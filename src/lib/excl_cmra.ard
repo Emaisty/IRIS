@@ -1,0 +1,320 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Data.Or
+\import Meta
+\import Arith.Nat
+\import ofe
+\import cmra
+
+
+\data Excl (A : \Type)
+  | excl (a : A)
+  | exclInvalid
+
+
+\instance ExclOFE (A : OFE) : OFE (Excl A.E) \cowith
+  | dist => \lam n e1 e2 => \case e1, e2 \with {
+    | excl a1, excl a2 => A.dist n a1 a2
+    | exclInvalid, exclInvalid => \Sigma
+    | _, _ => Empty
+  }
+  | ofe_equiv_dist => \lam e1 e2 => \case \elim e1, \elim e2 \with {
+    | excl a1, excl a2 => (
+      \lam eq => (A.ofe_equiv_dist a1 a2).1 (pmap (\case \elim __ \with { | excl a => a | exclInvalid => a1 }) eq),
+      \lam h => pmap excl ((A.ofe_equiv_dist a1 a2).2 h)
+    )
+    | exclInvalid, exclInvalid => (\lam _ _ => (), \lam _ => idp)
+    | excl _, exclInvalid => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | excl _ => \Sigma | exclInvalid => Empty }) eq) (), \lam h => \case h 0)
+    | exclInvalid, excl _ => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | excl _ => Empty | exclInvalid => \Sigma }) eq) (), \lam h => \case h 0)
+  }
+  | ofe_dist_refl => \lam n e => \case \elim e \with {
+    | excl a => A.ofe_dist_refl n a
+    | exclInvalid => ()
+  }
+  | ofe_dist_sym => \lam n e1 e2 => \case \elim e1, \elim e2 \with {
+    | excl a1, excl a2 => \lam h => A.ofe_dist_sym n a1 a2 h
+    | exclInvalid, exclInvalid => \lam _ => ()
+    | excl _, exclInvalid => \lam e => \case e \with {}
+    | exclInvalid, excl _ => \lam e => \case e \with {}
+  }
+  | ofe_dist_trans => \lam n e1 e2 e3 => \case \elim e1, \elim e2, \elim e3 \with {
+    | excl a1, excl a2, excl a3 => \lam h1 h2 => A.ofe_dist_trans n a1 a2 a3 h1 h2
+    | exclInvalid, exclInvalid, exclInvalid => \lam _ _ => ()
+    | excl _, exclInvalid, _ => \lam e => \case e \with {}
+    | exclInvalid, excl _, _ => \lam e => \case e \with {}
+    | _, excl _, exclInvalid => \lam _ e => \case e \with {}
+    | _, exclInvalid, excl _ => \lam _ e => \case e \with {}
+  }
+  | ofe_dist_le => \lam n m e1 e2 => \case \elim e1, \elim e2 \with {
+    | excl a1, excl a2 => \lam h le => A.ofe_dist_le n m a1 a2 h le
+    | exclInvalid, exclInvalid => \lam _ _ => ()
+    | excl _, exclInvalid => \lam e => \case e \with {}
+    | exclInvalid, excl _ => \lam e => \case e \with {}
+  }
+
+\func excl_compl_chain {A : COFE} (c : Nat -> Excl A.E) (hc : Chain c) (a0 : A.E) : Chain {A} (\lam n => \case c n \as cn \return A.E \with { | excl a => a | exclInvalid => a0 }) \cowith
+  | chain_cauchy n m le => \case c m \as cm, c n \as cn, hc.chain_cauchy n m le : (ExclOFE A).dist n cm cn \return A.dist n (\case cm \with { | excl a => a | exclInvalid => a0 }) (\case cn \with { | excl a => a | exclInvalid => a0 }) \with {
+    | excl am, excl an, h => h
+    | excl _, exclInvalid, h => \case h \with {}
+    | exclInvalid, excl _, h => \case h \with {}
+    | exclInvalid, exclInvalid, _ => A.ofe_dist_refl n a0
+  }
+
+\func ExclCOFE (A : COFE) : COFE \cowith
+  | OFE => ExclOFE A
+  | compl => \lam c hc => \case c 0 \as e0 \return Excl A.E \with {
+    | excl a0 => excl (A.compl _ (excl_compl_chain c hc a0))
+    | exclInvalid => exclInvalid
+  }
+  | cofe_conv_compl c hc n => help c hc n (c 0) idp (c n) idp (hc.chain_cauchy 0 n (zero<=_))
+  \where {
+    \func help {A : COFE} (c : Nat -> Excl A.E) (hc : Chain c) (n : Nat)
+               (e0 : Excl A.E) (p0 : c 0 = e0)
+               (en : Excl A.E) (pn : c n = en)
+               (h0 : (ExclOFE A).dist 0 en e0)
+      : (ExclOFE A).dist n (\case e0 \with { | excl a0 => excl (A.compl _ (excl_compl_chain c hc a0)) | exclInvalid => exclInvalid }) en \elim e0, en
+      | excl a0, excl an =>
+        transport (\lam x => A.dist n (A.compl _ (excl_compl_chain c hc a0)) (\case x \with { | excl a => a | exclInvalid => a0 })) pn (A.cofe_conv_compl _ (excl_compl_chain c hc a0) n)
+      | excl a0, exclInvalid => absurd h0
+      | exclInvalid, exclInvalid => ()
+      | exclInvalid, excl an => absurd h0
+  }
+
+
+\func excl_valid {A : \Type} (e : Excl A) : \Prop => \case e \with {
+  | excl _ => \Sigma
+  | exclInvalid => Empty
+}
+
+\func excl_validN {A : \Type} (n : Nat) (e : Excl A) : \Prop => \case e \with {
+  | excl _ => \Sigma
+  | exclInvalid => Empty
+}
+
+\func excl_pcore {A : \Type} (e : Excl A) : Maybe (Excl A) => nothing
+
+\func excl_op {A : \Type} (e1 e2 : Excl A) : Excl A => exclInvalid
+
+\func ExclCMRA (A : OFE) : CMRA \cowith
+  | OFE => ExclOFE A
+  | PCore => \new PCore (Excl A.E) { | pcore => excl_pcore }
+  | Op => \new Op (Excl A.E) { | op => excl_op }
+  | Valid => \new Valid (Excl A.E) { | valid => excl_valid }
+  | ValidN => \new ValidN (Excl A.E) { | validN => excl_validN }
+  | cmra_op_ne => \lam x n y1 y2 h => ()
+  | cmra_op_ne_2 => \lam y n x1 x2 h => ()
+  | cmra_pcore_ne => \lam n x y cx hd hp => \case hp \with {}
+  | cmra_validN_ne => \lam n e1 e2 hd hv => \case \elim e1, \elim e2, hd, hv \with {
+    | excl a1, excl a2, _, _ => ()
+    | excl _, exclInvalid, hd, _ => \case hd \with {}
+    | exclInvalid, _, _, hv => \case hv \with {}
+  }
+  | cmra_valid_validN => \lam e => (\lam h _ => h, \lam h => h 0)
+  | cmra_validN_le => \lam n m e hv hle => hv
+  | cmra_assoc => \lam x y z => idp
+  | cmra_comm => \lam x y => idp
+  | cmra_pcore_l => \lam x cx hp => \case hp \with {}
+  | cmra_pcore_idemp => \lam x cx hp => \case hp \with {}
+  | cmra_pcore_mono => \lam x y cx hi hp => \case hp \with {}
+  | cmra_validN_op_l => \lam n e1 e2 hv => \case \elim e1, \elim e2, hv \with {
+    | excl a1, excl a2, hv => \case hv \with {}
+    | excl a1, exclInvalid, hv => \case hv \with {}
+    | exclInvalid, _, hv => \case hv \with {}
+  }
+  | cmra_extend => \lam n x y1 y2 hv hd =>
+    \let result : \Sigma (z1 z2 : Excl A.E) (x = excl_op z1 z2) ((ExclOFE A).dist n z1 y1) ((ExclOFE A).dist n z2 y2) =>
+      \case \elim x, \elim y1, \elim y2, hv, hd \with {
+        | excl _, excl _, excl _, _, hd => absurd hd
+        | excl _, excl _, exclInvalid, _, hd => absurd hd
+        | excl _, exclInvalid, _, _, hd => absurd hd
+        | exclInvalid, _, _, hv, _ => absurd hv
+      }
+    \in result
+
+
+
+
+
+
+\lemma excl_exclusive {A : OFE} (e : (ExclCMRA A).E) : Exclusive {ExclCMRA A} e =>
+  \lam y hv => hv
+
+-- =================================================================================
+-- Inclusion lemmas for Excl
+-- =================================================================================
+
+-- =================================================================================
+-- Excl functor (mapping)
+-- =================================================================================
+
+\func excl_map {A B : \Type} (f : A -> B) (e : Excl A) : Excl B => \case e \with {
+  | excl a => excl (f a)
+  | exclInvalid => exclInvalid
+}
+
+\func excl_map_id {A : \Type} (e : Excl A) : excl_map (\lam x => x) e = e =>
+  \case \elim e \with {
+    | excl a => idp
+    | exclInvalid => idp
+  }
+
+\func excl_map_compose {A B C : \Type} (f : A -> B) (g : B -> C) (e : Excl A) :
+  excl_map (\lam a => g (f a)) e = excl_map g (excl_map f e) =>
+  \case \elim e \with {
+    | excl a => idp
+    | exclInvalid => idp
+  }
+
+\lemma excl_map_ne {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f) (n : Nat) (e1 e2 : Excl A.E) :
+  (ExclOFE A).dist n e1 e2 -> (ExclOFE B).dist n (excl_map f e1) (excl_map f e2) =>
+  \lam h => \case \elim e1, \elim e2, h \with {
+    | excl a1, excl a2, h => hf n a1 a2 h
+    | exclInvalid, exclInvalid, _ => ()
+    | excl _, exclInvalid, h => \case h \with {}
+    | exclInvalid, excl _, h => \case h \with {}
+  }
+
+
+\func ExclUOFE (A : OFE) : OFE \cowith
+  | E => Maybe (Excl A.E)
+  | dist => \lam n me1 me2 => \case me1, me2 \with {
+    | nothing, nothing => \Sigma
+    | just e1, just e2 => (ExclOFE A).dist n e1 e2
+    | _, _ => Empty
+  }
+  | ofe_equiv_dist => \lam me1 me2 => \case \elim me1, \elim me2 \with {
+    | nothing, nothing => (\lam _ _ => (), \lam _ => idp)
+    | just e1, just e2 => (
+      \lam eq => ((ExclOFE A).ofe_equiv_dist e1 e2) .1 (pmap (\case \elim __ \with { | just e => e | nothing => e1 }) eq),
+      \lam h => pmap just (((ExclOFE A).ofe_equiv_dist e1 e2).2 h)
+    )
+    | just _, nothing => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | just _ => \Sigma | nothing => Empty }) eq) (), \lam h => \case h 0)
+    | nothing, just _ => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | just _ => Empty | nothing => \Sigma }) eq) (), \lam h => \case h 0)
+  }
+  | ofe_dist_refl => \lam n me => \case \elim me \with {
+    | nothing => ()
+    | just e => (ExclOFE A).ofe_dist_refl n e
+  }
+  | ofe_dist_sym => \lam n me1 me2 => \case \elim me1, \elim me2 \with {
+    | nothing, nothing => \lam _ => ()
+    | just e1, just e2 => \lam h => (ExclOFE A).ofe_dist_sym n e1 e2 h
+    | just _, nothing => \lam e => \case e \with {}
+    | nothing, just _ => \lam e => \case e \with {}
+  }
+  | ofe_dist_trans => \lam n me1 me2 me3 => \case \elim me1, \elim me2, \elim me3 \with {
+    | nothing, nothing, nothing => \lam _ _ => ()
+    | just e1, just e2, just e3 => \lam h1 h2 => (ExclOFE A).ofe_dist_trans n e1 e2 e3 h1 h2
+    | just _, nothing, _ => \lam e => \case e \with {}
+    | nothing, just _, _ => \lam e => \case e \with {}
+    | _, just _, nothing => \lam _ e => \case e \with {}
+    | _, nothing, just _ => \lam _ e => \case e \with {}
+  }
+  | ofe_dist_le => \lam n m me1 me2 => \case \elim me1, \elim me2 \with {
+    | nothing, nothing => \lam _ _ => ()
+    | just e1, just e2 => \lam h le => (ExclOFE A).ofe_dist_le n m e1 e2 h le
+    | just _, nothing => \lam e => \case e \with {}
+    | nothing, just _ => \lam e => \case e \with {}
+  }
+
+\func exclU_valid {A : \Type} (me : Maybe (Excl A)) : \Prop => \case me \with {
+  | nothing => \Sigma
+  | just e => excl_valid e
+}
+
+\func exclU_validN {A : \Type} (n : Nat) (me : Maybe (Excl A)) : \Prop => \case me \with {
+  | nothing => \Sigma
+  | just e => excl_validN n e
+}
+
+\func exclU_pcore {A : \Type} (me : Maybe (Excl A)) : Maybe (Maybe (Excl A)) => just nothing
+
+\func exclU_op {A : \Type} (me1 me2 : Maybe (Excl A)) : Maybe (Excl A) => \case me1, me2 \with {
+  | nothing, me2 => me2
+  | me1, nothing => me1
+  | just e1, just e2 => just (excl_op e1 e2)
+}
+
+\func ExclUCMRA (A : OFE) : UCMRA \cowith
+  | OFE => ExclUOFE A
+  | PCore => \new PCore (Maybe (Excl A.E)) { | pcore => exclU_pcore }
+  | Op => \new Op (Maybe (Excl A.E)) { | op => exclU_op }
+  | Valid => \new Valid (Maybe (Excl A.E)) { | valid => exclU_valid }
+  | ValidN => \new ValidN (Maybe (Excl A.E)) { | validN => exclU_validN }
+  | Unit => \new Unit (Maybe (Excl A.E)) { | unit => nothing }
+  | cmra_op_ne => \lam x n y1 y2 h => \case \elim x, \elim y1, \elim y2, h \with {
+    | nothing, nothing, nothing, _ => ()
+    | nothing, just e1, just e2, h => h
+    | nothing, nothing, just e2, h => \case h \with {}
+    | nothing, just e1, nothing, h => \case h \with {}
+    | just e, nothing, nothing, _ => (ExclOFE A).ofe_dist_refl n e
+    | just e, just e1, just e2, h => ()
+    | just e, nothing, just e2, h => \case h \with {}
+    | just e, just e1, nothing, h => \case h \with {}
+  }
+  | cmra_op_ne_2 => \lam y n x1 x2 h => \case \elim y, \elim x1, \elim x2, h \with {
+    | nothing, nothing, nothing, _ => ()
+    | nothing, just e1, just e2, h => h
+    | nothing, nothing, just e2, h => \case h \with {}
+    | nothing, just e1, nothing, h => \case h \with {}
+    | just e, nothing, nothing, _ => (ExclOFE A).ofe_dist_refl n e
+    | just e, just e1, just e2, h => ()
+    | just e, nothing, just e2, h => \case h \with {}
+    | just e, just e1, nothing, h => \case h \with {}
+  }
+  | cmra_pcore_ne => \lam n x y cx hd hp => \case \elim cx, hp \with { | nothing, _ => (nothing, idp, ()) }
+  | cmra_validN_ne => \lam n me1 me2 hd hv => \case \elim me1, \elim me2, hd, hv \with {
+    | nothing, nothing, _, _ => ()
+    | just e1, just e2, hd, hv => (ExclCMRA A).cmra_validN_ne n e1 e2 hd hv
+    | nothing, just e2, hd, _ => \case hd \with {}
+    | just e1, nothing, hd, _ => \case hd \with {}
+  }
+  | cmra_valid_validN => \lam me => (\lam h _ => h, \lam h => h 0)
+  | cmra_validN_le => \lam n m me hv hle => hv
+  | cmra_assoc => \lam x y z => \case \elim x, \elim y, \elim z \with {
+    | nothing, nothing, nothing => idp
+    | nothing, nothing, just e => idp
+    | nothing, just e, nothing => idp
+    | nothing, just e1, just e2 => idp
+    | just e, nothing, nothing => idp
+    | just e, nothing, just e2 => idp
+    | just e, just e1, nothing => idp
+    | just e, just e1, just e2 => idp
+  }
+  | cmra_comm => \lam x y => \case \elim x, \elim y \with {
+    | nothing, nothing => idp
+    | nothing, just e => idp
+    | just e, nothing => idp
+    | just e1, just e2 => idp
+  }
+  | cmra_pcore_l => \lam x cx hp => \case \elim cx, hp \with { | nothing, _ => \case \elim x \with { | nothing => idp | just _ => idp } }
+  | cmra_pcore_idemp => \lam x cx hp => \case \elim cx, hp \with { | nothing, _ => idp }
+  | cmra_pcore_mono => \lam x y cx hi hp => \case \elim cx, hp \with { | nothing, _ => (nothing, idp, inP (nothing, idp)) }
+  | cmra_validN_op_l => \lam n me1 me2 hv => \case \elim me1, \elim me2, hv \with {
+    | nothing, nothing, _ => ()
+    | nothing, just e, hv => ()
+    | just e, nothing, hv => hv
+    | just e1, just e2, hv => \case hv \with {}
+  }
+  | cmra_extend => \lam n x y1 y2 hv hd =>
+    \let result : \Sigma (z1 z2 : Maybe (Excl A.E)) (x = exclU_op z1 z2) ((ExclUOFE A).dist n z1 y1) ((ExclUOFE A).dist n z2 y2) =>
+      \case \elim x, \elim y1, \elim y2, hv, hd \with {
+        | nothing, nothing, nothing, _, _ => (nothing, nothing, idp, (), ())
+        | nothing, nothing, just e, _, hd => \case hd \with {}
+        | nothing, just e, nothing, _, hd => \case hd \with {}
+        | nothing, just e1, just e2, _, hd => \case hd \with {}
+        | just e, nothing, nothing, hv, hd => (just e, nothing, idp, hd, ())
+        | just e, nothing, just e2, hv, hd => (nothing, just e, idp, (), hd)
+        | just e, just e1, nothing, hv, hd => (just e, nothing, idp, hd, ())
+        | just (excl _), just e1, just e2, hv, hd => absurd hd
+        | just exclInvalid, just e1, just e2, hv, hd => absurd hv
+      }
+    \in result
+  | ucmra_unit_valid => ()
+  | ucmra_unit_left_id => \lam x => \case \elim x \with {
+    | nothing => idp
+    | just e => idp
+  }
+  | ucmra_pcore_unit => idp
+
