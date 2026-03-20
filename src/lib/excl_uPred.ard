@@ -1,0 +1,78 @@
+\import Logic
+\import Paths
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import lib.excl_cmra
+\import uPred
+\import interface
+
+-- =================================================================================
+-- uPred interpretation for ExclUCMRA
+-- =================================================================================
+
+\func BIExcl (A : OFE) : BIBase => BIuPred (ExclUCMRA A)
+
+-- =================================================================================
+-- BIMixin proofs for ExclUCMRA
+-- =================================================================================
+
+\func BIMixinExcl (A : OFE) : BIMixin \cowith
+  | BIBase => BIExcl A
+
+  | bi_mixin_pure_intro => \lam phi P h n a hP => h
+  | bi_mixin_pure_elim => \lam phi P h n a hp => h hp n a ()
+
+  | bi_mixin_and_intro => \lam P Q R hPQ hPR n a hP => (hPQ n a hP, hPR n a hP)
+  | bi_mixin_and_elim_l => \lam P Q n a hPQ => hPQ.1
+  | bi_mixin_and_elim_r => \lam P Q n a hPQ => hPQ.2
+
+  | bi_mixin_or_intro_l => \lam P Q n a hP => byLeft hP
+  | bi_mixin_or_intro_r => \lam P Q n a hQ => byRight hQ
+  | bi_mixin_or_elim => \lam P Q R hPR hQR n a hPQ => \case hPQ \with {
+    | byLeft hP => hPR n a hP
+    | byRight hQ => hQR n a hQ
+  }
+
+  | bi_mixin_impl_intro_r => \lam P Q R hPQR n a hP m m_le_n hQma => {?}
+  | bi_mixin_impl_elim_l => \lam P Q R hPQR n a (hP, hQ) => hPQR n a hP n <=-refl a hQ
+
+  | bi_mixin_forall_intro => \lam P Phi h n a hP t => h t n a hP
+  | bi_mixin_forall_elim => \lam Phi t n a hForall => hForall t
+
+  | bi_mixin_exist_intro => \lam Phi t n a hPhi => inP (t, hPhi)
+  | bi_mixin_exist_elim => \lam Phi Q h n a hExist => \case hExist \with {
+    | inP (t, hPhi) => h t n a hPhi
+  }
+
+  | bi_mixin_sep_mono => \lam P P' Q Q' hPP' hQQ' n a hSep => \case hSep \with {
+    | inP (a1, a2, dist_a, hP, hQ) => inP (a1, a2, dist_a, hPP' n a1 hP, hQQ' n a2 hQ)
+  }
+  | bi_mixin_emp_sep_1 => \lam P n a hP => inP ((ExclUCMRA A).unit, a,
+                                                transport (\lam w => (ExclUCMRA A).dist n a w) (inv ((ExclUCMRA A).ucmra_unit_left_id a)) ((ExclUCMRA A).ofe_dist_refl n a),
+                                                inP ((ExclUCMRA A).unit, transport (\lam w => (ExclUCMRA A).dist n (ExclUCMRA A).unit w) (inv ((ExclUCMRA A).ucmra_unit_left_id (ExclUCMRA A).unit)) ((ExclUCMRA A).ofe_dist_refl n (ExclUCMRA A).unit)),
+                                                hP)
+  | bi_mixin_emp_sep_2 => {?}
+  | bi_mixin_sep_comm => \lam P Q n a hSep => \case hSep \with {
+    | inP (a1, a2, dist_a, hP, hQ) => inP (a2, a1,
+                                           transport (\lam w => (ExclUCMRA A).dist n a w) ((ExclUCMRA A).cmra_comm a1 a2) dist_a,
+                                           hQ, hP)
+  }
+  | bi_mixin_sep_assoc => \lam P Q R n a hSep => \case hSep \with {
+    | inP (a12, a3, dist_a, hPQ, hR) => \case hPQ \with {
+      | inP (a1, a2, dist_a12, hP, hQ) => inP (a1, (ExclUCMRA A).op a2 a3,
+                                               (ExclUCMRA A).ofe_dist_trans n a ((ExclUCMRA A).op a12 a3) ((ExclUCMRA A).op a1 ((ExclUCMRA A).op a2 a3))
+                                               dist_a
+                                               (transport (\lam w => (ExclUCMRA A).dist n ((ExclUCMRA A).op a12 a3) w)
+                                               (inv ((ExclUCMRA A).cmra_assoc a1 a2 a3))
+                                               ((ExclUCMRA A).cmra_op_ne_2 a3 n a12 ((ExclUCMRA A).op a1 a2) dist_a12)),
+                                               hP,
+                                               inP (a2, a3, (ExclUCMRA A).ofe_dist_refl n ((ExclUCMRA A).op a2 a3), hQ, hR))
+    }
+  }
+
+  | bi_mixin_wand_intro => {?}
+  | bi_mixin_wand_elim => {?}
+

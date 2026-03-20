@@ -1,0 +1,216 @@
+\import interface
+\import Logic
+\import Order.PartialOrder
+
+
+
+
+\lemma and_elim_l' {B : BIMixin} {P Q R : B.E} (h : P |- R) : P && Q |- R
+  => B.<=-transitive (B.bi_mixin_and_elim_l P Q) h
+
+\lemma and_elim_r' {B : BIMixin} {P Q R : B.E} (h : Q |- R) : P && Q |- R
+  => B.<=-transitive (B.bi_mixin_and_elim_r P Q) h
+
+\lemma or_intro_l' {B : BIMixin} {P Q R : B.E} (h : P |- Q) : P |- Q || R
+  => B.<=-transitive h (B.bi_mixin_or_intro_l Q R)
+
+\lemma or_intro_r' {B : BIMixin} {P Q R : B.E} (h : P |- R) : P |- (Q || R)
+  => B.<=-transitive h (B.bi_mixin_or_intro_r Q R)
+
+
+\lemma exist_intro' {B : BIMixin} {A : \Type} {P : B.E} {Phi : A -> B.E} (a : A) (h : P |- (Phi a))
+  : P |- (exists A Phi)
+  => B.<=-transitive h (B.bi_mixin_exist_intro Phi a)
+
+\lemma forall_elim' {B : BIMixin} {A : \Type} {P : B.E} {Phi : A -> B.E} (h : P |- (forall A Phi)) (a : A)
+  : P |- (Phi a)
+  => B.<=-transitive h (B.bi_mixin_forall_elim Phi a)
+
+
+\lemma impl_intro_l {B : BIMixin} {P Q R : B.E} (h : (Q && P) |- R) : P |- (Q ->> R)
+  => B.bi_mixin_impl_intro_r P Q R (B.<=-transitive and_comm h)
+
+\lemma impl_elim {B : BIMixin} {P Q R : B.E} (h1 : P |- (Q ->> R)) (h2 : P |- Q) : P |- R
+  => B.<=-transitive (B.bi_mixin_and_intro P (Q ->> R) Q h1 h2) impl_elim_l
+
+\lemma impl_elim_r' {B : BIMixin} {P Q R : B.E} (h : Q |- (P ->> R)) : (P && Q) |- R
+  => B.<=-transitive (and_mono (B.<=-refl {P}) h) impl_elim_r
+
+\lemma impl_elim_l {B : BIMixin} {P Q : B.E} : ((P ->> Q) && P) |- Q
+  => B.bi_mixin_impl_elim_l (P ->> Q) P Q (B.<=-refl {P ->> Q})
+
+\lemma impl_elim_r {B : BIMixin} {P Q : B.E} : (P && (P ->> Q)) |- Q
+  => B.<=-transitive and_comm impl_elim_l
+
+
+\lemma False_elim {B : BIMixin} (P : B.E) : False |- P
+  => B.bi_mixin_pure_elim Empty P (\lam e => \case e \with {})
+
+\lemma True_intro {B : BIMixin} (P : B.E) : P |- True
+  => B.bi_mixin_pure_intro (\Sigma) P ()
+
+
+\lemma and_mono {B : BIMixin} {P P' Q Q' : B.E} (h1 : P |- Q) (h2 : P' |- Q')
+  : (P && P') |- (Q && Q')
+  => B.bi_mixin_and_intro (P && P') Q Q' (and_elim_l' h1) (and_elim_r' h2)
+
+\lemma and_mono_l {B : BIMixin} {P P' Q : B.E} (h : P |- Q) : (P && P') |- (Q && P')
+  => and_mono h (B.<=-refl {P'})
+
+\lemma and_mono_r {B : BIMixin} {P P' Q' : B.E} (h : P' |- Q') : (P && P') |- (P && Q')
+  => and_mono (B.<=-refl {P}) h
+
+
+\lemma or_mono {B : BIMixin} {P P' Q Q' : B.E} (h1 : P |- Q) (h2 : P' |- Q')
+  : (P || P') |- (Q || Q')
+  => B.bi_mixin_or_elim P P' (Q || Q') (or_intro_l' h1) (or_intro_r' h2)
+
+\lemma or_mono_l {B : BIMixin} {P P' Q : B.E} (h : P |- Q) : (P || P') |- (Q || P')
+  => or_mono h (B.<=-refl {P'})
+
+\lemma or_mono_r {B : BIMixin} {P P' Q' : B.E} (h : P' |- Q') : (P || P') |- (P || Q')
+  => or_mono (B.<=-refl {P}) h
+
+
+\lemma impl_mono {B : BIMixin} {P P' Q Q' : B.E} (h1 : Q |- P) (h2 : P' |- Q')
+  : (P ->> P') |- (Q ->> Q')
+  => {?}
+
+\lemma forall_mono {B : BIMixin} {A : \Type} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
+  : (forall A Phi) |- (forall A Psi)
+  => B.bi_mixin_forall_intro (forall A Phi) Psi (\lam a => B.<=-transitive (B.bi_mixin_forall_elim Phi a) (h a))
+
+\lemma exist_mono {B : BIMixin} {A : \Type} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
+  : (exists A Phi) |- (exists A Psi)
+  => B.bi_mixin_exist_elim Phi (exists A Psi) (\lam a => B.<=-transitive (h a) (B.bi_mixin_exist_intro Psi a))
+
+
+\lemma and_idem {B : BIMixin} {P : B.E} : (P && P) |- P
+  => B.bi_mixin_and_elim_l P P
+
+\lemma and_idem-rev {B : BIMixin} {P : B.E} : P |- (P && P)
+  => B.bi_mixin_and_intro P P P B.<=-refl B.<=-refl
+
+\lemma or_idem {B : BIMixin} {P : B.E} : (P || P) |- P
+  => B.bi_mixin_or_elim P P P B.<=-refl B.<=-refl
+
+\lemma or_idem-rev {B : BIMixin} {P : B.E} : P |- (P || P)
+  => B.bi_mixin_or_intro_l P P
+
+
+\lemma and_comm {B : BIMixin} {P Q : B.E} : (P && Q) |- (Q && P)
+  => B.bi_mixin_and_intro (P && Q) Q P (B.bi_mixin_and_elim_r P Q) (B.bi_mixin_and_elim_l P Q)
+
+\lemma or_comm {B : BIMixin} {P Q : B.E} : (P || Q) |- (Q || P)
+  => B.bi_mixin_or_elim P Q (Q || P) (B.bi_mixin_or_intro_r Q P) (B.bi_mixin_or_intro_l Q P)
+
+
+\lemma and_assoc {B : BIMixin} {P Q R : B.E} : ((P && Q) && R) |- (P && (Q && R))
+  => B.bi_mixin_and_intro ((P && Q) && R) P (Q && R)
+    (and_elim_l' (B.bi_mixin_and_elim_l P Q))
+    (B.bi_mixin_and_intro ((P && Q) && R) Q R
+      (and_elim_l' (B.bi_mixin_and_elim_r P Q))
+      (B.bi_mixin_and_elim_r (P && Q) R))
+
+\lemma and_assoc-rev {B : BIMixin} {P Q R : B.E} : (P && (Q && R)) |- ((P && Q) && R)
+  => B.bi_mixin_and_intro (P && (Q && R)) (P && Q) R
+    (B.bi_mixin_and_intro (P && (Q && R)) P Q
+      (B.bi_mixin_and_elim_l P (Q && R))
+      (and_elim_r' (B.bi_mixin_and_elim_l Q R)))
+    (and_elim_r' (B.bi_mixin_and_elim_r Q R))
+
+\lemma or_assoc {B : BIMixin} {P Q R : B.E} : ((P || Q) || R) |- (P || (Q || R))
+  => B.bi_mixin_or_elim (P || Q) R (P || (Q || R))
+    (B.bi_mixin_or_elim P Q (P || (Q || R))
+      (B.bi_mixin_or_intro_l P (Q || R))
+      (or_intro_r' (B.bi_mixin_or_intro_l Q R)))
+    (or_intro_r' (B.bi_mixin_or_intro_r Q R))
+
+\lemma or_assoc-rev {B : BIMixin} {P Q R : B.E} : (P || (Q || R)) |- ((P || Q) || R)
+  => B.bi_mixin_or_elim P (Q || R) ((P || Q) || R)
+    (or_intro_l' (B.bi_mixin_or_intro_l P Q))
+    (B.bi_mixin_or_elim Q R ((P || Q) || R)
+      (or_intro_l' (B.bi_mixin_or_intro_r P Q))
+      (B.bi_mixin_or_intro_r (P || Q) R))
+
+
+\lemma True_and {B : BIMixin} {P : B.E} : (True && P) |- P
+  => B.bi_mixin_and_elim_r True P
+
+\lemma True_and-rev {B : BIMixin} {P : B.E} : P |- (True && P)
+  => B.bi_mixin_and_intro P True P (True_intro P) (B.<=-refl {P})
+
+\lemma and_True {B : BIMixin} {P : B.E} : (P && True) |- P
+  => B.bi_mixin_and_elim_l P True
+
+\lemma and_True-rev {B : BIMixin} {P : B.E} : P |- (P && True)
+  => B.bi_mixin_and_intro P P True (B.<=-refl {P}) (True_intro P)
+
+\lemma False_or {B : BIMixin} {P : B.E} : (False || P) |- P
+  => B.bi_mixin_or_elim False P P (False_elim P) (B.<=-refl {P})
+
+\lemma False_or-rev {B : BIMixin} {P : B.E} : P |- (False || P)
+  => B.bi_mixin_or_intro_r False P
+
+\lemma or_False {B : BIMixin} {P : B.E} : (P || False) |- P
+  => B.bi_mixin_or_elim P False P (B.<=-refl {P}) (False_elim P)
+
+\lemma or_False-rev {B : BIMixin} {P : B.E} : P |- (P || False)
+  => B.bi_mixin_or_intro_l P False
+
+
+\lemma False_and {B : BIMixin} {P : B.E} : (False && P) |- False
+  => B.bi_mixin_and_elim_l False P
+
+\lemma False_and-rev {B : BIMixin} {P : B.E} : False |- (False && P)
+  => B.bi_mixin_and_intro False False P (B.<=-refl {False}) (False_elim P)
+
+\lemma and_False {B : BIMixin} {P : B.E} : (P && False) |- False
+  => B.bi_mixin_and_elim_r P False
+
+\lemma and_False-rev {B : BIMixin} {P : B.E} : False |- (P && False)
+  => B.bi_mixin_and_intro False P False (False_elim P) (B.<=-refl {False})
+
+\lemma True_or {B : BIMixin} {P : B.E} : (True || P) |- True
+  => B.bi_mixin_or_elim True P True (B.<=-refl {True}) (True_intro P)
+
+\lemma True_or-rev {B : BIMixin} {P : B.E} : True |- (True || P)
+  => B.bi_mixin_or_intro_l True P
+
+\lemma or_True {B : BIMixin} {P : B.E} : (P || True) |- True
+  => B.bi_mixin_or_elim P True True (True_intro P) (B.<=-refl {True})
+
+\lemma or_True-rev {B : BIMixin} {P : B.E} : True |- (P || True)
+  => B.bi_mixin_or_intro_r P True
+
+
+\lemma True_impl {B : BIMixin} {P : B.E} : (True ->> P) |- P
+  => B.<=-transitive
+    (B.bi_mixin_and_intro (True ->> P) True (True ->> P) (True_intro (True ->> P)) (B.<=-refl {True ->> P}))
+    impl_elim_r
+
+\lemma True_impl-rev {B : BIMixin} {P : B.E} : P |- (True ->> P)
+  => impl_intro_l True_and
+
+\lemma impl_refl {B : BIMixin} {P Q : B.E} : Q |- (P ->> P)
+  => impl_intro_l (B.bi_mixin_and_elim_l P Q)
+
+\lemma False_impl {B : BIMixin} {P : B.E} : (False ->> P) |- True
+  => True_intro (False ->> P)
+
+\lemma False_impl-rev {B : BIMixin} {P : B.E} : True |- (False ->> P)
+  => impl_intro_l (B.<=-transitive (B.bi_mixin_and_elim_l False True) (False_elim P))
+
+
+\lemma sep_mono_l {B : BIMixin} {P P' Q : B.E} (pf : P |- Q) : (P * P') |- (Q * P')
+  => B.bi_mixin_sep_mono P Q P' P' pf (B.<=-refl {P'})
+
+\lemma sep_mono_r {B : BIMixin} {P P' Q' : B.E} (pf : P' |- Q') : (P * P') |- (P * Q')
+  => B.bi_mixin_sep_mono P P P' Q' (B.<=-refl {P}) pf
+
+-- \lemma sep_comm {B : BIMixin} {P Q : B.E} : B.equiv (P * Q) (Q * P)
+--   => (B.bi_mixin_sep_comm P Q, B.bi_mixin_sep_comm Q P)
+--
+-- \lemma sep_False_r {B : BIMixin} {P : B.E} : B.equiv (P * False) False
+--   => (B.<=-transitive sep_comm.1 sep_False_l.1, B.<=-transitive sep_False_l.2 sep_comm.1)
+

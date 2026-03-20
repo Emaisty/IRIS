@@ -1,0 +1,383 @@
+\import Arith.Nat
+\import Logic
+\import Function.Iterate
+\import Order.PartialOrder
+\import Order.LinearOrder
+\import Paths
+\import Set
+\import Data.Or
+\import Data.Maybe
+\import Logic.Meta
+
+
+-- =================================================================================
+-- OFE
+-- =================================================================================
+
+
+-- Ordered Famaly of Equivalance extends the Basic set with the notion of a dist
+\class OFE \extends BaseSet {
+  | dist : Nat -> E -> E -> \Prop
+
+  | ofe_equiv_dist (x y : E) : (x = y) <-> (\Pi (n : Nat) -> dist n x y)
+
+  | ofe_dist_refl (n : Nat) (x : E) : dist n x x
+  | ofe_dist_sym (n : Nat) (x y : E) : dist n x y -> dist n y x
+  | ofe_dist_trans (n : Nat) (x y z : E) : dist n x y -> dist n y z -> dist n x z
+
+  | ofe_dist_le (n m : Nat) (x y : E) : dist n x y -> m <= n -> dist m x y
+}
+
+
+\record DistLater {A : OFE} (n : Nat) (x y : A.E)
+  | dist_later_lt : \Pi (m : Nat) -> m NatOrder.< n -> A.dist m x y
+
+\func NonExpansive {A B : OFE} (f : A.E -> B.E) : \Prop =>
+  \Pi (n : Nat) (x y : A.E) -> A.dist n x y -> B.dist n (f x) (f y)
+
+\func NonExpansive2 {A B C : OFE} (f : A.E -> B.E -> C.E) : \Prop =>
+  \Pi (n : Nat) (x y : A.E) (x' y' : B.E) ->
+    A.dist n x y -> B.dist n x' y' -> C.dist n (f x x') (f y y')
+
+
+\func Discrete {O : OFE} (x : O.E) : \Prop =>
+  \Pi (y : O.E) -> O.dist 0 x y -> x = y
+
+\func OFEDiscrete (O : OFE) : \Prop =>
+  \Pi (x : O.E) -> Discrete x
+
+\record Chain {O : OFE} (c : Nat -> O.E)
+  | chain_cauchy (n m : Nat) : n <= m -> O.dist n (c m) (c n)
+
+
+-- =================================================================================
+-- COFE
+-- =================================================================================
+
+
+\class COFE \extends OFE {
+  | compl : \Pi (c : Nat -> E) -> Chain c -> E
+  | cofe_conv_compl (c : Nat -> E) (hc : Chain c) (n : Nat) :
+  dist n (compl c hc) (c n)
+}
+
+
+-- =================================================================================
+-- OFE, COFE and dist lemmas
+-- =================================================================================
+
+
+\lemma n<=sucn (n : Nat) : n <= suc n \elim n
+  | 0 => zero<=_
+  | suc n => suc<=suc (n<=sucn n)
+
+\lemma dist_S {O : OFE} (n : Nat) (x y : O.E) : O.dist (suc n) x y -> O.dist n x y =>
+  \lam h => O.ofe_dist_le (suc n) n x y h (n<=sucn n)
+
+\lemma equiv_dist_n {O : OFE} (x y : O.E) : x = y -> \Pi (n : Nat) -> O.dist n x y =>
+  \lam eq n => transport (\lam z => O.dist n x z) eq (O.ofe_dist_refl n x)
+
+\lemma ne_proper {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f)
+                 (x y : A.E) : x = y -> f x = f y =>
+  \lam eq =>
+    \let d1 => equiv_dist_n x y eq
+         | d2 => \lam n => hf n x y (d1 n)
+    \in (B.ofe_equiv_dist (f x) (f y)).2 d2
+
+\func chain_const {O : OFE} (a : O.E) : \Sigma (c : Nat -> O.E) (Chain c) =>
+  (\lam _ => a, \new Chain {
+    | chain_cauchy => \lam n m _ => O.ofe_dist_refl n a
+  })
+
+\lemma compl_chain_const {O : COFE} (a : O.E) :
+  \let cc => chain_const {O} a
+  \in O.compl cc.1 cc.2 = a =>
+  \let cc => chain_const {O} a \in
+    (O.ofe_equiv_dist _ _).2 (\lam n => O.cofe_conv_compl cc.1 cc.2 n)
+
+\func chain_map {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f)
+                (c : Nat -> A.E) (hc : Chain c) : \Sigma (c' : Nat -> B.E) (Chain c') =>
+  (\lam n => f (c n), \new Chain {
+    | chain_cauchy => \lam n m le => hf n (c m) (c n) (hc.chain_cauchy n m le)
+  })
+
+\lemma compl_chain_map {A B : COFE} (f : A.E -> B.E) (hf : NonExpansive f)
+                       (c : Nat -> A.E) (hc : Chain c) :
+  f (A.compl c hc) = B.compl (chain_map f hf c hc).1 (chain_map f hf c hc).2 =>
+  \let cm => chain_map f hf c hc \in
+    (B.ofe_equiv_dist _ _).2 (\lam n =>
+      B.ofe_dist_trans n (f (A.compl c hc)) (f (c n)) (B.compl cm.1 cm.2)
+        (hf n (A.compl c hc) (c n) (A.cofe_conv_compl c hc n))
+        (B.ofe_dist_sym n (B.compl cm.1 cm.2) (cm.1 n) (B.cofe_conv_compl cm.1 cm.2 n)))
+
+
+\lemma dist_later_zero {A : OFE} (x y : A.E) : DistLater {A} 0 x y \cowith
+  | dist_later_lt => \lam m h => \case h \with {}
+
+
+\lemma dist_to_dist_later_suc {A : OFE} (n : Nat) (x y : A.E) (h : A.dist n x y)
+  : DistLater {A} (suc n) x y \cowith
+  | dist_later_lt => \lam m hm => A.ofe_dist_le n m x y h (<_suc_<= hm)
+
+\lemma dist_later_suc_to_dist {A : OFE} (n : Nat) (x y : A.E) (h : DistLater {A} (suc n) x y)
+  : A.dist n x y => h.dist_later_lt n id<suc
+
+
+-- =================================================================================
+-- OFE Morphisms (non-expansive functions)
+-- =================================================================================
+
+\record OFEMor (A B : OFE) (f : A.E -> B.E)
+  | ofe_mor_ne : NonExpansive f
+
+\func ofe_mor_id {A : OFE} : OFEMor A A (\lam x => x) \cowith
+  | ofe_mor_ne => \lam n x y h => h
+
+\func ofe_mor_comp {A B C : OFE} (g : OFEMor B C) (f : OFEMor A B) :
+  OFEMor A C (\lam x => g.f (f.f x)) \cowith
+  | ofe_mor_ne => \lam n x y h => g.ofe_mor_ne n (f.f x) (f.f y) (f.ofe_mor_ne n x y h)
+
+\func ofe_mor_const {A B : OFE} (b : B.E) : OFEMor A B (\lam _ => b) \cowith
+  | ofe_mor_ne => \lam n x y h => B.ofe_dist_refl n b
+
+
+
+-- =================================================================================
+-- OFE Examples
+-- =================================================================================
+
+
+\func UnitOFE : OFE \cowith
+  | E => \Sigma
+  | dist => \lam _ _ _ => \Sigma
+  | ofe_equiv_dist => \lam _ _ => (\lam _ _ => (), \lam _ => idp)
+  | ofe_dist_refl => \lam _ _ => ()
+  | ofe_dist_sym => \lam _ _ _ _ => ()
+  | ofe_dist_trans => \lam _ _ _ _ _ _ => ()
+  | ofe_dist_le => \lam _ _ _ _ _ _ => ()
+
+\func UnitCOFE : COFE \cowith
+  | OFE => UnitOFE
+  | compl => \lam _ _ => ()
+  | cofe_conv_compl => \lam _ _ _ => ()
+
+\func EmptyOFE : OFE \cowith
+  | E => Empty
+  | dist => \lam _ e _ => \case e \with {}
+  | ofe_equiv_dist => \lam e => \case e \with {}
+  | ofe_dist_refl => \lam _ e => \case e \with {}
+  | ofe_dist_sym => \lam _ e => \case e \with {}
+  | ofe_dist_trans => \lam _ e => \case e \with {}
+  | ofe_dist_le => \lam _ _ e => \case e \with {}
+
+\func ProdOFE (A B : OFE) : OFE \cowith
+  | E => \Sigma A.E B.E
+  | dist => \lam n p q => \Sigma (A.dist n p.1 q.1) (B.dist n p.2 q.2)
+  | ofe_equiv_dist => \lam p q => (
+    \lam eq n => (equiv_dist_n p.1 q.1 (pmap (__ .1) eq) n, equiv_dist_n p.2 q.2 (pmap (__ .2) eq) n),
+    \lam h => path (\lam i => ((A.ofe_equiv_dist p.1 q.1).2 (\lam n => (h n).1) @ i, (B.ofe_equiv_dist p.2 q.2).2 (\lam n => (h n).2) @ i))
+  )
+  | ofe_dist_refl => \lam n p => (A.ofe_dist_refl n p.1, B.ofe_dist_refl n p.2)
+  | ofe_dist_sym => \lam n p q h => (A.ofe_dist_sym n p.1 q.1 h.1, B.ofe_dist_sym n p.2 q.2 h.2)
+  | ofe_dist_trans => \lam n p q r h1 h2 => (A.ofe_dist_trans n p.1 q.1 r.1 h1.1 h2.1, B.ofe_dist_trans n p.2 q.2 r.2 h1.2 h2.2)
+  | ofe_dist_le => \lam n m p q h le => (A.ofe_dist_le n m p.1 q.1 h.1 le, B.ofe_dist_le n m p.2 q.2 h.2 le)
+
+\func ProdCOFE (A B : COFE) : COFE \cowith
+  | OFE => ProdOFE A B
+  | compl => \lam c hc => (A.compl (\lam n => (c n).1) (\new Chain {
+    | chain_cauchy => \lam n m le => (hc.chain_cauchy n m le).1
+  }), B.compl (\lam n => (c n).2) (\new Chain {
+    | chain_cauchy => \lam n m le => (hc.chain_cauchy n m le).2
+  }))
+  | cofe_conv_compl => \lam c hc n => (
+    A.cofe_conv_compl (\lam n => (c n).1) _ n,
+    B.cofe_conv_compl (\lam n => (c n).2) _ n
+  )
+
+\func SumOFE (A B : OFE) : OFE \cowith
+  | E => Or A.E B.E
+  | dist => \lam n s1 s2 => \case s1, s2 \with {
+    | inl a1, inl a2 => A.dist n a1 a2
+    | inr b1, inr b2 => B.dist n b1 b2
+    | _, _ => Empty
+  }
+  | ofe_equiv_dist => \lam s1 s2 => \case \elim s1, \elim s2 \with {
+    | inl a1, inl a2 => (
+      \lam eq => (A.ofe_equiv_dist a1 a2).1 (pmap (\case \elim __ \with { | inl a => a | inr _ => a1 }) eq),
+      \lam h => pmap inl ((A.ofe_equiv_dist a1 a2).2 h)
+    )
+    | inr b1, inr b2 => (
+      \lam eq => (B.ofe_equiv_dist b1 b2).1 (pmap (\case \elim __ \with { | inr b => b | inl _ => b1 }) eq),
+      \lam h => pmap inr ((B.ofe_equiv_dist b1 b2).2 h)
+    )
+    | inl a, inr b => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | inl _ => \Sigma | inr _ => Empty }) eq) (), \lam h => \case h 0)
+    | inr b, inl a => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | inl _ => Empty | inr _ => \Sigma }) eq) (), \lam h => \case h 0)
+  }
+  | ofe_dist_refl => \lam n s => \case \elim s \with {
+    | inl a => A.ofe_dist_refl n a
+    | inr b => B.ofe_dist_refl n b
+  }
+  | ofe_dist_sym => \lam n s1 s2 => \case \elim s1, \elim s2 \with {
+    | inl a1, inl a2 => \lam h => A.ofe_dist_sym n a1 a2 h
+    | inr b1, inr b2 => \lam h => B.ofe_dist_sym n b1 b2 h
+    | inl _, inr _ => \lam e => \case e \with {}
+    | inr _, inl _ => \lam e => \case e \with {}
+  }
+  | ofe_dist_trans => \lam n s1 s2 s3 => \case \elim s1, \elim s2, \elim s3 \with {
+    | inl a1, inl a2, inl a3 => \lam h1 h2 => A.ofe_dist_trans n a1 a2 a3 h1 h2
+    | inr b1, inr b2, inr b3 => \lam h1 h2 => B.ofe_dist_trans n b1 b2 b3 h1 h2
+    | inl _, inr _, _ => \lam e => \case e \with {}
+    | inr _, inl _, _ => \lam e => \case e \with {}
+    | _, inl _, inr _ => \lam _ e => \case e \with {}
+    | _, inr _, inl _ => \lam _ e => \case e \with {}
+  }
+  | ofe_dist_le => \lam n m s1 s2 => \case \elim s1, \elim s2 \with {
+    | inl a1, inl a2 => \lam h le => A.ofe_dist_le n m a1 a2 h le
+    | inr b1, inr b2 => \lam h le => B.ofe_dist_le n m b1 b2 h le
+    | inl _, inr _ => \lam e => \case e \with {}
+    | inr _, inl _ => \lam e => \case e \with {}
+  }
+
+\func OptionOFE (A : OFE) : OFE \cowith
+  | E => Maybe A.E
+  | dist => \lam n o1 o2 => \case o1, o2 \with {
+    | nothing, nothing => \Sigma
+    | just a1, just a2 => A.dist n a1 a2
+    | _, _ => Empty
+  }
+  | ofe_equiv_dist => \lam o1 o2 => \case \elim o1, \elim o2 \with {
+    | nothing, nothing => (\lam _ _ => (), \lam _ => idp)
+    | just a1, just a2 => (
+      \lam eq => (A.ofe_equiv_dist a1 a2).1 (pmap (\case \elim __ \with { | just a => a | nothing => a1 }) eq),
+      \lam h => pmap just ((A.ofe_equiv_dist a1 a2).2 h)
+    )
+    | nothing, just a => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | nothing => \Sigma | just _ => Empty }) eq) (), \lam h => \case h 0)
+    | just a, nothing => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | nothing => Empty | just _ => \Sigma }) eq) (), \lam h => \case h 0)
+  }
+  | ofe_dist_refl => \lam n o => \case \elim o \with {
+    | nothing => ()
+    | just a => A.ofe_dist_refl n a
+  }
+  | ofe_dist_sym => \lam n o1 o2 => \case \elim o1, \elim o2 \with {
+    | nothing, nothing => \lam _ => ()
+    | just a1, just a2 => \lam h => A.ofe_dist_sym n a1 a2 h
+    | nothing, just _ => \lam e => \case e \with {}
+    | just _, nothing => \lam e => \case e \with {}
+  }
+  | ofe_dist_trans => \lam n o1 o2 o3 => \case \elim o1, \elim o2, \elim o3 \with {
+    | nothing, nothing, nothing => \lam _ _ => ()
+    | just a1, just a2, just a3 => \lam h1 h2 => A.ofe_dist_trans n a1 a2 a3 h1 h2
+    | nothing, just _, _ => \lam e => \case e \with {}
+    | just _, nothing, _ => \lam e => \case e \with {}
+    | _, nothing, just _ => \lam _ e => \case e \with {}
+    | _, just _, nothing => \lam _ e => \case e \with {}
+  }
+  | ofe_dist_le => \lam n m o1 o2 => \case \elim o1, \elim o2 \with {
+    | nothing, nothing => \lam _ _ => ()
+    | just a1, just a2 => \lam h le => A.ofe_dist_le n m a1 a2 h le
+    | nothing, just _ => \lam e => \case e \with {}
+    | just _, nothing => \lam e => \case e \with {}
+  }
+
+\func DiscreteOFE (S : \Set) : OFE \cowith
+  | E => S
+  | dist => \lam _ x y => x = y
+  | ofe_equiv_dist => \lam x y => (\lam eq _ => eq, \lam h => h 0)
+  | ofe_dist_refl => \lam _ x => idp
+  | ofe_dist_sym => \lam _ x y => inv
+  | ofe_dist_trans => \lam _ x y z p q => p *> q
+  | ofe_dist_le => \lam _ _ _ _ h _ => h
+
+
+-- =================================================================================
+-- Contractive
+-- =================================================================================
+
+\func Contractive {A : OFE} (f : A.E -> A.E) : \Prop =>
+  \Pi (n : Nat) (x y : A.E) -> DistLater {A} n x y -> A.dist n (f x) (f y)
+
+-- Immediate consequence: at n=0, f x and f y are always dist-0-related
+\lemma contractive_zero {A : OFE} (f : A.E -> A.E) (hf : Contractive f) (x y : A.E)
+  : A.dist 0 (f x) (f y) => hf 0 x y (dist_later_zero x y)
+
+-- Old-style Contractive implies Contractive2
+\lemma contractive_implies_contractive2 {A : OFE} (f : A.E -> A.E) (hf : Contractive f)
+  : Contractive f => \lam n x y dl => hf n x y dl
+
+-- Contractive2 implies NonExpansive
+\lemma contractive_ne {A : OFE} (f : A.E -> A.E) (hf : Contractive f) : NonExpansive f =>
+  \lam n x y h =>
+      dist_S n (f x) (f y)
+          (hf (suc n) x y (dist_to_dist_later_suc n x y h))
+
+\class Inhabited (A : \Type)
+  | default : A
+
+
+-- =================================================================================
+-- Banach Thm
+-- =================================================================================
+
+
+\func fp_approx {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f)
+                (n : Nat) : A.E \elim n
+  | 0 => f inh.default
+  | suc n => f (fp_approx f hf n)
+
+\lemma fp_approx_cauchy {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f)
+                        (n m : Nat) (le : n <= m)
+  : A.dist n (fp_approx f hf m) (fp_approx f hf n) \elim n, m
+  | 0, 0 => A.ofe_dist_refl 0 (f inh.default)
+  | 0, suc m' => contractive_zero f hf (fp_approx f hf m') inh.default
+  | suc n', suc m' =>
+    hf (suc n')
+        (fp_approx f hf m')
+        (fp_approx f hf n')
+        (dist_to_dist_later_suc n'
+            (fp_approx f hf m')
+            (fp_approx f hf n')
+            (fp_approx_cauchy f hf n' m' (suc<=suc.conv le)))
+  | suc n', 0 => absurd (le NatOrder.zero<suc)
+
+\func fixpoint {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) : A.E =>
+  A.compl (fp_approx f hf) (\new Chain { | chain_cauchy => fp_approx_cauchy f hf })
+
+\lemma fixpoint_unfold {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f)
+  : fixpoint f hf = f (fixpoint f hf) =>
+  \let | c => fp_approx f hf
+       | hc : Chain c => \new Chain c { | chain_cauchy => fp_approx_cauchy f hf }
+       | fp => fixpoint f hf
+  \in (A.ofe_equiv_dist fp (f fp)).2 (\lam n =>
+    A.ofe_dist_trans n fp (f (c n)) (f fp)
+      (A.ofe_dist_le (suc n) n fp (c (suc n)) (A.cofe_conv_compl c hc (suc n)) (n<=sucn n))
+      (hf n (c n) fp (\new DistLater {
+        | dist_later_lt => \lam m m<n =>
+            A.ofe_dist_trans m (c n) (c m) fp
+              (hc.chain_cauchy m n (LinearOrder.<_<= m<n))
+              (A.ofe_dist_sym m fp (c m) (A.cofe_conv_compl c hc m))
+      })))
+
+\lemma fixpoint_unique {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f)
+                        (x : A.E) (hx : x = f x) : x = fixpoint f hf =>
+  (A.ofe_equiv_dist x (fixpoint f hf)).2 (\lam n => fixpoint_unique_aux f hf x hx n)
+
+  \where {
+    \lemma fixpoint_unique_aux {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f)
+                               (x : A.E) (hx : x = f x) (n : Nat)
+      : A.dist n x (fixpoint f hf) \elim n
+      | 0 =>
+        \let | fp => fixpoint f hf
+             | unfold_fp => fixpoint_unfold f hf
+        \in transport (\lam y => A.dist 0 y fp) (inv hx)
+            (transport (\lam y => A.dist 0 (f x) y) (inv unfold_fp)
+                (contractive_zero f hf x fp))
+      | suc n' =>
+        \let | fp => fixpoint f hf
+             | unfold_fp => fixpoint_unfold f hf
+             | ih : A.dist n' x fp => fixpoint_unique_aux f hf x hx n'
+             | step : A.dist (suc n') (f x) (f fp) =>
+               hf (suc n') x fp (dist_to_dist_later_suc n' x fp ih)
+        \in transport (\lam y => A.dist (suc n') y fp) (inv hx)
+            (transport (\lam y => A.dist (suc n') (f x) y) (inv unfold_fp)
+                step)
+  }

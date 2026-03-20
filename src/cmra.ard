@@ -1,0 +1,154 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+
+
+-- =================================================================================
+-- CMRA structure
+-- =================================================================================
+
+\class PCore (A : \Set)
+  | pcore : A -> Maybe A
+
+\class Op (A : \Set)
+  | op : A -> A -> A
+
+\func \infixl 7 op_dot {A : \Set} {opA : Op A} (x y : A) : A => op x y
+
+\class Valid (A : \Set)
+  | valid : A -> \Prop
+
+\class ValidN (A : \Set)
+  | validN : Nat -> A -> \Prop
+
+
+\func vld {A : \Set} {vA : Valid A} (x : A) : \Prop => valid x
+\func vldN {A : \Set} {vnA : ValidN A} (n : Nat) (x : A) : \Prop => validN n x
+
+
+\func \infix 6 incl {A : \Set} {eA : BaseSet A} {opA : Op A} (x y : A) : \Prop =>
+  ∃ (z : A) (y = op x z)
+
+\func \infix 6 inclN {O : OFE} {opO : Op O.E} (x : O.E) (n : Nat) (y : O.E) : \Prop =>
+  ∃ (z : O.E) (O.dist n y (op x z))
+
+
+\class CMRA \extends OFE, PCore, Op, Valid, ValidN {
+  | PCore.A => E
+  | Op.A => E
+  | Valid.A => E
+  | ValidN.A => E
+
+  | cmra_op_ne (x : E) : NonExpansive (op x)
+  | cmra_op_ne_2 (y : E) : NonExpansive (\lam x => op x y)
+
+  | cmra_pcore_ne (n : Nat) (x y : E) (cx : E) :
+  dist n x y -> pcore x = just cx ->
+  \Sigma (cy : E) (pcore y = just cy) (dist n cx cy)
+
+  | cmra_validN_ne (n : Nat) (x y : E) : dist n x y -> validN n x -> validN n y
+
+  | cmra_valid_validN (x : E) : valid x <-> (\Pi (n : Nat) -> validN n x)
+
+  | cmra_validN_le (n m : Nat) (x : E) : validN n x -> m <= n -> validN m x
+
+  | cmra_assoc (x y z : E) : op x (op y z) = op (op x y) z
+  | cmra_comm (x y : E) : op x y = op y x
+
+  | cmra_pcore_l (x cx : E) : pcore x = just cx -> op cx x = x
+  | cmra_pcore_idemp (x cx : E) : pcore x = just cx -> pcore cx = just cx
+  | cmra_pcore_mono (x y cx : E) : incl {E} {\this} {\new Op E { | op => op }} x y -> pcore x = just cx ->
+  \Sigma (cy : E) (pcore y = just cy) (incl {E} {\this} {\new Op E { | op => op }} cx cy)
+
+  | cmra_validN_op_l (n : Nat) (x y : E) : validN n (op x y) -> validN n x
+
+  | cmra_extend (n : Nat) (x y1 y2 : E) :
+  validN n x -> dist n x (op y1 y2) ->
+  \Sigma (z1 z2 : E) (x = op z1 z2) (dist n z1 y1) (dist n z2 y2)
+}
+
+-- =================================================================================
+-- UCMRA: Unital CMRA (with unit element)
+-- =================================================================================
+
+\class Unit (A : \Set)
+  | unit : A
+
+\class UCMRA \extends CMRA, Unit{
+  | Unit.A => E
+
+  | ucmra_unit_valid : valid unit
+  | ucmra_unit_left_id : \Pi (x : E) -> op unit x = x
+  | ucmra_pcore_unit : pcore unit = just unit
+}
+
+\func CoreId {C : CMRA} (x : C.E) : \Prop => pcore {C} x = just x
+
+\func Exclusive {C : CMRA} (x : C.E) : \Prop =>
+  \Pi (y : C.E) -> validN {C} 0 (op {C} x y) -> Empty
+
+\func Cancelable {C : CMRA} (x : C.E) : \Prop =>
+  \Pi (n : Nat) (y z : C.E) -> validN {C} n (op {C} x y) -> C.dist n (op {C} x y) (op {C} x z) -> C.dist n y z
+
+\func CMRATotal (C : CMRA) : \Prop =>
+  \Pi (x : C.E) -> TruncP(\Sigma (cx : C.E) (pcore {C} x = just cx))
+
+-- =================================================================================
+-- Basic CMRA lemmas
+-- =================================================================================
+
+\lemma cmra_op_ne_both {C : CMRA} (n : Nat) (x1 x2 y1 y2 : C.E)
+                       (h1 : C.dist n x1 x2) (h2 : C.dist n y1 y2) :
+  C.dist n (op {C} x1 y1) (op {C} x2 y2) =>
+  C.ofe_dist_trans n (op {C} x1 y1) (op {C} x2 y1) (op {C} x2 y2)
+    (cmra_op_ne_2 {C} y1 n x1 x2 h1)
+    (cmra_op_ne {C} x2 n y1 y2 h2)
+
+\lemma cmra_validN_op_r {C : CMRA} (n : Nat) (x y : C.E) :
+  validN {C} n (op {C} x y) -> validN {C} n y =>
+  \lam h => cmra_validN_op_l {C} n y x (transport (validN {C} n) (cmra_comm {C} x y) h)
+
+\lemma cmra_pcore_r {C : CMRA} (x cx : C.E) :
+  pcore {C} x = just cx -> op {C} x cx = x =>
+  \lam h => transport (\lam z => z = x) (cmra_comm {C} cx x) (cmra_pcore_l {C} x cx h)
+
+\lemma ucmra_unit_right_id {U : UCMRA} (x : U.E) : op {U} x U.unit = x =>
+  transport (\lam z => z = x) (inv (U.cmra_comm x U.unit)) (U.ucmra_unit_left_id x)
+
+\func cmra_includedN_l {C : CMRA} (n : Nat) (x y : C.E) : inclN {C} {\new Op C.E { | op => C.op }} x n (C.op x y) =>
+  inP (y, C.ofe_dist_refl n (C.op x y))
+
+\func inclN_le {O : OFE} {opO : Op O.E} (x y : O.E) (n m : Nat)
+               (h : inclN {O} {opO} x n y) (le : m <= n) : inclN {O} {opO} x m y
+  => \case h \with {
+    | inP (z, dist_y_xz) => inP (z, O.ofe_dist_le n m y (opO.op x z) dist_y_xz le)
+  }
+
+\func dist_op_ne_l {M : CMRA} (n : Nat) (x1 x2 y : M.E)
+                   (h : M.dist n x1 x2) : M.dist n (M.op x1 y) (M.op x2 y)
+  => M.cmra_op_ne_2 y n x1 x2 h
+
+\func dist_op_ne_r {M : CMRA} (n : Nat) (x y1 y2 : M.E)
+                   (h : M.dist n y1 y2) : M.dist n (M.op x y1) (M.op x y2)
+  => M.cmra_op_ne x n y1 y2 h
+
+\func inclN_op_l {M : CMRA} (n : Nat) (x y : M.E) : inclN {M} {\new Op M.E { | op => M.op }} x n (M.op x y)
+  => inP (y, M.ofe_dist_refl n (M.op x y))
+
+\func inclN_op_r {M : CMRA} (n : Nat) (x1 x2 a : M.E)
+                 (h : inclN {M} {\new Op M.E { | op => M.op }} x1 n x2)
+  : inclN {M} {\new Op M.E { | op => M.op }} (M.op x1 a) n (M.op x2 a)
+  => \case h \with {
+    | inP (z, dist_x2_x1z) =>
+      inP (z,
+           transport (\lam w => M.dist n (M.op x2 a) w)
+             (inv (M.cmra_assoc x1 z a)
+               *> pmap (M.op x1) (M.cmra_comm z a)
+                    *> M.cmra_assoc x1 a z)
+             (M.cmra_op_ne_2 a n x2 (M.op x1 z) dist_x2_x1z))
+  }

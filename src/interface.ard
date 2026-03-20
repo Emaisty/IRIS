@@ -1,0 +1,184 @@
+\import Logic
+\import Order.PartialOrder
+\import Paths
+
+
+-- Represents the basic operation for the separation logic
+\class BIBase \extends Preorder {
+  | bi_emp : E
+  | bi_pure : \Prop -> E
+  | bi_and : E -> E -> E
+  | bi_or : E -> E -> E
+  | bi_impl : E -> E -> E
+  | bi_forall (A : \Type) : (A -> E) -> E
+  | bi_exist (A : \Type) : (A -> E) -> E
+  | bi_sep : E -> E -> E
+  | bi_wand : E -> E -> E
+  -- | bi_persistently : E -> E
+  -- | bi_later : E -> E
+
+
+  --   \func \infixl 6 ∧ (P Q : E) => bi_and P Q
+  --   \func \infixl 5 ∨ (P Q : E) => bi_or P Q
+  --   \func \infixr 3 ->> (P Q : E) => bi_impl P Q
+  --   \func \infixl 6 ∗ (P Q : E) => bi_sep P Q
+  --   \func \infixr 3 -∗ (P Q : E) => bi_wand P Q
+
+}
+
+\func emp {B : BIBase} => B.bi_emp
+\func pure {B : BIBase} (phi : \Prop) => B.bi_pure phi
+\func \infixl 5 && {B : BIBase} (P Q : B.E) => B.bi_and P Q
+\func \infixl 4 || {B : BIBase} (P Q : B.E) => B.bi_or P Q
+\func \infix 2 |- {B : BIBase} (P Q : B.E) => B.<= P Q
+\func \infixr 3 ->> {B : BIBase} (P Q : B.E) => B.bi_impl P Q
+\func forall {B : BIBase} (A : \Type) (Phi : A -> B.E) => B.bi_forall A Phi
+\func exists {B : BIBase} (A : \Type) (Phi : A -> B.E) => B.bi_exist A Phi
+\func \infixl 6 * {B : BIBase} (P Q : B.E) => B.bi_sep P Q
+\func \infixr 3 -* {B : BIBase} (P Q : B.E) => B.bi_wand P Q
+
+
+\func True {B : BIBase} => B.bi_pure (\Sigma)
+\func False {B : BIBase} => B.bi_pure Empty
+
+
+-- Axioms for the BI operations
+\class BIMixin \extends BIBase {
+
+  | bi_mixin_pure_intro (phi : \Prop) (P : E) : phi ->  P |- pure phi
+  | bi_mixin_pure_elim (phi : \Prop) (P : E) : (phi ->  True |- P) -> pure phi |- P
+
+  | bi_mixin_and_intro (P Q R : E)  : P |- Q -> P |- R -> P |- (Q && R)
+  | bi_mixin_and_elim_l (P Q : E) : (P && Q) |- P
+  | bi_mixin_and_elim_r (P Q : E) : (P && Q) |- Q
+
+  | bi_mixin_or_intro_l (P Q : E) : P |- P || Q
+  | bi_mixin_or_intro_r (P Q : E) : Q |- P || Q
+  | bi_mixin_or_elim (P Q R : E) : P |- R -> Q |- R -> (P || Q) |- R
+
+  | bi_mixin_impl_intro_r (P Q R : E) : P && Q |- R -> P |- Q ->> R
+  | bi_mixin_impl_elim_l (P Q R : E) : P |- Q ->> R -> (P && Q)  |- R
+
+  | bi_mixin_forall_intro {A : \Type} (P : E) (Phi : A -> E) : (\Pi (a : A) -> P |- (Phi a)) -> P |- (forall A Phi)
+  | bi_mixin_forall_elim {A : \Type} (Phi : A -> E) (a : A) : (forall A Phi) |- (Phi a)
+
+  | bi_mixin_exist_intro {A : \Type} (Phi : A -> E) (a : A) : (Phi a) |- (exists A Phi)
+  | bi_mixin_exist_elim {A : \Type} (Phi : A -> E) (Q : E) : (\Pi (a : A) -> (Phi a) |- Q) ->  (exists A Phi) |- Q
+
+  | bi_mixin_sep_mono (P P' Q Q' : E) : P |- P' -> Q |- Q' -> (P * Q) |- (P' * Q')
+  | bi_mixin_emp_sep_1 (P : E) : P |- (emp * P)
+  | bi_mixin_emp_sep_2 (P : E) : (emp * P) |- P
+  | bi_mixin_sep_comm (P Q : E) : (P * Q) |- (Q * P)
+  | bi_mixin_sep_assoc (P Q R : E) : ((P * Q) * R) |- (P * (Q * R))
+
+  | bi_mixin_wand_intro (P Q R : E) : (P * Q) |- R -> P |- (Q -* R)
+  | bi_mixin_wand_elim (P Q : E) : (P * (P -* Q)) |- Q
+}
+
+-- Axioms for the Persistent modality
+-- \class BIPersistentlyMixin \extends BIBase {
+--   | persistently_mono (P Q : E) : ent P Q -> ent (persistently P) (persistently Q)
+--   | persistently_idemp_2 (P : E) : ent (persistently P) (persistently (persistently P))
+--   | persistently_emp_2 : ent emp (persistently emp)
+--   | persistently_and_2 (P Q : E) : ent (bi_and (persistently P) (persistently Q)) (persistently (bi_and P Q))
+--   | persistently_exist_1 {A : \Type} (Phi : A -> E) : ent (persistently (bi_exist A Phi)) (bi_exist A (\lam a => persistently (Phi a)))
+--   | persistently_absorbing (P Q : E) : ent (bi_sep (persistently P) Q) (persistently P)
+--   | persistently_and_sep_elim (P Q : E) : ent (bi_and (persistently P) Q) (bi_sep P Q)
+-- }
+--
+-- Axioms for the Later modality
+-- \class BILaterMixin \extends BIBase {
+--   | later_mono (P Q : E) : ent P Q -> ent (later P) (later Q)
+--   | later_intro (P : E) : ent P (later P)
+--   | later_forall_2 {A : \Type} (Phi : A -> E) : ent (bi_forall A (\lam a => later (Phi a))) (later (bi_forall A Phi))
+--   | later_exist_false {A : \Type} (Phi : A -> E) : ent (later (bi_exist A Phi)) (bi_or (later False) (bi_exist A (\lam a => later (Phi a))))
+--   | later_sep_1 (P Q : E) : ent (later (bi_sep P Q)) (bi_sep (later P) (later Q))
+--   | later_sep_2 (P Q : E) : ent (bi_sep (later P) (later Q)) (later (bi_sep P Q))
+--   | later_persistently_1 (P : E) : ent (later (persistently P)) (persistently (later P))
+--   | later_persistently_2 (P : E) : ent (persistently (later P)) (later (persistently P))
+--   | later_false_em (P : E) : ent (later P) (bi_or (later False) (bi_impl (later False) P))
+-- }
+
+\class BI \extends BIMixin -- , BiPersistentlyMixin, BiLaterMixin
+
+
+
+
+-- =================================================================================
+-- Support lemmas for the BIMixin
+-- =================================================================================
+
+\lemma pure_intro_lemma {B : BIMixin} (phi : \Prop) (P : B.E) : phi -> P |- pure phi
+  => B.bi_mixin_pure_intro phi P
+
+\lemma pure_elim_lemma {B : BIMixin} (phi : \Prop) (P : B.E) : (phi -> True |- P) -> pure phi |- P
+  => B.bi_mixin_pure_elim phi P
+
+
+\lemma and_elim_l_lemma {B : BIMixin} (P Q : B.E) : P && Q |- P
+  => B.bi_mixin_and_elim_l P Q
+
+\lemma and_elim_r_lemma {B : BIMixin} (P Q : B.E) : P && Q |- Q
+  => B.bi_mixin_and_elim_r P Q
+
+\lemma and_intro_lemma {B : BIMixin} (P Q R : B.E) : P |- Q -> P |- R -> P |- (Q && R)
+  => B.bi_mixin_and_intro P Q R
+
+\lemma or_intro_l_lemma {B : BIMixin} (P Q : B.E) : P |- (P || Q)
+  => B.bi_mixin_or_intro_l P Q
+
+\lemma or_intro_r_lemma {B : BIMixin} (P Q : B.E) : Q |- (P || Q)
+  => B.bi_mixin_or_intro_r P Q
+
+\lemma or_elim_lemma {B : BIMixin} (P Q R : B.E) : P |- R -> Q |- R -> (P || Q) |- R
+  => B.bi_mixin_or_elim P Q R
+
+
+\lemma impl_intro_r_lemma {B : BIMixin} (P Q R : B.E) : (P && Q) |- R -> P |- (Q ->> R)
+  => B.bi_mixin_impl_intro_r P Q R
+
+\lemma impl_elim_l_lemma {B : BIMixin} (P Q R : B.E) (h : P |- (Q ->> R)) : (P && Q) |- R
+  => B.bi_mixin_impl_elim_l P Q R h
+
+
+\lemma forall_intro_lemma {B : BIMixin} {A : \Type} (P : B.E) (Phi : A -> B.E) : (\Pi (a : A) -> P |- (Phi a)) -> P |- (forall A Phi)
+  => B.bi_mixin_forall_intro P Phi
+
+\lemma forall_elim_lemma {B : BIMixin} {A : \Type} (Phi : A -> B.E) (a : A) : (forall A Phi) |- (Phi a)
+  => B.bi_mixin_forall_elim Phi a
+
+\lemma exist_intro_lemma {B : BIMixin} {A : \Type} (Phi : A -> B.E) (a : A) : (Phi a) |- (exists A Phi)
+  => B.bi_mixin_exist_intro Phi a
+
+\lemma exist_elim_lemma {B : BIMixin} {A : \Type} (Phi : A -> B.E) (Q : B.E) : (\Pi (a : A) -> (Phi a) |- Q) -> (exists A Phi) |- Q
+  => B.bi_mixin_exist_elim Phi Q
+
+
+\lemma sep_mono_lemma {B : BIMixin} (P P' Q Q' : B.E) : P |- P' -> Q |- Q' -> (P * Q) |- (P' * Q')
+  => B.bi_mixin_sep_mono P P' Q Q'
+
+\lemma emp_sep_1_lemma {B : BIMixin} (P : B.E) : P |- (emp * P)
+  => B.bi_mixin_emp_sep_1 P
+
+\lemma emp_sep_2_lemma {B : BIMixin} (P : B.E) : (emp * P) |- P
+  => B.bi_mixin_emp_sep_2 P
+
+\lemma sep_comm_lemma {B : BIMixin} (P Q : B.E) : (P * Q) |- (Q * P)
+  => B.bi_mixin_sep_comm P Q
+
+\lemma sep_assoc_lemma {B : BIMixin} (P Q R : B.E) : ((P * Q) * R) |- (P * (Q * R))
+  => B.bi_mixin_sep_assoc P Q R
+
+\lemma wand_intro_lemma {B : BIMixin} (P Q R : B.E) : (P * Q) |- R -> P |- (Q -* R)
+  => B.bi_mixin_wand_intro P Q R
+
+\lemma wand_elim_lemma {B : BIMixin} (P Q : B.E) : (P * (P -* Q)) |- Q
+  => B.bi_mixin_wand_elim P Q
+
+-- =================================================================================
+-- Support lemmas for the BIPersistentlyMixin
+-- =================================================================================
+
+-- =================================================================================
+-- Support lemmas for the BILaterMixin
+-- =================================================================================

@@ -1,0 +1,185 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import ofe
+\import cmra
+\import interface
+\import Order.PartialOrder
+\import Order.LinearOrder
+
+
+
+\func uPred (M : UCMRA) : \Type => Nat -> M.E -> \Prop
+
+
+
+
+\func uPred_ent {M : UCMRA} (P Q : uPred M) : \Prop =>
+  \Pi (n : Nat) (a : M.E) -> P n a -> Q n a
+
+\func uPred_pure {M : UCMRA} (phi : \Prop) : uPred M =>
+  \lam n a => phi
+
+\func uPred_sep {M : UCMRA} (P Q : uPred M) : uPred M =>
+  \lam n a => ∃ (a1 a2 : M.E) (a = M.op a1 a2) (P n a1) (Q n a2)
+
+\func uPred_and {M : UCMRA} (P Q : uPred M) : uPred M =>
+  \lam n a => \Sigma (P n a) (Q n a)
+
+\func uPred_or {M : UCMRA} (P Q : uPred M) : uPred M =>
+  \lam n a => (P n a) || (Q n a)
+
+\func uPred_impl {M : UCMRA} (P Q : uPred M) : uPred M =>
+  \lam n a => \Pi (m : Nat) -> m <= n -> P m a -> Q m a
+
+\func uPred_forall {M : UCMRA} (T : \Type) (Phi : T -> uPred M) : uPred M =>
+  \lam n a => \Pi (t : T) -> Phi t n a
+
+\func uPred_exist {M : UCMRA} (T : \Type) (Phi : T -> uPred M) : uPred M =>
+  \lam n a => ∃ (t : T) (Phi t n a)
+
+\func uPred_wand {M : UCMRA} (P Q : uPred M) : uPred M =>
+  \lam n a1 => \Pi (m : Nat) -> m <= n -> \Pi (a2 : M.E) -> P m a2 -> Q m (M.op a1 a2)
+
+\func uPred_emp {M : UCMRA} : uPred M =>
+  \lam n a => M.dist n a M.unit
+
+\func uPred_valid {M : UCMRA} (a : M.E) : uPred M =>
+  \lam n _ => M.validN n a
+
+\func uPred_own {M : UCMRA} (a : M.E) : uPred M =>
+  \lam n a' => \Sigma (M.dist n a a') (M.validN n a')
+
+
+
+
+
+\record ProperUPred (M : UCMRA)
+  | upred_holds : Nat -> M.E -> \Prop
+  | upred_mono : \Pi (n1 n2 : Nat) (x1 x2 : M.E) ->
+    upred_holds n1 x1 ->
+    inclN {M} {\new Op M.E { | op => M.op }} x1 n2 x2 ->
+    n2 <= n1 ->
+    upred_holds n2 x2
+
+\func properUPred_ent {M : UCMRA} (P Q : ProperUPred M) : \Prop =>
+  \Pi (n : Nat) (a : M.E) -> P.upred_holds n a -> Q.upred_holds n a
+
+\func properUPred_ent_refl {M : UCMRA} (P : ProperUPred M) : properUPred_ent P P =>
+  \lam n a h => h
+
+\func properUPred_ent_trans {M : UCMRA} (P Q R : ProperUPred M)
+                            (h1 : properUPred_ent P Q) (h2 : properUPred_ent Q R) : properUPred_ent P R =>
+  \lam n a hp => h2 n a (h1 n a hp)
+
+
+
+
+\func mkProperPure {M : UCMRA} (phi : \Prop) : ProperUPred M \cowith
+  | upred_holds => \lam n a => phi
+  | upred_mono => \lam n1 n2 x1 x2 h _ _ => h
+
+\func mkProperEmp {M : UCMRA} : ProperUPred M \cowith
+  | upred_holds => \lam n a => inclN {M} {\new Op M.E { | op => M.op }} M.unit n a
+  | upred_mono => \lam n1 n2 x1 x2 h_incl incl n2_le_n1 =>
+    \case h_incl, incl \with {
+      | inP (z1, dist_x1_uz1), inP (z2, dist_x2_x1z2) =>
+        inP (M.op z1 z2,
+             transport (\lam w => M.dist n2 x2 w) (inv (M.ucmra_unit_left_id (M.op z1 z2)))
+               (M.ofe_dist_trans n2 x2 (M.op x1 z2) (M.op z1 z2)
+                 dist_x2_x1z2
+                 (M.cmra_op_ne_2 z2 n2 x1 z1
+                   (transport (\lam w => M.dist n2 x1 w) (M.ucmra_unit_left_id z1)
+                     (M.ofe_dist_le n1 n2 x1 (M.op M.unit z1) dist_x1_uz1 n2_le_n1)))))
+
+    }
+
+
+\func mkProperAnd {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => \Sigma (P.upred_holds n a) (Q.upred_holds n a)
+  | upred_mono => \lam n1 n2 x1 x2 (h_P, h_Q) incl n2_le_n1 =>
+    (P.upred_mono n1 n2 x1 x2 h_P incl n2_le_n1, Q.upred_mono n1 n2 x1 x2 h_Q incl n2_le_n1)
+
+\func mkProperOr {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => (P.upred_holds n a) || (Q.upred_holds n a)
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h \with {
+    | byLeft h_P => byLeft (P.upred_mono n1 n2 x1 x2 h_P incl n2_le_n1)
+    | byRight h_Q => byRight (Q.upred_mono n1 n2 x1 x2 h_Q incl n2_le_n1)
+  }
+
+\func mkProperImpl {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) -> P.upred_holds m b -> Q.upred_holds m b
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b hp =>
+    h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b hp
+
+\func mkProperForall {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => \Pi (t : T) -> (Phi t).upred_holds n a
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 t =>
+      (Phi t).upred_mono n1 n2 x1 x2 (h t) incl n2_le_n1
+
+\func mkProperExist {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => TruncP (\Sigma (t : T) ((Phi t).upred_holds n a))
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h \with {
+    | inP (t, h_t) => inP (t, (Phi t).upred_mono n1 n2 x1 x2 h_t incl n2_le_n1)
+  }
+
+\func mkProperSep {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => TruncP (\Sigma (a1 a2 : M.E) (M.dist n a (M.op a1 a2)) (P.upred_holds n a1) (Q.upred_holds n a2))
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h, incl \with {
+    | inP (a1, a2, dist_x1, hp, hq), inP (z, dist_x2) =>
+      \let inclN_refl : \Pi (a : M.E) -> inclN {M} {\new Op M.E { | op => M.op }} a n2 a =>
+        \lam a => inP (M.unit, transport (\lam w => M.dist n2 a w) (inv (ucmra_unit_right_id a)) (M.ofe_dist_refl n2 a))
+      \in inP (a1, M.op a2 z,
+               M.ofe_dist_trans n2 x2 (M.op x1 z) (M.op a1 (M.op a2 z))
+                 dist_x2
+                 (transport (\lam w => M.dist n2 (M.op x1 z) w)
+                   (inv (M.cmra_assoc a1 a2 z))
+                   (M.cmra_op_ne_2 z n2 x1 (M.op a1 a2)
+                     (M.ofe_dist_le n1 n2 x1 (M.op a1 a2) dist_x1 n2_le_n1))),
+               P.upred_mono n1 n2 a1 a1 hp (inclN_refl a1) n2_le_n1,
+               Q.upred_mono n1 n2 a2 (M.op a2 z) hq (cmra_includedN_l n2 a2 z) n2_le_n1)
+  }
+
+
+\func mkProperWand {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a1 => \Pi (m : Nat) -> m <= n -> \Pi (a2 : M.E) -> P.upred_holds m a2 -> Q.upred_holds m (M.op a1 a2)
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 a2 hp =>
+    Q.upred_mono m m (M.op x1 a2) (M.op x2 a2)
+      (h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) a2 hp)
+      (inclN_op_r m x1 x2 a2 (inclN_le x1 x2 n2 m incl m_le_n2))
+      <=-refl
+
+-- \func mkProperOwn {M : CMRA} (a : M.E) : ProperUPred M \cowith
+--   | upred_holds => \lam n a' => \Sigma (M.dist n a a') (M.validN n a')
+--   | upred_mono => {?}
+
+
+
+\func BIuPred (M : UCMRA) : BIBase \cowith
+  | E => ProperUPred M
+  | <= => properUPred_ent
+  | <=-refl => \lam n a h => h
+  | <=-transitive => \lam h1 h2 n a hp => h2 n a (h1 n a hp)
+  | bi_emp => mkProperEmp
+  | bi_pure => mkProperPure
+  | bi_and => mkProperAnd
+  | bi_or => mkProperOr
+  | bi_impl => mkProperImpl
+  | bi_forall => mkProperForall
+  | bi_exist => mkProperExist
+  | bi_sep => mkProperSep
+  | bi_wand => mkProperWand
+
+
+
+\func uPred_ent_refl {M : UCMRA} (P : uPred M) : uPred_ent P P =>
+  \lam n a h => h
+
+\func uPred_ent_trans {M : UCMRA} (P Q R : uPred M)
+                      (h1 : uPred_ent P Q) (h2 : uPred_ent Q R) : uPred_ent P R =>
+  \lam n a hp => h2 n a (h1 n a hp)
+
