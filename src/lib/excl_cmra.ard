@@ -236,6 +236,7 @@
   | just e1, just e2 => just (excl_op e1 e2)
 }
 
+
 \func ExclUCMRA (A : OFE) : UCMRA \cowith
   | OFE => ExclUOFE A
   | PCore => \new PCore (Maybe (Excl A.E)) { | pcore => exclU_pcore }

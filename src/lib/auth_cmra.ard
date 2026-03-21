@@ -1,0 +1,179 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import cmra
+\import ofe
+
+
+\func AuthViewRel {A : UCMRA} (n : Nat) (a b : A.E) : \Prop =>
+  \Sigma (inclN {A} {\new Op A.E { | op => A.op }} b n a) (validN {A} n a)
+
+
+\func AuthElem (A : UCMRA) : \Set => \Sigma (Maybe A.E) A.E
+
+
+\func AuthOFE (A : UCMRA) : OFE \cowith
+  | E => AuthElem A
+  | dist => \lam n x y => \case x, y \with {
+    | (just a1, b1), (just a2, b2) => \Sigma (A.dist n a1 a2) (A.dist n b1 b2)
+    | (nothing, b1), (nothing, b2) => A.dist n b1 b2
+    | _, _ => Empty
+  }
+  | ofe_equiv_dist => \lam x y => \case \elim x, \elim y \with {
+    | (just a1, b1), (just a2, b2) => (
+      \lam eq n => (
+        (A.ofe_equiv_dist a1 a2).1 (pmap (\lam p => \case p \with {
+          | (just a, _) => a
+          | _ => a1
+        }) eq) n,
+        (A.ofe_equiv_dist b1 b2).1 (pmap (\lam p => p.2) eq) n
+      ),
+      \lam h => path (\lam i => (
+        pmap just ((A.ofe_equiv_dist a1 a2).2 (\lam n => (h n).1)) @ i,
+        (A.ofe_equiv_dist b1 b2).2 (\lam n => (h n).2) @ i
+      ))
+    )
+    | (nothing, b1), (nothing, b2) => (
+      \lam eq => (A.ofe_equiv_dist b1 b2).1 (pmap (\lam p => p.2) eq),
+      \lam h => path (\lam i => (nothing, (A.ofe_equiv_dist b1 b2).2 h @ i))
+    )
+    | (just _, _), (nothing, _) => (
+      \lam eq _ => transport (\lam T => T) (pmap (\lam p => \case p \with {
+        | (just _, _) => \Sigma
+        | _ => Empty
+      }) eq) (),
+      \lam h => \case h 0
+    )
+    | (nothing, _), (just _, _) => (
+      \lam eq _ => transport (\lam T => T) (pmap (\lam p => \case p \with {
+        | (nothing, _) => \Sigma
+        | _ => Empty
+      }) eq) (),
+      \lam h => \case h 0
+    )
+  }
+  | ofe_dist_refl => \lam n x => \case \elim x \with {
+    | (just a, b) => (A.ofe_dist_refl n a, A.ofe_dist_refl n b)
+    | (nothing, b) => A.ofe_dist_refl n b
+  }
+  | ofe_dist_sym => \lam n x y => \case \elim x, \elim y \with {
+    | (just a1, b1), (just a2, b2) => \lam h => (A.ofe_dist_sym n a1 a2 h.1, A.ofe_dist_sym n b1 b2 h.2)
+    | (nothing, b1), (nothing, b2) => \lam h => A.ofe_dist_sym n b1 b2 h
+    | (just _, _), (nothing, _) => \lam e => \case e \with {}
+    | (nothing, _), (just _, _) => \lam e => \case e \with {}
+  }
+  | ofe_dist_trans => \lam n x y z => \case \elim x, \elim y, \elim z \with {
+    | (just a1, b1), (just a2, b2), (just a3, b3) => \lam h1 h2 => (
+        A.ofe_dist_trans n a1 a2 a3 h1.1 h2.1,
+        A.ofe_dist_trans n b1 b2 b3 h1.2 h2.2
+      )
+    | (nothing, b1), (nothing, b2), (nothing, b3) => \lam h1 h2 => A.ofe_dist_trans n b1 b2 b3 h1 h2
+    | (just _, _), (just _, _), (nothing, _) => \lam _ e => \case e \with {}
+    | (just _, _), (nothing, _), _ => \lam e => \case e \with {}
+    | (nothing, _), (just _, _), _ => \lam e => \case e \with {}
+    | (nothing, _), (nothing, _), (just _, _) => \lam _ e => \case e \with {}
+  }
+  | ofe_dist_le => \lam n m x y => \case \elim x, \elim y \with {
+    | (just a1, b1), (just a2, b2) => \lam h le => (A.ofe_dist_le n m a1 a2 h.1 le, A.ofe_dist_le n m b1 b2 h.2 le)
+    | (nothing, b1), (nothing, b2) => \lam h le => A.ofe_dist_le n m b1 b2 h le
+    | (just _, _), (nothing, _) => \lam e => \case e \with {}
+    | (nothing, _), (just _, _) => \lam e => \case e \with {}
+  }
+
+
+\func AuthOp {A : UCMRA} (x y : AuthElem A) : AuthElem A \elim x, y
+  | (just a1, b1), (just a2, b2) => (just (A.op a1 a2), A.op b1 b2)
+  | (just a, b1), (nothing, b2) => (just a, A.op b1 b2)
+  | (nothing, b1), (just a, b2) => (just a, A.op b1 b2)
+  | (nothing, b1), (nothing, b2) => (nothing, A.op b1 b2)
+
+\func AuthValidN {A : UCMRA} (n : Nat) (x : AuthElem A) : \Prop \elim x
+  | (just a, b) => \Sigma (validN {A} n a) (inclN {A} {\new Op A.E { | op => A.op }} b n a)
+  | (nothing, b) => validN {A} n b
+
+\func AuthValid {A : UCMRA} (x : AuthElem A) : \Prop \elim x
+  | (just a, b) => \Sigma (valid {A} a) (incl {A} {A} {\new Op A.E { | op => A.op }} b a)
+  | (nothing, b) => valid {A} b
+
+\func AuthPCore {A : UCMRA} (x : AuthElem A) : Maybe (AuthElem A) \elim x
+  | (just a, b) => \case pcore {A} a, pcore {A} b \with {
+    | just ca, just cb => just (just ca, cb)
+    | _, _ => nothing
+  }
+  | (nothing, b) => \case pcore {A} b \with {
+    | nothing => nothing
+    | just cb => just (nothing, cb)
+  }
+
+
+\func AuthCMRA (A : UCMRA) : CMRA \cowith
+  | OFE => AuthOFE A
+  | pcore => AuthPCore
+  | op => AuthOp
+  | valid => AuthValid
+  | validN => AuthValidN
+
+  | cmra_op_ne => \lam x n y1 y2 hy => \case \elim x, \elim y1, \elim y2, hy \with {
+    | (just a, b), (just a1, b1), (just a2, b2), hy => (A.cmra_op_ne a n a1 a2 hy.1, A.cmra_op_ne b n b1 b2 hy.2)
+    | (just a, b), (nothing, b1), (nothing, b2), hy => (A.ofe_dist_refl n a, A.cmra_op_ne b n b1 b2 hy)
+    | (nothing, b), (just a1, b1), (just a2, b2), hy => (hy.1, A.cmra_op_ne b n b1 b2 hy.2)
+    | (nothing, b), (nothing, b1), (nothing, b2), hy => A.cmra_op_ne b n b1 b2 hy
+    | _, (just _, _), (nothing, _), hy => \case hy \with {}
+    | _, (nothing, _), (just _, _), hy => \case hy \with {}
+  }
+
+  | cmra_op_ne_2 => \lam y n x1 x2 hx => \case \elim x1, \elim x2, \elim y, hx \with {
+    | (just a1, b1), (just a2, b2), (just a', b'), hx => (A.cmra_op_ne_2 a' n a1 a2 hx.1, A.cmra_op_ne_2 b' n b1 b2 hx.2)
+    | (just a1, b1), (just a2, b2), (nothing, b'), hx => (hx.1, A.cmra_op_ne_2 b' n b1 b2 hx.2)
+    | (nothing, b1), (nothing, b2), (just a', b'), hx => (A.ofe_dist_refl n a', A.cmra_op_ne_2 b' n b1 b2 hx)
+    | (nothing, b1), (nothing, b2), (nothing, b'), hx => A.cmra_op_ne_2 b' n b1 b2 hx
+    | (just _, _), (nothing, _), _, hx => \case hx \with {}
+    | (nothing, _), (just _, _), _, hx => \case hx \with {}
+  }
+  | cmra_pcore_ne => \lam n x y cx hxy hpx => \case \elim x, \elim y, hxy, hpx \with {
+    | (just a1, b1), (just a2, b2), (hda, hdb), hpx =>
+      \case pcore {A} a1 \as pca, idp : pcore {A} a1 = pca,
+            pcore {A} b1 \as pcb, idp : pcore {A} b1 = pcb, hpx \with {
+        | just ca, hca, just cb, hcb, idp =>
+          \let (ca2, hca2, hdca) => A.cmra_pcore_ne n a1 a2 ca hda hca
+               | (cb2, hcb2, hdcb) => A.cmra_pcore_ne n b1 b2 cb hdb hcb
+          \in ((just ca2, cb2), rewrite hca2 (rewrite hcb2 idp), (hdca, hdcb))
+        | just _, _, nothing, _, hpx => \case hpx \with {}
+        | nothing, _, _, _, hpx => \case hpx \with {}
+      }
+    | (nothing, b1), (nothing, b2), hdb, hpx =>
+      \case pcore {A} b1 \as pcb, idp : pcore {A} b1 = pcb, hpx \with {
+        | just cb, hcb, idp =>
+          \let (cb2, hcb2, hdcb) => A.cmra_pcore_ne n b1 b2 cb hdb hcb
+          \in ((nothing, cb2), rewrite hcb2 idp, hdcb)
+        | nothing, _, hpx => \case hpx \with {}
+      }
+    | (just _, _), (nothing, _), hxy, _ => \case hxy \with {}
+    | (nothing, _), (just _, _), hxy, _ => \case hxy \with {}
+  }
+  | cmra_validN_ne => \lam n x y hxy hvx => {?}
+  | cmra_valid_validN => \lam x => {?}
+  | cmra_validN_le => \lam n m x hvn hle => {?}
+  | cmra_assoc => \lam x y z => {?}
+  | cmra_comm => \lam x y => {?}
+  | cmra_pcore_l => \lam x cx hpx => {?}
+  | cmra_pcore_idemp => \lam x cx hpx => {?}
+  | cmra_pcore_mono => \lam x y cx hincl hpx => {?}
+  | cmra_validN_op_l => \lam n x y hv => {?}
+  | cmra_extend => \lam n x y1 y2 hvx hdist => {?}
+
+-- Auth UCMRA instance
+\func AuthUCMRA (A : UCMRA) : UCMRA \cowith
+  | CMRA => AuthCMRA A
+  | unit => (nothing, A.unit)
+  | ucmra_unit_valid => A.ucmra_unit_valid
+  | ucmra_unit_left_id => \lam x => \case \elim x \with {
+    | (just a, b) => pmap (\lam w => (just a, w)) (A.ucmra_unit_left_id b)
+    | (nothing, b) => path (\lam i => (nothing, A.ucmra_unit_left_id b @ i))
+  }
+  | ucmra_pcore_unit => rewrite A.ucmra_pcore_unit idp
