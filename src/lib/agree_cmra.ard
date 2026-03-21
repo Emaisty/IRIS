@@ -1,0 +1,269 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+\import Set
+\import Data.Maybe
+\import Data.List
+\import Arith.Nat
+\import Order.PartialOrder
+\import cmra
+\import ofe
+
+
+
+\data In {A : \Set} (a : A) (l : List A) \elim l
+  | :: b l => here (a = b)
+  | :: b l => there b (In a l)
+
+
+\record AgreeElem (A : OFE)
+  | agree_list : List A.E
+  | agree_not_nil : \Sigma (a : A.E) (In a agree_list)
+
+
+\func to_agree {A : OFE} (a : A.E) : AgreeElem A \cowith
+  | agree_list => a :: nil
+  | agree_not_nil => (a, here idp)
+
+
+\func AgreeOFE (A : OFE) : OFE \cowith
+  | E => AgreeElem A
+  | dist => \lam n x y =>
+      \Sigma
+        (\Pi (a : A.E) -> In a x.agree_list -> \Sigma (b : A.E) (In b y.agree_list) (A.dist n a b))
+        (\Pi (b : A.E) -> In b y.agree_list -> \Sigma (a : A.E) (In a x.agree_list) (A.dist n a b))
+
+  | ofe_equiv_dist => \lam x y => (
+      \lam eq n => (
+        \lam a ain => (
+          transport (\lam z => \Sigma (b : A.E) (In b z.agree_list) (A.dist n a b))
+                    eq
+                    (a, ain, A.ofe_dist_refl n a)
+        ),
+        \lam b bin => (
+          transport (\lam z => \Sigma (a : A.E) (In a z.agree_list) (A.dist n a b))
+                    (inv eq)
+                    (b, bin, A.ofe_dist_refl n b)
+        )
+      ),
+      \lam h => ext (agree_list_eq x y h)
+    )
+
+  | ofe_dist_refl => \lam n x => (
+      \lam a ain => (a, ain, A.ofe_dist_refl n a),
+      \lam b bin => (b, bin, A.ofe_dist_refl n b)
+    )
+
+  | ofe_dist_sym => \lam n x y h => (
+      \lam b bin => \case h.2 b bin \with {
+        | (a, ain, dab) => (a, ain, A.ofe_dist_sym n a b dab)
+      },
+      \lam a ain => \case h.1 a ain \with {
+        | (b, bin, dab) => (b, bin, A.ofe_dist_sym n b a dab)
+      }
+    )
+
+  | ofe_dist_trans => \lam n x y z hxy hyz => (
+      \lam a ain => \case hxy.1 a ain \with {
+        | (b, bin, dab) => \case hyz.1 b bin \with {
+          | (c, cin, dbc) => (c, cin, A.ofe_dist_trans n a b c dab dbc)
+        }
+      },
+      \lam c cin => \case hyz.2 c cin \with {
+        | (b, bin, dbc) => \case hxy.2 b bin \with {
+          | (a, ain, dab) => (a, ain, A.ofe_dist_trans n a b c dab dbc)
+        }
+      }
+    )
+
+  | ofe_dist_le => \lam n m x y h le => (
+      \lam a ain => \case h.1 a ain \with {
+        | (b, bin, dab) => (b, bin, A.ofe_dist_le n m a b dab le)
+      },
+      \lam b bin => \case h.2 b bin \with {
+        | (a, ain, dab) => (a, ain, A.ofe_dist_le n m a b dab le)
+      }
+    )
+
+
+
+\func AgreeOp {A : OFE} (x y : AgreeElem A) : AgreeElem A \cowith
+  | agree_list => x.agree_list ++ y.agree_list
+  | agree_not_nil => \case x.agree_not_nil \with {
+    | (a, ain) => (a, in_app_left ain)
+  }
+
+
+
+\func AgreeValidN {A : OFE} (n : Nat) (x : AgreeElem A) : \Prop =>
+  \Pi (a b : A.E) -> In a x.agree_list -> In b x.agree_list -> A.dist n a b
+
+\func AgreeValid {A : OFE} (x : AgreeElem A) : \Prop =>
+  \Pi (n : Nat) -> AgreeValidN {A} n x
+
+
+
+\func AgreePCore {A : OFE} (x : AgreeElem A) : Maybe (AgreeElem A) => just x
+
+
+\func AgreeCMRA (A : OFE) : CMRA \cowith
+  | OFE => AgreeOFE A
+  | pcore => AgreePCore
+  | op => AgreeOp
+  | valid => AgreeValid
+  | validN => AgreeValidN
+
+  | cmra_op_ne => \lam x n y1 y2 hy => (
+      \lam a ain => \case ain \with {
+        | in_app_left ax => \case hy.1 a ax \with {
+          | (b, bin, dab) => (b, in_app_left bin, dab)
+        }
+        | in_app_right ay1 => \case hy.2 a ay1 \with {
+          | (b, bin, dab) => (b, in_app_right bin, dab)
+        }
+      },
+      \lam b bin => \case bin \with {
+        | in_app_left bx => \case hy.1 b bx \with {
+          | (a, ain, dba) => (a, in_app_left ain, dba)
+        }
+        | in_app_right by2 => \case hy.2 b by2 \with {
+          | (a, ain, dba) => (a, in_app_right ain, dba)
+        }
+      }
+    )
+
+  | cmra_op_ne_2 => \lam y n x1 x2 hx => (
+      \lam a ain => \case ain \with {
+        | in_app_left ax1 => \case hx.1 a ax1 \with {
+          | (b, bin, dab) => (b, in_app_left bin, dab)
+        }
+        | in_app_right ay => \case hx.2 a ay \with {
+          | (b, bin, dab) => (b, in_app_right bin, dab)
+        }
+      },
+      \lam b bin => \case bin \with {
+        | in_app_left bx2 => \case hx.1 b bx2 \with {
+          | (a, ain, dba) => (a, in_app_left ain, dba)
+        }
+        | in_app_right by => \case hx.2 b by \with {
+          | (a, ain, dba) => (a, in_app_right ain, dba)
+        }
+      }
+    )
+
+  | cmra_pcore_ne => \lam n x y cx hxy hpx => (y, idp, hxy)
+
+  | cmra_validN_ne => \lam n x y hxy hvx a b ain bin =>
+      \case hxy.1 a ain \with {
+        | (a', ain', daa') => \case hxy.2 b bin \with {
+          | (b', bin', dbb') => A.ofe_dist_trans n a a' b
+                                  daa'
+                                  (A.ofe_dist_trans n a' b' b
+                                    (hvx a' b' ain' bin')
+                                    (A.ofe_dist_sym n b b' dbb'))
+        }
+      }
+
+  | cmra_valid_validN => \lam x => (
+      \lam hv n => hv n,
+      \lam hvn n => hvn n
+    )
+
+  | cmra_validN_le => \lam n m x hvn le a b ain bin =>
+      A.ofe_dist_le n m a b (hvn a b ain bin) le
+
+  | cmra_assoc => \lam x y z => path (\lam i => \new AgreeElem A {
+      | agree_list => ++-assoc x.agree_list y.agree_list z.agree_list @ i
+      | agree_not_nil => \case x.agree_not_nil \with {
+        | (a, ain) => (a, transport (In a) (++-assoc x.agree_list y.agree_list z.agree_list) (in_app_left (in_app_left ain)))
+      }
+    })
+
+  | cmra_comm => \lam x y => ext (agree_comm_proof x y)
+
+  | cmra_pcore_l => \lam x cx hpx => \case hpx \with {
+    | idp => idp
+  }
+
+  | cmra_pcore_idemp => \lam x cx hpx => hpx
+
+  | cmra_pcore_mono => \lam x y cx hincl hpx => (y, idp, hincl)
+
+  | cmra_validN_op_l => \lam n x y hv a b ain bin =>
+      hv a b (in_app_left ain) (in_app_left bin)
+
+  | cmra_extend => \lam n x y1 y2 hvx hdist => (x, x, idp, hdist.1, hdist.2)
+
+
+
+\func agree_list_eq {A : OFE} (x y : AgreeElem A)
+  (h : \Pi (n : Nat) -> (AgreeOFE A).dist n x y)
+  : x.agree_list = y.agree_list
+
+
+\func agree_comm_proof {A : OFE} (x y : AgreeElem A)
+  : AgreeOp x y = AgreeOp y x =>
+  (AgreeOFE A).ofe_equiv_dist (AgreeOp x y) (AgreeOp y x) .2 (\lam n => (
+    \lam a ain => \case ain \with {
+      | in_app_left ax => (a, in_app_right ax, A.ofe_dist_refl n a)
+      | in_app_right ay => (a, in_app_left ay, A.ofe_dist_refl n a)
+    },
+    \lam b bin => \case bin \with {
+      | in_app_left by => (b, in_app_right by, A.ofe_dist_refl n b)
+      | in_app_right bx => (b, in_app_left bx, A.ofe_dist_refl n b)
+    }
+  ))
+
+-- Agree is idempotent (via equivalence)
+\func agree_idemp {A : OFE} (x : AgreeElem A) (n : Nat)
+  : (AgreeOFE A).dist n (AgreeOp x x) x =>
+  (
+    \lam a ain => \case ain \with {
+      | in_app_left ax => (a, ax, A.ofe_dist_refl n a)
+      | in_app_right ax => (a, ax, A.ofe_dist_refl n a)
+    },
+    \lam a ax => (a, in_app_left ax, A.ofe_dist_refl n a)
+  )
+
+
+
+\func to_agree_ne {A : OFE} (n : Nat) (a1 a2 : A.E) (h : A.dist n a1 a2)
+  : (AgreeOFE A).dist n (to_agree a1) (to_agree a2) =>
+  (
+    \lam a ain => \case ain \with {
+      | here p => (a2, here idp, transport (\lam z => A.dist n z a2) p h)
+      | there _ nin => \case nin \with {}
+    },
+    \lam b bin => \case bin \with {
+      | here p => (a1, here idp, transport (\lam z => A.dist n a1 z) p (A.ofe_dist_sym n a2 a1 h))
+      | there _ nin => \case nin \with {}
+    }
+  )
+
+
+
+\func to_agree_op_inv {A : OFE} (n : Nat) (a b : A.E)
+  (hv : AgreeValidN {A} n (AgreeOp (to_agree a) (to_agree b)))
+  : A.dist n a b =>
+  hv a b (in_app_left (here idp)) (in_app_right (here idp))
+
+
+
+\func ++-assoc {A : \Set} (l1 l2 l3 : List A) : l1 ++ (l2 ++ l3) = (l1 ++ l2) ++ l3 \elim l1
+  | nil => idp
+  | :: a l1 => pmap (a ::) (++-assoc l1 l2 l3)
+
+\func ++-nil {A : \Set} (l : List A) : l ++ nil = l \elim l
+  | nil => idp
+  | :: a l => pmap (a ::) (++-nil l)
+
+\func in_app_left {A : \Set} {a : A} {l1 l2 : List A} (h : In a l1) : In a (l1 ++ l2) \elim l1, h
+  | :: a' l1, here p => here p
+  | :: a' l1, there _ h => there a' (in_app_left h)
+
+\func in_app_right {A : \Set} {a : A} {l1 l2 : List A} (h : In a l2) : In a (l1 ++ l2) \elim l1
+  | nil => h
+  | :: a' l1 => there a' (in_app_right h)
+
+

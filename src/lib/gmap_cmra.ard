@@ -1,0 +1,92 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import cmra
+\import ofe
+
+
+\func Gmap (K : \Set) (A : \Set) => K -> Maybe A
+
+\func gmap_lookup {K A : \Set} (m : Gmap K A) (k : K) : Maybe A => m k
+
+\func gmap_empty {K A : \Set} : Gmap K A => \lam _ => nothing
+
+\func gmap_op {K : \Set} {A : CMRA} (m1 m2 : Gmap K A.E) : Gmap K A.E =>
+  \lam k => \case m1 k, m2 k \with {
+    | just a1, just a2 => just (A.op a1 a2)
+    | just a1, nothing => just a1
+    | nothing, just a2 => just a2
+    | nothing, nothing => nothing
+  }
+
+\func gmap_pcore {K : \Set} {A : CMRA} (m : Gmap K A.E) : Gmap K A.E =>
+  \lam k => \case m k \with {
+    | just a => pcore {A} a
+    | nothing => nothing
+  }
+
+
+\func GmapOFE (K : \Set) (A : OFE) : OFE \cowith
+  | E => Gmap K A.E
+  | dist => \lam n m1 m2 => \Pi (i : K) -> (OptionOFE A).dist n (m1 i) (m2 i)
+  | ofe_equiv_dist => \lam m1 m2 => (
+    \lam eq n i => equiv_dist_n {OptionOFE A} (m1 i) (m2 i) (pmap (\lam m => m i) eq) n,
+    \lam h => path (\lam j i => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).2 (\lam n => h n i) @ j)
+  )
+  | ofe_dist_refl => \lam n m i => (OptionOFE A).ofe_dist_refl n (m i)
+  | ofe_dist_sym => \lam n m1 m2 h i => (OptionOFE A).ofe_dist_sym n (m1 i) (m2 i) (h i)
+  | ofe_dist_trans => \lam n m1 m2 m3 h1 h2 i =>
+          (OptionOFE A).ofe_dist_trans n (m1 i) (m2 i) (m3 i) (h1 i) (h2 i)
+  | ofe_dist_le => \lam n m' m1 m2 h le i => (OptionOFE A).ofe_dist_le n m' (m1 i) (m2 i) (h i) le
+
+
+\func GmapValidN {K : \Set} {A : CMRA} (n : Nat) (m : Gmap K A.E) : \Prop =>
+  \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => validN {A} n a }
+
+\func GmapValid {K : \Set} {A : CMRA} (m : Gmap K A.E) : \Prop =>
+  \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => valid {A} a }
+
+
+\func GmapCMRA (K : \Set) (A : CMRA) : CMRA \cowith
+  | OFE => GmapOFE K A
+  | pcore => \lam m => just (gmap_pcore m)
+  | op => gmap_op
+  | valid => \lam m => \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => valid {A} a }
+  | validN => \lam n m => \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => validN {A} n a }
+
+  | cmra_op_ne => \lam m n m1 m2 hm i => {?}
+  | cmra_op_ne_2 => \lam m n m1 m2 hm i => {?}
+  | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm => {?}
+  | cmra_validN_ne => \lam n m1 m2 hm hv => {?}
+  | cmra_valid_validN => \lam m => {?}
+  | cmra_validN_le => \lam n m' x hvn hle i => {?}
+  | cmra_assoc => \lam x y z => {?}
+  | cmra_comm => \lam x y => {?}
+  | cmra_pcore_l => \lam x cx hpx => {?}
+  | cmra_pcore_idemp => \lam x cx hpx => {?}
+  | cmra_pcore_mono => \lam x y cx hincl hpx => {?}
+  | cmra_validN_op_l => \lam n x y hv i => {?}
+  | cmra_extend => \lam n x y1 y2 hvx hdist => {?}
+
+
+\func GmapUCMRA (K : \Set) (A : UCMRA) : UCMRA \cowith
+  | CMRA => GmapCMRA K A
+  | unit => gmap_empty
+  | ucmra_unit_valid => \lam i => ()
+  | ucmra_unit_left_id => \lam m => path (\lam i k =>
+      (\case m k \as mk \return
+      (\case (nothing : Maybe A.E), mk \with {
+        | just a1, just a2 => just (A.op a1 a2)
+        | just a1, nothing => just a1
+        | nothing, just a2 => just a2
+        | nothing, nothing => nothing
+      }) = mk \with {
+        | nothing => idp
+        | just a => idp
+      }) @ i)
+  | ucmra_pcore_unit => idp
