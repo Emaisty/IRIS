@@ -62,7 +62,16 @@
   | cmra_op_ne => \lam m n m1 m2 hm i => {?}
   | cmra_op_ne_2 => \lam m n m1 m2 hm i => {?}
   | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm => {?}
-  | cmra_validN_ne => \lam n m1 m2 hm hv => {?}
+  | cmra_validN_ne => \lam n m1 m2 hm hv i =>
+      \case m1 i \as m1i, m2 i \as m2i,
+            hm i : (OptionOFE A).dist n m1i m2i,
+            hv i : \case m1i \with { | nothing => \Sigma | just a => A.validN n a }
+      \return \case m2i \with { | nothing => \Sigma | just a => A.validN n a } \with {
+        | nothing, nothing, _, _ => ()
+        | just a1, just a2, hdist, hv1 => A.cmra_validN_ne n a1 a2 hdist hv1
+        | nothing, just _, hdist, _ => \case hdist \with {}
+        | just _, nothing, hdist, _ => \case hdist \with {}
+      }
   | cmra_valid_validN => \lam m => {?}
   | cmra_validN_le => \lam n m' x hvn hle i => {?}
   | cmra_assoc => \lam x y z => {?}
@@ -70,7 +79,23 @@
   | cmra_pcore_l => \lam x cx hpx => {?}
   | cmra_pcore_idemp => \lam x cx hpx => {?}
   | cmra_pcore_mono => \lam x y cx hincl hpx => {?}
-  | cmra_validN_op_l => \lam n x y hv i => {?}
+  | cmra_validN_op_l => \lam n x y hv i =>
+      \case x i \as xi, y i \as yi,
+            hv i : \case (\case xi, yi \with {
+              | just a1, just a2 => just (A.op a1 a2)
+              | just a1, nothing  => just a1
+              | nothing, just a2  => just a2
+              | nothing, nothing  => nothing
+            } : Maybe A.E) \return \Prop \with {
+              | nothing => \Sigma
+              | just a  => A.validN n a
+            }
+      \return \case xi \with { | nothing => \Sigma | just a => A.validN n a } \with {
+        | just a1, just a2, hvi => A.cmra_validN_op_l n a1 a2 hvi
+        | just a1, nothing,  hvi => hvi
+        | nothing, just _,   _   => ()
+        | nothing, nothing,  _   => ()
+      }
   | cmra_extend => \lam n x y1 y2 hvx hdist => {?}
 
 
