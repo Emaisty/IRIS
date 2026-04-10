@@ -2,7 +2,6 @@
 \import Order.PartialOrder
 \import Paths
 
-
 -- Represents the basic operation for the separation logic
 \class BIBase \extends Preorder {
   | bi_emp : E
@@ -14,8 +13,8 @@
   | bi_exist (A : \Type) : (A -> E) -> E
   | bi_sep : E -> E -> E
   | bi_wand : E -> E -> E
-  -- | bi_persistently : E -> E
-  -- | bi_later : E -> E
+  | bi_persistently : E -> E
+  | bi_later : E -> E
 
 
   --   \func \infixl 6 ∧ (P Q : E) => bi_and P Q
@@ -36,6 +35,9 @@
 \func exists {B : BIBase} (A : \Type) (Phi : A -> B.E) => B.bi_exist A Phi
 \func \infixl 6 * {B : BIBase} (P Q : B.E) => B.bi_sep P Q
 \func \infixr 3 -* {B : BIBase} (P Q : B.E) => B.bi_wand P Q
+\func persis {B : BIBase} (P : B.E) => B.bi_persistently P
+\func later {B : BIBase} (P : B.E) => B.bi_later P
+
 
 
 \func True {B : BIBase} => B.bi_pure (\Sigma)
@@ -75,31 +77,31 @@
   | bi_mixin_wand_elim (P Q : E) : (P * (P -* Q)) |- Q
 }
 
--- Axioms for the Persistent modality
--- \class BIPersistentlyMixin \extends BIBase {
---   | persistently_mono (P Q : E) : ent P Q -> ent (persistently P) (persistently Q)
---   | persistently_idemp_2 (P : E) : ent (persistently P) (persistently (persistently P))
---   | persistently_emp_2 : ent emp (persistently emp)
---   | persistently_and_2 (P Q : E) : ent (bi_and (persistently P) (persistently Q)) (persistently (bi_and P Q))
---   | persistently_exist_1 {A : \Type} (Phi : A -> E) : ent (persistently (bi_exist A Phi)) (bi_exist A (\lam a => persistently (Phi a)))
---   | persistently_absorbing (P Q : E) : ent (bi_sep (persistently P) Q) (persistently P)
---   | persistently_and_sep_elim (P Q : E) : ent (bi_and (persistently P) Q) (bi_sep P Q)
--- }
---
--- Axioms for the Later modality
--- \class BILaterMixin \extends BIBase {
---   | later_mono (P Q : E) : ent P Q -> ent (later P) (later Q)
---   | later_intro (P : E) : ent P (later P)
---   | later_forall_2 {A : \Type} (Phi : A -> E) : ent (bi_forall A (\lam a => later (Phi a))) (later (bi_forall A Phi))
---   | later_exist_false {A : \Type} (Phi : A -> E) : ent (later (bi_exist A Phi)) (bi_or (later False) (bi_exist A (\lam a => later (Phi a))))
---   | later_sep_1 (P Q : E) : ent (later (bi_sep P Q)) (bi_sep (later P) (later Q))
---   | later_sep_2 (P Q : E) : ent (bi_sep (later P) (later Q)) (later (bi_sep P Q))
---   | later_persistently_1 (P : E) : ent (later (persistently P)) (persistently (later P))
---   | later_persistently_2 (P : E) : ent (persistently (later P)) (later (persistently P))
---   | later_false_em (P : E) : ent (later P) (bi_or (later False) (bi_impl (later False) P))
--- }
 
-\class BI \extends BIMixin -- , BiPersistentlyMixin, BiLaterMixin
+\class BIPersistentlyMixin \extends BIBase {
+  | persistently_mono (P Q : E) : P |- Q -> (bi_persistently P) |- (bi_persistently Q)
+  | persistently_idemp_2 (P : E) : (bi_persistently P) |- (bi_persistently (bi_persistently P))
+  | persistently_emp_2 : emp |- (bi_persistently emp)
+  | persistently_and_2 (P Q : E) : (bi_and (bi_persistently P) (bi_persistently Q)) |- (bi_persistently (bi_and P Q))
+  | persistently_exist_1 {A : \Type} (Phi : A -> E) : (bi_persistently (bi_exist A Phi)) |- (bi_exist A (\lam a => bi_persistently (Phi a)))
+  | persistently_absorbing (P Q : E) : (bi_sep (bi_persistently P) Q) |- (bi_persistently P)
+  | persistently_and_sep_elim (P Q : E) : (bi_and (bi_persistently P) Q) |- (bi_sep P Q)
+}
+
+
+\class BILaterMixin \extends BIBase {
+  | later_mono (P Q : E) : P |- Q -> bi_later P |- bi_later Q
+  | later_intro (P : E) : P |- bi_later P
+  | later_forall_2 {A : \Type} (Phi : A -> E) : (bi_forall A (\lam a => bi_later (Phi a))) |- (bi_later (bi_forall A Phi))
+  | later_exist_false {A : \Type} (Phi : A -> E) : (bi_later (bi_exist A Phi)) |- (bi_or (bi_later False) (bi_exist A (\lam a => bi_later (Phi a))))
+  | later_sep_1 (P Q : E) : (bi_later (bi_sep P Q)) |- (bi_sep (bi_later P) (bi_later Q))
+  | later_sep_2 (P Q : E) : (bi_sep (bi_later P) (bi_later Q)) |- (bi_later (bi_sep P Q))
+  | later_persistently_1 (P : E) : (bi_later (bi_persistently P)) |- (bi_persistently (bi_later P))
+  | later_persistently_2 (P : E) : bi_persistently (bi_later P) |- bi_later (bi_persistently P)
+  | later_false_em (P : E) : bi_later P |- bi_or (bi_later False) (bi_impl (bi_later False) P)
+}
+
+\class BI \extends BIMixin, BIPersistentlyMixin, BILaterMixin
 
 
 

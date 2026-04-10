@@ -67,14 +67,14 @@
     upred_holds n2 x2
 
 \func properUPred_ent {M : UCMRA} (P Q : ProperUPred M) : \Prop =>
-  \Pi (n : Nat) (a : M.E) -> P.upred_holds n a -> Q.upred_holds n a
+  \Pi (n : Nat) (a : M.E) -> M.validN n a -> P.upred_holds n a -> Q.upred_holds n a
 
 \func properUPred_ent_refl {M : UCMRA} (P : ProperUPred M) : properUPred_ent P P =>
-  \lam n a h => h
+  \lam n a _ h => h
 
 \func properUPred_ent_trans {M : UCMRA} (P Q R : ProperUPred M)
                             (h1 : properUPred_ent P Q) (h2 : properUPred_ent Q R) : properUPred_ent P R =>
-  \lam n a hp => h2 n a (h1 n a hp)
+  \lam n a hv hp => h2 n a hv (h1 n a hv hp)
 
 
 
@@ -162,8 +162,8 @@
 \func BIuPred (M : UCMRA) : BIBase \cowith
   | E => ProperUPred M
   | <= => properUPred_ent
-  | <=-refl => \lam n a h => h
-  | <=-transitive => \lam h1 h2 n a hp => h2 n a (h1 n a hp)
+  | <=-refl => \lam n a _ h => h
+  | <=-transitive => \lam h1 h2 n a hv hp => h2 n a hv (h1 n a hv hp)
   | bi_emp => mkProperEmp
   | bi_pure => mkProperPure
   | bi_and => mkProperAnd
@@ -173,13 +173,3 @@
   | bi_exist => mkProperExist
   | bi_sep => mkProperSep
   | bi_wand => mkProperWand
-
-
-
-\func uPred_ent_refl {M : UCMRA} (P : uPred M) : uPred_ent P P =>
-  \lam n a h => h
-
-\func uPred_ent_trans {M : UCMRA} (P Q R : uPred M)
-                      (h1 : uPred_ent P Q) (h2 : uPred_ent Q R) : uPred_ent P R =>
-  \lam n a hp => h2 n a (h1 n a hp)
-
