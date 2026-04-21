@@ -1,0 +1,162 @@
+\import Arith.Nat
+\import Data.Bool
+\import Data.List
+\import Data.Maybe
+\import Data.Or
+\import Set
+\import Logic
+\import Paths
+\import Paths.Meta
+\import Meta
+
+\func Loc => Nat
+
+\data Lit
+  | LitInt (n : Int)
+  | LitBool (b : Bool)
+  | LitUnit
+  | LitLoc (l : Loc)
+
+\data Value : \Set
+  | LitV (l : Lit)
+  | LamV (x : String) (body : Expr)
+  | PairV (v1 v2 : Value)
+
+\data Expr : \Set
+  | Val (v : Value)
+  | Var (x : String)
+  | Lam (x : String) (body : Expr)
+  | App (e1 e2 : Expr)
+  | If (cond thenB elseB : Expr)
+  | Pair (e1 e2 : Expr)
+  | Fst (e : Expr)
+  | Snd (e : Expr)
+  | Alloc (e : Expr)
+  | Load (e : Expr)
+  | Store (e1 e2 : Expr)
+
+\record State
+  | heap : Loc -> Maybe Value
+
+\func of_val (v : Value) : Expr => Val v
+
+\func to_val (e : Expr) : Maybe Value
+  | Val v => just v
+  | _ => nothing
+
+\func subst (x : String) (v : Value) (e : Expr) : Expr \elim e
+  | Val w => Val w
+  | Var y => \case decideEq x y \with {
+    | inl _ => Val v
+    | inr _ => Var y
+  }
+  | Lam y body => \case decideEq x y \with {
+    | inl _ => Lam y body  -- x is shadowed
+    | inr _ => Lam y (subst x v body)
+  }
+  | App e1 e2 => App (subst x v e1) (subst x v e2)
+  | If cond thenB elseB => If (subst x v cond) (subst x v thenB) (subst x v elseB)
+  | Pair e1 e2 => Pair (subst x v e1) (subst x v e2)
+  | Fst e => Fst (subst x v e)
+  | Snd e => Snd (subst x v e)
+  | Alloc e => Alloc (subst x v e)
+  | Load e => Load (subst x v e)
+  | Store e1 e2 => Store (subst x v e1) (subst x v e2)
+  \where {
+    -- Decidable equality on strings (placeholder)
+    -- In practice, String has decidable equality in Arend
+    \func decideEq (x y : String) : (x = y) `Or` (Not (x = y)) => {?}
+  }
+
+\func decEqNat (n m : Nat) : (n = m) `Or` (Not (n = m))
+  | 0, 0 => inl idp
+  | 0, suc _ => inr (\lam p => \case p \with {})
+  | suc _, 0 => inr (\lam p => \case p \with {})
+  | suc n, suc m => \case decEqNat n m \with {
+    | inl eq => inl (pmap suc eq)
+    | inr neq => inr (\lam p => neq (pmap predNat p))
+  }
+  \where {
+    \func predNat (n : Nat) : Nat
+      | 0 => 0
+      | suc n => n
+  }
+
+\func heap_update (h : Loc -> Maybe Value) (l : Loc) (v : Value) : Loc -> Maybe Value =>
+  \lam l' => \case decEqNat l l' \with {
+    | inl _ => just v
+    | inr _ => h l'
+  }
+
+\truncated \data PrimStep (e1 : Expr) (s1 : State) (e2 : Expr) (s2 : State) : \Prop
+  | BetaS (x : String) (body : Expr) (v : Value)
+          (p1 : e1 = App (Val (LamV x body)) (Val v))
+          (p2 : e2 = subst x v body)
+          (p3 : s2 = s1)
+  | IfTrueS (t f : Expr)
+            (p1 : e1 = If (Val (LitV (LitBool true))) t f)
+            (p2 : e2 = t)
+            (p3 : s2 = s1)
+  | IfFalseS (t f : Expr)
+             (p1 : e1 = If (Val (LitV (LitBool false))) t f)
+             (p2 : e2 = f)
+             (p3 : s2 = s1)
+  | FstS (v1 v2 : Value)
+         (p1 : e1 = Fst (Val (PairV v1 v2)))
+         (p2 : e2 = Val v1)
+         (p3 : s2 = s1)
+  | SndS (v1 v2 : Value)
+         (p1 : e1 = Snd (Val (PairV v1 v2)))
+         (p2 : e2 = Val v2)
+         (p3 : s2 = s1)
+  | PairS (v1 v2 : Value)
+          (p1 : e1 = Pair (Val v1) (Val v2))
+          (p2 : e2 = Val (PairV v1 v2))
+          (p3 : s2 = s1)
+  | AllocS (v : Value) (l : Loc)
+           (fresh : s1.heap l = nothing)
+           (p1 : e1 = Alloc (Val v))
+           (p2 : e2 = Val (LitV (LitLoc l)))
+           (p3 : s2 = \new State { | heap => heap_update s1.heap l v })
+  | LoadS (l : Loc) (v : Value)
+          (lookup : s1.heap l = just v)
+          (p1 : e1 = Load (Val (LitV (LitLoc l))))
+          (p2 : e2 = Val v)
+          (p3 : s2 = s1)
+  | StoreS (l : Loc) (v v' : Value)
+           (allocated : s1.heap l = just v')
+           (p1 : e1 = Store (Val (LitV (LitLoc l))) (Val v))
+           (p2 : e2 = Val (LitV LitUnit))
+           (p3 : s2 = \new State { | heap => heap_update s1.heap l v })
+
+\func Reducible (e : Expr) (s : State) : \Prop =>
+  TruncP (\Sigma (e' : Expr) (s' : State) (PrimStep e s e' s'))
+
+\func to_of_val (v : Value) : to_val (of_val v) = just v => idp
+
+\func of_to_val (e : Expr) (v : Value) (p : to_val e = just v) : of_val v = e \elim e
+  | Val v' =>
+    \let eq : v' = v => pmap (\case \elim __ \with { | just x => x | nothing => v' }) p
+    \in pmap Val (inv eq)
+  | Var _ => \case p \with {}
+  | Lam _ _ => \case p \with {}
+  | App _ _ => \case p \with {}
+  | If _ _ _ => \case p \with {}
+  | Pair _ _ => \case p \with {}
+  | Fst _ => \case p \with {}
+  | Snd _ => \case p \with {}
+  | Alloc _ => \case p \with {}
+  | Load _ => \case p \with {}
+  | Store _ _ => \case p \with {}
+
+\func val_stuck (e : Expr) (s : State) (e' : Expr) (s' : State)
+                (step : PrimStep e s e' s') : to_val e = nothing \elim step
+  | BetaS x body v p1 p2 p3 => rewrite p1 idp
+  | IfTrueS t f p1 p2 p3 => rewrite p1 idp
+  | IfFalseS t f p1 p2 p3 => rewrite p1 idp
+  | FstS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | SndS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | PairS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | AllocS v l fresh p1 p2 p3 => rewrite p1 idp
+  | LoadS l v lookup p1 p2 p3 => rewrite p1 idp
+  | StoreS l v v' allocated p1 p2 p3 => rewrite p1 idp

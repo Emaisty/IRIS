@@ -9,6 +9,7 @@
 \import ofe
 \import cmra
 \import uPred
+\import lang
 \import interface
 \import lib.excl_cmra
 \import lib.auth_cmra
@@ -18,15 +19,6 @@
 -- Heap CMRA: AUTH (gmap (Loc, ExclU(Val)))
 -- =================================================================================
 
-
-\func DiscreteOFE (A : \Set) : OFE \cowith
-  | E => A
-  | dist => \lam n x y => x = y
-  | ofe_equiv_dist => \lam x y => (\lam eq _ => eq, \lam h => h 0)
-  | ofe_dist_refl => \lam n x => idp
-  | ofe_dist_sym => \lam n x y h => inv h
-  | ofe_dist_trans => \lam n x y z h1 h2 => h1 *> h2
-  | ofe_dist_le => \lam n m x y h _ => h
 
 \func HeapCMRA (Loc Val : \Set) : UCMRA =>
   AuthUCMRA (GmapUCMRA Loc (ExclUCMRA (DiscreteOFE Val)))
