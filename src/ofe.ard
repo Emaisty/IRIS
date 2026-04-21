@@ -288,6 +288,30 @@
   | ofe_dist_trans => \lam _ x y z p q => p *> q
   | ofe_dist_le => \lam _ _ _ _ h _ => h
 
+\func FunOFE (A : \Type) (B : OFE) : OFE \cowith
+  | E => A -> B.E
+  | dist => \lam n f g => \Pi (x : A) -> B.dist n (f x) (g x)
+  | ofe_equiv_dist => \lam f g => (
+    \lam eq n x => equiv_dist_n (f x) (g x) (pmap (\lam h => h x) eq) n,
+    \lam h => path (\lam i x => (B.ofe_equiv_dist (f x) (g x)).2 (\lam n => h n x) @ i)
+  )
+  | ofe_dist_refl => \lam n f x => B.ofe_dist_refl n (f x)
+  | ofe_dist_sym => \lam n f g h x => B.ofe_dist_sym n (f x) (g x) (h x)
+  | ofe_dist_trans => \lam n f g h h1 h2 x => B.ofe_dist_trans n (f x) (g x) (h x) (h1 x) (h2 x)
+  | ofe_dist_le => \lam n m f g h le x => B.ofe_dist_le n m (f x) (g x) (h x) le
+
+\func FunCOFE (A : \Type) (B : COFE) : COFE \cowith
+  | OFE => FunOFE A B
+  | compl => \lam c hc x =>
+      B.compl
+          (\lam n => c n x)
+          (\new Chain { | chain_cauchy => \lam n m le => hc.chain_cauchy n m le x })
+  | cofe_conv_compl => \lam c hc n x =>
+      B.cofe_conv_compl
+          (\lam k => c k x)
+          (\new Chain { | chain_cauchy => \lam n m le => hc.chain_cauchy n m le x })
+          n
+
 
 -- =================================================================================
 -- Contractive

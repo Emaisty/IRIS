@@ -15,8 +15,8 @@
 \class BUpd (B : BIBase)
   | bupd : B.E -> B.E
 
-\class FUpd (B : BIBase)
-  | fupd : Nat -> Nat -> B.E -> B.E
+-- \class FUpd (B : BIBase)
+--   | fupd : Nat -> Nat -> B.E -> B.E
 
 
 -- =================================================================================
@@ -36,22 +36,22 @@
 -- =================================================================================
 
 
-\class BiFUpdMixin (B : BIMixin) (fup : FUpd B) {
-  | bi_fupd_mixin_fupd_mask_subseteq (E1 E2 : Nat) :
-    E2 <= E1 -> True {B} |- fupd E1 E2 (fupd E2 E1 emp)
-
-  | bi_fupd_mixin_except_0_fupd (E1 E2 : Nat) (P : B.E) :
-    ((fupd E1 E2 P) || False) |- (fupd E1 E2 P)
-
-  | bi_fupd_mixin_fupd_mono (E1 E2 : Nat) (P Q : B.E) :
-    (P |- Q) -> (fupd E1 E2 P) |- (fupd E1 E2 Q)
-
-  | bi_fupd_mixin_fupd_trans (E1 E2 E3 : Nat) (P : B.E) :
-    (fupd E1 E2 (fupd E2 E3 P)) |- (fupd E1 E3 P)
-
-  | bi_fupd_mixin_fupd_frame_r (E1 E2 : Nat) (P R : B.E) :
-    ((fupd E1 E2 P) * R) |- (fupd E1 E2 (P * R))
-}
+-- \class BiFUpdMixin (B : BIMixin) (fup : FUpd B) {
+--   | bi_fupd_mixin_fupd_mask_subseteq (E1 E2 : Nat) :
+--     E2 <= E1 -> True {B} |- fupd E1 E2 (fupd E2 E1 emp)
+--
+--   | bi_fupd_mixin_except_0_fupd (E1 E2 : Nat) (P : B.E) :
+--     ((fupd E1 E2 P) || False) |- (fupd E1 E2 P)
+--
+--   | bi_fupd_mixin_fupd_mono (E1 E2 : Nat) (P Q : B.E) :
+--     (P |- Q) -> (fupd E1 E2 P) |- (fupd E1 E2 Q)
+--
+--   | bi_fupd_mixin_fupd_trans (E1 E2 E3 : Nat) (P : B.E) :
+--     (fupd E1 E2 (fupd E2 E3 P)) |- (fupd E1 E3 P)
+--
+--   | bi_fupd_mixin_fupd_frame_r (E1 E2 : Nat) (P R : B.E) :
+--     ((fupd E1 E2 P) * R) |- (fupd E1 E2 (P * R))
+-- }
 
 
 -- =================================================================================
@@ -64,15 +64,15 @@
   | bi_bupd_mixin : BiBUpdMixin B bi_bupd_bupd
 }
 
-\class BiFUpd (B : BIMixin) {
-  | bi_fupd_fupd : FUpd B
-  | bi_fupd_mixin : BiFUpdMixin B bi_fupd_fupd
-}
+-- \class BiFUpd (B : BIMixin) {
+--   | bi_fupd_fupd : FUpd B
+--   | bi_fupd_mixin : BiFUpdMixin B bi_fupd_fupd
+-- }
 
-\class BiBUpdFUpd (B : BIMixin) (Bu : BiBUpd B) (Fu : BiFUpd B) {
-  | bupd_fupd (E : Nat) (P : B.E) :
-    (Bu.bi_bupd_bupd.bupd P) |- (Fu.bi_fupd_fupd.fupd E E P)
-}
+-- \class BiBUpdFUpd (B : BIMixin) (Bu : BiBUpd B) (Fu : BiFUpd B) {
+--   | bupd_fupd (E : Nat) (P : B.E) :
+--     (Bu.bi_bupd_bupd.bupd P) |- (Fu.bi_fupd_fupd.fupd E E P)
+-- }
 
 
 -- =================================================================================
@@ -124,21 +124,21 @@
 -- =================================================================================
 
 
-\func fupd_mask_subseteq {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (h : E2 <= E1)
-  : True {B} |- Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E1 emp)
-  => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mask_subseteq E1 E2 h
-
-\func fupd_mono {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P Q : B.E) (h : P |- Q)
-  : (Fu.bi_fupd_fupd.fupd E1 E2 P) |- (Fu.bi_fupd_fupd.fupd E1 E2 Q)
-  => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mono E1 E2 P Q h
-
-\func fupd_trans {B : BIMixin} {Fu : BiFUpd B} (E1 E2 E3 : Nat) (P : B.E)
-  : (Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E3 P)) |- (Fu.bi_fupd_fupd.fupd E1 E3 P)
-  => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_trans E1 E2 E3 P
-
-\func fupd_frame_r {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P R : B.E)
-  : ((Fu.bi_fupd_fupd.fupd E1 E2 P) * R) |- (Fu.bi_fupd_fupd.fupd E1 E2 (P * R))
-  => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_frame_r E1 E2 P R
+-- \func fupd_mask_subseteq {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (h : E2 <= E1)
+--   : True {B} |- Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E1 emp)
+--   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mask_subseteq E1 E2 h
+--
+-- \func fupd_mono {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P Q : B.E) (h : P |- Q)
+--   : (Fu.bi_fupd_fupd.fupd E1 E2 P) |- (Fu.bi_fupd_fupd.fupd E1 E2 Q)
+--   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mono E1 E2 P Q h
+--
+-- \func fupd_trans {B : BIMixin} {Fu : BiFUpd B} (E1 E2 E3 : Nat) (P : B.E)
+--   : (Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E3 P)) |- (Fu.bi_fupd_fupd.fupd E1 E3 P)
+--   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_trans E1 E2 E3 P
+--
+-- \func fupd_frame_r {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P R : B.E)
+--   : ((Fu.bi_fupd_fupd.fupd E1 E2 P) * R) |- (Fu.bi_fupd_fupd.fupd E1 E2 (P * R))
+--   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_frame_r E1 E2 P R
 
 
 -- =================================================================================
@@ -146,30 +146,30 @@
 -- =================================================================================
 
 
-\func fupd_intro {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P : B.E)
-  : P |- (Fu.bi_fupd_fupd.fupd E E P)
-  => B.<=-transitive
-      (B.bi_mixin_pure_intro (\Sigma) P ())
-      (B.<=-transitive
-        (fupd_mask_subseteq E E <=-refl)
-        (B.<=-transitive
-          (fupd_mono E E (Fu.bi_fupd_fupd.fupd E E emp) (Fu.bi_fupd_fupd.fupd E E P)
-            (fupd_mono E E emp P (emp_sep_2_lemma P)))
-          (fupd_trans E E E P)))
-
-\func fupd_frame_l {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (R Q : B.E)
-  : (R * (Fu.bi_fupd_fupd.fupd E1 E2 Q)) |- (Fu.bi_fupd_fupd.fupd E1 E2 (R * Q))
-  => B.<=-transitive
-      (sep_comm_lemma R (Fu.bi_fupd_fupd.fupd E1 E2 Q))
-      (B.<=-transitive
-        (fupd_frame_r E1 E2 Q R)
-        (fupd_mono E1 E2 (Q * R) (R * Q) (sep_comm_lemma Q R)))
-
-\func fupd_sep {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P Q : B.E)
-  : ((Fu.bi_fupd_fupd.fupd E E P) * (Fu.bi_fupd_fupd.fupd E E Q)) |- (Fu.bi_fupd_fupd.fupd E E (P * Q))
-  => B.<=-transitive
-      (fupd_frame_r E E P (Fu.bi_fupd_fupd.fupd E E Q))
-      (B.<=-transitive
-        (fupd_mono E E (P * (Fu.bi_fupd_fupd.fupd E E Q)) (Fu.bi_fupd_fupd.fupd E E (P * Q))
-          (fupd_frame_l E E P Q))
-        (fupd_trans E E E (P * Q)))
+-- \func fupd_intro {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P : B.E)
+--   : P |- (Fu.bi_fupd_fupd.fupd E E P)
+--   => B.<=-transitive
+--       (B.bi_mixin_pure_intro (\Sigma) P ())
+--       (B.<=-transitive
+--         (fupd_mask_subseteq E E <=-refl)
+--         (B.<=-transitive
+--           (fupd_mono E E (Fu.bi_fupd_fupd.fupd E E emp) (Fu.bi_fupd_fupd.fupd E E P)
+--             (fupd_mono E E emp P (emp_sep_2_lemma P)))
+--           (fupd_trans E E E P)))
+--
+-- \func fupd_frame_l {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (R Q : B.E)
+--   : (R * (Fu.bi_fupd_fupd.fupd E1 E2 Q)) |- (Fu.bi_fupd_fupd.fupd E1 E2 (R * Q))
+--   => B.<=-transitive
+--       (sep_comm_lemma R (Fu.bi_fupd_fupd.fupd E1 E2 Q))
+--       (B.<=-transitive
+--         (fupd_frame_r E1 E2 Q R)
+--         (fupd_mono E1 E2 (Q * R) (R * Q) (sep_comm_lemma Q R)))
+--
+-- \func fupd_sep {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P Q : B.E)
+--   : ((Fu.bi_fupd_fupd.fupd E E P) * (Fu.bi_fupd_fupd.fupd E E Q)) |- (Fu.bi_fupd_fupd.fupd E E (P * Q))
+--   => B.<=-transitive
+--       (fupd_frame_r E E P (Fu.bi_fupd_fupd.fupd E E Q))
+--       (B.<=-transitive
+--         (fupd_mono E E (P * (Fu.bi_fupd_fupd.fupd E E Q)) (Fu.bi_fupd_fupd.fupd E E (P * Q))
+--           (fupd_frame_l E E P Q))
+--         (fupd_trans E E E (P * Q)))

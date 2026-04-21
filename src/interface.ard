@@ -1,6 +1,7 @@
 \import Logic
 \import Order.PartialOrder
 \import Paths
+\import derived_laws
 
 -- Represents the basic operation for the separation logic
 \class BIBase \extends Preorder {
