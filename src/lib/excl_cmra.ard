@@ -20,14 +20,37 @@
     | exclInvalid, exclInvalid => \Sigma
     | _, _ => Empty
   }
+  | equiv => \lam e1 e2 => \case e1, e2 \with {
+    | excl a1, excl a2 => A.equiv a1 a2
+    | exclInvalid, exclInvalid => \Sigma
+    | _, _ => Empty
+  }
+  | equiv_refl => \lam e => \case \elim e \with {
+    | excl a => A.equiv_refl a
+    | exclInvalid => ()
+  }
+  | equiv_sym => \lam e1 e2 => \case \elim e1, \elim e2 \with {
+    | excl a1, excl a2 => \lam h => A.equiv_sym a1 a2 h
+    | exclInvalid, exclInvalid => \lam _ => ()
+    | excl _, exclInvalid => \lam e => \case e \with {}
+    | exclInvalid, excl _ => \lam e => \case e \with {}
+  }
+  | equiv_trans => \lam e1 e2 e3 => \case \elim e1, \elim e2, \elim e3 \with {
+    | excl a1, excl a2, excl a3 => \lam h1 h2 => A.equiv_trans a1 a2 a3 h1 h2
+    | exclInvalid, exclInvalid, exclInvalid => \lam _ _ => ()
+    | excl _, exclInvalid, _ => \lam e => \case e \with {}
+    | exclInvalid, excl _, _ => \lam e => \case e \with {}
+    | _, excl _, exclInvalid => \lam _ e => \case e \with {}
+    | _, exclInvalid, excl _ => \lam _ e => \case e \with {}
+  }
   | ofe_equiv_dist => \lam e1 e2 => \case \elim e1, \elim e2 \with {
     | excl a1, excl a2 => (
-      \lam eq => (A.ofe_equiv_dist a1 a2).1 (pmap (\case \elim __ \with { | excl a => a | exclInvalid => a1 }) eq),
-      \lam h => pmap excl ((A.ofe_equiv_dist a1 a2).2 h)
+      \lam he n => (A.ofe_equiv_dist a1 a2).1 he n,
+      \lam h => (A.ofe_equiv_dist a1 a2).2 h
     )
-    | exclInvalid, exclInvalid => (\lam _ _ => (), \lam _ => idp)
-    | excl _, exclInvalid => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | excl _ => \Sigma | exclInvalid => Empty }) eq) (), \lam h => \case h 0)
-    | exclInvalid, excl _ => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | excl _ => Empty | exclInvalid => \Sigma }) eq) (), \lam h => \case h 0)
+    | exclInvalid, exclInvalid => (\lam _ _ => (), \lam _ => ())
+    | excl _, exclInvalid => (\lam e => \case e \with {}, \lam h => \case h 0)
+    | exclInvalid, excl _ => (\lam e => \case e \with {}, \lam h => \case h 0)
   }
   | ofe_dist_refl => \lam n e => \case \elim e \with {
     | excl a => A.ofe_dist_refl n a
@@ -184,14 +207,37 @@
     | just e1, just e2 => (ExclOFE A).dist n e1 e2
     | _, _ => Empty
   }
+  | equiv => \lam me1 me2 => \case me1, me2 \with {
+    | nothing, nothing => \Sigma
+    | just e1, just e2 => (ExclOFE A).equiv e1 e2
+    | _, _ => Empty
+  }
+  | equiv_refl => \lam me => \case \elim me \with {
+    | nothing => ()
+    | just e => (ExclOFE A).equiv_refl e
+  }
+  | equiv_sym => \lam me1 me2 => \case \elim me1, \elim me2 \with {
+    | nothing, nothing => \lam _ => ()
+    | just e1, just e2 => \lam h => (ExclOFE A).equiv_sym e1 e2 h
+    | just _, nothing => \lam e => \case e \with {}
+    | nothing, just _ => \lam e => \case e \with {}
+  }
+  | equiv_trans => \lam me1 me2 me3 => \case \elim me1, \elim me2, \elim me3 \with {
+    | nothing, nothing, nothing => \lam _ _ => ()
+    | just e1, just e2, just e3 => \lam h1 h2 => (ExclOFE A).equiv_trans e1 e2 e3 h1 h2
+    | just _, nothing, _ => \lam e => \case e \with {}
+    | nothing, just _, _ => \lam e => \case e \with {}
+    | _, just _, nothing => \lam _ e => \case e \with {}
+    | _, nothing, just _ => \lam _ e => \case e \with {}
+  }
   | ofe_equiv_dist => \lam me1 me2 => \case \elim me1, \elim me2 \with {
-    | nothing, nothing => (\lam _ _ => (), \lam _ => idp)
+    | nothing, nothing => (\lam _ _ => (), \lam _ => ())
     | just e1, just e2 => (
-      \lam eq => ((ExclOFE A).ofe_equiv_dist e1 e2) .1 (pmap (\case \elim __ \with { | just e => e | nothing => e1 }) eq),
-      \lam h => pmap just (((ExclOFE A).ofe_equiv_dist e1 e2).2 h)
+      \lam he n => ((ExclOFE A).ofe_equiv_dist e1 e2).1 he n,
+      \lam h => ((ExclOFE A).ofe_equiv_dist e1 e2).2 h
     )
-    | just _, nothing => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | just _ => \Sigma | nothing => Empty }) eq) (), \lam h => \case h 0)
-    | nothing, just _ => (\lam eq _ => transport (\lam T => T) (pmap (\case \elim __ \with { | just _ => Empty | nothing => \Sigma }) eq) (), \lam h => \case h 0)
+    | just _, nothing => (\lam e => \case e \with {}, \lam h => \case h 0)
+    | nothing, just _ => (\lam e => \case e \with {}, \lam h => \case h 0)
   }
   | ofe_dist_refl => \lam n me => \case \elim me \with {
     | nothing => ()

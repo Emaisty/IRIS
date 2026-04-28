@@ -9,6 +9,31 @@
 \import cmra
 \import ofe
 
+-- =================================================================================
+-- Option CMRA
+-- =================================================================================
+
+\func option_op {A : CMRA} (o1 o2 : Maybe A.E) : Maybe A.E \elim o1, o2
+  | just a1, just a2 => just (A.op a1 a2)
+  | just a1, nothing => just a1
+  | nothing, just a2 => just a2
+  | nothing, nothing => nothing
+
+\func option_pcore {A : CMRA} (o : Maybe A.E) : Maybe (Maybe A.E) \elim o
+  | nothing  => just nothing
+  | just a   => just (pcore {A} a)
+
+\func option_valid {A : CMRA} (o : Maybe A.E) : \Prop \elim o
+  | nothing => \Sigma
+  | just a  => valid {A} a
+
+\func option_validN {A : CMRA} (n : Nat) (o : Maybe A.E) : \Prop \elim o
+  | nothing => \Sigma
+  | just a  => validN {A} n a
+
+-- =================================================================================
+-- Gmap as a total function
+-- =================================================================================
 
 \func Gmap (K : \Set) (A : \Set) => K -> Maybe A
 
@@ -17,101 +42,317 @@
 \func gmap_empty {K A : \Set} : Gmap K A => \lam _ => nothing
 
 \func gmap_op {K : \Set} {A : CMRA} (m1 m2 : Gmap K A.E) : Gmap K A.E =>
-  \lam k => \case m1 k, m2 k \with {
-    | just a1, just a2 => just (A.op a1 a2)
-    | just a1, nothing => just a1
-    | nothing, just a2 => just a2
-    | nothing, nothing => nothing
+  \lam k => option_op {A} (m1 k) (m2 k)
+
+\func gmap_pcore_fun {K : \Set} {A : CMRA} (m : Gmap K A.E) : Gmap K A.E =>
+  \lam k => \case option_pcore {A} (m k) \with {
+    | just o => o
+    | nothing => nothing -- unreachable, kept for totality
   }
 
-\func gmap_pcore {K : \Set} {A : CMRA} (m : Gmap K A.E) : Gmap K A.E =>
-  \lam k => \case m k \with {
-    | just a => pcore {A} a
-    | nothing => nothing
-  }
+\func gmap_pcore {K : \Set} {A : CMRA} (m : Gmap K A.E) : Maybe (Gmap K A.E) =>
+  just (gmap_pcore_fun m)
 
+-- =================================================================================
+-- OFE structure on Gmap
+-- =================================================================================
 
 \func GmapOFE (K : \Set) (A : OFE) : OFE \cowith
   | E => Gmap K A.E
   | dist => \lam n m1 m2 => \Pi (i : K) -> (OptionOFE A).dist n (m1 i) (m2 i)
+  | equiv => \lam m1 m2 => \Pi (i : K) -> (OptionOFE A).equiv (m1 i) (m2 i)
+  | equiv_refl => \lam m i => (OptionOFE A).equiv_refl (m i)
+  | equiv_sym  => \lam m1 m2 h i => (OptionOFE A).equiv_sym (m1 i) (m2 i) (h i)
+  | equiv_trans => \lam m1 m2 m3 h1 h2 i =>
+          (OptionOFE A).equiv_trans (m1 i) (m2 i) (m3 i) (h1 i) (h2 i)
   | ofe_equiv_dist => \lam m1 m2 => (
-    \lam eq n i => equiv_dist_n {OptionOFE A} (m1 i) (m2 i) (pmap (\lam m => m i) eq) n,
-    \lam h => path (\lam j i => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).2 (\lam n => h n i) @ j)
+    \lam he n i => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).1 (he i) n,
+    \lam h  i   => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).2 (\lam n => h n i)
   )
-  | ofe_dist_refl => \lam n m i => (OptionOFE A).ofe_dist_refl n (m i)
-  | ofe_dist_sym => \lam n m1 m2 h i => (OptionOFE A).ofe_dist_sym n (m1 i) (m2 i) (h i)
+  | ofe_dist_refl  => \lam n m i => (OptionOFE A).ofe_dist_refl n (m i)
+  | ofe_dist_sym   => \lam n m1 m2 h i => (OptionOFE A).ofe_dist_sym n (m1 i) (m2 i) (h i)
   | ofe_dist_trans => \lam n m1 m2 m3 h1 h2 i =>
           (OptionOFE A).ofe_dist_trans n (m1 i) (m2 i) (m3 i) (h1 i) (h2 i)
-  | ofe_dist_le => \lam n m' m1 m2 h le i => (OptionOFE A).ofe_dist_le n m' (m1 i) (m2 i) (h i) le
+  | ofe_dist_le    => \lam n m' m1 m2 h le i =>
+          (OptionOFE A).ofe_dist_le n m' (m1 i) (m2 i) (h i) le
 
+-- =================================================================================
+-- Validity
+-- =================================================================================
 
 \func GmapValidN {K : \Set} {A : CMRA} (n : Nat) (m : Gmap K A.E) : \Prop =>
-  \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => validN {A} n a }
+  \Pi (i : K) -> option_validN {A} n (m i)
 
 \func GmapValid {K : \Set} {A : CMRA} (m : Gmap K A.E) : \Prop =>
-  \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => valid {A} a }
+  \Pi (i : K) -> option_valid {A} (m i)
 
+-- =================================================================================
+-- Pointwise lemmas about option_op
+-- =================================================================================
+
+\lemma option_op_ne {A : CMRA} (n : Nat) (o : Maybe A.E) (o1 o2 : Maybe A.E)
+                    (h : (OptionOFE A).dist n o1 o2)
+  : (OptionOFE A).dist n (option_op {A} o o1) (option_op {A} o o2)
+  => \case \elim o, \elim o1, \elim o2, h \with {
+    | nothing,  nothing,  nothing,  _ => ()
+    | nothing,  just a1, just a2, h  => h
+    | just a,   nothing,  nothing,  _ => A.ofe_dist_refl n a
+    | just a,   just a1, just a2, h  => A.cmra_op_ne a n a1 a2 h
+    | nothing,  nothing,  just _,   e => \case e \with {}
+    | nothing,  just _,   nothing,  e => \case e \with {}
+    | just _,   nothing,  just _,   e => \case e \with {}
+    | just _,   just _,   nothing,  e => \case e \with {}
+  }
+
+\lemma option_op_ne_2 {A : CMRA} (n : Nat) (o : Maybe A.E) (o1 o2 : Maybe A.E)
+                      (h : (OptionOFE A).dist n o1 o2)
+  : (OptionOFE A).dist n (option_op {A} o1 o) (option_op {A} o2 o)
+  => \case \elim o, \elim o1, \elim o2, h \with {
+    | nothing,  nothing,  nothing,  _ => ()
+    | just a,   nothing,  nothing,  _ => A.ofe_dist_refl n a
+    | nothing,  just a1, just a2, h  => h
+    | just a,   just a1, just a2, h  => A.cmra_op_ne_2 a n a1 a2 h
+    | nothing,  nothing,  just _,   e => \case e \with {}
+    | nothing,  just _,   nothing,  e => \case e \with {}
+    | just _,   nothing,  just _,   e => \case e \with {}
+    | just _,   just _,   nothing,  e => \case e \with {}
+  }
+
+\lemma option_op_assoc {A : CMRA} (o1 o2 o3 : Maybe A.E)
+  : option_op {A} o1 (option_op {A} o2 o3) = option_op {A} (option_op {A} o1 o2) o3
+  => \case \elim o1, \elim o2, \elim o3 \with {
+    | nothing,  nothing,  nothing  => idp
+    | nothing,  nothing,  just _   => idp
+    | nothing,  just _,   nothing  => idp
+    | nothing,  just _,   just _   => idp
+    | just _,   nothing,  nothing  => idp
+    | just _,   nothing,  just _   => idp
+    | just _,   just _,   nothing  => idp
+    | just a1, just a2, just a3 => pmap just (A.cmra_assoc a1 a2 a3)
+  }
+
+\lemma option_op_comm {A : CMRA} (o1 o2 : Maybe A.E)
+  : option_op {A} o1 o2 = option_op {A} o2 o1
+  => \case \elim o1, \elim o2 \with {
+    | nothing,  nothing  => idp
+    | nothing,  just _   => idp
+    | just _,   nothing  => idp
+    | just a1, just a2 => pmap just (A.cmra_comm a1 a2)
+  }
+
+\lemma option_validN_op_l {A : CMRA} (n : Nat) (o1 o2 : Maybe A.E)
+                          (h : option_validN {A} n (option_op {A} o1 o2))
+  : option_validN {A} n o1
+  => \case \elim o1, \elim o2, h \with {
+    | nothing,  _,         _ => ()
+    | just a1, nothing,    h => h
+    | just a1, just a2, h => A.cmra_validN_op_l n a1 a2 h
+  }
+
+\lemma option_validN_ne {A : CMRA} (n : Nat) (o1 o2 : Maybe A.E)
+                        (h : (OptionOFE A).dist n o1 o2)
+                        (hv : option_validN {A} n o1)
+  : option_validN {A} n o2
+  => \case \elim o1, \elim o2, h, hv \with {
+    | nothing,  nothing,  _, _   => ()
+    | just a1, just a2, h, hv => A.cmra_validN_ne n a1 a2 h hv
+    | nothing,  just _,   e, _   => \case e \with {}
+    | just _,   nothing,  e, _   => \case e \with {}
+  }
+
+\lemma option_validN_le {A : CMRA} (n m : Nat) (o : Maybe A.E)
+                        (hv : option_validN {A} n o) (le : m <= n)
+  : option_validN {A} m o
+  => \case \elim o, hv \with {
+    | nothing, _  => ()
+    | just a,  hv => A.cmra_validN_le n m a hv le
+  }
+
+\lemma option_pcore_l {A : CMRA} (o co : Maybe A.E)
+                      (h : option_pcore {A} o = just co)
+  : option_op {A} co o = o
+  => \case \elim o, \elim co, h \with {
+    | nothing,  nothing,  _ => idp
+    | nothing,  just _,   p => \case pmap (\case __ \with { | just c => c | nothing => nothing }) p
+    \with {}
+    | just a,   _,        p =>
+      \let q : pcore {A} a = co =>
+        pmap (\case __ \with { | just c => c | nothing => nothing }) p
+      \in \case \elim co, \elim q \with {
+        | nothing, q  =>
+          idp
+        | just ca, q  =>
+          pmap just (A.cmra_pcore_l a ca q)
+      }
+  }
+  \where {
+    -- Helper to extract the inner value from a `just`.
+    \func unjust {X : \Type} (def : X) (m : Maybe X) : X \elim m
+      | nothing => def
+      | just x  => x
+  }
+
+-- =================================================================================
+-- The Gmap CMRA instance
+-- =================================================================================
 
 \func GmapCMRA (K : \Set) (A : CMRA) : CMRA \cowith
-  | OFE => GmapOFE K A
-  | pcore => \lam m => just (gmap_pcore m)
-  | op => gmap_op
-  | valid => \lam m => \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => valid {A} a }
-  | validN => \lam n m => \Pi (i : K) -> \case m i \with { | nothing => \Sigma | just a => validN {A} n a }
+  | OFE     => GmapOFE K A
+  | pcore   => gmap_pcore
+  | op      => gmap_op
+  | valid   => GmapValid {K} {A}
+  | validN  => GmapValidN {K} {A}
 
-  | cmra_op_ne => \lam m n m1 m2 hm i => {?}
-  | cmra_op_ne_2 => \lam m n m1 m2 hm i => {?}
-  | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm => {?}
+  | cmra_op_ne   => \lam m n m1 m2 hm i =>
+      option_op_ne {A} n (m i) (m1 i) (m2 i) (hm i)
+  | cmra_op_ne_2 => \lam m n m1 m2 hm i =>
+      option_op_ne_2 {A} n (m i) (m1 i) (m2 i) (hm i)
+
+  | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm =>
+      \let cm_eq : cm = gmap_pcore_fun m1 =>
+        inv (pmap (\case __ \with { | just x => x | nothing => cm }) hpcm)
+      \in (gmap_pcore_fun m2, idp,
+           \lam i =>
+               transport (\lam c => (OptionOFE A).dist n (c i) (gmap_pcore_fun m2 i))
+                   (inv cm_eq)
+                   (gmap_pcore_pointwise_ne {K} {A} n m1 m2 hm i))
+
   | cmra_validN_ne => \lam n m1 m2 hm hv i =>
-      \case m1 i \as m1i, m2 i \as m2i,
-            hm i : (OptionOFE A).dist n m1i m2i,
-            hv i : \case m1i \with { | nothing => \Sigma | just a => A.validN n a }
-      \return \case m2i \with { | nothing => \Sigma | just a => A.validN n a } \with {
-        | nothing, nothing, _, _ => ()
-        | just a1, just a2, hdist, hv1 => A.cmra_validN_ne n a1 a2 hdist hv1
-        | nothing, just _, hdist, _ => \case hdist \with {}
-        | just _, nothing, hdist, _ => \case hdist \with {}
-      }
-  | cmra_valid_validN => \lam m => {?}
-  | cmra_validN_le => \lam n m' x hvn hle i => {?}
-  | cmra_assoc => \lam x y z => {?}
-  | cmra_comm => \lam x y => {?}
-  | cmra_pcore_l => \lam x cx hpx => {?}
-  | cmra_pcore_idemp => \lam x cx hpx => {?}
-  | cmra_pcore_mono => \lam x y cx hincl hpx => {?}
-  | cmra_validN_op_l => \lam n x y hv i =>
-      \case x i \as xi, y i \as yi,
-            hv i : \case (\case xi, yi \with {
-              | just a1, just a2 => just (A.op a1 a2)
-              | just a1, nothing  => just a1
-              | nothing, just a2  => just a2
-              | nothing, nothing  => nothing
-            } : Maybe A.E) \return \Prop \with {
-              | nothing => \Sigma
-              | just a  => A.validN n a
-            }
-      \return \case xi \with { | nothing => \Sigma | just a => A.validN n a } \with {
-        | just a1, just a2, hvi => A.cmra_validN_op_l n a1 a2 hvi
-        | just a1, nothing,  hvi => hvi
-        | nothing, just _,   _   => ()
-        | nothing, nothing,  _   => ()
-      }
-  | cmra_extend => \lam n x y1 y2 hvx hdist => {?}
+      option_validN_ne {A} n (m1 i) (m2 i) (hm i) (hv i)
 
+  | cmra_valid_validN => \lam m => (
+    \lam hv n i => \case \elim m, m i \as mi, hv i : option_valid {A} mi
+    \return option_validN {A} n mi \with {
+      | _, nothing, _  => ()
+      | _, just a,  hv => (A.cmra_valid_validN a).1 hv n
+    },
+    \lam hvn i => \case m i \as mi, \lam n => hvn n i : \Pi (n : Nat) -> option_validN {A} n mi
+    \return option_valid {A} mi \with {
+      | nothing, _ => ()
+      | just a, h  => (A.cmra_valid_validN a).2 h
+    }
+  )
+
+  | cmra_validN_le => \lam n m' x hvn hle i =>
+      option_validN_le {A} n m' (x i) (hvn i) hle
+
+  | cmra_assoc => \lam x y z =>
+      path (\lam i k => option_op_assoc {A} (x k) (y k) (z k) @ i)
+
+  | cmra_comm => \lam x y =>
+      path (\lam i k => option_op_comm {A} (x k) (y k) @ i)
+
+  | cmra_pcore_l => \lam x cx hpx =>
+      \let cx_eq : cx = gmap_pcore_fun x =>
+        inv (pmap (\case __ \with { | just c => c | nothing => cx }) hpx)
+      \in path (\lam i k =>
+          transport (\lam c => option_op {A} (c k) (x k) = x k)
+              (inv cx_eq)
+              (option_pcore_l {A} (x k) (gmap_pcore_fun x k)
+                  (gmap_pcore_fun_lookup_eq {K} {A} x k))
+            @ i)
+
+  | cmra_pcore_idemp => \lam x cx hpx =>
+      \let cx_eq : cx = gmap_pcore_fun x =>
+        inv (pmap (\case __ \with { | just c => c | nothing => cx }) hpx)
+      \in transport (\lam c => gmap_pcore c = just c) (inv cx_eq)
+          (path (\lam i => just (path (\lam j k =>
+              gmap_pcore_fun_idemp {K} {A} x k @ j) @ i)))
+
+  | cmra_pcore_mono => \lam x y cx hincl hpx =>
+      (gmap_pcore_fun y, idp,
+       gmap_pcore_mono_proof {K} {A} x y cx hincl hpx)
+
+  | cmra_validN_op_l => \lam n x y hv i =>
+      option_validN_op_l {A} n (x i) (y i) (hv i)
+
+  | cmra_extend => \lam n x y1 y2 hvx hdist =>
+      gmap_extend_proof {K} {A} n x y1 y2 hvx hdist
+  \where {
+    -- pointwise non-expansiveness of option_pcore (a definitional case analysis)
+    \func gmap_pcore_pointwise_ne {K : \Set} {A : CMRA}
+                                  (n : Nat) (m1 m2 : Gmap K A.E)
+                                  (hm : \Pi (i : K) -> (OptionOFE A).dist n (m1 i) (m2 i))
+                                  (i : K)
+      : (OptionOFE A).dist n (gmap_pcore_fun m1 i) (gmap_pcore_fun m2 i)
+      => \case m1 i \as o1, m2 i \as o2, hm i : (OptionOFE A).dist n o1 o2
+      \return (OptionOFE A).dist n
+          (\case option_pcore {A} o1 \with { | just o => o | nothing => nothing })
+          (\case option_pcore {A} o2 \with { | just o => o | nothing => nothing })
+      \with {
+        | nothing,  nothing,  _ => ()
+        | just a1, just a2, h =>
+          \case pcore {A} a1 \as p1, pcore {A} a2 \as p2,
+                A.cmra_pcore_ne_dist n a1 a2 h p1 p2
+          \return (OptionOFE A).dist n p1 p2
+          \with { | _, _, r => r }
+        | nothing, just _, e => \case e \with {}
+        | just _, nothing, e => \case e \with {}
+      }
+
+    \func gmap_pcore_fun_lookup_eq {K : \Set} {A : CMRA}
+                                   (m : Gmap K A.E) (k : K)
+      : option_pcore {A} (m k) = just (gmap_pcore_fun m k)
+      => \case m k \as o \return option_pcore {A} o = just (
+        \case option_pcore {A} o \with { | just x => x | nothing => nothing }) \with {
+        | nothing => idp
+        | just _  => idp
+      }
+
+    \func gmap_pcore_fun_idemp {K : \Set} {A : CMRA}
+                               (m : Gmap K A.E) (k : K)
+      : gmap_pcore_fun (gmap_pcore_fun m) k = gmap_pcore_fun m k
+      => \case m k \as o \return
+      (\case option_pcore {A} (\case option_pcore {A} o \with {
+        | just x => x | nothing => nothing }) \with {
+        | just y => y | nothing => nothing })
+        = (\case option_pcore {A} o \with {
+        | just x => x | nothing => nothing })
+      \with {
+        | nothing => idp
+        | just a  =>
+          \case pcore {A} a \as p,
+                idp : pcore {A} a = p
+          \return
+          (\case option_pcore {A} p \with { | just y => y | nothing => nothing })
+            = (\case option_pcore {A} (just a) \with { | just x => x | nothing => nothing })
+          \with {
+            | nothing,  _ => idp
+            | just ca,  q => pmap (\lam x => \case x \with { | just y => y | nothing => nothing })
+                (pmap (option_pcore {A}) (inv q)) *>
+            pmap just (A.cmra_pcore_idemp a ca q)
+          }
+      }
+
+    \func gmap_pcore_mono_proof {K : \Set} {A : CMRA}
+                                (x y : Gmap K A.E) (cx : Gmap K A.E)
+                                (hincl : incl {Gmap K A.E} {\new BaseSet (Gmap K A.E)} {\new Op (Gmap K A.E) { | op => gmap_op }} x y)
+                                (hpx : gmap_pcore x = just cx)
+      : incl {Gmap K A.E} {\new BaseSet (Gmap K A.E)} {\new Op (Gmap K A.E) { | op => gmap_op }}
+        cx (gmap_pcore_fun y)
+      => {?}
+
+    \func gmap_extend_proof {K : \Set} {A : CMRA}
+                            (n : Nat) (x y1 y2 : Gmap K A.E)
+                            (hvx : GmapValidN {K} {A} n x)
+                            (hdist : \Pi (i : K) -> (OptionOFE A).dist n (x i) (option_op {A} (y1 i) (y2 i)))
+      : \Sigma (z1 z2 : Gmap K A.E) (x = gmap_op z1 z2)
+               ((GmapOFE K A).dist n z1 y1) ((GmapOFE K A).dist n z2 y2)
+      => {?}
+  }
+
+-- =================================================================================
+-- The Gmap UCMRA instance
+-- =================================================================================
 
 \func GmapUCMRA (K : \Set) (A : UCMRA) : UCMRA \cowith
   | CMRA => GmapCMRA K A
   | unit => gmap_empty
   | ucmra_unit_valid => \lam i => ()
-  | ucmra_unit_left_id => \lam m => path (\lam i k =>
-      (\case m k \as mk \return
-      (\case (nothing : Maybe A.E), mk \with {
-        | just a1, just a2 => just (A.op a1 a2)
-        | just a1, nothing => just a1
-        | nothing, just a2 => just a2
-        | nothing, nothing => nothing
-      }) = mk \with {
-        | nothing => idp
-        | just a => idp
-      }) @ i)
+  | ucmra_unit_left_id => \lam m =>
+      path (\lam i k =>
+          (\case m k \as mk \return option_op {A} (nothing : Maybe A.E) mk = mk \with {
+            | nothing => idp
+            | just _  => idp
+          }) @ i)
   | ucmra_pcore_unit => idp

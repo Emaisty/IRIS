@@ -89,59 +89,48 @@
     (mkProperSep (pointsTo l v dec) (pointsTo l v dec))
     (mkProperPure Empty)
   => \lam n a hv hsep =>
-      \case hsep \with {
-        | inP (a1, a2, dist_a_a1a2, hpt1, hpt2) =>
-          \case hpt1, hpt2 \with {
-            | inP (z1, dist_a1_fz1), inP (z2, dist_a2_fz2) =>
-              \let
-                | M    => HeapCMRA Loc Val
-                | frag => heap_frag l v dec
-                | sing => gmap_singleton l (just (excl v)) dec
-                | eq_a  : a  = M.op a1 a2   =>
-                  (M.ofe_equiv_dist a (M.op a1 a2)).2
-                      (\lam k => M.ofe_dist_le n k a (M.op a1 a2) dist_a_a1a2 zero<=_)
-                | eq_a1 : a1 = M.op frag z1 =>
-                  (M.ofe_equiv_dist a1 (M.op frag z1)).2
-                      (\lam k => M.ofe_dist_le n k a1 (M.op frag z1) dist_a1_fz1 zero<=_)
-                | eq_a2 : a2 = M.op frag z2 =>
-                  (M.ofe_equiv_dist a2 (M.op frag z2)).2
-                      (\lam k => M.ofe_dist_le n k a2 (M.op frag z2) dist_a2_fz2 zero<=_)
-                | hv_ops : M.validN n (M.op (M.op frag z1) (M.op frag z2)) =>
-                  transport (M.validN n) (pmap2 M.op eq_a1 eq_a2)
-                      (transport (M.validN n) eq_a hv)
-                | eq_rg : M.op (M.op frag z1) (M.op frag z2) =
-                M.op (M.op frag frag) (M.op z1 z2) =>
-                  inv (M.cmra_assoc frag z1 (M.op frag z2))
-                    *> pmap (M.op frag) (inv (M.cmra_assoc z1 frag z2)
-                    *> pmap (\lam w => M.op w z2) (M.cmra_comm z1 frag)
-                         *> M.cmra_assoc frag z1 z2)
-                         *> M.cmra_assoc frag frag (M.op z1 z2)
-                | hv_ff : GmapValidN {Loc} {ExclUCMRA (DiscreteOFE Val)} n
-                    (gmap_op sing sing) =>
-                      (GmapCMRA Loc (ExclUCMRA (DiscreteOFE Val))).cmra_validN_op_l
-                      n (gmap_op sing sing) (M.op z1 z2).2
-                      (transport (M.validN n) eq_rg hv_ops)
-                | sing_l : sing l = just (just (excl v)) =>
-                  \let d => dec l l
-                  \in \case d \as d' \return
-                  (\case d' \with {
-                    | yes _ => just (just (excl v : Excl Val))
-                    | no _  => nothing
-                  }) = just (just (excl v)) \with {
-                    | yes _  => idp
-                    | no  hn => absurd (hn idp)
-                  }
-                | gop_l : gmap_op {Loc} {ExclUCMRA (DiscreteOFE Val)} sing sing l =
-                just (just exclInvalid) =>
-                  rewrite sing_l idp
-              \in transport
-                  (\lam x => \case x \with {
-                    | nothing => \Sigma
-                    | just e  => exclU_validN n e
-                  })
-                  gop_l
-                  (hv_ff l)
-          }
+      \let
+        | M    : UCMRA => HeapCMRA Loc Val
+        | frag : M.E   => heap_frag l v dec
+      \in \case hsep \with {
+        | inP (a1, a2, dist_a, hpt1, hpt2) => \case hpt1, hpt2 \with {
+          | inP (z1, dist_a1), inP (z2, dist_a2) =>
+            \let
+              | dist_op : M.dist n a (M.op (M.op frag z1) (M.op frag z2)) =>
+                M.ofe_dist_trans n a (M.op a1 a2)
+                    (M.op (M.op frag z1) (M.op frag z2)) dist_a
+                    (cmra_op_ne_both {M} n a1 (M.op frag z1) a2 (M.op frag z2)
+                        dist_a1 dist_a2)
+              | hv_full : M.validN n (M.op (M.op frag z1) (M.op frag z2)) =>
+                M.cmra_validN_ne n a (M.op (M.op frag z1) (M.op frag z2)) dist_op hv
+              | eq_rearrange : M.op (M.op frag z1) (M.op frag z2) =
+              M.op (M.op frag frag) (M.op z1 z2) =>
+                inv (M.cmra_assoc frag z1 (M.op frag z2)) *>
+                pmap (M.op frag) (
+                  M.cmra_assoc z1 frag z2 *>
+                  pmap (\lam w => M.op w z2) (M.cmra_comm z1 frag) *>
+                  inv (M.cmra_assoc frag z1 z2)
+                ) *>
+                M.cmra_assoc frag frag (M.op z1 z2)
+              | hv_ffz : M.validN n (M.op (M.op frag frag) (M.op z1 z2)) =>
+                transport (M.validN n) eq_rearrange hv_full
+              | hv_ff : M.validN n (M.op frag frag) =>
+                M.cmra_validN_op_l n (M.op frag frag) (M.op z1 z2) hv_ffz
+            \in \case decide {dec l l} \as d \return
+            option_validN {ExclUCMRA (DiscreteOFE Val)} n
+                (option_op {ExclUCMRA (DiscreteOFE Val)}
+                    (\case d \with {
+                      | yes _ => just (just (excl v))
+                      | no  _ => nothing
+                    })
+                    (\case d \with {
+                      | yes _ => just (just (excl v))
+                      | no  _ => nothing
+                    })) -> Empty \with {
+              | yes _ => \lam k => k
+              | no  k => \lam _ => k idp
+            } (hv_ff l)
+        }
       }
 
 \func heap_frame {Loc Val : \Set} {l : Loc} {v : Val}
