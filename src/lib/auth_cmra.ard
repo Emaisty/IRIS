@@ -17,72 +17,80 @@
 \func AuthElem (A : UCMRA) : \Set => \Sigma (Maybe A.E) A.E
 
 
-\func AuthOFE (A : UCMRA) : OFE \cowith
+\instance AuthOFE (A : UCMRA) : OFE \cowith
   | E => AuthElem A
   | dist => \lam n x y => \case x, y \with {
     | (just a1, b1), (just a2, b2) => \Sigma (A.dist n a1 a2) (A.dist n b1 b2)
     | (nothing, b1), (nothing, b2) => A.dist n b1 b2
     | _, _ => Empty
   }
+  | equiv => \lam x y => \case x, y \with {
+    | (just a1, b1), (just a2, b2) => \Sigma (A.equiv a1 a2) (A.equiv b1 b2)
+    | (nothing, b1), (nothing, b2) => A.equiv b1 b2
+    | _, _ => Empty
+  }
+  | equiv_refl => \lam x => \case \elim x \with {
+    | (just a, b)  => (A.equiv_refl a, A.equiv_refl b)
+    | (nothing, b) => A.equiv_refl b
+  }
+  | equiv_sym => \lam x y => \case \elim x, \elim y \with {
+    | (just a1, b1), (just a2, b2) => \lam h => (A.equiv_sym a1 a2 h.1, A.equiv_sym b1 b2 h.2)
+    | (nothing, b1), (nothing, b2) => \lam h => A.equiv_sym b1 b2 h
+    | (just _, _),   (nothing, _)  => \lam e => \case e \with {}
+    | (nothing, _),  (just _, _)   => \lam e => \case e \with {}
+  }
+  | equiv_trans => \lam x y z => \case \elim x, \elim y, \elim z \with {
+    | (just a1, b1), (just a2, b2), (just a3, b3) =>
+      \lam h1 h2 => (A.equiv_trans a1 a2 a3 h1.1 h2.1, A.equiv_trans b1 b2 b3 h1.2 h2.2)
+    | (nothing, b1), (nothing, b2), (nothing, b3) =>
+      \lam h1 h2 => A.equiv_trans b1 b2 b3 h1 h2
+    | (just _, _),   (just _, _),   (nothing, _)  => \lam _ e => \case e \with {}
+    | (just _, _),   (nothing, _),  _              => \lam e => \case e \with {}
+    | (nothing, _),  (just _, _),   _              => \lam e => \case e \with {}
+    | (nothing, _),  (nothing, _),  (just _, _)    => \lam _ e => \case e \with {}
+  }
   | ofe_equiv_dist => \lam x y => \case \elim x, \elim y \with {
     | (just a1, b1), (just a2, b2) => (
-      \lam eq n => (
-        (A.ofe_equiv_dist a1 a2).1 (pmap (\lam p => \case p \with {
-          | (just a, _) => a
-          | _ => a1
-        }) eq) n,
-        (A.ofe_equiv_dist b1 b2).1 (pmap (\lam p => p.2) eq) n
-      ),
-      \lam h => path (\lam i => (
-        pmap just ((A.ofe_equiv_dist a1 a2).2 (\lam n => (h n).1)) @ i,
-        (A.ofe_equiv_dist b1 b2).2 (\lam n => (h n).2) @ i
-      ))
+      \lam he n =>
+          ((A.ofe_equiv_dist a1 a2).1 he.1 n,
+           (A.ofe_equiv_dist b1 b2).1 he.2 n),
+      \lam h =>
+          ((A.ofe_equiv_dist a1 a2).2 (\lam n => (h n).1),
+           (A.ofe_equiv_dist b1 b2).2 (\lam n => (h n).2))
     )
     | (nothing, b1), (nothing, b2) => (
-      \lam eq => (A.ofe_equiv_dist b1 b2).1 (pmap (\lam p => p.2) eq),
-      \lam h => path (\lam i => (nothing, (A.ofe_equiv_dist b1 b2).2 h @ i))
+      \lam he n => (A.ofe_equiv_dist b1 b2).1 he n,
+      \lam h    => (A.ofe_equiv_dist b1 b2).2 h
     )
-    | (just _, _), (nothing, _) => (
-      \lam eq _ => transport (\lam T => T) (pmap (\lam p => \case p \with {
-        | (just _, _) => \Sigma
-        | _ => Empty
-      }) eq) (),
-      \lam h => \case h 0
-    )
-    | (nothing, _), (just _, _) => (
-      \lam eq _ => transport (\lam T => T) (pmap (\lam p => \case p \with {
-        | (nothing, _) => \Sigma
-        | _ => Empty
-      }) eq) (),
-      \lam h => \case h 0
-    )
+    | (just _, _),  (nothing, _) => (\lam e => \case e \with {}, \lam h => \case h 0)
+    | (nothing, _), (just _, _)  => (\lam e => \case e \with {}, \lam h => \case h 0)
   }
   | ofe_dist_refl => \lam n x => \case \elim x \with {
-    | (just a, b) => (A.ofe_dist_refl n a, A.ofe_dist_refl n b)
+    | (just a, b)  => (A.ofe_dist_refl n a, A.ofe_dist_refl n b)
     | (nothing, b) => A.ofe_dist_refl n b
   }
   | ofe_dist_sym => \lam n x y => \case \elim x, \elim y \with {
     | (just a1, b1), (just a2, b2) => \lam h => (A.ofe_dist_sym n a1 a2 h.1, A.ofe_dist_sym n b1 b2 h.2)
     | (nothing, b1), (nothing, b2) => \lam h => A.ofe_dist_sym n b1 b2 h
-    | (just _, _), (nothing, _) => \lam e => \case e \with {}
-    | (nothing, _), (just _, _) => \lam e => \case e \with {}
+    | (just _, _),   (nothing, _)  => \lam e => \case e \with {}
+    | (nothing, _),  (just _, _)   => \lam e => \case e \with {}
   }
   | ofe_dist_trans => \lam n x y z => \case \elim x, \elim y, \elim z \with {
     | (just a1, b1), (just a2, b2), (just a3, b3) => \lam h1 h2 => (
-        A.ofe_dist_trans n a1 a2 a3 h1.1 h2.1,
-        A.ofe_dist_trans n b1 b2 b3 h1.2 h2.2
-      )
+      A.ofe_dist_trans n a1 a2 a3 h1.1 h2.1,
+      A.ofe_dist_trans n b1 b2 b3 h1.2 h2.2
+    )
     | (nothing, b1), (nothing, b2), (nothing, b3) => \lam h1 h2 => A.ofe_dist_trans n b1 b2 b3 h1 h2
     | (just _, _), (just _, _), (nothing, _) => \lam _ e => \case e \with {}
-    | (just _, _), (nothing, _), _ => \lam e => \case e \with {}
-    | (nothing, _), (just _, _), _ => \lam e => \case e \with {}
+    | (just _, _), (nothing, _), _           => \lam e => \case e \with {}
+    | (nothing, _), (just _, _), _           => \lam e => \case e \with {}
     | (nothing, _), (nothing, _), (just _, _) => \lam _ e => \case e \with {}
   }
   | ofe_dist_le => \lam n m x y => \case \elim x, \elim y \with {
     | (just a1, b1), (just a2, b2) => \lam h le => (A.ofe_dist_le n m a1 a2 h.1 le, A.ofe_dist_le n m b1 b2 h.2 le)
     | (nothing, b1), (nothing, b2) => \lam h le => A.ofe_dist_le n m b1 b2 h le
-    | (just _, _), (nothing, _) => \lam e => \case e \with {}
-    | (nothing, _), (just _, _) => \lam e => \case e \with {}
+    | (just _, _),   (nothing, _)  => \lam e => \case e \with {}
+    | (nothing, _),  (just _, _)   => \lam e => \case e \with {}
   }
 
 
@@ -135,27 +143,7 @@
     | (just _, _), (nothing, _), _, hx => \case hx \with {}
     | (nothing, _), (just _, _), _, hx => \case hx \with {}
   }
-  | cmra_pcore_ne => \lam n x y cx hxy hpx => \case \elim x, \elim y, hxy, hpx \with {
-    | (just a1, b1), (just a2, b2), (hda, hdb), hpx =>
-      \case pcore {A} a1 \as pca, idp : pcore {A} a1 = pca,
-            pcore {A} b1 \as pcb, idp : pcore {A} b1 = pcb, hpx \with {
-        | just ca, hca, just cb, hcb, idp =>
-          \let (ca2, hca2, hdca) => A.cmra_pcore_ne n a1 a2 ca hda hca
-               | (cb2, hcb2, hdcb) => A.cmra_pcore_ne n b1 b2 cb hdb hcb
-          \in ((just ca2, cb2), rewrite hca2 (rewrite hcb2 idp), (hdca, hdcb))
-        | just _, _, nothing, _, hpx => \case hpx \with {}
-        | nothing, _, _, _, hpx => \case hpx \with {}
-      }
-    | (nothing, b1), (nothing, b2), hdb, hpx =>
-      \case pcore {A} b1 \as pcb, idp : pcore {A} b1 = pcb, hpx \with {
-        | just cb, hcb, idp =>
-          \let (cb2, hcb2, hdcb) => A.cmra_pcore_ne n b1 b2 cb hdb hcb
-          \in ((nothing, cb2), rewrite hcb2 idp, hdcb)
-        | nothing, _, hpx => \case hpx \with {}
-      }
-    | (just _, _), (nothing, _), hxy, _ => \case hxy \with {}
-    | (nothing, _), (just _, _), hxy, _ => \case hxy \with {}
-  }
+  | cmra_pcore_ne => \lam n x y cx hxy hpx => {?}
   | cmra_validN_ne => \lam n x y hxy hvx => {?}
   | cmra_valid_validN => \lam x => {?}
   | cmra_validN_le => \lam n m x hvn hle => {?}

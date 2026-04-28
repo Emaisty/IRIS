@@ -66,9 +66,10 @@
   }
 
 \func mkProperImpl {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
-  | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) -> P.upred_holds m b -> Q.upred_holds m b
-  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b hp =>
-    h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b hp
+  | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) ->
+      M.validN m b -> P.upred_holds m b -> Q.upred_holds m b
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b hv hp =>
+      h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b hv hp
 
 \func mkProperForall {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (t : T) -> (Phi t).upred_holds n a
@@ -100,16 +101,18 @@
 
 
 \func mkProperWand {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
-  | upred_holds => \lam n a1 => \Pi (m : Nat) -> m <= n -> \Pi (a2 : M.E) -> P.upred_holds m a2 -> Q.upred_holds m (M.op a1 a2)
-  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 a2 hp =>
-    Q.upred_mono m m (M.op x1 a2) (M.op x2 a2)
-      (h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) a2 hp)
-      (inclN_op_r m x1 x2 a2 (inclN_le x1 x2 n2 m incl m_le_n2))
-      <=-refl
-
--- \func mkProperOwn {M : CMRA} (a : M.E) : ProperUPred M \cowith
---   | upred_holds => \lam n a' => \Sigma (M.dist n a a') (M.validN n a')
---   | upred_mono => {?}
+  | upred_holds => \lam n a1 => \Pi (m : Nat) -> m <= n -> \Pi (a2 : M.E) ->
+      M.validN m (M.op a1 a2) -> P.upred_holds m a2 -> Q.upred_holds m (M.op a1 a2)
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 a2 hv hp =>
+      \let
+        | inclN_x1x2 : inclN {M} {\new Op M.E { | op => M.op }} x1 m x2 =>
+          inclN_le x1 x2 n2 m incl m_le_n2
+        | hv_x1a2 : M.validN m (M.op x1 a2) =>
+          cmra_validN_includedN {M} m (M.op x1 a2) (M.op x2 a2) hv (inclN_op_r m x1 x2 a2 inclN_x1x2)
+      \in Q.upred_mono m m (M.op x1 a2) (M.op x2 a2)
+          (h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) a2 hv_x1a2 hp)
+          (inclN_op_r m x1 x2 a2 inclN_x1x2)
+          <=-refl
 
 
 \func mkProperLater {M : UCMRA} (P : ProperUPred M) : ProperUPred M \cowith
@@ -117,7 +120,14 @@
     | 0 => \Sigma
     | suc n' => P.upred_holds n' a
   }
-  | upred_mono => {?}
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case \elim n1, \elim n2, h, incl, n2_le_n1 \with {
+    | _, 0, _, _, _ => ()
+    | 0, suc n2', _, _, le => absurd (le NatOrder.zero<suc)
+    | suc n1', suc n2', h_p, incl', le =>
+      P.upred_mono n1' n2' x1 x2 h_p
+          (inclN_le x1 x2 (suc n2') n2' incl' (n<=sucn n2'))
+          (suc<=suc.conv le)
+  }
 
 \func mkProperPersistently {M : UCMRA} (P : ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) ->
@@ -149,14 +159,58 @@
 -- =================================================================================
 
 
+\lemma proper_forall_mono {M : UCMRA} {T : \Type} (Phi Psi : T -> ProperUPred M)
+                          (h : \Pi (t : T) -> properUPred_ent (Phi t) (Psi t))
+  : properUPred_ent (mkProperForall T Phi) (mkProperForall T Psi)
+  => \lam n a hv hPhi t => h t n a hv (hPhi t)
+
+\lemma proper_and_mono_r {M : UCMRA} (P Q Q' : ProperUPred M)
+                         (h : properUPred_ent Q Q') : properUPred_ent (mkProperAnd P Q) (mkProperAnd P Q')
+  => \lam n a hv hPQ => (hPQ.1, h n a hv hPQ.2)
+
+\lemma proper_later_mono {M : UCMRA} (P Q : ProperUPred M)
+                         (h : properUPred_ent P Q) : properUPred_ent (mkProperLater P) (mkProperLater Q)
+  => \lam n a hv hP => \case \elim n, hv, hP \with {
+    | 0, _, _ => ()
+    | suc n', hv', hP' => h n' a (M.cmra_validN_le (suc n') n' a hv' (n<=sucn n')) hP'
+  }
+
+\lemma proper_impl_mono_r {M : UCMRA} (P Q Q' : ProperUPred M)
+                          (h : properUPred_ent Q Q') : properUPred_ent (mkProperImpl P Q) (mkProperImpl P Q')
+  => \lam n a hv himpl m m_le_n b hv_b hp =>
+      h m b hv_b (himpl m m_le_n b hv_b hp)
+
+-- =================================================================================
+-- OFE and COFE for ProperUPred
+-- =================================================================================
+
+
 \func upredDist {M : UCMRA} (n : Nat) (P Q : ProperUPred M) : \Prop =>
   \Pi (m : Nat) (a : M.E) -> m <= n -> M.validN m a ->
-    \Sigma (P.upred_holds m a -> Q.upred_holds m a) (Q.upred_holds m a -> P.upred_holds m a)
+  \Sigma (P.upred_holds m a -> Q.upred_holds m a)
+         (Q.upred_holds m a -> P.upred_holds m a)
+
+\func upredEquiv {M : UCMRA} (P Q : ProperUPred M) : \Prop =>
+  \Pi (n : Nat) (a : M.E) -> M.validN n a ->
+  \Sigma (P.upred_holds n a -> Q.upred_holds n a)
+         (Q.upred_holds n a -> P.upred_holds n a)
 
 \func UPredOFE (M : UCMRA) : OFE \cowith
   | E => ProperUPred M
   | dist => upredDist
-  | ofe_equiv_dist => \lam P Q => {?}
+  | equiv => upredEquiv
+  | equiv_refl P n a _ => (\lam h => h, \lam h => h)
+  | equiv_sym P Q h n a hv =>
+    \let r => h n a hv \in (r.2, r.1)
+  | equiv_trans P Q R h1 h2 n a hv =>
+    \let pq => h1 n a hv | qr => h2 n a hv
+    \in (\lam hp => qr.1 (pq.1 hp), \lam hr => pq.2 (qr.2 hr))
+  | ofe_equiv_dist => \lam P Q => (
+  -- equiv P Q -> ∀ n, dist n P Q
+    \lam heq n m a hle hv => heq m a hv,
+  -- (∀ n, dist n P Q) -> equiv P Q
+    \lam hd n a hv => hd n n a <=-refl hv
+  )
   | ofe_dist_refl => \lam n P m a _ _ => (\lam h => h, \lam h => h)
   | ofe_dist_sym => \lam n P Q hPQ m a hle hv =>
       \let r => hPQ m a hle hv \in (r.2, r.1)
@@ -167,10 +221,32 @@
   | ofe_dist_le => \lam n k P Q h hle m a hm hv =>
       h m a (NatSemiring.<=∘ hm hle) hv
 
+
+\func upred_compl {M : UCMRA} (c : Nat -> ProperUPred M) (hc : Chain {UPredOFE M} c)
+  : ProperUPred M \cowith
+  | upred_holds => \lam n a =>
+      \Pi (n' : Nat) -> n' <= n -> M.validN n' a -> (c n').upred_holds n' a
+  | upred_mono => \lam n1 n2 x1 x2 h hincl le n' n'_le_n2 hv' =>
+          (c n').upred_mono n' n' x1 x2
+          (h n' (NatSemiring.<=∘ n'_le_n2 le)
+              (cmra_validN_includedN {M} n' x1 x2 hv'
+                  (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 n' hincl n'_le_n2)))
+          (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 n' hincl n'_le_n2)
+          <=-refl
+
+
 \func UPredCOFE (M : UCMRA) : COFE \cowith
   | OFE => UPredOFE M
-  | compl => {?}
-  | cofe_conv_compl => {?}
+  | compl => upred_compl
+  | cofe_conv_compl => \lam c hc n m a hle hv =>
+      ( \lam h => (hc.chain_cauchy m n hle m a <=-refl hv).2 (h m <=-refl hv)
+      , \lam h => \lam n' n'_le_m hv' =>
+          (hc.chain_cauchy n' n (NatSemiring.<=∘ n'_le_m hle) n' a <=-refl hv').1
+              ((c n).upred_mono m n' a a h
+                  (inP (M.unit, transport (\lam w => M.dist n' a w)
+                      (inv (ucmra_unit_right_id a)) (M.ofe_dist_refl n' a)))
+                  n'_le_m)
+      )
 
 
 

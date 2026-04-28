@@ -1,0 +1,39 @@
+\import interface
+\import lang
+\import uPred
+\import cmra
+\import weakestpre
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+
+-- =================================================================================
+-- Hoare triples
+--
+-- Rocq (iris/deprecated/program_logic/hoare.v):
+--
+--   Definition ht `{!irisGS Λ Σ} (s : stuckness) (E : coPset)
+--     (P : iProp Σ) (e : expr Λ) (Φ : val Λ → iProp Σ) : iProp Σ :=
+--     (□ (P -∗ WP e @ s; E {{ Φ }}))%I.
+--
+-- Differences from the Rocq version (intentional):
+--   * No `stuckness` parameter -- this project has a single (NotStuck) WP.
+--   * No mask `E : coPset`     -- there is no `fupd` yet (`fupd_impl.ard` is empty);
+--                                 only the basic update `bupd` from `BUpdNE`,
+--                                 which carries no mask.
+--   * No invariants / ghost theory / threads -- out of scope for this project.
+--
+-- The shape `□ (P -∗ WP e {{ Φ }})` is preserved exactly.
+-- We use `mkProperPersistently` / `mkProperWand` directly because `wp` returns a
+-- `ProperUPred (HeapCMRA Loc Value)` rather than a `BIMixin.E`. Once a `BIMixin`
+-- instance for `ProperUPred` is added, `ht` can be re-expressed as
+-- `persis (P -* wp bu e Phi)` using the connectives from `interface.ard`.
+-- =================================================================================
+
+\func ht
+  (bu  : BUpdNE)
+  (P   : ProperUPred (HeapCMRA Loc Value))
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc Value))
+  : ProperUPred (HeapCMRA Loc Value)
+  => mkProperPersistently (mkProperWand P (wp bu e Phi))

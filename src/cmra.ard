@@ -113,6 +113,16 @@
   validN {C} n (op {C} x y) -> validN {C} n y =>
   \lam h => cmra_validN_op_l {C} n y x (transport (validN {C} n) (cmra_comm {C} x y) h)
 
+
+\lemma cmra_validN_includedN {C : CMRA} (n : Nat) (x y : C.E)
+                             (hv : validN {C} n y)
+                             (h : inclN {C} {\new Op C.E { | op => C.op }} x n y)
+  : validN {C} n x => \case h \with {
+  | inP (z, dist_y_xz) =>
+    cmra_validN_op_l {C} n x z
+        (cmra_validN_ne {C} n y (op {C} x z) dist_y_xz hv)
+}
+
 \lemma cmra_pcore_r {C : CMRA} (x cx : C.E) :
   pcore {C} x = just cx -> op {C} x cx = x =>
   \lam h => transport (\lam z => z = x) (cmra_comm {C} cx x) (cmra_pcore_l {C} x cx h)

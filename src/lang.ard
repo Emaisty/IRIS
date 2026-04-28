@@ -51,7 +51,7 @@
     | inr _ => Var y
   }
   | Lam y body => \case decideEq x y \with {
-    | inl _ => Lam y body  -- x is shadowed
+    | inl _ => Lam y body
     | inr _ => Lam y (subst x v body)
   }
   | App e1 e2 => App (subst x v e1) (subst x v e2)
@@ -63,8 +63,6 @@
   | Load e => Load (subst x v e)
   | Store e1 e2 => Store (subst x v e1) (subst x v e2)
   \where {
-    -- Decidable equality on strings (placeholder)
-    -- In practice, String has decidable equality in Arend
     \func decideEq (x y : String) : (x = y) `Or` (Not (x = y)) => {?}
   }
 
