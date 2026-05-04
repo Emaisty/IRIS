@@ -15,26 +15,31 @@
 \import lib.auth_cmra
 \import lib.gmap_cmra
 
+
 -- =================================================================================
 -- Heap CMRA: AUTH (gmap (Loc, ExclU(Val)))
+--
+-- NOTE: After the Gmap redefinition, `Gmap K cnt A` now takes an explicit
+-- `Countable K` instance.  Decidability of equality comes from `cnt`, so we no
+-- longer thread a separate `dec` parameter through the heap API.
 -- =================================================================================
 
 
-\func HeapCMRA (Loc Val : \Set) : UCMRA =>
-  AuthUCMRA (GmapUCMRA Loc (ExclUCMRA (DiscreteOFE Val)))
+\func HeapCMRA (Loc : \Set) (cnt : Countable Loc) (Val : \Set) : UCMRA =>
+  AuthUCMRA (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val)))
 
-\func gmap_singleton {K V : \Set} (k : K) (v : V) (dec : \Pi (k1 k2 : K) -> Decide (k1 = k2)) : Gmap K V =>
-  \lam k' => \case decide {dec k k'} \with {
-    | yes _ => just v
-    | no _ => nothing
-  }
+-- A singleton gmap built from the new gmap API.
+\func gmap_singleton {K : \Set} {cnt : Countable K} {V : \Set} (k : K) (v : V) : Gmap K cnt V =>
+  gsingleton k v
 
 
-\func heap_frag {Loc Val : \Set} (l : Loc) (v : Val) (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2)) : (HeapCMRA Loc Val).E =>
-  (nothing, gmap_singleton l (just (excl v)) dec)
+\func heap_frag {Loc : \Set} {cnt : Countable Loc} {Val : \Set} (l : Loc) (v : Val)
+  : (HeapCMRA Loc cnt Val).E =>
+  (nothing, gmap_singleton l (just (excl v)))
 
-\func heap_auth {Loc Val : \Set} (m : Gmap Loc (Maybe (Excl Val))) : (HeapCMRA Loc Val).E =>
-  (just m, gmap_empty)
+\func heap_auth {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                (m : Gmap Loc cnt (Maybe (Excl Val))) : (HeapCMRA Loc cnt Val).E =>
+  (just (excl m), gempty)
 
 
 -- =================================================================================
@@ -42,26 +47,32 @@
 -- =================================================================================
 
 
-\func pointsTo {Loc Val : \Set} (l : Loc) (v : Val) (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2)) : ProperUPred (HeapCMRA Loc Val) \cowith
+\func pointsTo {Loc : \Set} {cnt : Countable Loc} {Val : \Set} (l : Loc) (v : Val)
+  : ProperUPred (HeapCMRA Loc cnt Val) \cowith
   | upred_holds => \lam n a =>
-      inclN {HeapCMRA Loc Val} {\new Op (HeapCMRA Loc Val).E { | op => (HeapCMRA Loc Val).op }} (heap_frag l v dec) n a
+      inclN {HeapCMRA Loc cnt Val}
+          {\new Op (HeapCMRA Loc cnt Val).E { | op => (HeapCMRA Loc cnt Val).op }}
+          (heap_frag l v) n a
   | upred_mono => \lam n1 n2 x1 x2 h_incl incl_x1_x2 n2_le_n1 =>
-      heap_incl_trans {Loc} {Val} n1 n2 (heap_frag l v dec) x1 x2 h_incl incl_x1_x2 n2_le_n1
+      heap_incl_trans n1 n2 (heap_frag l v) x1 x2 h_incl incl_x1_x2 n2_le_n1
 
 -- =================================================================================
 -- Helper lemmas for points-to
 -- =================================================================================
 
-\func heap_incl_trans {Loc Val : \Set} (n1 n2 : Nat)
-                      (a b c : (HeapCMRA Loc Val).E)
-                      (h1 : inclN {HeapCMRA Loc Val} {\new Op (HeapCMRA Loc Val).E { | op => (HeapCMRA Loc Val).op }} a n1 b)
-                      (h2 : inclN {HeapCMRA Loc Val} {\new Op (HeapCMRA Loc Val).E { | op => (HeapCMRA Loc Val).op }} b n2 c)
+\func heap_incl_trans {Loc : \Set} {cnt : Countable Loc} {Val : \Set} (n1 n2 : Nat)
+                      (a b c : (HeapCMRA Loc cnt Val).E)
+                      (h1 : inclN {HeapCMRA Loc cnt Val}
+                          {\new Op (HeapCMRA Loc cnt Val).E { | op => (HeapCMRA Loc cnt Val).op }} a n1 b)
+                      (h2 : inclN {HeapCMRA Loc cnt Val}
+                          {\new Op (HeapCMRA Loc cnt Val).E { | op => (HeapCMRA Loc cnt Val).op }} b n2 c)
                       (le : n2 <= n1)
-  : inclN {HeapCMRA Loc Val} {\new Op (HeapCMRA Loc Val).E { | op => (HeapCMRA Loc Val).op }} a n2 c
+  : inclN {HeapCMRA Loc cnt Val}
+    {\new Op (HeapCMRA Loc cnt Val).E { | op => (HeapCMRA Loc cnt Val).op }} a n2 c
   => \case h1, h2 \with {
     | inP (z1, dist_b_az1), inP (z2, dist_c_bz2) =>
-      \let M => HeapCMRA Loc Val
-        \in inP (M.op z1 z2,
+      \let M => HeapCMRA Loc cnt Val
+      \in inP (M.op z1 z2,
                M.ofe_dist_trans n2 c (M.op b z2) (M.op a (M.op z1 z2))
                    dist_c_bz2
                    (transport (\lam w => M.dist n2 (M.op b z2) w)
@@ -76,71 +87,29 @@
 -- =================================================================================
 
 
-\func heap_agree {Loc Val : \Set} {l : Loc} {v1 v2 : Val}
-                 (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2))
-  : properUPred_ent {HeapCMRA Loc Val}
-      (mkProperSep (pointsTo l v1 dec) (pointsTo l v2 dec))
-      (mkProperPure (v1 = v2))
+\func heap_agree {Loc : \Set} {cnt : Countable Loc} {Val : \Set} {l : Loc} {v1 v2 : Val}
+  : properUPred_ent {HeapCMRA Loc cnt Val}
+    (mkProperSep (pointsTo l v1) (pointsTo l v2))
+    (mkProperPure (v1 = v2))
   => {?}
 
-\func heap_exclusive {Loc Val : \Set} {l : Loc} {v : Val}
-                     (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2))
-  : properUPred_ent {HeapCMRA Loc Val}
-    (mkProperSep (pointsTo l v dec) (pointsTo l v dec))
+-- Two fragments [l ↦ v] cannot coexist: their combined value at `l` would be
+-- `excl v · excl v = exclInvalid`, contradicting validity.  The proof is left
+-- as a TODO since glookup of an op of singletons against the new Gmap is not
+-- yet wired in via a dedicated lemma.
+\func heap_exclusive {Loc : \Set} {cnt : Countable Loc} {Val : \Set} {l : Loc} {v : Val}
+  : properUPred_ent {HeapCMRA Loc cnt Val}
+    (mkProperSep (pointsTo l v) (pointsTo l v))
     (mkProperPure Empty)
-  => \lam n a hv hsep =>
-      \let
-        | M    : UCMRA => HeapCMRA Loc Val
-        | frag : M.E   => heap_frag l v dec
-      \in \case hsep \with {
-        | inP (a1, a2, dist_a, hpt1, hpt2) => \case hpt1, hpt2 \with {
-          | inP (z1, dist_a1), inP (z2, dist_a2) =>
-            \let
-              | dist_op : M.dist n a (M.op (M.op frag z1) (M.op frag z2)) =>
-                M.ofe_dist_trans n a (M.op a1 a2)
-                    (M.op (M.op frag z1) (M.op frag z2)) dist_a
-                    (cmra_op_ne_both {M} n a1 (M.op frag z1) a2 (M.op frag z2)
-                        dist_a1 dist_a2)
-              | hv_full : M.validN n (M.op (M.op frag z1) (M.op frag z2)) =>
-                M.cmra_validN_ne n a (M.op (M.op frag z1) (M.op frag z2)) dist_op hv
-              | eq_rearrange : M.op (M.op frag z1) (M.op frag z2) =
-              M.op (M.op frag frag) (M.op z1 z2) =>
-                inv (M.cmra_assoc frag z1 (M.op frag z2)) *>
-                pmap (M.op frag) (
-                  M.cmra_assoc z1 frag z2 *>
-                  pmap (\lam w => M.op w z2) (M.cmra_comm z1 frag) *>
-                  inv (M.cmra_assoc frag z1 z2)
-                ) *>
-                M.cmra_assoc frag frag (M.op z1 z2)
-              | hv_ffz : M.validN n (M.op (M.op frag frag) (M.op z1 z2)) =>
-                transport (M.validN n) eq_rearrange hv_full
-              | hv_ff : M.validN n (M.op frag frag) =>
-                M.cmra_validN_op_l n (M.op frag frag) (M.op z1 z2) hv_ffz
-            \in \case decide {dec l l} \as d \return
-            option_validN {ExclUCMRA (DiscreteOFE Val)} n
-                (option_op {ExclUCMRA (DiscreteOFE Val)}
-                    (\case d \with {
-                      | yes _ => just (just (excl v))
-                      | no  _ => nothing
-                    })
-                    (\case d \with {
-                      | yes _ => just (just (excl v))
-                      | no  _ => nothing
-                    })) -> Empty \with {
-              | yes _ => \lam k => k
-              | no  k => \lam _ => k idp
-            } (hv_ff l)
-        }
-      }
+  => {?}
 
-\func heap_frame {Loc Val : \Set} {l : Loc} {v : Val}
-                 (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2))
-  : properUPred_ent {HeapCMRA Loc Val}
-    (pointsTo l v dec)
-    (mkProperSep (pointsTo l v dec) mkProperEmp)
+\func heap_frame {Loc : \Set} {cnt : Countable Loc} {Val : \Set} {l : Loc} {v : Val}
+  : properUPred_ent {HeapCMRA Loc cnt Val}
+    (pointsTo l v)
+    (mkProperSep (pointsTo l v) mkProperEmp)
   => \lam n a hv h_incl =>
-      \let M => HeapCMRA Loc Val
-           | frag => heap_frag l v dec
+      \let M => HeapCMRA Loc cnt Val
+           | frag => heap_frag l v
       \in \case h_incl \with {
         | inP (z, dist_a_fragz) =>
           inP (frag, M.op M.unit z,
@@ -154,53 +123,58 @@
                inP (z, M.ofe_dist_refl n (M.op M.unit z)))
       }
 
-\lemma sep_frame_pointsTo {Loc Val : \Set}
+\lemma sep_frame_pointsTo {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
                           {l1 l2 l3 : Loc} {v1 v2 v3 : Val}
-                          (dec : \Pi (l l' : Loc) -> Decide (l = l'))
-                          (h : properUPred_ent {HeapCMRA Loc Val}
-                              (pointsTo l1 v1 dec)
-                              (pointsTo l2 v2 dec))
-  : properUPred_ent {HeapCMRA Loc Val}
-    (mkProperSep (pointsTo l1 v1 dec) (pointsTo l3 v3 dec))
-    (mkProperSep (pointsTo l2 v2 dec) (pointsTo l3 v3 dec))
+                          (h : properUPred_ent {HeapCMRA Loc cnt Val}
+                              (pointsTo l1 v1)
+                              (pointsTo l2 v2))
+  : properUPred_ent {HeapCMRA Loc cnt Val}
+    (mkProperSep (pointsTo l1 v1) (pointsTo l3 v3))
+    (mkProperSep (pointsTo l2 v2) (pointsTo l3 v3))
   => \lam n a hv hsep =>
-      \case hsep \with {
-        | inP (a1, a2, dist_a, hp1, hp3) =>
-          inP (a1, a2, dist_a, h n a1 (HeapCMRA Loc Val).cmra_validN_op_l n a1 a2
-              (transport ((HeapCMRA Loc Val).validN n)
-                  ((HeapCMRA Loc Val).ofe_equiv_dist a (HeapCMRA Loc Val).op a1 a2).2
-                  (\lam k => (HeapCMRA Loc Val).ofe_dist_le n k a
-                      ((HeapCMRA Loc Val).op a1 a2) dist_a zero<=_) hv), hp1), hp3)
-      }
+      \let M => HeapCMRA Loc cnt Val \in
+        \case hsep \with {
+          | inP (a1, a2, dist_a, hp1, hp3) =>
+            \let
+              | hv_op : M.validN n (M.op a1 a2) =>
+                M.cmra_validN_ne n a (M.op a1 a2) dist_a hv
+              | hv_a1 : M.validN n a1 =>
+                M.cmra_validN_op_l n a1 a2 hv_op
+            \in inP (a1, a2, dist_a, h n a1 hv_a1 hp1, hp3)
+        }
 
 -- =================================================================================
 -- BI instance for heap
 -- =================================================================================
 
 
-\func HeapBI (Loc Val : \Set) : BIBase => BIuPred (HeapCMRA Loc Val)
+\func HeapBI (Loc : \Set) (cnt : Countable Loc) (Val : \Set) : BIBase =>
+  BIuPred (HeapCMRA Loc cnt Val)
 
 
 -- =================================================================================
 -- Additional heap operations
+--
+-- These now look up / update through the Gmap API rather than treating the
+-- gmap as a plain function.
 -- =================================================================================
 
 
-\func heap_lookup {Loc Val : \Set} (h : Gmap Loc (Maybe (Excl Val))) (l : Loc) : Maybe Val =>
-  \case h l \with {
+\func heap_lookup {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                  (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) : Maybe Val =>
+  \case glookup h l \with {
     | nothing => nothing
     | just nothing => nothing
     | just (just (excl v)) => just v
     | just (just exclInvalid) => nothing
   }
 
-\func heap_update {Loc Val : \Set} (h : Gmap Loc (Maybe (Excl Val))) (l : Loc) (v : Val)
-                  (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2)) : Gmap Loc (Maybe (Excl Val)) =>
-  \lam k => \case decide {dec l k} \with {
-    | yes _ => just (just (excl v))
-    | no _ => h k
-  }
+\func heap_update {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                  (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+  : Gmap Loc cnt (Maybe (Excl Val)) =>
+  ginsert l (just (excl v)) h
 
-\func heap_alloc {Loc Val : \Set} (h : Gmap Loc (Maybe (Excl Val))) (l : Loc) (v : Val)
-                 (dec : \Pi (l1 l2 : Loc) -> Decide (l1 = l2)) : Gmap Loc (Maybe (Excl Val)) =>
-  heap_update h l v dec
+\func heap_alloc {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                 (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+  : Gmap Loc cnt (Maybe (Excl Val)) =>
+  heap_update h l v
