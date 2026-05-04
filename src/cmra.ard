@@ -20,6 +20,10 @@
 
 \func \infixl 7 op_dot {A : \Set} {opA : Op A} (x y : A) : A => op x y
 
+\func opM {A : \Set} {opA : Op A} (x : A) (my : Maybe A) : A \elim my
+  | just y  => op x y
+  | nothing => x
+
 \class Valid (A : \Set)
   | valid : A -> \Prop
 
@@ -161,4 +165,152 @@
                *> pmap (M.op x1) (M.cmra_comm z a)
                     *> M.cmra_assoc x1 a z)
              (M.cmra_op_ne_2 a n x2 (M.op x1 z) dist_x2_x1z))
+  }
+
+\lemma inclN_trans {C : CMRA} (n : Nat) (x y w : C.E)
+                   (h1 : inclN {C} {\new Op C.E { | op => C.op }} x n y)
+                   (h2 : inclN {C} {\new Op C.E { | op => C.op }} y n w)
+  : inclN {C} {\new Op C.E { | op => C.op }} x n w
+  => \case h1, h2 \with {
+    | inP (z1, hz1), inP (z2, hz2) =>
+      inP (C.op z1 z2,
+           C.ofe_dist_trans n w (C.op y z2) (C.op x (C.op z1 z2))
+               hz2
+               (C.ofe_dist_trans n (C.op y z2) (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
+                   (C.cmra_op_ne_2 z2 n y (C.op x z1) hz1)
+                   (equiv_dist_n {C} (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
+                       (inv (C.cmra_assoc x z1 z2)) n)))
+  }
+
+-- =================================================================================
+-- Derived laws
+-- =================================================================================
+
+\lemma cmra_pcore_ne_dist {C : CMRA} (n : Nat) (x y : C.E)
+                          (h : C.dist n x y) (px py : Maybe C.E)
+                          (hx : pcore {C} x = px) (hy : pcore {C} y = py)
+  : (OptionOFE C).dist n px py
+  => \case px \as px', py \as py', hx : pcore {C} x = px', hy : pcore {C} y = py'
+  \return (OptionOFE C).dist n px' py'
+  \with {
+    | just cx, just cy, hx, hy =>
+      \case C.cmra_pcore_ne n x y cx h hx \with {
+        | (cy', hy', dcx_cy') =>
+          \let cy_eq : just cy' = just cy =>
+            transport (\lam z => z = just cy) hy' hy
+          \in transport (\lam z => C.dist n cx z)
+              (pmap (\case __ \with { | just c => c | nothing => cy' }) cy_eq)
+              dcx_cy'
+      }
+    | nothing, nothing, _, _ => ()
+    | just cx, nothing, hx, hy =>
+      \case C.cmra_pcore_ne n x y cx h hx \with {
+        | (_, hy', _) =>
+          \case transport (\lam z => z = nothing) hy' hy
+                : (just _ : Maybe C.E) = nothing \with {}
+      }
+    | nothing, just cy, hx, hy =>
+      \case C.cmra_pcore_ne n y x cy (C.ofe_dist_sym n x y h) hy \with {
+        | (_, hx', _) =>
+          \case transport (\lam z => z = nothing) hx' hx
+                : (just _ : Maybe C.E) = nothing \with {}
+      }
+  }
+
+-- =================================================================================
+-- Total core on a UCMRA
+-- =================================================================================
+
+\func ucmra_core {U : UCMRA} (x : U.E) : U.E =>
+  \case pcore {U} x \with {
+    | just c  => c
+    | nothing => U.unit
+  }
+
+\lemma ucmra_unit_least {U : UCMRA} (x : U.E)
+  : incl {U.E} {U} {\new Op U.E { | op => U.op }} U.unit x
+  => inP (x, inv (U.ucmra_unit_left_id x))
+
+\lemma ucmra_core_ne {U : UCMRA} (n : Nat) (x y : U.E)
+                     (h : U.dist n x y)
+  : U.dist n (ucmra_core x) (ucmra_core y)
+  => \case pcore {U} x \as px, pcore {U} y \as py,
+           idp : pcore {U} x = px, idp : pcore {U} y = py
+  \return U.dist n
+      (\case px \with { | just c => c | nothing => U.unit })
+      (\case py \with { | just c => c | nothing => U.unit })
+  \with {
+    | just cx, just cy, hpx, hpy =>
+      \case U.cmra_pcore_ne n x y cx h hpx \with {
+        | (cy', hpy', dcxcy') =>
+          \let cy_eq : cy' = cy =>
+            pmap (\case __ \with { | just c => c | nothing => cy' })
+                (transport (\lam z => z = just cy) hpy' hpy)
+          \in transport (\lam z => U.dist n cx z) cy_eq dcxcy'
+      }
+    | nothing, nothing, _, _ => U.ofe_dist_refl n U.unit
+    | just cx, nothing, hpx, hpy =>
+      \case U.cmra_pcore_ne n x y cx h hpx \with {
+        | (_, hpy', _) =>
+          \case transport (\lam z => z = nothing) hpy' hpy
+                : (just _ : Maybe U.E) = nothing \with {}
+      }
+    | nothing, just cy, hpx, hpy =>
+      \case U.cmra_pcore_ne n y x cy (U.ofe_dist_sym n x y h) hpy \with {
+        | (_, hpx', _) =>
+          \case transport (\lam z => z = nothing) hpx' hpx
+                : (just _ : Maybe U.E) = nothing \with {}
+      }
+  }
+
+\lemma ucmra_core_left_id {U : UCMRA} (x : U.E)
+  : U.op (ucmra_core x) x = x
+  => \case pcore {U} x \as px, idp : pcore {U} x = px
+  \return U.op (\case px \with { | just c => c | nothing => U.unit }) x = x
+  \with {
+    | just c, hpx => U.cmra_pcore_l x c hpx
+    | nothing, _  => U.ucmra_unit_left_id x
+  }
+
+\lemma ucmra_core_idemp {U : UCMRA} (x : U.E)
+  : ucmra_core (ucmra_core x) = ucmra_core x
+  => \case pcore {U} x \as px, idp : pcore {U} x = px
+  \return ucmra_core {U} (\case px \with { | just c => c | nothing => U.unit })
+    = (\case px \with { | just c => c | nothing => U.unit })
+  \with {
+    | just c, hpx =>
+      \let
+        | hpcc : pcore {U} c = just c => U.cmra_pcore_idemp x c hpx
+      \in path (\lam i =>
+          \case hpcc @ i \with {
+            | just c' => c'
+            | nothing => U.unit
+          })
+    | nothing, _ =>
+      path (\lam i =>
+          \case U.ucmra_pcore_unit @ i \with {
+            | just u => u
+            | nothing => U.unit
+          })
+  }
+
+\lemma ucmra_core_mono {U : UCMRA} (x y : U.E)
+                       (h : incl {U.E} {U} {\new Op U.E { | op => U.op }} x y)
+  : incl {U.E} {U} {\new Op U.E { | op => U.op }} (ucmra_core x) (ucmra_core y)
+  => \case pcore {U} x \as px, idp : pcore {U} x = px
+  \return incl {U.E} {U} {\new Op U.E { | op => U.op }}
+      (\case px \with { | just c => c | nothing => U.unit })
+      (ucmra_core y)
+  \with {
+    | nothing, _ => ucmra_unit_least (ucmra_core y)
+    | just cx, hpx =>
+      \case U.cmra_pcore_mono x y cx h hpx \with {
+        | (cy, hpy, hincl_cy) =>
+          transport
+              (\lam py => incl {U.E} {U} {\new Op U.E { | op => U.op }}
+                  cx
+                  (\case py \with { | just c => c | nothing => U.unit }))
+              (inv hpy)
+              hincl_cy
+      }
   }

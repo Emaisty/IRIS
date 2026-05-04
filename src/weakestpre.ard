@@ -1,6 +1,7 @@
 \import Logic
 \import Arith.Nat
 \import Data.List
+\import Order.PartialOrder
 \import Data.Maybe
 \import Paths
 \import Set
@@ -14,6 +15,7 @@
 \import lib.heap
 \import lib.gmap_cmra
 \import lib.excl_cmra
+\import lib.pmap
 
 
 -- =================================================================================
@@ -25,32 +27,32 @@
   | nil => emp
   | v :: l' => Phi v * big_sep_list l' Phi
 
-\func bupd_later_iter_fn
-  (bupd : ProperUPred (HeapCMRA Loc Value) -> ProperUPred (HeapCMRA Loc Value))
-  (k    : Nat)
-  (P    : ProperUPred (HeapCMRA Loc Value))
-  : ProperUPred (HeapCMRA Loc Value) \elim k
+\func bupd_later_iter_fn {cnt : Countable Loc}
+                         (bupd : ProperUPred (HeapCMRA Loc cnt Value) -> ProperUPred (HeapCMRA Loc cnt Value))
+                         (k    : Nat)
+                         (P    : ProperUPred (HeapCMRA Loc cnt Value))
+  : ProperUPred (HeapCMRA Loc cnt Value) \elim k
   | 0     => P
   | suc k => bupd (mkProperLater (bupd_later_iter_fn bupd k P))
 
-\record BUpdNE
-  | bupd       : ProperUPred (HeapCMRA Loc Value) -> ProperUPred (HeapCMRA Loc Value)
-  | bupd_ne    : \Pi (n : Nat) (P Q : ProperUPred (HeapCMRA Loc Value)) ->
+\record BUpdNE {cnt : Countable Loc}
+  | bupd       : ProperUPred (HeapCMRA Loc cnt Value) -> ProperUPred (HeapCMRA Loc cnt Value)
+  | bupd_ne    : \Pi (n : Nat) (P Q : ProperUPred (HeapCMRA Loc cnt Value)) ->
       upredDist n P Q -> upredDist n (bupd P) (bupd Q)
-  | bupd_mono  : \Pi (P Q : ProperUPred (HeapCMRA Loc Value)) ->
+  | bupd_mono  : \Pi (P Q : ProperUPred (HeapCMRA Loc cnt Value)) ->
       properUPred_ent P Q -> properUPred_ent (bupd P) (bupd Q)
-  | bupd_trans : \Pi (P : ProperUPred (HeapCMRA Loc Value)) ->
+  | bupd_trans : \Pi (P : ProperUPred (HeapCMRA Loc cnt Value)) ->
       properUPred_ent (bupd (bupd P)) (bupd P)
-  | bupd_intro : \Pi (P : ProperUPred (HeapCMRA Loc Value)) ->
+  | bupd_intro : \Pi (P : ProperUPred (HeapCMRA Loc cnt Value)) ->
       properUPred_ent P (bupd P)
-  | bupd_frame_r : \Pi (P R : ProperUPred (HeapCMRA Loc Value)) ->
+  | bupd_frame_r : \Pi (P R : ProperUPred (HeapCMRA Loc cnt Value)) ->
       properUPred_ent (mkProperSep (bupd P) R) (bupd (mkProperSep P R))
-  | bupd_extract_pure : \Pi (phi : \Prop) (n : Nat) (a : (HeapCMRA Loc Value).E) ->
-      validN {HeapCMRA Loc Value} n a ->
+  | bupd_extract_pure : \Pi (phi : \Prop) (n : Nat) (a : (HeapCMRA Loc cnt Value).E) ->
+      validN {HeapCMRA Loc cnt Value} n a ->
           (bupd (mkProperPure phi)).upred_holds n a -> phi
   | bupd_later_iter_soundness :
-  \Pi (k : Nat) (phi : \Prop) (a : (HeapCMRA Loc Value).E) ->
-      validN {HeapCMRA Loc Value} k a ->
+  \Pi (k : Nat) (phi : \Prop) (a : (HeapCMRA Loc cnt Value).E) ->
+      validN {HeapCMRA Loc cnt Value} k a ->
           (bupd_later_iter_fn bupd k (bupd (mkProperPure phi))).upred_holds k a -> phi
 
 
@@ -59,20 +61,84 @@
 -- =================================================================================
 
 
-\func heap_state_to_gmap (s : State) : Gmap Loc (Maybe (Excl Value)) =>
-  \lam l => \case s.heap l \with {
-    | nothing => nothing
-    | just v => just (just (excl v))
+\func heap_state_to_gmap {cnt : Countable Loc} (s : State cnt)
+  : Gmap Loc cnt (Maybe (Excl Value)) =>
+  \new Gmap Loc cnt (Maybe (Excl Value)) {
+    | gtree => pomap (\lam p => just (p.1, just (excl p.2))) s.heap.gtree
+    | gtree_wf => heap_state_to_gmap_wf s
+  }
+  \where {
+    -- The mapping function we apply with `pomap`. Defined as a top-level helper so
+    -- it appears literally in lookup-rewrites below.
+    \func tag (p : \Sigma Loc Value) : Maybe (\Sigma Loc (Maybe (Excl Value))) =>
+      just (p.1, just (excl p.2))
+
+    \func heap_state_to_gmap_wf
+      {cnt : Countable Loc} (s : State cnt)
+      : gmap_wf {Loc} {cnt} {Maybe (Excl Value)}
+        (\new Pmap (\Sigma Loc (Maybe (Excl Value))) {
+          | tree => (pomap tag s.heap.gtree).tree
+          | tree_wf => (pomap tag s.heap.gtree).tree_wf
+        })
+      => \lam q p hp =>
+          \let
+            -- Move the lookup through `pomap`:
+            --   plookup (pomap tag s.heap.gtree) q = option_bind tag (plookup s.heap.gtree q)
+            | step : pomap_tree.option_bind tag (plookup s.heap.gtree q) = just p
+            => inv (plookup_pomap tag s.heap.gtree q) *> hp
+          \in
+            -- Now case-split on `plookup s.heap.gtree q`. Only the `just pp` branch
+            -- is reachable: `option_bind tag nothing = nothing`, contradicting `= just p`.
+            \case plookup s.heap.gtree q \as o,
+                  idp : plookup s.heap.gtree q = o,
+                  step : pomap_tree.option_bind tag o = just p
+            \return encode {cnt} p.1 = q
+            \with {
+              | nothing, _, e => \case e \with {}
+              | just pp, hpp, e =>
+                -- e : just (pp.1, just (excl pp.2)) = just p, so p.1 = pp.1.
+                \let
+                  | hp1 : p.1 = pp.1 =>
+                    inv (pmap (\lam mp => \case mp \with {
+                      | nothing => pp.1
+                      | just q' => q'.1
+                    }) e)
+                \in transport (\lam k' => encode {cnt} k' = q)
+                    (inv hp1) (s.heap.gtree_wf q pp hpp)
+            }
   }
 
+\lemma heap_state_to_gmap_validN
+  {cnt : Countable Loc}
+  (n : Nat) (sigma : State cnt)
+  : (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Value))).validN n
+    (heap_state_to_gmap sigma)
+  => \lam i =>
+      \let
+        | g => heap_state_to_gmap sigma
+        -- Unfold glookup: it's `\case plookup (pomap tag h.gtree) (encode i) \with ...`.
+        -- pomap's plookup law gives us: result is either `nothing` or `just (just (excl _))`.
+        | step : plookup g.gtree (encode {cnt} i)
+          = pomap_tree.option_bind heap_state_to_gmap.tag (plookup sigma.heap.gtree (encode {cnt} i))
+        => plookup_pomap heap_state_to_gmap.tag sigma.heap.gtree (encode {cnt} i)
+      \in
+        \case plookup sigma.heap.gtree (encode {cnt} i) \as p,
+              idp : plookup sigma.heap.gtree (encode {cnt} i) = p
+        \return option_validN {ExclUCMRA (DiscreteOFE Value)} n (glookup g i)
+        \with {
+          | nothing, hp => {?}      -- glookup g i = nothing, validN nothing = ()
+          | just _,  hp => {?}      -- glookup g i = just (just (excl _)), validN of that = ()
+        }
+
 -- Own the full view of the state
-\func own_heap_auth (s : State)
-  : ProperUPred (HeapCMRA Loc Value) \cowith
+\func own_heap_auth {cnt : Countable Loc} (s : State cnt)
+  : ProperUPred (HeapCMRA Loc cnt Value) \cowith
   | upred_holds => \lam n a =>
-      inclN {HeapCMRA Loc Value} {\new Op (HeapCMRA Loc Value).E { | op => (HeapCMRA Loc Value).op }}
+      inclN {HeapCMRA Loc cnt Value}
+          {\new Op (HeapCMRA Loc cnt Value).E { | op => (HeapCMRA Loc cnt Value).op }}
           (heap_auth (heap_state_to_gmap s)) n a
   | upred_mono => \lam n1 n2 x1 x2 h_incl incl_x1_x2 n2_le_n1 =>
-      heap_incl_trans {Loc} {Value} n1 n2
+      heap_incl_trans n1 n2
           (heap_auth (heap_state_to_gmap s)) x1 x2
           h_incl incl_x1_x2 n2_le_n1
 
@@ -82,16 +148,16 @@
 -- =================================================================================
 
 
-\func wp_pre
-  (bupd : ProperUPred (HeapCMRA Loc Value) -> ProperUPred (HeapCMRA Loc Value))
-  (wp   : Expr -> (Value -> ProperUPred (HeapCMRA Loc Value)) -> ProperUPred (HeapCMRA Loc Value))
-  (e    : Expr)
-  (Phi  : Value -> ProperUPred (HeapCMRA Loc Value))
-  : ProperUPred (HeapCMRA Loc Value)
+\func wp_pre {cnt : Countable Loc}
+             (bupd : ProperUPred (HeapCMRA Loc cnt Value) -> ProperUPred (HeapCMRA Loc cnt Value))
+             (wp   : Expr -> (Value -> ProperUPred (HeapCMRA Loc cnt Value)) -> ProperUPred (HeapCMRA Loc cnt Value))
+             (e    : Expr)
+             (Phi  : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : ProperUPred (HeapCMRA Loc cnt Value)
   => \case to_val e \with {
     | just v  => bupd (Phi v)
     | nothing =>
-      mkProperForall State (\lam sigma =>
+      mkProperForall (State cnt) (\lam sigma =>
           mkProperWand
               (own_heap_auth sigma)
               (bupd (
@@ -99,7 +165,7 @@
                     (mkProperPure (Reducible e sigma))
                     (mkProperLater (
                       mkProperForall Expr (\lam e2 =>
-                          mkProperForall State (\lam sigma2 =>
+                          mkProperForall (State cnt) (\lam sigma2 =>
                               mkProperImpl
                                   (mkProperPure (PrimStep e sigma e2 sigma2))
                                   (bupd (
@@ -119,24 +185,25 @@
 -- =================================================================================
 
 
-\func WPFun : \Type =>
-  Expr -> (Value -> ProperUPred (HeapCMRA Loc Value)) -> ProperUPred (HeapCMRA Loc Value)
+\func WPFun {cnt : Countable Loc} : \Type =>
+  Expr -> (Value -> ProperUPred (HeapCMRA Loc cnt Value)) -> ProperUPred (HeapCMRA Loc cnt Value)
 
-\func WPFunDist (n : Nat) (f g : WPFun) : \Prop =>
-  \Pi (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc Value)) ->
+\func WPFunDist {cnt : Countable Loc} (n : Nat) (f g : WPFun {cnt}) : \Prop =>
+  \Pi (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) ->
       upredDist n (f e Phi) (g e Phi)
 
-\func ContractiveFun (F : WPFun -> WPFun) : \Prop =>
-  \Pi (n : Nat) (f g : WPFun)
+\func ContractiveFun {cnt : Countable Loc} (F : WPFun {cnt} -> WPFun {cnt}) : \Prop =>
+  \Pi (n : Nat) (f g : WPFun {cnt})
   -> (\Pi (k : Nat) -> k NatOrder.< n -> WPFunDist k f g)
   -> WPFunDist n (F f) (F g)
 
 \lemma wp_pre_contractive_core
+  {cnt : Countable Loc}
   (bupd : BUpdNE)
   (n k : Nat) (hk : k NatOrder.< n)
   (f g : WPFun) (hdl : \Pi (j : Nat) -> j NatOrder.< n -> WPFunDist j f g)
-  (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc Value))
-  (sigma : State)
+  (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (sigma : State cnt)
   : upredDist k
     (bupd.bupd (mkProperSep (own_heap_auth sigma) (f e Phi)))
     (bupd.bupd (mkProperSep (own_heap_auth sigma) (g e Phi)))
@@ -145,32 +212,33 @@
           (hdl k hk e Phi))
 
 \lemma wp_pre_contractive
+  {cnt : Countable Loc}
   (bupd : BUpdNE)
   : ContractiveFun (wp_pre bupd.bupd) =>
   \lam n f g hdl e Phi =>
       \let
-        | step_body_f (sigma : State) : Expr -> ProperUPred (HeapCMRA Loc Value) =>
+        | step_body_f (sigma : State cnt) : Expr -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam e2 =>
-              mkProperForall State (\lam sigma2 =>
+              mkProperForall (State cnt) (\lam sigma2 =>
                   mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
                       (bupd.bupd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))))
-        | step_body_g (sigma : State) : Expr -> ProperUPred (HeapCMRA Loc Value) =>
+        | step_body_g (sigma : State cnt) : Expr -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam e2 =>
-              mkProperForall State (\lam sigma2 =>
+              mkProperForall (State cnt) (\lam sigma2 =>
                   mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
                       (bupd.bupd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
-        | wand_body_f : State -> ProperUPred (HeapCMRA Loc Value) =>
+        | wand_body_f : State cnt -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam sigma => mkProperWand (own_heap_auth sigma)
               (bupd.bupd (mkProperAnd (mkProperPure (Reducible e sigma))
                   (mkProperLater (mkProperForall Expr (step_body_f sigma)))))
-        | wand_body_g : State -> ProperUPred (HeapCMRA Loc Value) =>
+        | wand_body_g : State cnt -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam sigma => mkProperWand (own_heap_auth sigma)
               (bupd.bupd (mkProperAnd (mkProperPure (Reducible e sigma))
                   (mkProperLater (mkProperForall Expr (step_body_g sigma)))))
-        | LHS_nothing : ProperUPred (HeapCMRA Loc Value) =>
-          mkProperForall State wand_body_f
-        | RHS_nothing : ProperUPred (HeapCMRA Loc Value) =>
-          mkProperForall State wand_body_g
+        | LHS_nothing : ProperUPred (HeapCMRA Loc cnt Value) =>
+          mkProperForall (State cnt) wand_body_f
+        | RHS_nothing : ProperUPred (HeapCMRA Loc cnt Value) =>
+          mkProperForall (State cnt) wand_body_g
       \in
         \case to_val e \as tv
         \return upredDist n
@@ -180,18 +248,18 @@
           | just _ =>
             \lam m a hm hv => (\lam h => h, \lam h => h)
           | nothing =>
-            upredDist_forall {HeapCMRA Loc Value} State n wand_body_f wand_body_g
+            upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) n wand_body_f wand_body_g
                 (\lam sigma =>
                     \let body_dist : \Pi (k : Nat) -> k NatOrder.< n ->
-                    upredDist {HeapCMRA Loc Value} k
+                    upredDist {HeapCMRA Loc cnt Value} k
                         (mkProperForall Expr (step_body_f sigma))
                         (mkProperForall Expr (step_body_g sigma)) =>
                       \lam k hk =>
-                          upredDist_forall {HeapCMRA Loc Value} Expr k
+                          upredDist_forall {HeapCMRA Loc cnt Value} Expr k
                               (step_body_f sigma)
                               (step_body_g sigma)
                               (\lam e2 =>
-                                  upredDist_forall {HeapCMRA Loc Value} State k
+                                  upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) k
                                       (\lam sigma2 =>
                                           mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
                                               (bupd.bupd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))))
@@ -199,17 +267,17 @@
                                           mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
                                               (bupd.bupd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
                                       (\lam sigma2 =>
-                                          upredDist_impl_r {HeapCMRA Loc Value} k
+                                          upredDist_impl_r {HeapCMRA Loc cnt Value} k
                                               (mkProperPure (PrimStep e sigma e2 sigma2))
                                               (bupd.bupd (mkProperSep (own_heap_auth sigma2) (f e2 Phi)))
                                               (bupd.bupd (mkProperSep (own_heap_auth sigma2) (g e2 Phi)))
                                               (bupd.bupd_ne k
                                                   (mkProperSep (own_heap_auth sigma2) (f e2 Phi))
                                                   (mkProperSep (own_heap_auth sigma2) (g e2 Phi))
-                                                  (upredDist_sep_r {HeapCMRA Loc Value} k (own_heap_auth sigma2)
+                                                  (upredDist_sep_r {HeapCMRA Loc cnt Value} k (own_heap_auth sigma2)
                                                       (f e2 Phi) (g e2 Phi)
                                                       (hdl k hk e2 Phi)))))
-                    \in upredDist_wand_r {HeapCMRA Loc Value} n
+                    \in upredDist_wand_r {HeapCMRA Loc cnt Value} n
                         (own_heap_auth sigma)
                         (bupd.bupd (mkProperAnd (mkProperPure (Reducible e sigma))
                             (mkProperLater (mkProperForall Expr (step_body_f sigma)))))
@@ -220,11 +288,11 @@
                                 (mkProperLater (mkProperForall Expr (step_body_f sigma))))
                             (mkProperAnd (mkProperPure (Reducible e sigma))
                                 (mkProperLater (mkProperForall Expr (step_body_g sigma))))
-                            (upredDist_and_r {HeapCMRA Loc Value} n
+                            (upredDist_and_r {HeapCMRA Loc cnt Value} n
                                 (mkProperPure (Reducible e sigma))
                                 (mkProperLater (mkProperForall Expr (step_body_f sigma)))
                                 (mkProperLater (mkProperForall Expr (step_body_g sigma)))
-                                (upredDist_later {HeapCMRA Loc Value} n
+                                (upredDist_later {HeapCMRA Loc cnt Value} n
                                     (mkProperForall Expr (step_body_f sigma))
                                     (mkProperForall Expr (step_body_g sigma))
                                     body_dist))))
@@ -235,15 +303,16 @@
 -- =================================================================================
 
 
-\func WPFunCOFE : COFE =>
+\func WPFunCOFE {cnt : Countable Loc} : COFE =>
   FunCOFE Expr
-      (FunCOFE (Value -> ProperUPred (HeapCMRA Loc Value))
-          (UPredCOFE (HeapCMRA Loc Value)))
+      (FunCOFE (Value -> ProperUPred (HeapCMRA Loc cnt Value))
+          (UPredCOFE (HeapCMRA Loc cnt Value)))
 
-\instance WPFunInhabited : Inhabited WPFunCOFE.E
+\instance WPFunInhabited {cnt : Countable Loc} : Inhabited (WPFunCOFE {cnt}).E
   | default => \lam _ _ => mkProperPure Empty
 
 \lemma wp_pre_contractive_ofe
+  {cnt : Countable Loc}
   (bupd : BUpdNE)
   : Contractive {WPFunCOFE} (wp_pre bupd.bupd) =>
   \lam n f g dl e Phi =>
@@ -252,17 +321,19 @@
           e Phi
 
 \func wp
+  {cnt : Countable Loc}
   (bupd : BUpdNE)
   (e    : Expr)
-  (Phi  : Value -> ProperUPred (HeapCMRA Loc Value))
-  : ProperUPred (HeapCMRA Loc Value)
+  (Phi  : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : ProperUPred (HeapCMRA Loc cnt Value)
   => fixpoint {WPFunCOFE} {WPFunInhabited} (wp_pre bupd.bupd)
       (wp_pre_contractive_ofe bupd) e Phi
 
 \func wp_unfold
+  {cnt : Countable Loc}
   (bupd : BUpdNE)
   (e    : Expr)
-  (Phi  : Value -> ProperUPred (HeapCMRA Loc Value))
+  (Phi  : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : upredEquiv (wp bupd e Phi) (wp_pre bupd.bupd (wp bupd) e Phi)
   => fixpoint_unfold {WPFunCOFE} {WPFunInhabited}
       (wp_pre bupd.bupd)
@@ -275,27 +346,29 @@
 
 
 \func wp_value
+  {cnt : Countable Loc}
   (bu  : BUpdNE)
   (v   : Value)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc Value))
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : upredEquiv (wp bu (Val v) Phi) (bu.bupd (Phi v))
   => wp_unfold bu (Val v) Phi
 
 
 \func wp_mono
+  {cnt : Countable Loc}
   (bu      : BUpdNE)
   (e       : Expr)
-  (Phi Psi : Value -> ProperUPred (HeapCMRA Loc Value))
+  (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
   : properUPred_ent (wp bu e Phi) (wp bu e Psi)
   => wp_mono_aux bu Phi Psi h e
   \where {
     \func wp_mono_at
       (bu      : BUpdNE)
-      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc Value))
+      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
       (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
-      (n : Nat) (e : Expr) (a : (HeapCMRA Loc Value).E)
-      (hv : validN {HeapCMRA Loc Value} n a)
+      (n : Nat) (e : Expr) (a : (HeapCMRA Loc cnt Value).E)
+      (hv : validN {HeapCMRA Loc cnt Value} n a)
       (hp : (wp bu e Phi).upred_holds n a)
       : (wp bu e Psi).upred_holds n a \elim n
       | 0 =>
@@ -313,31 +386,35 @@
         \in (wp_unfold bu e Psi (suc n) a hv).2 unfPsi
 
     \func wp_mono_aux
+      {cnt : Countable Loc}
       (bu      : BUpdNE)
-      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc Value))
+      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
       (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
       (e : Expr)
       : properUPred_ent (wp bu e Phi) (wp bu e Psi)
-      => \lam n a hv hp => wp_mono_at bu Phi Psi h n e a hv hp
+      => {?}
+      -- => \lam n a hv hp => wp_mono_at bu Phi Psi h n e a hv hp
 
     \func wp_pre_mono_zero
+      {cnt : Countable Loc}
       (bu      : BUpdNE)
-      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc Value))
+      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
       (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
-      (e : Expr) (a : (HeapCMRA Loc Value).E)
-      (hv : validN {HeapCMRA Loc Value} 0 a)
+      (e : Expr) (a : (HeapCMRA Loc cnt Value).E)
+      (hv : validN {HeapCMRA Loc cnt Value} 0 a)
       (hp : (wp_pre bu.bupd (wp bu) e Phi).upred_holds 0 a)
       : (wp_pre bu.bupd (wp bu) e Psi).upred_holds 0 a => {?}
 
     \func wp_pre_mono_step
+      {cnt : Countable Loc}
       (bu      : BUpdNE)
-      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc Value))
+      (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
       (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
-      (e : Expr) (a : (HeapCMRA Loc Value).E) {n : Nat}
-      (hv : validN {HeapCMRA Loc Value} (suc n) a)
+      (e : Expr) (a : (HeapCMRA Loc cnt Value).E) {n : Nat}
+      (hv : validN {HeapCMRA Loc cnt Value} (suc n) a)
       (hp : (wp_pre bu.bupd (wp bu) e Phi).upred_holds (suc n) a)
-      (ih : \Pi (e' : Expr) (a' : (HeapCMRA Loc Value).E)
-      -> validN {HeapCMRA Loc Value} n a'
+      (ih : \Pi (e' : Expr) (a' : (HeapCMRA Loc cnt Value).E)
+      -> validN {HeapCMRA Loc cnt Value} n a'
           -> (wp bu e' Phi).upred_holds n a'
           -> (wp bu e' Psi).upred_holds n a')
       : (wp_pre bu.bupd (wp bu) e Psi).upred_holds (suc n) a => {?}
@@ -345,23 +422,205 @@
 
 
 \func wp_frame_l
+  {cnt : Countable Loc}
   (bu  : BUpdNE)
   (e   : Expr)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc Value))
-  (R   : ProperUPred (HeapCMRA Loc Value))
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (R   : ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
     (mkProperSep R (wp bu e Phi))
     (wp bu e (\lam v => mkProperSep R (Phi v)))
   => {?}
 
 \func wp_frame_r
+  {cnt : Countable Loc}
   (bu  : BUpdNE)
   (e   : Expr)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc Value))
-  (R   : ProperUPred (HeapCMRA Loc Value))
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (R   : ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
     (mkProperSep (wp bu e Phi) R)
     (wp bu e (\lam v => mkProperSep (Phi v) R))
   => {?}
 
+\lemma wp_value_intro
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (v   : Value)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (Phi v) (wp bu (Val v) Phi)
+  -- Proof: combine `bu.bupd_intro` with `wp_value bu v Phi` (the equiv).
+  => \lam n a hv hp =>
+      (wp_value bu v Phi n a hv).2 (bu.bupd_intro (Phi v) n a hv hp)
 
+\lemma wp_post_mono
+  {cnt : Countable Loc}
+  (bu      : BUpdNE)
+  (e       : Expr)
+  (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (h       : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
+  : properUPred_ent (wp bu e Phi) (wp bu e Psi)
+  => wp_mono bu e Phi Psi h
+
+\lemma wp_pure_step
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (e e' : Expr)
+  (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma)
+  (no_val : to_val e = nothing)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp bu e' Phi) (wp bu e Phi)
+  => {?}
+
+\lemma wp_pure_step'
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (e e' : Expr)
+  (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma)
+  (no_val : to_val e = nothing)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp bu e' Phi) (wp bu e Phi)
+  => {?}
+
+\lemma wp_bind_app_l
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (e   : Expr)            -- focused subterm
+  (e2  : Expr)            -- already-evaluated argument position
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (wp bu e (\lam v => wp bu (App (Val v) e2) Phi))
+    (wp bu (App e e2) Phi)
+  => {?}
+
+\lemma wp_bind_app_r
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (vf  : Value)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (wp bu e (\lam v => wp bu (App (Val vf) (Val v)) Phi))
+    (wp bu (App (Val vf) e) Phi)
+  => {?}
+
+\lemma wp_bind_load
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (wp bu e (\lam v => wp bu (Load (Val v)) Phi))
+    (wp bu (Load e) Phi)
+  => {?}
+
+\lemma wp_bind_store_r
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (l   : Loc)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (wp bu e (\lam v => wp bu (Store (Val (LitV (LitLoc l))) (Val v)) Phi))
+    (wp bu (Store (Val (LitV (LitLoc l))) e) Phi)
+  => {?}
+
+\lemma wp_bind_if
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (e t f : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (wp bu e (\lam v => wp bu (If (Val v) t f) Phi))
+    (wp bu (If e t f) Phi)
+  => {?}
+
+-- (S5) Heap operations
+--
+-- wp_load:  l ↦ v  ⊢  wp (Load (Loc l)) (\v'. v' = v ∧ l ↦ v)
+\lemma wp_load
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (l   : Loc)
+  (v   : Value)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l v)
+    (wp bu (Load (Val (LitV (LitLoc l))))
+        (\lam v' => mkProperAnd (mkProperPure (v' = v)) (pointsTo l v)))
+  => {?}
+
+-- wp_store:  l ↦ _  ⊢  wp (Store l v) (\_. l ↦ v)
+\lemma wp_store
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (l   : Loc)
+  (v u : Value)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l u)
+    (wp bu (Store (Val (LitV (LitLoc l))) (Val v))
+        (\lam _ => pointsTo l v))
+  => {?}
+
+-- wp_alloc: True  ⊢  wp (Alloc v) (\v'. ∃ l. v' = LitLoc l ∧ l ↦ v)
+\lemma wp_alloc
+  {cnt : Countable Loc}
+  (bu  : BUpdNE)
+  (v   : Value)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (mkProperPure (\Sigma))
+    (wp bu (Alloc (Val v))
+        (\lam v' => mkProperExist Loc (\lam l =>
+            mkProperAnd
+                (mkProperPure (v' = LitV (LitLoc l)))
+                (pointsTo l v))))
+  => {?}
+
+\lemma sep_exist_l
+  {cnt : Countable Loc}
+  (T : \Type) (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value))
+  (R : ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+    (mkProperSep (mkProperExist T Phi) R)
+    (mkProperExist T (\lam t => mkProperSep (Phi t) R))
+  => \lam n a hv hsep =>
+      \case hsep \with {
+        | inP (a1, a2, dist_a, hexist, hR) =>
+          \case hexist \with {
+            | inP (t, hPhi) => inP (t, inP (a1, a2, dist_a, hPhi, hR))
+          }
+      }
+
+\lemma exist_intro_ent
+  {cnt : Countable Loc}
+  (T : \Type) (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value))
+  (t : T)
+  : properUPred_ent (Phi t) (mkProperExist T Phi)
+  => \lam n a hv hp => inP (t, hp)
+
+\lemma exist_elim_ent
+  {cnt : Countable Loc}
+  (T : \Type)
+  (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value))
+  (Q : ProperUPred (HeapCMRA Loc cnt Value))
+  (h : \Pi (t : T) -> properUPred_ent (Phi t) Q)
+  : properUPred_ent (mkProperExist T Phi) Q
+  => \lam n a hv hp =>
+      \case hp \with { | inP (t, ht') => h t n a hv ht' }
+
+\lemma true_sep_drop
+  {cnt : Countable Loc}
+  (P : ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (mkProperSep (mkProperPure (\Sigma)) P) P
+  => \lam n a hv hsep =>
+      \case hsep \with {
+        | inP (a1, a2, dist_a, _, hP) =>
+          \let M => HeapCMRA Loc cnt Value
+          \in P.upred_mono n n a2 a hP
+              (inP (a1,
+                    M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
+                        dist_a
+                        (transport (\lam w => M.dist n (M.op a1 a2) w)
+                            (M.cmra_comm a1 a2)
+                            (M.ofe_dist_refl n (M.op a1 a2)))))
+              <=-refl
+      }

@@ -8,10 +8,28 @@
 \import Order.PartialOrder
 \import cmra
 \import ofe
+\import lib.pmap
+
+
+-- =================================================================================
+-- Countability
+-- =================================================================================
+
+
+\class EqDecision (A : \Set)
+  | decideEq (x y : A) : Dec (x = y)
+
+\class Countable \extends EqDecision
+  | encode : A -> Pos
+  | decode : Pos -> Maybe A
+  | decode_encode (x : A) : decode (encode x) = just x
+  | encode_inj (x y : A) : encode x = encode y -> x = y
+
 
 -- =================================================================================
 -- Option CMRA
 -- =================================================================================
+
 
 \func option_op {A : CMRA} (o1 o2 : Maybe A.E) : Maybe A.E \elim o1, o2
   | just a1, just a2 => just (A.op a1 a2)
@@ -19,9 +37,11 @@
   | nothing, just a2 => just a2
   | nothing, nothing => nothing
 
-\func option_pcore {A : CMRA} (o : Maybe A.E) : Maybe (Maybe A.E) \elim o
-  | nothing  => just nothing
-  | just a   => just (pcore {A} a)
+\func option_op_nothing_nothing {A : CMRA} : option_op {A} nothing nothing = nothing => idp
+
+\func option_pcore {A : CMRA} (o : Maybe A.E) : Maybe A.E \elim o
+  | nothing => nothing
+  | just a => pcore {A} a
 
 \func option_valid {A : CMRA} (o : Maybe A.E) : \Prop \elim o
   | nothing => \Sigma
@@ -31,73 +51,14 @@
   | nothing => \Sigma
   | just a  => validN {A} n a
 
--- =================================================================================
--- Gmap as a total function
--- =================================================================================
-
-\func Gmap (K : \Set) (A : \Set) => K -> Maybe A
-
-\func gmap_lookup {K A : \Set} (m : Gmap K A) (k : K) : Maybe A => m k
-
-\func gmap_empty {K A : \Set} : Gmap K A => \lam _ => nothing
-
-\func gmap_op {K : \Set} {A : CMRA} (m1 m2 : Gmap K A.E) : Gmap K A.E =>
-  \lam k => option_op {A} (m1 k) (m2 k)
-
-\func gmap_pcore_fun {K : \Set} {A : CMRA} (m : Gmap K A.E) : Gmap K A.E =>
-  \lam k => \case option_pcore {A} (m k) \with {
-    | just o => o
-    | nothing => nothing -- unreachable, kept for totality
-  }
-
-\func gmap_pcore {K : \Set} {A : CMRA} (m : Gmap K A.E) : Maybe (Gmap K A.E) =>
-  just (gmap_pcore_fun m)
-
--- =================================================================================
--- OFE structure on Gmap
--- =================================================================================
-
-\func GmapOFE (K : \Set) (A : OFE) : OFE \cowith
-  | E => Gmap K A.E
-  | dist => \lam n m1 m2 => \Pi (i : K) -> (OptionOFE A).dist n (m1 i) (m2 i)
-  | equiv => \lam m1 m2 => \Pi (i : K) -> (OptionOFE A).equiv (m1 i) (m2 i)
-  | equiv_refl => \lam m i => (OptionOFE A).equiv_refl (m i)
-  | equiv_sym  => \lam m1 m2 h i => (OptionOFE A).equiv_sym (m1 i) (m2 i) (h i)
-  | equiv_trans => \lam m1 m2 m3 h1 h2 i =>
-          (OptionOFE A).equiv_trans (m1 i) (m2 i) (m3 i) (h1 i) (h2 i)
-  | ofe_equiv_dist => \lam m1 m2 => (
-    \lam he n i => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).1 (he i) n,
-    \lam h  i   => ((OptionOFE A).ofe_equiv_dist (m1 i) (m2 i)).2 (\lam n => h n i)
-  )
-  | ofe_dist_refl  => \lam n m i => (OptionOFE A).ofe_dist_refl n (m i)
-  | ofe_dist_sym   => \lam n m1 m2 h i => (OptionOFE A).ofe_dist_sym n (m1 i) (m2 i) (h i)
-  | ofe_dist_trans => \lam n m1 m2 m3 h1 h2 i =>
-          (OptionOFE A).ofe_dist_trans n (m1 i) (m2 i) (m3 i) (h1 i) (h2 i)
-  | ofe_dist_le    => \lam n m' m1 m2 h le i =>
-          (OptionOFE A).ofe_dist_le n m' (m1 i) (m2 i) (h i) le
-
--- =================================================================================
--- Validity
--- =================================================================================
-
-\func GmapValidN {K : \Set} {A : CMRA} (n : Nat) (m : Gmap K A.E) : \Prop =>
-  \Pi (i : K) -> option_validN {A} n (m i)
-
-\func GmapValid {K : \Set} {A : CMRA} (m : Gmap K A.E) : \Prop =>
-  \Pi (i : K) -> option_valid {A} (m i)
-
--- =================================================================================
--- Pointwise lemmas about option_op
--- =================================================================================
-
 \lemma option_op_ne {A : CMRA} (n : Nat) (o : Maybe A.E) (o1 o2 : Maybe A.E)
                     (h : (OptionOFE A).dist n o1 o2)
   : (OptionOFE A).dist n (option_op {A} o o1) (option_op {A} o o2)
   => \case \elim o, \elim o1, \elim o2, h \with {
     | nothing,  nothing,  nothing,  _ => ()
-    | nothing,  just a1, just a2, h  => h
+    | nothing,  just _,   just _,   h => h
     | just a,   nothing,  nothing,  _ => A.ofe_dist_refl n a
-    | just a,   just a1, just a2, h  => A.cmra_op_ne a n a1 a2 h
+    | just a,   just a1,  just a2,  h => A.cmra_op_ne a n a1 a2 h
     | nothing,  nothing,  just _,   e => \case e \with {}
     | nothing,  just _,   nothing,  e => \case e \with {}
     | just _,   nothing,  just _,   e => \case e \with {}
@@ -110,8 +71,8 @@
   => \case \elim o, \elim o1, \elim o2, h \with {
     | nothing,  nothing,  nothing,  _ => ()
     | just a,   nothing,  nothing,  _ => A.ofe_dist_refl n a
-    | nothing,  just a1, just a2, h  => h
-    | just a,   just a1, just a2, h  => A.cmra_op_ne_2 a n a1 a2 h
+    | nothing,  just _,   just _,   h => h
+    | just a,   just a1,  just a2,  h => A.cmra_op_ne_2 a n a1 a2 h
     | nothing,  nothing,  just _,   e => \case e \with {}
     | nothing,  just _,   nothing,  e => \case e \with {}
     | just _,   nothing,  just _,   e => \case e \with {}
@@ -128,7 +89,7 @@
     | just _,   nothing,  nothing  => idp
     | just _,   nothing,  just _   => idp
     | just _,   just _,   nothing  => idp
-    | just a1, just a2, just a3 => pmap just (A.cmra_assoc a1 a2 a3)
+    | just a1,  just a2,  just a3  => pmap just (A.cmra_assoc a1 a2 a3)
   }
 
 \lemma option_op_comm {A : CMRA} (o1 o2 : Maybe A.E)
@@ -137,16 +98,16 @@
     | nothing,  nothing  => idp
     | nothing,  just _   => idp
     | just _,   nothing  => idp
-    | just a1, just a2 => pmap just (A.cmra_comm a1 a2)
+    | just a1,  just a2  => pmap just (A.cmra_comm a1 a2)
   }
 
 \lemma option_validN_op_l {A : CMRA} (n : Nat) (o1 o2 : Maybe A.E)
                           (h : option_validN {A} n (option_op {A} o1 o2))
   : option_validN {A} n o1
   => \case \elim o1, \elim o2, h \with {
-    | nothing,  _,         _ => ()
-    | just a1, nothing,    h => h
-    | just a1, just a2, h => A.cmra_validN_op_l n a1 a2 h
+    | nothing, _,         _ => ()
+    | just _,  nothing,   h => h
+    | just a1, just a2,   h => A.cmra_validN_op_l n a1 a2 h
   }
 
 \lemma option_validN_ne {A : CMRA} (n : Nat) (o1 o2 : Maybe A.E)
@@ -154,10 +115,10 @@
                         (hv : option_validN {A} n o1)
   : option_validN {A} n o2
   => \case \elim o1, \elim o2, h, hv \with {
-    | nothing,  nothing,  _, _   => ()
+    | nothing, nothing, _, _   => ()
     | just a1, just a2, h, hv => A.cmra_validN_ne n a1 a2 h hv
-    | nothing,  just _,   e, _   => \case e \with {}
-    | just _,   nothing,  e, _   => \case e \with {}
+    | nothing, just _,  e, _   => \case e \with {}
+    | just _,  nothing, e, _   => \case e \with {}
   }
 
 \lemma option_validN_le {A : CMRA} (n m : Nat) (o : Maybe A.E)
@@ -168,191 +129,486 @@
     | just a,  hv => A.cmra_validN_le n m a hv le
   }
 
-\lemma option_pcore_l {A : CMRA} (o co : Maybe A.E)
-                      (h : option_pcore {A} o = just co)
-  : option_op {A} co o = o
-  => \case \elim o, \elim co, h \with {
-    | nothing,  nothing,  _ => idp
-    | nothing,  just _,   p => \case pmap (\case __ \with { | just c => c | nothing => nothing }) p
-    \with {}
-    | just a,   _,        p =>
-      \let q : pcore {A} a = co =>
-        pmap (\case __ \with { | just c => c | nothing => nothing }) p
-      \in \case \elim co, \elim q \with {
-        | nothing, q  =>
-          idp
-        | just ca, q  =>
-          pmap just (A.cmra_pcore_l a ca q)
+
+-- =================================================================================
+-- Gmap
+-- =================================================================================
+
+
+\func gmap_wf {K : \Set} {cnt : Countable K} {A : \Set} (m : Pmap (\Sigma K A)) : \Prop =>
+  \Pi (k : Pos) (p : \Sigma K A) -> plookup m k = just p -> encode {cnt} p.1 = k
+
+\record Gmap (K : \Set) (cnt : Countable K) (A : \Set)
+  | gtree : Pmap (\Sigma K A)
+  | gtree_wf : gmap_wf {K} {cnt} {A} gtree
+
+\func glookup {K : \Set} {cnt : Countable K} {A : \Set} (m : Gmap K cnt A) (k : K) : Maybe A =>
+  \case plookup m.gtree (encode {cnt} k) \with {
+    | nothing => nothing
+    | just p  => just p.2
+  }
+
+\func gempty {K : \Set} {cnt : Countable K} {A : \Set} : Gmap K cnt A \cowith
+  | gtree => pempty
+  | gtree_wf => \lam k p hp =>
+      absurd (\case transport (\lam o => o = just p) (plookup_empty k) hp \with {})
+
+\lemma glookup_empty {K : \Set} {cnt : Countable K} {A : \Set} (k : K)
+  : glookup {K} {cnt} {A} gempty k = nothing
+  => path (\lam i => \case plookup_empty {\Sigma K A} (encode {cnt} k) @ i \with {
+    | nothing => nothing
+    | just p  => just p.2
+  })
+
+-- partial_alter on Gmap. We update the position `encode k` in the Pmap, but
+-- we must also tag any newly-inserted value with `k` itself.
+\func gpartial_alter {K : \Set} {cnt : Countable K} {A : \Set}
+                     (f : Maybe A -> Maybe A) (k : K) (m : Gmap K cnt A) : Gmap K cnt A \cowith
+  | gtree => ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree
+  | gtree_wf => gpartial_alter_wf f k m
+  \where {
+    -- Lift `f : Maybe A -> Maybe A` to act on (K, A) pairs by tagging with k.
+    \func gpartial_alter_lift {K A : \Set} (f : Maybe A -> Maybe A) (k : K)
+                              (o : Maybe (\Sigma K A)) : Maybe (\Sigma K A) =>
+      \case f (\case o \with { | nothing => nothing | just p => just p.2 }) \with {
+        | nothing => nothing
+        | just a  => just (k, a)
+      }
+
+    -- Wellformedness preservation: the only newly-stored entries are at position
+    -- `encode k`, and they're tagged with k itself, so encode (k, _).1 = encode k.
+    \func gpartial_alter_wf {K : \Set} {cnt : Countable K} {A : \Set}
+                            (f : Maybe A -> Maybe A) (k : K) (m : Gmap K cnt A)
+      : gmap_wf {K} {cnt} {A}
+        (\new Pmap (\Sigma K A) {
+          | tree => (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree).tree
+          | tree_wf => (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree).tree_wf
+        }) =>
+      \lam q p hp =>
+          \case Pos_eq_dec (encode {cnt} k) q \with {
+            | yes ekq =>
+              -- Lookup at `encode k` after partial_alter: we're at the just-altered cell.
+              \let
+                | step : plookup (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree)
+                    (encode {cnt} k)
+                  = gpartial_alter_lift f k (plookup m.gtree (encode {cnt} k))
+                => plookup_partial_alter_eq (gpartial_alter_lift f k) (encode {cnt} k) m.gtree
+                | step2 : plookup (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree) q
+                  = gpartial_alter_lift f k (plookup m.gtree (encode {cnt} k))
+                => transport (\lam q' => plookup (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree) q'
+                    = gpartial_alter_lift f k (plookup m.gtree (encode {cnt} k))) ekq step
+                | hp' : gpartial_alter_lift f k (plookup m.gtree (encode {cnt} k)) = just p
+                => inv step2 *> hp
+                -- Inspecting the lifted-f result: must be `just (k, a)`, so p.1 = k.
+                | hk : p.1 = k => gpartial_alter_lift_fst f k (plookup m.gtree (encode {cnt} k)) p hp'
+              \in transport (\lam k' => encode {cnt} k' = q) (inv hk) ekq
+            | no ne =>
+              \let
+                | step : plookup (ppartial_alter (gpartial_alter_lift f k) (encode {cnt} k) m.gtree) q
+                  = plookup m.gtree q
+                => plookup_partial_alter_ne (gpartial_alter_lift f k) (encode {cnt} k) q m.gtree ne
+                | hp' : plookup m.gtree q = just p => inv step *> hp
+              \in m.gtree_wf q p hp'
+          }
+
+    -- Inspecting `gpartial_alter_lift`: if its output is `just p`, then p.1 = k.
+    \func gpartial_alter_lift_fst {K A : \Set} (f : Maybe A -> Maybe A) (k : K)
+                                  (o : Maybe (\Sigma K A)) (p : \Sigma K A)
+                                  (h : gpartial_alter_lift f k o = just p)
+      : p.1 = k =>
+      \case f (\case o \with { | nothing => nothing | just p' => just p'.2 }) \as fr,
+            idp : f (\case o \with { | nothing => nothing | just p' => just p'.2 }) = fr,
+            h : (\case fr \with { | nothing => nothing | just a => just (k, a) }) = just p
+      \return p.1 = k
+      \with {
+        | nothing, _, e => \case e \with {}
+        | just a, _, e =>
+          -- e : just (k, a) = just p ⇒ (k, a) = p ⇒ p.1 = k
+          inv (pmap (\lam mp => \case mp \with {
+            | nothing => k
+            | just p' => p'.1
+          }) e)
       }
   }
+
+-- Lookup laws after partial_alter.
+\func glookup_partial_alter_eq_aux {K A : \Set} (f : Maybe A -> Maybe A) (k : K)
+                                   (oA : Maybe A) (oP : Maybe (\Sigma K A))
+                                   (heq : (\case oP \with {
+                                     | nothing => nothing
+                                     | just p => just p.2
+                                   }) = oA)
+  : (\case \case f (\case oP \with {
+  | nothing => nothing
+  | just p' => just p'.2
+}) \return Maybe (\Sigma K A) \with {
+  | nothing => nothing
+  | just a  => just (k, a)
+} \with {
+  | nothing => nothing
+  | just p  => just p.2
+}) = f oA \elim oP
+  | nothing =>
+    \case f nothing \as fr,
+          idp : f nothing = fr
+    \return (\case \case fr \return Maybe (\Sigma K A) \with {
+      | nothing => nothing
+      | just a  => just (k, a)
+    } \with {
+      | nothing => nothing
+      | just p  => just p.2
+    }) = f oA
+    \with {
+      | nothing, hf => inv hf *> pmap f heq
+      | just a,  hf => inv hf *> pmap f heq
+    }
+  | just p =>
+    \case f (just p.2) \as fr,
+          idp : f (just p.2) = fr
+    \return (\case \case fr \return Maybe (\Sigma K A) \with {
+      | nothing => nothing
+      | just a  => just (k, a)
+    } \with {
+      | nothing => nothing
+      | just p'  => just p'.2
+    }) = f oA
+    \with {
+      | nothing, hf => inv hf *> pmap f heq
+      | just a,  hf => inv hf *> pmap f heq
+    }
+
+
+-- ... [similar lookup laws follow] ...
+
+-- =================================================================================
+-- Insert / delete / singleton
+-- =================================================================================
+
+\func ginsert {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A) (m : Gmap K cnt A) : Gmap K cnt A =>
+  gpartial_alter (\lam _ => just x) k m
+
+\func gdelete {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (m : Gmap K cnt A) : Gmap K cnt A =>
+  gpartial_alter (\lam _ => nothing) k m
+
+\func gsingleton {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A) : Gmap K cnt A =>
+  ginsert k x gempty
+
+-- =================================================================================
+-- Merge: pointwise combine two Gmaps using f.
+-- =================================================================================
+
+\func gmerge {K : \Set} {cnt : Countable K} {A B C : \Set}
+             (f : Maybe A -> Maybe B -> Maybe C)
+             (m1 : Gmap K cnt A) (m2 : Gmap K cnt B) : Gmap K cnt C \cowith
+  | gtree => pmerge (gmerge_lift {K} {A} {B} {C} f) m1.gtree m2.gtree
+  | gtree_wf => \lam q p hp =>
+      \let
+        | hf_nn : gmerge_lift {K} {A} {B} {C} f nothing nothing = nothing
+        => gmerge_lift_nn f
+        | step : plookup (pmerge (gmerge_lift {K} {A} {B} {C} f) m1.gtree m2.gtree) q
+          = gmerge_lift {K} {A} {B} {C} f (plookup m1.gtree q) (plookup m2.gtree q)
+        => plookup_merge (gmerge_lift {K} {A} {B} {C} f) hf_nn m1.gtree m2.gtree q
+        | hp' : gmerge_lift {K} {A} {B} {C} f (plookup m1.gtree q) (plookup m2.gtree q) = just p
+        => inv step *> hp
+      \in gmerge_lift_fst f q p
+          (plookup m1.gtree q) (plookup m2.gtree q) hp'
+          (\lam p1 hq1 => m1.gtree_wf q p1 hq1)
+          (\lam p2 hq2 => m2.gtree_wf q p2 hq2)
   \where {
-    -- Helper to extract the inner value from a `just`.
-    \func unjust {X : \Type} (def : X) (m : Maybe X) : X \elim m
-      | nothing => def
-      | just x  => x
+    -- Lift f from values to (K, value) pairs. We need to know which K to tag the
+    -- result with; we take it from whichever of the two operand pairs is `just`.
+    \func gmerge_lift {K A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+                      (o1 : Maybe (\Sigma K A)) (o2 : Maybe (\Sigma K B)) : Maybe (\Sigma K C)
+    \elim o1, o2
+      | nothing, nothing => \case f nothing nothing \with {
+        | nothing => nothing
+        | just _  => nothing  -- unreachable in practice (f preserves nothing nothing)
+      }
+      | just p1, nothing => \case f (just p1.2) nothing \with {
+        | nothing => nothing
+        | just c  => just (p1.1, c)
+      }
+      | nothing, just p2 => \case f nothing (just p2.2) \with {
+        | nothing => nothing
+        | just c  => just (p2.1, c)
+      }
+      | just p1, just p2 => \case f (just p1.2) (just p2.2) \with {
+        | nothing => nothing
+        | just c  => just (p1.1, c)
+      }
+
+    -- `gmerge_lift` always sends `(nothing, nothing)` to `nothing`, regardless of `f`.
+    \func gmerge_lift_nn {K A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+      : gmerge_lift {K} {A} {B} {C} f nothing nothing = nothing
+      => \case f nothing nothing \as fr, idp : f nothing nothing = fr
+      \return (\case fr \return Maybe (\Sigma K C) \with {
+        | nothing => nothing
+        | just _  => nothing
+      }) = nothing
+      \with {
+        | nothing, _ => idp
+        | just _,  _ => idp
+      }
+
+    -- The key inspection lemma: if `gmerge_lift f o1 o2 = just p`, then we can
+    -- "extract" a witness in `m1` or `m2` whose first projection is `p.1`,
+    -- letting us close `encode p.1 = q` by appealing to gtree_wf of m1 or m2.
+    \func gmerge_lift_fst {K A B C : \Set} {cnt : Countable K}
+                          (f : Maybe A -> Maybe B -> Maybe C)
+                          (q : Pos) (p : \Sigma K C)
+                          (o1 : Maybe (\Sigma K A)) (o2 : Maybe (\Sigma K B))
+                          (h : gmerge_lift {K} {A} {B} {C} f o1 o2 = just p)
+                          (wf1 : \Pi (p1 : \Sigma K A) -> o1 = just p1 -> encode {cnt} p1.1 = q)
+                          (wf2 : \Pi (p2 : \Sigma K B) -> o2 = just p2 -> encode {cnt} p2.1 = q)
+      : encode {cnt} p.1 = q
+    \elim o1, o2
+      | nothing, nothing =>
+        \case f nothing nothing \as fr,
+              idp : f nothing nothing = fr,
+              h : (\case fr \return Maybe (\Sigma K C) \with {
+                | nothing => nothing
+                | just _  => nothing
+              }) = just p
+        \return encode {cnt} p.1 = q
+        \with {
+          | nothing, _, e => \case e \with {}
+          | just _,  _, e => \case e \with {}
+        }
+      | just p1, nothing =>
+        \case f (just p1.2) nothing \as fr,
+              idp : f (just p1.2) nothing = fr,
+              h : (\case fr \return Maybe (\Sigma K C) \with {
+                | nothing => nothing
+                | just c  => just (p1.1, c)
+              }) = just p
+        \return encode {cnt} p.1 = q
+        \with {
+          | nothing, _, e => \case e \with {}
+          | just c,  _, e =>
+            -- e : just (p1.1, c) = just p, so p.1 = p1.1
+            \let
+              | hp1 : p.1 = p1.1 =>
+                inv (pmap (\lam mp => \case mp \with {
+                  | nothing => p1.1
+                  | just p' => p'.1
+                }) e)
+            \in transport (\lam k' => encode {cnt} k' = q) (inv hp1) (wf1 p1 idp)
+        }
+      | nothing, just p2 =>
+        \case f nothing (just p2.2) \as fr,
+              idp : f nothing (just p2.2) = fr,
+              h : (\case fr \return Maybe (\Sigma K C) \with {
+                | nothing => nothing
+                | just c  => just (p2.1, c)
+              }) = just p
+        \return encode {cnt} p.1 = q
+        \with {
+          | nothing, _, e => \case e \with {}
+          | just c,  _, e =>
+            \let
+              | hp2 : p.1 = p2.1 =>
+                inv (pmap (\lam mp => \case mp \with {
+                  | nothing => p2.1
+                  | just p' => p'.1
+                }) e)
+            \in transport (\lam k' => encode {cnt} k' = q) (inv hp2) (wf2 p2 idp)
+        }
+      | just p1, just p2 =>
+        \case f (just p1.2) (just p2.2) \as fr,
+              idp : f (just p1.2) (just p2.2) = fr,
+              h : (\case fr \return Maybe (\Sigma K C) \with {
+                | nothing => nothing
+                | just c  => just (p1.1, c)
+              }) = just p
+        \return encode {cnt} p.1 = q
+        \with {
+          | nothing, _, e => \case e \with {}
+          | just c,  _, e =>
+            \let
+              | hp1 : p.1 = p1.1 =>
+                inv (pmap (\lam mp => \case mp \with {
+                  | nothing => p1.1
+                  | just p' => p'.1
+                }) e)
+            \in transport (\lam k' => encode {cnt} k' = q) (inv hp1) (wf1 p1 idp)
+        }
   }
 
 -- =================================================================================
--- The Gmap CMRA instance
+-- OFE structure on Gmap (pointwise)
 -- =================================================================================
 
-\func GmapCMRA (K : \Set) (A : CMRA) : CMRA \cowith
-  | OFE     => GmapOFE K A
-  | pcore   => gmap_pcore
-  | op      => gmap_op
-  | valid   => GmapValid {K} {A}
-  | validN  => GmapValidN {K} {A}
+\func GmapOFE (K : \Set) (cnt : Countable K) (A : OFE) : OFE \cowith
+  | E => Gmap K cnt A.E
+  | dist => \lam n m1 m2 => \Pi (k : K) -> (OptionOFE A).dist n (glookup m1 k) (glookup m2 k)
+  | equiv => \lam m1 m2 => \Pi (k : K) -> (OptionOFE A).equiv (glookup m1 k) (glookup m2 k)
+  | equiv_refl => \lam m k => (OptionOFE A).equiv_refl (glookup m k)
+  | equiv_sym => \lam m1 m2 h k => (OptionOFE A).equiv_sym (glookup m1 k) (glookup m2 k) (h k)
+  | equiv_trans => \lam m1 m2 m3 h1 h2 k =>
+          (OptionOFE A).equiv_trans (glookup m1 k) (glookup m2 k) (glookup m3 k) (h1 k) (h2 k)
+  | ofe_equiv_dist => \lam m1 m2 => (
+    \lam he n k => ((OptionOFE A).ofe_equiv_dist (glookup m1 k) (glookup m2 k)).1 (he k) n,
+    \lam h k => ((OptionOFE A).ofe_equiv_dist (glookup m1 k) (glookup m2 k)).2 (\lam n => h n k)
+  )
+  | ofe_dist_refl => \lam n m k => (OptionOFE A).ofe_dist_refl n (glookup m k)
+  | ofe_dist_sym => \lam n m1 m2 h k => (OptionOFE A).ofe_dist_sym n (glookup m1 k) (glookup m2 k) (h k)
+  | ofe_dist_trans => \lam n m1 m2 m3 h1 h2 k =>
+          (OptionOFE A).ofe_dist_trans n (glookup m1 k) (glookup m2 k) (glookup m3 k) (h1 k) (h2 k)
+  | ofe_dist_le => \lam n m m1 m2 h le k =>
+          (OptionOFE A).ofe_dist_le n m (glookup m1 k) (glookup m2 k) (h k) le
 
-  | cmra_op_ne   => \lam m n m1 m2 hm i =>
-      option_op_ne {A} n (m i) (m1 i) (m2 i) (hm i)
-  | cmra_op_ne_2 => \lam m n m1 m2 hm i =>
-      option_op_ne_2 {A} n (m i) (m1 i) (m2 i) (hm i)
+-- =================================================================================
+-- Validity
+-- =================================================================================
 
-  | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm =>
-      \let cm_eq : cm = gmap_pcore_fun m1 =>
-        inv (pmap (\case __ \with { | just x => x | nothing => cm }) hpcm)
-      \in (gmap_pcore_fun m2, idp,
-           \lam i =>
-               transport (\lam c => (OptionOFE A).dist n (c i) (gmap_pcore_fun m2 i))
-                   (inv cm_eq)
-                   (gmap_pcore_pointwise_ne {K} {A} n m1 m2 hm i))
+\func GmapValidN {K : \Set} {cnt : Countable K} {A : CMRA} (n : Nat) (m : Gmap K cnt A.E) : \Prop =>
+  \Pi (k : K) -> option_validN {A} n (glookup m k)
 
-  | cmra_validN_ne => \lam n m1 m2 hm hv i =>
-      option_validN_ne {A} n (m1 i) (m2 i) (hm i) (hv i)
+\func GmapValid {K : \Set} {cnt : Countable K} {A : CMRA} (m : Gmap K cnt A.E) : \Prop =>
+  \Pi (k : K) -> option_valid {A} (glookup m k)
+
+-- =================================================================================
+-- The Gmap CMRA
+--
+-- Operations:
+--   op    = pointwise option_op
+--   pcore = pointwise option_pcore (always returns just)
+--   valid / validN = pointwise
+-- =================================================================================
+
+\func gmap_op {K : \Set} {cnt : Countable K} {A : CMRA} (m1 m2 : Gmap K cnt A.E) : Gmap K cnt A.E =>
+  gmerge (option_op {A}) m1 m2
+
+\func gmap_pcore {K : \Set} {cnt : Countable K} {A : CMRA} (m : Gmap K cnt A.E) : Maybe (Gmap K cnt A.E) =>
+  -- core = omap pcore (in stdpp); pomap is the wrapped omap on Pmap.
+  just (\new Gmap K cnt A.E {
+    | gtree => pomap (\lam p => \case pcore {A} p.2 \with {
+      | nothing => nothing
+      | just c  => just (p.1, c)
+    }) m.gtree
+    | gtree_wf => {?}    -- preserved: pomap only keeps existing positions
+  })
+
+-- The pointwise lookup law for op:
+\lemma glookup_op {K : \Set} {cnt : Countable K} {A : CMRA} (m1 m2 : Gmap K cnt A.E) (k : K)
+  : glookup (gmap_op m1 m2) k = option_op {A} (glookup m1 k) (glookup m2 k)
+  => {?}    -- by `plookup_merge` of pmerge + the gmerge_lift-vs-option_op equation
+
+-- The pointwise lookup law for pcore:
+\lemma glookup_core {K : \Set} {cnt : Countable K} {A : CMRA} (m : Gmap K cnt A.E) (k : K)
+  : (\case gmap_pcore m \with {
+  | nothing => nothing
+  | just cm => glookup cm k
+}) = option_pcore {A} (glookup m k)
+  => {?}
+
+-- =================================================================================
+-- The CMRA instance
+--
+-- All the proofs are pointwise, using `glookup_op` / `glookup_core` and the
+-- corresponding `option_op_*` / `option_validN_*` lemmas.
+-- =================================================================================
+
+\func GmapCMRA (K : \Set) (cnt : Countable K) (A : CMRA) : CMRA \cowith
+  | OFE => GmapOFE K cnt A
+  | pcore => gmap_pcore
+  | op => gmap_op
+  | valid => GmapValid {K} {cnt} {A}
+  | validN => GmapValidN {K} {cnt} {A}
+
+  | cmra_op_ne => \lam x n y1 y2 hy k =>
+      transport2 (\lam u v => (OptionOFE A).dist n u v)
+          (inv (glookup_op x y1 k))
+          (inv (glookup_op x y2 k))
+          (option_op_ne {A} n (glookup x k) (glookup y1 k) (glookup y2 k) (hy k))
+
+  | cmra_op_ne_2 => \lam y n x1 x2 hx k =>
+      transport2 (\lam u v => (OptionOFE A).dist n u v)
+          (inv (glookup_op x1 y k))
+          (inv (glookup_op x2 y k))
+          (option_op_ne_2 {A} n (glookup y k) (glookup x1 k) (glookup x2 k) (hx k))
+
+  | cmra_pcore_ne => \lam n m1 m2 cm hm hpcm => {?}
+
+  | cmra_validN_ne => \lam n m1 m2 hm hv k =>
+      option_validN_ne {A} n (glookup m1 k) (glookup m2 k) (hm k) (hv k)
 
   | cmra_valid_validN => \lam m => (
-    \lam hv n i => \case \elim m, m i \as mi, hv i : option_valid {A} mi
-    \return option_validN {A} n mi \with {
-      | _, nothing, _  => ()
-      | _, just a,  hv => (A.cmra_valid_validN a).1 hv n
+    \lam hv n k => \case glookup m k \as o, hv k : option_valid {A} o
+    \return option_validN {A} n o \with {
+      | nothing, _  => ()
+      | just a,  hv => (A.cmra_valid_validN a).1 hv n
     },
-    \lam hvn i => \case m i \as mi, \lam n => hvn n i : \Pi (n : Nat) -> option_validN {A} n mi
-    \return option_valid {A} mi \with {
+    \lam hvn k => \case glookup m k \as o, \lam n => hvn n k : \Pi (n : Nat) -> option_validN {A} n o
+    \return option_valid {A} o \with {
       | nothing, _ => ()
       | just a, h  => (A.cmra_valid_validN a).2 h
     }
   )
 
-  | cmra_validN_le => \lam n m' x hvn hle i =>
-      option_validN_le {A} n m' (x i) (hvn i) hle
+  | cmra_validN_le => \lam n m' x hvn hle k =>
+      option_validN_le {A} n m' (glookup x k) (hvn k) hle
 
   | cmra_assoc => \lam x y z =>
-      path (\lam i k => option_op_assoc {A} (x k) (y k) (z k) @ i)
+  -- Two Gmaps are equal iff they have equal lookups at every key.
+  -- We prove this via `glookup_op` followed by `option_op_assoc`, then close
+  -- with `gmap_eq` (extensionality).
+      gmap_eq _ _ (\lam k =>
+          glookup_op x (gmap_op y z) k *>
+          pmap2 (option_op {A}) idp (glookup_op y z k) *>
+          option_op_assoc {A} (glookup x k) (glookup y k) (glookup z k) *>
+          inv (pmap2 (option_op {A}) (glookup_op x y k) idp) *>
+          inv (glookup_op (gmap_op x y) z k))
 
   | cmra_comm => \lam x y =>
-      path (\lam i k => option_op_comm {A} (x k) (y k) @ i)
+      gmap_eq _ _ (\lam k =>
+          glookup_op x y k *>
+          option_op_comm {A} (glookup x k) (glookup y k) *>
+          inv (glookup_op y x k))
 
-  | cmra_pcore_l => \lam x cx hpx =>
-      \let cx_eq : cx = gmap_pcore_fun x =>
-        inv (pmap (\case __ \with { | just c => c | nothing => cx }) hpx)
-      \in path (\lam i k =>
-          transport (\lam c => option_op {A} (c k) (x k) = x k)
-              (inv cx_eq)
-              (option_pcore_l {A} (x k) (gmap_pcore_fun x k)
-                  (gmap_pcore_fun_lookup_eq {K} {A} x k))
-            @ i)
+  | cmra_pcore_l => \lam x cx hpx => {?}
+  | cmra_pcore_idemp => \lam x cx hpx => {?}
+  | cmra_pcore_mono => \lam x y cx hincl hpx => {?}
 
-  | cmra_pcore_idemp => \lam x cx hpx =>
-      \let cx_eq : cx = gmap_pcore_fun x =>
-        inv (pmap (\case __ \with { | just c => c | nothing => cx }) hpx)
-      \in transport (\lam c => gmap_pcore c = just c) (inv cx_eq)
-          (path (\lam i => just (path (\lam j k =>
-              gmap_pcore_fun_idemp {K} {A} x k @ j) @ i)))
+  | cmra_validN_op_l => \lam n x y hv k =>
+      option_validN_op_l {A} n (glookup x k) (glookup y k)
+          (transport (option_validN {A} n) (glookup_op x y k) (hv k))
 
-  | cmra_pcore_mono => \lam x y cx hincl hpx =>
-      (gmap_pcore_fun y, idp,
-       gmap_pcore_mono_proof {K} {A} x y cx hincl hpx)
+  | cmra_extend => \lam n x y1 y2 hvx hdist => {?}
 
-  | cmra_validN_op_l => \lam n x y hv i =>
-      option_validN_op_l {A} n (x i) (y i) (hv i)
+-- =================================================================================
+-- The UCMRA instance
+-- =================================================================================
 
-  | cmra_extend => \lam n x y1 y2 hvx hdist =>
-      gmap_extend_proof {K} {A} n x y1 y2 hvx hdist
-  \where {
-    -- pointwise non-expansiveness of option_pcore (a definitional case analysis)
-    \func gmap_pcore_pointwise_ne {K : \Set} {A : CMRA}
-                                  (n : Nat) (m1 m2 : Gmap K A.E)
-                                  (hm : \Pi (i : K) -> (OptionOFE A).dist n (m1 i) (m2 i))
-                                  (i : K)
-      : (OptionOFE A).dist n (gmap_pcore_fun m1 i) (gmap_pcore_fun m2 i)
-      => \case m1 i \as o1, m2 i \as o2, hm i : (OptionOFE A).dist n o1 o2
-      \return (OptionOFE A).dist n
-          (\case option_pcore {A} o1 \with { | just o => o | nothing => nothing })
-          (\case option_pcore {A} o2 \with { | just o => o | nothing => nothing })
-      \with {
-        | nothing,  nothing,  _ => ()
-        | just a1, just a2, h =>
-          \case pcore {A} a1 \as p1, pcore {A} a2 \as p2,
-                A.cmra_pcore_ne_dist n a1 a2 h p1 p2
-          \return (OptionOFE A).dist n p1 p2
-          \with { | _, _, r => r }
-        | nothing, just _, e => \case e \with {}
-        | just _, nothing, e => \case e \with {}
-      }
 
-    \func gmap_pcore_fun_lookup_eq {K : \Set} {A : CMRA}
-                                   (m : Gmap K A.E) (k : K)
-      : option_pcore {A} (m k) = just (gmap_pcore_fun m k)
-      => \case m k \as o \return option_pcore {A} o = just (
-        \case option_pcore {A} o \with { | just x => x | nothing => nothing }) \with {
-        | nothing => idp
-        | just _  => idp
-      }
-
-    \func gmap_pcore_fun_idemp {K : \Set} {A : CMRA}
-                               (m : Gmap K A.E) (k : K)
-      : gmap_pcore_fun (gmap_pcore_fun m) k = gmap_pcore_fun m k
-      => \case m k \as o \return
-      (\case option_pcore {A} (\case option_pcore {A} o \with {
-        | just x => x | nothing => nothing }) \with {
-        | just y => y | nothing => nothing })
-        = (\case option_pcore {A} o \with {
-        | just x => x | nothing => nothing })
-      \with {
-        | nothing => idp
-        | just a  =>
-          \case pcore {A} a \as p,
-                idp : pcore {A} a = p
-          \return
-          (\case option_pcore {A} p \with { | just y => y | nothing => nothing })
-            = (\case option_pcore {A} (just a) \with { | just x => x | nothing => nothing })
-          \with {
-            | nothing,  _ => idp
-            | just ca,  q => pmap (\lam x => \case x \with { | just y => y | nothing => nothing })
-                (pmap (option_pcore {A}) (inv q)) *>
-            pmap just (A.cmra_pcore_idemp a ca q)
-          }
-      }
-
-    \func gmap_pcore_mono_proof {K : \Set} {A : CMRA}
-                                (x y : Gmap K A.E) (cx : Gmap K A.E)
-                                (hincl : incl {Gmap K A.E} {\new BaseSet (Gmap K A.E)} {\new Op (Gmap K A.E) { | op => gmap_op }} x y)
-                                (hpx : gmap_pcore x = just cx)
-      : incl {Gmap K A.E} {\new BaseSet (Gmap K A.E)} {\new Op (Gmap K A.E) { | op => gmap_op }}
-        cx (gmap_pcore_fun y)
-      => {?}
-
-    \func gmap_extend_proof {K : \Set} {A : CMRA}
-                            (n : Nat) (x y1 y2 : Gmap K A.E)
-                            (hvx : GmapValidN {K} {A} n x)
-                            (hdist : \Pi (i : K) -> (OptionOFE A).dist n (x i) (option_op {A} (y1 i) (y2 i)))
-      : \Sigma (z1 z2 : Gmap K A.E) (x = gmap_op z1 z2)
-               ((GmapOFE K A).dist n z1 y1) ((GmapOFE K A).dist n z2 y2)
-      => {?}
+\lemma option_op_nothing_l {A : CMRA} (o : Maybe A.E) : option_op {A} nothing o = o
+  => \case \elim o \with {
+    | nothing => idp
+    | just _  => idp
   }
 
+\lemma option_op_nothing_r {A : CMRA} (o : Maybe A.E) : option_op {A} o nothing = o
+  => \case \elim o \with {
+    | nothing => idp
+    | just _  => idp
+  }
+
+\func GmapUCMRA (K : \Set) (cnt : Countable K) (A : UCMRA) : UCMRA \cowith
+  | CMRA => GmapCMRA K cnt A
+  | unit => gempty
+  | ucmra_unit_valid => \lam k =>
+      transport (option_valid {A}) (inv (glookup_empty k)) ()
+  | ucmra_unit_left_id => \lam m =>
+      gmap_eq _ _ (\lam k =>
+          glookup_op gempty m k *>
+          path (\lam i => option_op {A} (glookup_empty {K} {cnt} {A.E} k @ i) (glookup m k)) *>
+          option_op_nothing_l {A} (glookup m k))
+  | ucmra_pcore_unit => {?}    -- core of empty is empty (omap pcore on PEmpty = PEmpty)
+
 -- =================================================================================
--- The Gmap UCMRA instance
+-- Extensionality at the Gmap level (the key lemma we get from Pmap)
 -- =================================================================================
 
-\func GmapUCMRA (K : \Set) (A : UCMRA) : UCMRA \cowith
-  | CMRA => GmapCMRA K A
-  | unit => gmap_empty
-  | ucmra_unit_valid => \lam i => ()
-  | ucmra_unit_left_id => \lam m =>
-      path (\lam i k =>
-          (\case m k \as mk \return option_op {A} (nothing : Maybe A.E) mk = mk \with {
-            | nothing => idp
-            | just _  => idp
-          }) @ i)
-  | ucmra_pcore_unit => idp
+\func gmap_eq {K : \Set} {cnt : Countable K} {A : \Set} (m1 m2 : Gmap K cnt A)
+              (h : \Pi (k : K) -> glookup m1 k = glookup m2 k)
+  : m1 = m2 => {?}    -- via `pmap_eq` after lifting K-keys to Pos-keys via decode_encode

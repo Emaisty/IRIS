@@ -8,6 +8,32 @@
 \import Paths
 \import Paths.Meta
 \import Meta
+\import lib.gmap_cmra
+
+
+
+-- \func String => List Nat
+--
+-- \func stringDecEq (x y : String) : (x = y) `Or` (Not (x = y)) \elim x, y
+--   | nil, nil => inl idp
+--   | nil, :: _ _ => inr (\lam p => \case p \with {})
+--   | :: _ _, nil => inr (\lam p => \case p \with {})
+--   | :: a xs, :: b ys => \case decEqNat a b \with {
+--     | inl ab => \case stringDecEq xs ys \with {
+--       | inl xys => inl (pmap2 (::) ab xys)
+--       | inr nxys => inr (\lam p => nxys (pmap tail p))
+--     }
+--     | inr nab => inr (\lam p => nab (pmap headDef p))
+--   }
+--   \where {
+--     \func headDef (l : List Nat) : Nat
+--       | nil => 0
+--       | :: a _ => a
+--
+--     \func tail (l : List Nat) : List Nat
+--       | nil => nil
+--       | :: _ xs => xs
+--   }
 
 \func Loc => Nat
 
@@ -35,8 +61,8 @@
   | Load (e : Expr)
   | Store (e1 e2 : Expr)
 
-\record State
-  | heap : Loc -> Maybe Value
+\record State (cnt : Countable Loc)
+  | heap : Gmap Loc cnt Value
 
 \func of_val (v : Value) : Expr => Val v
 
@@ -80,11 +106,8 @@
       | suc n => n
   }
 
-\func heap_update (h : Loc -> Maybe Value) (l : Loc) (v : Value) : Loc -> Maybe Value =>
-  \lam l' => \case decEqNat l l' \with {
-    | inl _ => just v
-    | inr _ => h l'
-  }
+\func heap_update {cnt : Countable Loc} (h : Gmap Loc cnt Value) (l : Loc) (v : Value) : Gmap Loc cnt Value =>
+  ginsert l v h
 
 \truncated \data PrimStep (e1 : Expr) (s1 : State) (e2 : Expr) (s2 : State) : \Prop
   | BetaS (x : String) (body : Expr) (v : Value)
@@ -112,20 +135,20 @@
           (p2 : e2 = Val (PairV v1 v2))
           (p3 : s2 = s1)
   | AllocS (v : Value) (l : Loc)
-           (fresh : s1.heap l = nothing)
+           (fresh : glookup s1.heap l = nothing)
            (p1 : e1 = Alloc (Val v))
            (p2 : e2 = Val (LitV (LitLoc l)))
-           (p3 : s2 = \new State { | heap => heap_update s1.heap l v })
+           (p3 : s2 = \new State { | cnt => s1.cnt | heap => heap_update s1.heap l v })
   | LoadS (l : Loc) (v : Value)
-          (lookup : s1.heap l = just v)
+          (lookup : glookup s1.heap l = just v)
           (p1 : e1 = Load (Val (LitV (LitLoc l))))
           (p2 : e2 = Val v)
           (p3 : s2 = s1)
   | StoreS (l : Loc) (v v' : Value)
-           (allocated : s1.heap l = just v')
+           (allocated : glookup s1.heap l = just v')
            (p1 : e1 = Store (Val (LitV (LitLoc l))) (Val v))
            (p2 : e2 = Val (LitV LitUnit))
-           (p3 : s2 = \new State { | heap => heap_update s1.heap l v })
+           (p3 : s2 = \new State { | cnt => s1.cnt | heap => heap_update s1.heap l v })
 
 \func Reducible (e : Expr) (s : State) : \Prop =>
   TruncP (\Sigma (e' : Expr) (s' : State) (PrimStep e s e' s'))
