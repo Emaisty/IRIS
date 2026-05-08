@@ -136,7 +136,7 @@
       h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b unit_incl_b
 
 
-\func BIuPred (M : UCMRA) : BIBase \cowith
+\instance BIuPred (M : UCMRA) : BIBase \cowith
   | E => ProperUPred M
   | <= => properUPred_ent
   | <=-refl => \lam n a _ h => h
@@ -287,3 +287,38 @@
 \lemma upredDist_wand_r {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
                         (h : upredDist n P Q)
   : upredDist n (mkProperWand R P) (mkProperWand R Q) => {?}
+
+
+-- =================================================================================
+-- uPred updates
+-- =================================================================================
+
+\func mkProperBUpd {M : UCMRA} (P : ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a =>
+      \Pi (k : Nat) -> k <= n -> \Pi (yf : M.E) ->
+          M.validN k (M.op a yf) ->
+          TruncP (\Sigma (a' : M.E) (M.validN k (M.op a' yf)) (P.upred_holds k a'))
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 k k_le_n2 yf hv =>
+      \case incl \with {
+        | inP (x3, dist_x2_x1x3) =>
+          \let
+            | k_le_n1 : k <= n1 => NatSemiring.<=∘ k_le_n2 n2_le_n1
+            | dist_x2_x1x3_k : M.dist k x2 (M.op x1 x3) =>
+              M.ofe_dist_le n2 k x2 (M.op x1 x3) dist_x2_x1x3 k_le_n2
+            | dist_op_yf : M.dist k (M.op x2 yf) (M.op (M.op x1 x3) yf) =>
+              M.cmra_op_ne_2 yf k x2 (M.op x1 x3) dist_x2_x1x3_k
+            | hv_x1x3_yf : M.validN k (M.op (M.op x1 x3) yf) =>
+              M.cmra_validN_ne k (M.op x2 yf) (M.op (M.op x1 x3) yf) dist_op_yf hv
+            | hv_x1_x3yf : M.validN k (M.op x1 (M.op x3 yf)) =>
+              transport (M.validN k) (inv (M.cmra_assoc x1 x3 yf)) hv_x1x3_yf
+            | step => h k k_le_n1 (M.op x3 yf) hv_x1_x3yf
+          \in \case step \with {
+            | inP (a', hv_a'_x3yf, hp_a') =>
+              \let
+                | hv_a'x3_yf : M.validN k (M.op (M.op a' x3) yf) =>
+                  transport (M.validN k) (M.cmra_assoc a' x3 yf) hv_a'_x3yf
+              \in inP (M.op a' x3, hv_a'x3_yf,
+                       P.upred_mono k k a' (M.op a' x3) hp_a'
+                           (inclN_op_l k a' x3) <=-refl)
+          }
+      }

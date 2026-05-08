@@ -46,20 +46,25 @@
 \data Value : \Set
   | LitV (l : Lit)
   | LamV (x : String) (body : Expr)
+  | RecV (f x : String) (body : Expr)
   | PairV (v1 v2 : Value)
 
 \data Expr : \Set
   | Val (v : Value)
   | Var (x : String)
   | Lam (x : String) (body : Expr)
+  | Rec (f x : String) (body : Expr)
   | App (e1 e2 : Expr)
   | If (cond thenB elseB : Expr)
   | Pair (e1 e2 : Expr)
   | Fst (e : Expr)
   | Snd (e : Expr)
-  | Alloc (e : Expr)
+  | IsZero (e : Expr)
+  | Pred (e : Expr)
+  | Mul (e1 e2 : Expr)
   | Load (e : Expr)
   | Store (e1 e2 : Expr)
+  | Alloc (e : Expr)
 
 \record State (cnt : Countable Loc)
   | heap : Gmap Loc cnt Value
@@ -80,11 +85,21 @@
     | inl _ => Lam y body
     | inr _ => Lam y (subst x v body)
   }
+  | Rec f y body => \case decideEq x f \with {
+    | inl _ => Rec f y body
+    | inr _ => \case decideEq x y \with {
+      | inl _ => Rec f y body
+      | inr _ => Rec f y (subst x v body)
+    }
+  }
   | App e1 e2 => App (subst x v e1) (subst x v e2)
   | If cond thenB elseB => If (subst x v cond) (subst x v thenB) (subst x v elseB)
   | Pair e1 e2 => Pair (subst x v e1) (subst x v e2)
   | Fst e => Fst (subst x v e)
   | Snd e => Snd (subst x v e)
+  | IsZero e => IsZero (subst x v e)
+  | Pred e => Pred (subst x v e)
+  | Mul e1 e2 => Mul (subst x v e1) (subst x v e2)
   | Alloc e => Alloc (subst x v e)
   | Load e => Load (subst x v e)
   | Store e1 e2 => Store (subst x v e1) (subst x v e2)
@@ -114,6 +129,14 @@
           (p1 : e1 = App (Val (LamV x body)) (Val v))
           (p2 : e2 = subst x v body)
           (p3 : s2 = s1)
+  | RecBetaS (f x : String) (body : Expr) (v : Value)
+             (p1 : e1 = App (Val (RecV f x body)) (Val v))
+             (p2 : e2 = subst x v (subst f (RecV f x body) body))
+             (p3 : s2 = s1)
+  | RecS (f x : String) (body : Expr)
+         (p1 : e1 = Rec f x body)
+         (p2 : e2 = Val (RecV f x body))
+         (p3 : s2 = s1)
   | IfTrueS (t f : Expr)
             (p1 : e1 = If (Val (LitV (LitBool true))) t f)
             (p2 : e2 = t)
@@ -149,6 +172,22 @@
            (p1 : e1 = Store (Val (LitV (LitLoc l))) (Val v))
            (p2 : e2 = Val (LitV LitUnit))
            (p3 : s2 = \new State { | cnt => s1.cnt | heap => heap_update s1.heap l v })
+  | IsZeroZeroS
+          (p1 : e1 = IsZero (Val (LitV (LitInt 0))))
+          (p2 : e2 = Val (LitV (LitBool true)))
+          (p3 : s2 = s1)
+  | IsZeroPosS (n : Nat)
+               (p1 : e1 = IsZero (Val (LitV (LitInt (pos (suc n))))))
+               (p2 : e2 = Val (LitV (LitBool false)))
+               (p3 : s2 = s1)
+  | PredS (n : Nat)
+          (p1 : e1 = Pred (Val (LitV (LitInt (pos (suc n))))))
+          (p2 : e2 = Val (LitV (LitInt (pos n))))
+          (p3 : s2 = s1)
+  | MulS (a b : Nat)
+         (p1 : e1 = Mul (Val (LitV (LitInt (pos a)))) (Val (LitV (LitInt (pos b)))))
+         (p2 : e2 = Val (LitV (LitInt (pos (a Nat.* b)))))
+         (p3 : s2 = s1)
 
 \func Reducible (e : Expr) (s : State) : \Prop =>
   TruncP (\Sigma (e' : Expr) (s' : State) (PrimStep e s e' s'))
@@ -181,3 +220,13 @@
   | AllocS v l fresh p1 p2 p3 => rewrite p1 idp
   | LoadS l v lookup p1 p2 p3 => rewrite p1 idp
   | StoreS l v v' allocated p1 p2 p3 => rewrite p1 idp
+
+-- =================================================================================
+-- Mathematical factorial on Nat
+-- =================================================================================
+
+\func nat_fact (n : Nat) : Nat
+  | 0      => 1
+  | suc n' => suc n' Nat.* nat_fact n'
+
+\func natV (n : Nat) : Value => LitV (LitInt (pos n))

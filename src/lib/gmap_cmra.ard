@@ -612,3 +612,10 @@
 \func gmap_eq {K : \Set} {cnt : Countable K} {A : \Set} (m1 m2 : Gmap K cnt A)
               (h : \Pi (k : K) -> glookup m1 k = glookup m2 k)
   : m1 = m2 => {?}    -- via `pmap_eq` after lifting K-keys to Pos-keys via decode_encode
+
+\lemma glookup_singleton_eq {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A)
+  : glookup (gsingleton k x) k = just x
+  => path (\lam i => \case plookup_singleton_eq (encode {cnt} k) x @ i \with {
+    | nothing => nothing
+    | just p  => just p.2
+  })
