@@ -10,6 +10,7 @@
 \import lang
 \import weakestpre
 \import ofe
+\import updates
 \import lib.heap
 \import lib.gmap_cmra
 \import lib.excl_cmra
@@ -23,14 +24,13 @@
 
 \lemma ghost_intro
   {cnt : Countable Loc}
-  (bu    : BUpdNE)
   (e     : Expr)
   (Phi   : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (sigma : State cnt)
-  (hwp   : properUPred_ent (mkProperPure (\Sigma)) (wp bu e Phi))
+  (hwp   : properUPred_ent (mkProperPure (\Sigma)) (wp e Phi))
   : properUPred_ent
     (own_heap_auth sigma)
-    (mkProperSep (own_heap_auth sigma) (wp bu e Phi))
+    (mkProperSep (own_heap_auth sigma) (wp e Phi))
   =>
     \let M => HeapCMRA Loc cnt Value
     \in \lam n a hv hauth =>
@@ -48,14 +48,13 @@
 
 \lemma wp_step
   {cnt : Countable Loc}
-  (bu          : BUpdNE)
   (e e2        : Expr)
   (Phi         : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (sigma sigma2 : State cnt)
   (hstep       : PrimStep e sigma e2 sigma2)
   : properUPred_ent
-    (mkProperSep (wp bu e Phi) (own_heap_auth sigma))
-    (bu.bupd (mkProperLater (bu.bupd (mkProperSep (own_heap_auth sigma2) (wp bu e2 Phi)))))
+    (mkProperSep (wp e Phi) (own_heap_auth sigma))
+    (mkProperBUpd (mkProperLater (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))))
   =>
     \lam n a hv hsep =>
         \case hsep \with {
@@ -66,68 +65,68 @@
                  | hv_op : M.validN n (M.op a_wp a_auth) =>
                    M.cmra_validN_ne n a (M.op a_wp a_auth) dist_a hv
                  | hv_wp : M.validN n a_wp => M.cmra_validN_op_l n a_wp a_auth hv_op
-                 | hwp_unfolded : (wp_pre bu.bupd (wp bu) e Phi).upred_holds n a_wp =>
-                   (wp_unfold bu e Phi n a_wp hv_wp).1 hwp
+                 | hwp_unfolded : (wp_pre wp e Phi).upred_holds n a_wp =>
+                   (wp_unfold e Phi n a_wp hv_wp).1 hwp
                  | hwand : (mkProperWand (own_heap_auth sigma)
-                     (bu.bupd (mkProperAnd
+                     (mkProperBUpd (mkProperAnd
                          (mkProperPure (Reducible e sigma))
                          (mkProperLater (mkProperForall Expr (\lam e' =>
                              mkProperForall (State cnt) (\lam s' =>
                                  mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                     (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))
+                                     (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))
                            ).upred_holds n a_wp =>
                    \let
-                     | unfolded_eq : wp_pre bu.bupd (wp bu) e Phi =
+                     | unfolded_eq : wp_pre wp  e Phi =
                      mkProperForall (State cnt) (\lam sigma' =>
                          mkProperWand (own_heap_auth sigma')
-                             (bu.bupd (mkProperAnd
+                             (mkProperBUpd (mkProperAnd
                                  (mkProperPure (Reducible e sigma'))
                                  (mkProperLater (mkProperForall Expr (\lam e' =>
                                      mkProperForall (State cnt) (\lam s' =>
                                          mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                             (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))) =>
+                                             (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))) =>
                        pmap (\lam tv =>
                            \case tv \with {
-                             | just v  => bu.bupd (Phi v)
+                             | just v  => mkProperBUpd (Phi v)
                              | nothing => mkProperForall (State cnt) (\lam sigma' =>
                                  mkProperWand (own_heap_auth sigma')
-                                     (bu.bupd (mkProperAnd
+                                     (mkProperBUpd (mkProperAnd
                                          (mkProperPure (Reducible e sigma'))
                                          (mkProperLater (mkProperForall Expr (\lam e' =>
                                              mkProperForall (State cnt) (\lam s' =>
                                                  mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                                     (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi))))))))))
+                                                     (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi))))))))))
                            })
                            tv_nothing
                      | hforall :
                            (mkProperForall (State cnt) (\lam sigma' =>
                                mkProperWand (own_heap_auth sigma')
-                                   (bu.bupd (mkProperAnd
+                                   (mkProperBUpd (mkProperAnd
                                        (mkProperPure (Reducible e sigma'))
                                        (mkProperLater (mkProperForall Expr (\lam e' =>
                                            mkProperForall (State cnt) (\lam s' =>
                                                mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                                   (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))
+                                                   (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))
                            )).upred_holds n a_wp =>
                        transport
                            (\lam (P : ProperUPred (HeapCMRA Loc cnt Value)) => P.upred_holds n a_wp)
                            unfolded_eq
                            hwp_unfolded
                    \in hforall sigma
-                 | h_on_op : (bu.bupd (mkProperAnd
+                 | h_on_op : (mkProperBUpd (mkProperAnd
                      (mkProperPure (Reducible e sigma))
                      (mkProperLater (mkProperForall Expr (\lam e' =>
                          mkProperForall (State cnt) (\lam s' =>
                              mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                 (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                 (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                       )).upred_holds n (M.op a_wp a_auth) =>
                    hwand n <=-refl a_auth hv_op hauth
-                 | h_on_a : (bu.bupd (mkProperAnd
+                 | h_on_a : (mkProperBUpd (mkProperAnd
                      (mkProperPure (Reducible e sigma))
                      (mkProperLater (mkProperForall Expr (\lam e' =>
                          mkProperForall (State cnt) (\lam s' =>
                              mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                 (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                 (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                      )).upred_holds n a =>
                    \let
                      | dist_a_op_unit : M.dist n a (M.op (M.op a_wp a_auth) M.unit) =>
@@ -135,25 +134,25 @@
                            (inv (ucmra_unit_right_id (M.op a_wp a_auth)))
                            dist_a
                    \in
-                         (bu.bupd (mkProperAnd
+                         (mkProperBUpd (mkProperAnd
                              (mkProperPure (Reducible e sigma))
                              (mkProperLater (mkProperForall Expr (\lam e' =>
                                  mkProperForall (State cnt) (\lam s' =>
                                      mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                         (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                         (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                   )).upred_mono n n (M.op a_wp a_auth) a
                          h_on_op
                          (inP (M.unit, dist_a_op_unit))
                          <=-refl
             \in
-              bu.bupd_mono
+              bupd_mono
                   (mkProperAnd
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e' =>
                           mkProperForall (State cnt) (\lam s' =>
                               mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                  (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi))))))))
-                  (mkProperLater (bu.bupd (mkProperSep (own_heap_auth sigma2) (wp bu e2 Phi))))
+                                  (mkProperBUpd(mkProperSep (own_heap_auth s') (wp e' Phi))))))))
+                  (mkProperLater (mkProperBUpd(mkProperSep (own_heap_auth sigma2) (wp e2 Phi))))
                   (\lam n' a' hv' hand =>
                       \case n' \as n'', hv' \as hv'' : (HeapCMRA Loc cnt Value).validN n'' a',
                             hand \as hand'' : (mkProperAnd
@@ -161,16 +160,16 @@
                                 (mkProperLater (mkProperForall Expr (\lam e' =>
                                     mkProperForall (State cnt) (\lam s' =>
                                         mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                            (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))
+                                            (mkProperBUpd(mkProperSep (own_heap_auth s') (wp e' Phi)))))
                                 ))).upred_holds n'' a' \return
-                          (mkProperLater (bu.bupd (mkProperSep (own_heap_auth sigma2) (wp bu e2 Phi)))).upred_holds n'' a'
+                          (mkProperLater (mkProperBUpd(mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))).upred_holds n'' a'
                       \with {
                         | 0, _, _ => ()
                         | suc k, hv'', hand'' =>
                           \let hlater : (mkProperForall Expr (\lam e' =>
                               mkProperForall (State cnt) (\lam s' =>
                                   mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                      (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))).upred_holds k a' =>
+                                      (mkProperBUpd(mkProperSep (own_heap_auth s') (wp e' Phi)))))).upred_holds k a' =>
                             hand''.2
                           \in hlater e2 sigma2 k <=-refl a'
                               ((HeapCMRA Loc cnt Value).cmra_validN_le (suc k) k a' hv'' (n<=sucn k))
@@ -193,11 +192,10 @@
 
 \func bupd_later_iter
   {cnt : Countable Loc}
-  (bu : BUpdNE)
   (k  : Nat)
   (P  : ProperUPred (HeapCMRA Loc cnt Value))
   : ProperUPred (HeapCMRA Loc cnt Value)
-  => bupd_later_iter_fn bu.bupd k P
+  => bupd_later_iter_fn k P
 
 \func not_stuck {cnt : Countable Loc} (e : Expr) (sigma : State cnt) : \Prop =>
   (\Sigma (v : Value) (to_val e = just v)) ||
@@ -206,13 +204,12 @@
 
 \lemma wp_not_stuck
   {cnt : Countable Loc}
-  (bu    : BUpdNE)
   (e     : Expr)
   (Phi   : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (sigma : State cnt)
   : properUPred_ent
-    (mkProperSep (own_heap_auth sigma) (wp bu e Phi))
-    (bu.bupd (mkProperPure (not_stuck e sigma)))
+    (mkProperSep (own_heap_auth sigma) (wp e Phi))
+    (mkProperBUpd (mkProperPure (not_stuck e sigma)))
   =>
     \lam n a hv hsep =>
         \case hsep \with {
@@ -224,71 +221,71 @@
               | hv_wp : M.validN n a_wp =>
                 M.cmra_validN_op_l n a_wp a_auth
                     (transport (\lam w => M.validN n w) (M.cmra_comm a_auth a_wp) hv_op)
-              | hwp_unfolded : (wp_pre bu.bupd (wp bu) e Phi).upred_holds n a_wp =>
-                (wp_unfold bu e Phi n a_wp hv_wp).1 hwp
+              | hwp_unfolded : (wp_pre wp e Phi).upred_holds n a_wp =>
+                (wp_unfold e Phi n a_wp hv_wp).1 hwp
             \in \case to_val e \as tv, idp : to_val e = tv \return
-                (bu.bupd (mkProperPure (not_stuck e sigma))).upred_holds n a
+                (mkProperBUpd (mkProperPure (not_stuck e sigma))).upred_holds n a
             \with {
               | just v, p_val =>
                 \let
                   | h_val : not_stuck e sigma => byLeft (v, p_val)
                   | h_pure : (mkProperPure (not_stuck e sigma)).upred_holds n a => h_val
-                \in bu.bupd_intro (mkProperPure (not_stuck e sigma)) n a hv h_pure
+                \in bupd_intro (mkProperPure (not_stuck e sigma)) n a hv h_pure
               | nothing, p_noval =>
                 \let
-                  | unfolded_eq : wp_pre bu.bupd (wp bu) e Phi =
+                  | unfolded_eq : wp_pre wp e Phi =
                   mkProperForall (State cnt) (\lam sigma' =>
                       mkProperWand (own_heap_auth sigma')
-                          (bu.bupd (mkProperAnd
+                          (mkProperBUpd (mkProperAnd
                               (mkProperPure (Reducible e sigma'))
                               (mkProperLater (mkProperForall Expr (\lam e' =>
                                   mkProperForall (State cnt) (\lam s' =>
                                       mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                          (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))) =>
+                                          (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))) =>
                     pmap (\lam tv =>
                         \case tv \with {
-                          | just v  => bu.bupd (Phi v)
+                          | just v  => mkProperBUpd (Phi v)
                           | nothing => mkProperForall (State cnt) (\lam sigma' =>
                               mkProperWand (own_heap_auth sigma')
-                                  (bu.bupd (mkProperAnd
+                                  (mkProperBUpd (mkProperAnd
                                       (mkProperPure (Reducible e sigma'))
                                       (mkProperLater (mkProperForall Expr (\lam e' =>
                                           mkProperForall (State cnt) (\lam s' =>
                                               mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                                  (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi))))))))))
+                                                  (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi))))))))))
                         })
                         p_noval
                   | hforall :
                         (mkProperForall (State cnt) (\lam sigma' =>
                             mkProperWand (own_heap_auth sigma')
-                                (bu.bupd (mkProperAnd
+                                (mkProperBUpd (mkProperAnd
                                     (mkProperPure (Reducible e sigma'))
                                     (mkProperLater (mkProperForall Expr (\lam e' =>
                                         mkProperForall (State cnt) (\lam s' =>
                                             mkProperImpl (mkProperPure (PrimStep e sigma' e' s'))
-                                                (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))
+                                                (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))
                         )).upred_holds n a_wp =>
                     transport
                         (\lam (P : ProperUPred (HeapCMRA Loc cnt Value)) => P.upred_holds n a_wp)
                         unfolded_eq
                         hwp_unfolded
                   | hwand : (mkProperWand (own_heap_auth sigma)
-                      (bu.bupd (mkProperAnd
+                      (mkProperBUpd (mkProperAnd
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e' =>
                               mkProperForall (State cnt) (\lam s' =>
                                   mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                      (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))))
+                                      (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))))
                             ).upred_holds n a_wp =>
                     hforall sigma
                   | hv_wp_auth : M.validN n (M.op a_wp a_auth) =>
                     transport (\lam w => M.validN n w) (M.cmra_comm a_auth a_wp) hv_op
-                  | h_on_wp_auth : (bu.bupd (mkProperAnd
+                  | h_on_wp_auth : (mkProperBUpd (mkProperAnd
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e' =>
                           mkProperForall (State cnt) (\lam s' =>
                               mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                  (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                  (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                             )).upred_holds n (M.op a_wp a_auth) =>
                     hwand n <=-refl a_auth hv_wp_auth hauth
                   | dist_a_wp_auth : M.dist n a (M.op a_wp a_auth) =>
@@ -297,12 +294,12 @@
                         (transport (\lam w => M.dist n (M.op a_auth a_wp) w)
                             (M.cmra_comm a_auth a_wp)
                             (M.ofe_dist_refl n (M.op a_auth a_wp)))
-                  | h_on_a : (bu.bupd (mkProperAnd
+                  | h_on_a : (mkProperBUpd (mkProperAnd
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e' =>
                           mkProperForall (State cnt) (\lam s' =>
                               mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                  (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                  (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                       )).upred_holds n a =>
                     \let
                       | dist_a_op_unit : M.dist n a (M.op (M.op a_wp a_auth) M.unit) =>
@@ -310,24 +307,24 @@
                             (inv (ucmra_unit_right_id (M.op a_wp a_auth)))
                             dist_a_wp_auth
                     \in
-                          (bu.bupd (mkProperAnd
+                          (mkProperBUpd (mkProperAnd
                               (mkProperPure (Reducible e sigma))
                               (mkProperLater (mkProperForall Expr (\lam e' =>
                                   mkProperForall (State cnt) (\lam s' =>
                                       mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                          (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi)))))))
+                                          (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi)))))))
                                    )).upred_mono n n (M.op a_wp a_auth) a
                           h_on_wp_auth
                           (inP (M.unit, dist_a_op_unit))
                           <=-refl
                 \in
-                  bu.bupd_mono
+                  bupd_mono
                       (mkProperAnd
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e' =>
                               mkProperForall (State cnt) (\lam s' =>
                                   mkProperImpl (mkProperPure (PrimStep e sigma e' s'))
-                                      (bu.bupd (mkProperSep (own_heap_auth s') (wp bu e' Phi))))))))
+                                      (mkProperBUpd (mkProperSep (own_heap_auth s') (wp e' Phi))))))))
                       (mkProperPure (not_stuck e sigma))
                       (\lam n' a' hv' hand => byRight hand.1)
                       n a hv h_on_a
@@ -341,39 +338,38 @@
 
 \lemma wp_steps
   {cnt : Countable Loc}
-  (bu    : BUpdNE)
   (k     : Nat)
   (e e'  : Expr)
   (Phi   : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (sigma sigma' : State cnt)
   (hsteps : Steps k e sigma e' sigma')
   : properUPred_ent
-    (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-    (bupd_later_iter bu k (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))))
+    (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+    (bupd_later_iter k (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi))))
 \elim k, hsteps
   | 0, StepsRefl pe ps =>
     transport
         (\lam x => properUPred_ent
-            (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-            (bu.bupd (mkProperSep (own_heap_auth x.2) (wp bu x.1 Phi))))
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+            (mkProperBUpd (mkProperSep (own_heap_auth x.2) (wp x.1 Phi))))
         (path (\lam i => (pe @ i, ps @ i)))
-        (properUPred_ent_refl (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi))))
+        (properUPred_ent_refl (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi))))
   | suc k', StepsStep emid smid hd tl =>
     \let ih : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth smid) (wp bu emid Phi)))
-        (bupd_later_iter bu k' (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))) =>
-      wp_steps bu k' emid e' Phi smid sigma' tl
+        (mkProperBUpd (mkProperSep (own_heap_auth smid) (wp emid Phi)))
+        (bupd_later_iter k' (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))) =>
+      wp_steps k' emid e' Phi smid sigma' tl
     \in \lam n a hv h_bupd_own_wp =>
-        bu.bupd_trans
-            (mkProperLater (bupd_later_iter bu k'
-                (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))))
+        bupd_trans
+            (mkProperLater (bupd_later_iter k'
+                (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))))
             n a hv
-            (bu.bupd_mono
-                (mkProperSep (own_heap_auth sigma) (wp bu e Phi))
-                (bu.bupd (mkProperLater (bupd_later_iter bu k'
-                    (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))))))
+            (bupd_mono
+                (mkProperSep (own_heap_auth sigma) (wp e Phi))
+                (mkProperBUpd (mkProperLater (bupd_later_iter k'
+                    (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi))))))
                 (\lam n' a' hv' hsep_own_wp =>
-                    \let hsep_wp_own : (mkProperSep (wp bu e Phi) (own_heap_auth sigma)).upred_holds n' a' =>
+                    \let hsep_wp_own : (mkProperSep (wp e Phi) (own_heap_auth sigma)).upred_holds n' a' =>
                            \case hsep_own_wp \with {
                              | inP (ao, aw, d, ho, hw) =>
                                inP (aw, ao,
@@ -382,24 +378,24 @@
                                         d,
                                     hw, ho)
                            }
-                         | h_one : (bu.bupd (mkProperLater
-                             (bu.bupd (mkProperSep (own_heap_auth smid) (wp bu emid Phi))))).upred_holds n' a' =>
-                           wp_step bu e emid Phi sigma smid hd n' a' hv' hsep_wp_own
-                         | h_iter : (bu.bupd (mkProperLater
-                             (bupd_later_iter bu k'
-                                 (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))))).upred_holds n' a' =>
-                           bu.bupd_mono
-                               (mkProperLater (bu.bupd (mkProperSep (own_heap_auth smid) (wp bu emid Phi))))
-                               (mkProperLater (bupd_later_iter bu k'
-                                   (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))))
+                         | h_one : (mkProperBUpd (mkProperLater
+                             (mkProperBUpd (mkProperSep (own_heap_auth smid) (wp emid Phi))))).upred_holds n' a' =>
+                           wp_step e emid Phi sigma smid hd n' a' hv' hsep_wp_own
+                         | h_iter : (mkProperBUpd (mkProperLater
+                             (bupd_later_iter k'
+                                 (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))))).upred_holds n' a' =>
+                           bupd_mono
+                               (mkProperLater (mkProperBUpd (mkProperSep (own_heap_auth smid) (wp emid Phi))))
+                               (mkProperLater (bupd_later_iter k'
+                                   (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))))
                                (\lam n'' a'' hv'' hlater =>
                                    \case n'' \as nnn,
                                          hv'' \as hv_nnn : (HeapCMRA Loc cnt Value).validN nnn a'',
                                          hlater \as hlater' :
-                                             (mkProperLater (bu.bupd (mkProperSep (own_heap_auth smid) (wp bu emid Phi)))).upred_holds nnn a''
+                                             (mkProperLater (mkProperBUpd (mkProperSep (own_heap_auth smid) (wp emid Phi)))).upred_holds nnn a''
                                    \return
-                                       (mkProperLater (bupd_later_iter bu k'
-                                           (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))))).upred_holds nnn a''
+                                       (mkProperLater (bupd_later_iter k'
+                                           (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi))))).upred_holds nnn a''
                                    \with {
                                      | 0, _, _ => ()
                                      | suc m, hv_nnn, h_bupd_smid =>
@@ -416,13 +412,12 @@
 
 \lemma bupd_later_soundness
   {cnt : Countable Loc}
-  (bu    : BUpdNE)
   (P     : \Prop)
   (sigma : State cnt)
   (h     : \Pi (n : Nat) ->
       properUPred_ent
           (own_heap_auth sigma)
-          (bupd_later_iter bu n (bu.bupd (mkProperPure P))))
+          (bupd_later_iter n (mkProperBUpd (mkProperPure P))))
   : P =>
   \let
     | M => HeapCMRA Loc cnt Value
@@ -443,9 +438,9 @@
            transport (\lam w => M.dist 0 a0 w)
                (inv (ucmra_unit_right_id a0))
                (M.ofe_dist_refl 0 a0))
-    | h_bupd_pure : (bu.bupd (mkProperPure P)).upred_holds 0 a0 =>
+    | h_bupd_pure : (mkProperBUpd (mkProperPure P)).upred_holds 0 a0 =>
       h 0 0 a0 hv_a0 hauth_a0
-  \in bu.bupd_extract_pure P 0 a0 hv_a0 h_bupd_pure
+  \in bupd_extract_pure P 0 a0 hv_a0 h_bupd_pure
 
 
 -- =================================================================================
@@ -455,19 +450,17 @@
 
 \lemma bupd_later_iter_extract_pure
   {cnt : Countable Loc}
-  (bu  : BUpdNE)
   (k   : Nat)
   (phi : \Prop)
   (a   : (HeapCMRA Loc cnt Value).E)
   (hv  : (HeapCMRA Loc cnt Value).validN k a)
-  (h   : (bupd_later_iter bu k (bu.bupd (mkProperPure phi))).upred_holds k a)
+  (h   : (bupd_later_iter k (mkProperBUpd (mkProperPure phi))).upred_holds k a)
   : phi =>
-  bu.bupd_later_iter_soundness k phi a hv h
+  bupd_later_iter_soundness k phi a hv h
 
 
 \lemma wp_adequacy
   {cnt : Countable Loc}
-  (bu     : BUpdNE)
   (e      : Expr)
   (phi    : Value -> \Prop)
   (sigma  : State cnt)
@@ -476,7 +469,7 @@
   (sigma' : State cnt)
   (hwp    : properUPred_ent
       (mkProperPure (\Sigma))
-      (wp bu e (\lam w => mkProperPure (phi w))))
+      (wp e (\lam w => mkProperPure (phi w))))
   (hsteps : Steps k e sigma (Val v) sigma')
   : phi v =>
   \let
@@ -502,29 +495,29 @@
                          (M.ofe_dist_refl n a0))
     | h_ghost : properUPred_ent
         (own_heap_auth sigma)
-        (mkProperSep (own_heap_auth sigma) (wp bu e Phi)) =>
-      ghost_intro bu e Phi sigma hwp
+        (mkProperSep (own_heap_auth sigma) (wp e Phi)) =>
+      ghost_intro e Phi sigma hwp
     | h_seed : properUPred_ent
         (own_heap_auth sigma)
-        (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi))) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi))) =>
       properUPred_ent_trans
           (own_heap_auth sigma)
-          (mkProperSep (own_heap_auth sigma) (wp bu e Phi))
-          (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
+          (mkProperSep (own_heap_auth sigma) (wp e Phi))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
           h_ghost
-          (bu.bupd_intro (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
+          (bupd_intro (mkProperSep (own_heap_auth sigma) (wp e Phi)))
     | h_run : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu (Val v) Phi)))) =>
-      wp_steps bu k e (Val v) Phi sigma sigma' hsteps
-    | wp_val_eq : upredEquiv (wp bu (Val v) Phi) (bu.bupd (Phi v)) =>
-      wp_value bu v Phi
-    | wp_val_to_bupd : properUPred_ent (wp bu (Val v) Phi) (bu.bupd (Phi v)) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi)))) =>
+      wp_steps k e (Val v) Phi sigma sigma' hsteps
+    | wp_val_eq : upredEquiv (wp (Val v) Phi) (mkProperBUpd (Phi v)) =>
+      wp_value v Phi
+    | wp_val_to_bupd : properUPred_ent (wp (Val v) Phi) (mkProperBUpd (Phi v)) =>
       \lam n a hv h => (wp_val_eq n a hv).1 h
     | sep_inner_mono : properUPred_ent
-        (mkProperSep (own_heap_auth sigma') (wp bu (Val v) Phi))
-        (mkProperSep (own_heap_auth sigma') (bu.bupd (Phi v))) =>
+        (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi))
+        (mkProperSep (own_heap_auth sigma') (mkProperBUpd (Phi v))) =>
       \lam n a hv hsep =>
           \case hsep \with {
             | inP (a1, a2, dist_a, h1, h2) =>
@@ -538,29 +531,37 @@
               \in inP (a1, a2, dist_a, h1, wp_val_to_bupd n a2 hv_a2 h2)
           }
     | step_collapsed : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu (Val v) Phi)))
-        (bu.bupd (mkProperSep (own_heap_auth sigma') (bu.bupd (Phi v)))) =>
-      bu.bupd_mono _ _ sep_inner_mono
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi)))
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma') (mkProperBUpd (Phi v)))) =>
+      bupd_mono
+          (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi))
+          (mkProperSep (own_heap_auth sigma') (mkProperBUpd (Phi v)))
+          sep_inner_mono
     | h_run_unfolded : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperSep (own_heap_auth sigma')
-                (bu.bupd (mkProperPure (phi v)))))) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+                (mkProperBUpd (mkProperPure (phi v)))))) =>
       properUPred_ent_trans
-          _ _ _
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+          (bupd_later_iter k
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi))))
+          (bupd_later_iter k
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+                  (mkProperBUpd (mkProperPure (phi v))))))
           h_run
-          (iter_mono_aux bu k
-              (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu (Val v) Phi)))
-              (bu.bupd (mkProperSep (own_heap_auth sigma') (bu.bupd (Phi v))))
+          (iter_mono_aux k
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp (Val v) Phi)))
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma') (mkProperBUpd (Phi v))))
               step_collapsed)
     | inner_drop : properUPred_ent
         (mkProperSep (own_heap_auth sigma')
-            (bu.bupd (mkProperPure (phi v))))
-        (bu.bupd (mkProperPure (phi v))) =>
+            (mkProperBUpd (mkProperPure (phi v))))
+        (mkProperBUpd (mkProperPure (phi v))) =>
       \lam n' a' hv' hsep =>
           \case hsep \with {
             | inP (a1, a2, dist_a, _, h_bupd_pure) =>
-                  (bu.bupd (mkProperPure (phi v))).upred_mono n' n' a2 a'
+                  (mkProperBUpd (mkProperPure (phi v))).upred_mono n' n' a2 a'
                   h_bupd_pure
                   (inP (a1,
                         M.ofe_dist_trans n' a' (M.op a1 a2) (M.op a2 a1)
@@ -571,61 +572,66 @@
                   <=-refl
           }
     | h_collapsed_step : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma')
-            (bu.bupd (mkProperPure (phi v)))))
-        (bu.bupd (mkProperPure (phi v))) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+            (mkProperBUpd (mkProperPure (phi v)))))
+        (mkProperBUpd (mkProperPure (phi v))) =>
       properUPred_ent_trans
-          _ _ _
-          (bu.bupd_mono _ _ inner_drop)
-          (bu.bupd_trans (mkProperPure (phi v)))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+              (mkProperBUpd (mkProperPure (phi v)))))
+          (mkProperBUpd (mkProperBUpd (mkProperPure (phi v))))
+          (mkProperBUpd (mkProperPure (phi v)))
+          (bupd_mono
+              (mkProperSep (own_heap_auth sigma') (mkProperBUpd (mkProperPure (phi v))))
+              (mkProperBUpd (mkProperPure (phi v)))
+              inner_drop)
+          (bupd_trans (mkProperPure (phi v)))
     | h_iter_pure : properUPred_ent
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperSep (own_heap_auth sigma')
-                (bu.bupd (mkProperPure (phi v))))))
-        (bupd_later_iter bu k (bu.bupd (mkProperPure (phi v)))) =>
-      iter_mono_aux bu k _ _ h_collapsed_step
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+                (mkProperBUpd (mkProperPure (phi v))))))
+        (bupd_later_iter k (mkProperBUpd (mkProperPure (phi v)))) =>
+      iter_mono_aux k _ _ h_collapsed_step
     | h_final : properUPred_ent
         (own_heap_auth sigma)
-        (bupd_later_iter bu k (bu.bupd (mkProperPure (phi v)))) =>
+        (bupd_later_iter k (mkProperBUpd (mkProperPure (phi v)))) =>
       properUPred_ent_trans
           (own_heap_auth sigma)
-          (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-          (bupd_later_iter bu k (bu.bupd (mkProperPure (phi v))))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+          (bupd_later_iter k (mkProperBUpd (mkProperPure (phi v))))
           h_seed
           (properUPred_ent_trans
-              (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-              (bupd_later_iter bu k
-                  (bu.bupd (mkProperSep (own_heap_auth sigma')
-                      (bu.bupd (mkProperPure (phi v))))))
-              (bupd_later_iter bu k (bu.bupd (mkProperPure (phi v))))
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+              (bupd_later_iter k
+                  (mkProperBUpd (mkProperSep (own_heap_auth sigma')
+                      (mkProperBUpd (mkProperPure (phi v))))))
+              (bupd_later_iter k (mkProperBUpd (mkProperPure (phi v))))
               h_run_unfolded
               h_iter_pure)
-    | h_at_k : (bupd_later_iter bu k (bu.bupd (mkProperPure (phi v)))).upred_holds k a0 =>
+    | h_at_k : (bupd_later_iter k (mkProperBUpd (mkProperPure (phi v)))).upred_holds k a0 =>
       h_final k a0 (hv_a0 k) (hauth_a0 k)
-  \in bu.bupd_later_iter_soundness k (phi v) a0 (hv_a0 k) h_at_k
+  \in bupd_later_iter_soundness k (phi v) a0 (hv_a0 k) h_at_k
   \where {
     \lemma iter_mono_aux
       {cnt : Countable Loc}
-      (bu : BUpdNE)
       (j : Nat)
       (P Q : ProperUPred (HeapCMRA Loc cnt Value))
       (hPQ : properUPred_ent P Q)
-      : properUPred_ent (bupd_later_iter bu j P) (bupd_later_iter bu j Q)
+      : properUPred_ent (bupd_later_iter j P) (bupd_later_iter j Q)
     \elim j
       | 0 => hPQ
       | suc j' =>
-        bu.bupd_mono
-            (mkProperLater (bupd_later_iter bu j' P))
-            (mkProperLater (bupd_later_iter bu j' Q))
+        bupd_mono
+            (mkProperLater (bupd_later_iter j' P))
+            (mkProperLater (bupd_later_iter j' Q))
             (\lam n a hv hl =>
                 \case n \as n', hv \as hv' : (HeapCMRA Loc cnt Value).validN n' a,
                       hl \as hl' :
-                          (mkProperLater (bupd_later_iter bu j' P)).upred_holds n' a
-                \return (mkProperLater (bupd_later_iter bu j' Q)).upred_holds n' a
+                          (mkProperLater (bupd_later_iter j' P)).upred_holds n' a
+                \return (mkProperLater (bupd_later_iter  j' Q)).upred_holds n' a
                 \with {
                   | 0, _, _ => ()
                   | suc m, hv_sm, hl_inner =>
-                    iter_mono_aux bu j' P Q hPQ m a
+                    iter_mono_aux j' P Q hPQ m a
                         ((HeapCMRA Loc cnt Value).cmra_validN_le (suc m) m a hv_sm (n<=sucn m))
                         hl_inner
                 })
@@ -634,7 +640,6 @@
 
 \lemma wp_progress
   {cnt : Countable Loc}
-  (bu     : BUpdNE)
   (e      : Expr)
   (phi    : Value -> \Prop)
   (sigma  : State cnt)
@@ -643,7 +648,7 @@
   (sigma' : State cnt)
   (hwp    : properUPred_ent
       (mkProperPure (\Sigma))
-      (wp bu e (\lam w => mkProperPure (phi w))))
+      (wp e (\lam w => mkProperPure (phi w))))
   (hsteps : Steps k e sigma e' sigma')
   : not_stuck e' sigma' =>
   \let
@@ -669,54 +674,57 @@
 
     | h_seed : properUPred_ent
         (own_heap_auth sigma)
-        (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi))) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi))) =>
       properUPred_ent_trans
           (own_heap_auth sigma)
-          (mkProperSep (own_heap_auth sigma) (wp bu e Phi))
-          (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-          (ghost_intro bu e Phi sigma hwp)
-          (bu.bupd_intro (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
+          (mkProperSep (own_heap_auth sigma) (wp e Phi))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+          (ghost_intro e Phi sigma hwp)
+          (bupd_intro (mkProperSep (own_heap_auth sigma) (wp e Phi)))
     | h_run : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))) =>
-      wp_steps bu k e e' Phi sigma sigma' hsteps
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))) =>
+      wp_steps k e e' Phi sigma sigma' hsteps
     | step_to_pure : properUPred_ent
-        (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))
-        (bu.bupd (mkProperPure (not_stuck e' sigma'))) =>
-      wp_not_stuck bu e' Phi sigma'
+        (mkProperSep (own_heap_auth sigma') (wp e' Phi))
+        (mkProperBUpd (mkProperPure (not_stuck e' sigma'))) =>
+      wp_not_stuck e' Phi sigma'
     | collapse : properUPred_ent
-        (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))
-        (bu.bupd (mkProperPure (not_stuck e' sigma'))) =>
+        (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))
+        (mkProperBUpd (mkProperPure (not_stuck e' sigma'))) =>
       properUPred_ent_trans
-          (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi)))
-          (bu.bupd (bu.bupd (mkProperPure (not_stuck e' sigma'))))
-          (bu.bupd (mkProperPure (not_stuck e' sigma')))
-          (bu.bupd_mono _ _ step_to_pure)
-          (bu.bupd_trans (mkProperPure (not_stuck e' sigma')))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi)))
+          (mkProperBUpd (mkProperBUpd (mkProperPure (not_stuck e' sigma'))))
+          (mkProperBUpd (mkProperPure (not_stuck e' sigma')))
+          (bupd_mono
+              (mkProperSep (own_heap_auth sigma') (wp e' Phi))
+              (mkProperBUpd (mkProperPure (not_stuck e' sigma')))
+              step_to_pure)
+          (bupd_trans (mkProperPure (not_stuck e' sigma')))
     | h_iter : properUPred_ent
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))))
-        (bupd_later_iter bu k
-            (bu.bupd (mkProperPure (not_stuck e' sigma')))) =>
-      wp_adequacy.iter_mono_aux bu k _ _ collapse
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi))))
+        (bupd_later_iter k
+            (mkProperBUpd (mkProperPure (not_stuck e' sigma')))) =>
+      wp_adequacy.iter_mono_aux k _ _ collapse
 
     | h_final : properUPred_ent
         (own_heap_auth sigma)
-        (bupd_later_iter bu k (bu.bupd (mkProperPure (not_stuck e' sigma')))) =>
+        (bupd_later_iter k (mkProperBUpd (mkProperPure (not_stuck e' sigma')))) =>
       properUPred_ent_trans
           (own_heap_auth sigma)
-          (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-          (bupd_later_iter bu k (bu.bupd (mkProperPure (not_stuck e' sigma'))))
+          (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+          (bupd_later_iter k (mkProperBUpd (mkProperPure (not_stuck e' sigma'))))
           h_seed
           (properUPred_ent_trans
-              (bu.bupd (mkProperSep (own_heap_auth sigma) (wp bu e Phi)))
-              (bupd_later_iter bu k
-                  (bu.bupd (mkProperSep (own_heap_auth sigma') (wp bu e' Phi))))
-              (bupd_later_iter bu k (bu.bupd (mkProperPure (not_stuck e' sigma'))))
+              (mkProperBUpd (mkProperSep (own_heap_auth sigma) (wp e Phi)))
+              (bupd_later_iter k
+                  (mkProperBUpd (mkProperSep (own_heap_auth sigma') (wp e' Phi))))
+              (bupd_later_iter k (mkProperBUpd (mkProperPure (not_stuck e' sigma'))))
               h_run h_iter)
 
-    | h_at_k : (bupd_later_iter bu k
-        (bu.bupd (mkProperPure (not_stuck e' sigma')))).upred_holds k a0 =>
+    | h_at_k : (bupd_later_iter k
+        (mkProperBUpd (mkProperPure (not_stuck e' sigma')))).upred_holds k a0 =>
       h_final k a0 (hv_a0 k) (hauth_a0 k)
-  \in bu.bupd_later_iter_soundness k (not_stuck e' sigma') a0 (hv_a0 k) h_at_k
+  \in bupd_later_iter_soundness k (not_stuck e' sigma') a0 (hv_a0 k) h_at_k
