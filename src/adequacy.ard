@@ -172,6 +172,10 @@
                                       (mkProperBUpd(mkProperSep (own_heap_auth s') (wp e' Phi)))))).upred_holds k a' =>
                             hand''.2
                           \in hlater e2 sigma2 k <=-refl a'
+                              (inP (M.unit,
+                                    transport (\lam w => M.dist k a' w)
+                                        (inv (ucmra_unit_right_id a'))
+                                        (M.ofe_dist_refl k a')))
                               ((HeapCMRA Loc cnt Value).cmra_validN_le (suc k) k a' hv'' (n<=sucn k))
                               hstep
                       })

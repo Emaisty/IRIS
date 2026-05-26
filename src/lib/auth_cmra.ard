@@ -317,6 +317,18 @@
 \func AuthUCMRA (A : UCMRA) : UCMRA \cowith
   | CMRA => AuthCMRA A
   | unit => (nothing, A.unit)
-  | ucmra_unit_valid => {?}
-  | ucmra_unit_left_id => {?}
-  | ucmra_pcore_unit => {?}
+  | ucmra_unit_valid =>
+    \lam n => (A.cmra_valid_validN A.unit).1 A.ucmra_unit_valid n
+  | ucmra_unit_left_id => \lam x => \case \elim x \with {
+    | (just a, b) => path (\lam i => (just a, A.ucmra_unit_left_id b @ i))
+    | (nothing, b) => path (\lam i => (nothing, A.ucmra_unit_left_id b @ i))
+  }
+  | ucmra_pcore_unit =>
+    path (\lam i =>
+        just (nothing,
+              \case A.ucmra_pcore_unit @ i \as p
+              \return A.E
+              \with {
+                | just c  => c
+                | nothing => A.unit
+              }))
