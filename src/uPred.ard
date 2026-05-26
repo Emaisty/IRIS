@@ -67,9 +67,14 @@
 
 \func mkProperImpl {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) ->
+      inclN {M} {\new Op M.E { | op => M.op }} a m b ->
       M.validN m b -> P.upred_holds m b -> Q.upred_holds m b
-  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b hv hp =>
-      h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b hv hp
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b incl_x2_b hv hp =>
+      h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b
+          (inclN_trans m x1 x2 b
+              (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 m incl m_le_n2)
+              incl_x2_b)
+          hv hp
 
 \func mkProperForall {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (t : T) -> (Phi t).upred_holds n a
@@ -177,8 +182,8 @@
 
 \lemma proper_impl_mono_r {M : UCMRA} (P Q Q' : ProperUPred M)
                           (h : properUPred_ent Q Q') : properUPred_ent (mkProperImpl P Q) (mkProperImpl P Q')
-  => \lam n a hv himpl m m_le_n b hv_b hp =>
-      h m b hv_b (himpl m m_le_n b hv_b hp)
+  => \lam n a hv himpl m m_le_n b incl_a_b hv_b hp =>
+      h m b hv_b (himpl m m_le_n b incl_a_b hv_b hp)
 
 -- =================================================================================
 -- OFE and COFE for ProperUPred
@@ -206,9 +211,7 @@
     \let pq => h1 n a hv | qr => h2 n a hv
     \in (\lam hp => qr.1 (pq.1 hp), \lam hr => pq.2 (qr.2 hr))
   | ofe_equiv_dist => \lam P Q => (
-  -- equiv P Q -> ∀ n, dist n P Q
     \lam heq n m a hle hv => heq m a hv,
-  -- (∀ n, dist n P Q) -> equiv P Q
     \lam hd n a hv => hd n n a <=-refl hv
   )
   | ofe_dist_refl => \lam n P m a _ _ => (\lam h => h, \lam h => h)
