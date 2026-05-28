@@ -212,6 +212,8 @@
 \func val_stuck (e : Expr) (s : State) (e' : Expr) (s' : State)
                 (step : PrimStep e s e' s') : to_val e = nothing \elim step
   | BetaS x body v p1 p2 p3 => rewrite p1 idp
+  | RecBetaS f x body v p1 p2 p3 => rewrite p1 idp
+  | RecS f x body p1 p2 p3 => rewrite p1 idp
   | IfTrueS t f p1 p2 p3 => rewrite p1 idp
   | IfFalseS t f p1 p2 p3 => rewrite p1 idp
   | FstS v1 v2 p1 p2 p3 => rewrite p1 idp
@@ -220,6 +222,10 @@
   | AllocS v l fresh p1 p2 p3 => rewrite p1 idp
   | LoadS l v lookup p1 p2 p3 => rewrite p1 idp
   | StoreS l v v' allocated p1 p2 p3 => rewrite p1 idp
+  | IsZeroZeroS p1 p2 p3 => rewrite p1 idp
+  | IsZeroPosS n p1 p2 p3 => rewrite p1 idp
+  | PredS n p1 p2 p3 => rewrite p1 idp
+  | MulS a b p1 p2 p3 => rewrite p1 idp
 
 -- =================================================================================
 -- Mathematical factorial on Nat

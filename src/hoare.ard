@@ -1,5 +1,6 @@
 \import interface
 \import lang
+\import Paths
 \import uPred
 \import cmra
 \import weakestpre

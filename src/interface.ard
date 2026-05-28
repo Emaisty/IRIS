@@ -39,7 +39,7 @@
 \func persis {B : BIBase} (P : B.E) => B.bi_persistently P
 \func later {B : BIBase} (P : B.E) => B.bi_later P
 
-
+-- accept for B.E
 
 \func True {B : BIBase} => B.bi_pure (\Sigma)
 \func False {B : BIBase} => B.bi_pure Empty
