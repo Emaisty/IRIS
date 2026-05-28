@@ -503,37 +503,38 @@
     (pointsTo l u)
     (wp (Store (Val (LitV (LitLoc l))) (Val v))
         (\lam _ => pointsTo l v))
-  => \lam n a_frag hv_frag h_frag =>
-      \let
-        | M    => HeapCMRA Loc cnt Value
-        | Phi  : Value -> ProperUPred M => \lam _ => pointsTo l v
-        | e    => Store (Val (LitV (LitLoc l))) (Val v)
-        | tv_e : to_val e = nothing => idp
-        | body : (wp_pre wp e Phi).upred_holds n a_frag =>
-          \lam sigma => \lam m m_le_n a_auth hv_op h_auth =>
-              \let
-                | lookup : glookup sigma.heap l = just u =>
-                  heap_auth_frag_agree m sigma a_frag a_auth l u
-                      (transport (\lam w => M.validN m w) (M.cmra_comm a_frag a_auth)
-                          (M.cmra_validN_le n m _ hv_op m_le_n))
-                      h_auth
-                      (h_frag
-                | red : Reducible e sigma => store_reducible l v sigma u lookup
-                | later_body :
-                      (mkProperLater (mkProperForall Expr (\lam e2 =>
-                          mkProperForall (State cnt) (\lam sigma2 =>
-                              mkProperImpl
-                                  (mkProperPure (PrimStep e sigma e2 sigma2))
-                                  (mkProperBUpd (mkProperSep (own_heap_auth sigma2)
-                                      (wp e2 Phi)))))))
-                      .upred_holds m (M.op a_frag a_auth) =>
-                  {?}
-                | core_pure_and :
-                      (mkProperAnd (mkProperPure (Reducible e sigma)) _).upred_holds
-                      m (M.op a_frag a_auth) =>
-                  (red, later_body)
-              \in bu.bupd_intro _ m (M.op a_frag a_auth) hv_op core_pure_and
-      \in (wp_unfold bu e Phi n a_frag hv_frag).2 body
+  => {?}
+--     \lam n a_frag hv_frag h_frag =>
+--       \let
+--         | M    => HeapCMRA Loc cnt Value
+--         | Phi  : Value -> ProperUPred M => \lam _ => pointsTo l v
+--         | e    => Store (Val (LitV (LitLoc l))) (Val v)
+--         | tv_e : to_val e = nothing => idp
+--         | body : (wp_pre wp e Phi).upred_holds n a_frag =>
+--           \lam sigma => \lam m m_le_n a_auth hv_op h_auth =>
+--               \let
+--                 | lookup : glookup sigma.heap l = just u =>
+--                   heap_auth_frag_agree m sigma a_frag a_auth l u
+--                       (transport (\lam w => M.validN m w) (M.cmra_comm a_frag a_auth)
+--                           (M.cmra_validN_le n m _ hv_op m_le_n))
+--                       h_auth
+--                       (h_frag
+--                 | red : Reducible e sigma => store_reducible l v sigma u lookup
+--                 | later_body :
+--                       (mkProperLater (mkProperForall Expr (\lam e2 =>
+--                           mkProperForall (State cnt) (\lam sigma2 =>
+--                               mkProperImpl
+--                                   (mkProperPure (PrimStep e sigma e2 sigma2))
+--                                   (mkProperBUpd (mkProperSep (own_heap_auth sigma2)
+--                                       (wp e2 Phi)))))))
+--                       .upred_holds m (M.op a_frag a_auth) =>
+--                   {?}
+--                 | core_pure_and :
+--                       (mkProperAnd (mkProperPure (Reducible e sigma)) _).upred_holds
+--                       m (M.op a_frag a_auth) =>
+--                   (red, later_body)
+--               \in bu.bupd_intro _ m (M.op a_frag a_auth) hv_op core_pure_and
+--       \in (wp_unfold bu e Phi n a_frag hv_frag).2 body
 
 -- wp_alloc: True  ⊢  wp (Alloc v) (\v'. ∃ l. v' = LitLoc l ∧ l ↦ v)
 \lemma wp_alloc
