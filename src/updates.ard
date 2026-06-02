@@ -23,9 +23,6 @@
 \class BUpd \extends BIBase
   | bupd : E -> E
 
--- \class FUpd (B : BIBase)
---   | fupd : Nat -> Nat -> B.E -> B.E
-
 
 -- =================================================================================
 -- BUpd Mixin: Axioms for Basic Updates
@@ -169,69 +166,9 @@
         \in Q.upred_mono n n (M.op a2 a1) a hq_swap inclN_swap_a <=-refl
     }
 
--- =================================================================================
--- FUpd Mixin: Axioms for Fancy Updates
--- =================================================================================
 
 
--- \class BiFUpdMixin (B : BIMixin) (fup : FUpd B) {
---   | bi_fupd_mixin_fupd_mask_subseteq (E1 E2 : Nat) :
---     E2 <= E1 -> True {B} |- fupd E1 E2 (fupd E2 E1 emp)
---
---   | bi_fupd_mixin_except_0_fupd (E1 E2 : Nat) (P : B.E) :
---     ((fupd E1 E2 P) || False) |- (fupd E1 E2 P)
---
---   | bi_fupd_mixin_fupd_mono (E1 E2 : Nat) (P Q : B.E) :
---     (P |- Q) -> (fupd E1 E2 P) |- (fupd E1 E2 Q)
---
---   | bi_fupd_mixin_fupd_trans (E1 E2 E3 : Nat) (P : B.E) :
---     (fupd E1 E2 (fupd E2 E3 P)) |- (fupd E1 E3 P)
---
---   | bi_fupd_mixin_fupd_frame_r (E1 E2 : Nat) (P R : B.E) :
---     ((fupd E1 E2 P) * R) |- (fupd E1 E2 (P * R))
--- }
 
-
--- =================================================================================
--- Bundled Update Classes
--- =================================================================================
-
-
--- \class BiFUpd (B : BIMixin) {
---   | bi_fupd_fupd : FUpd B
---   | bi_fupd_mixin : BiFUpdMixin B bi_fupd_fupd
--- }
-
--- \class BiBUpdFUpd (B : BIMixin) (Bu : BiBUpd B) (Fu : BiFUpd B) {
---   | bupd_fupd (E : Nat) (P : B.E) :
---     (Bu.bi_bupd_bupd.bupd P) |- (Fu.bi_fupd_fupd.fupd E E P)
--- }
-
-
--- =================================================================================
--- BUpd laws
--- =================================================================================
-
-
--- \record BUpdNE {cnt : Countable Loc}
---   | bupd       : ProperUPred (HeapCMRA Loc cnt Value) -> ProperUPred (HeapCMRA Loc cnt Value)
---   | bupd_ne    : \Pi (n : Nat) (P Q : ProperUPred (HeapCMRA Loc cnt Value)) ->
---       upredDist n P Q -> upredDist n (bupd P) (bupd Q)
---   | bupd_mono  : \Pi (P Q : ProperUPred (HeapCMRA Loc cnt Value)) ->
---       properUPred_ent P Q -> properUPred_ent (bupd P) (bupd Q)
---   | bupd_trans : \Pi (P : ProperUPred (HeapCMRA Loc cnt Value)) ->
---       properUPred_ent (bupd (bupd P)) (bupd P)
---   | bupd_intro : \Pi (P : ProperUPred (HeapCMRA Loc cnt Value)) ->
---       properUPred_ent P (bupd P)
---   | bupd_frame_r : \Pi (P R : ProperUPred (HeapCMRA Loc cnt Value)) ->
---       properUPred_ent (mkProperSep (bupd P) R) (bupd (mkProperSep P R))
---   | bupd_extract_pure : \Pi (phi : \Prop) (n : Nat) (a : (HeapCMRA Loc cnt Value).E) ->
---       validN {HeapCMRA Loc cnt Value} n a ->
---           (bupd (mkProperPure phi)).upred_holds n a -> phi
---   | bupd_later_iter_soundness :
---   \Pi (k : Nat) (phi : \Prop) (a : (HeapCMRA Loc cnt Value).E) ->
---       validN {HeapCMRA Loc cnt Value} k a ->
---           (bupd_later_iter_fn bupd k (bupd (mkProperPure phi))).upred_holds k a -> phi
 
 
 
@@ -380,31 +317,27 @@
   | bi_bupd_mixin_bupd_trans   => bupd_trans
   | bi_bupd_mixin_bupd_frame_r => bupd_frame_r
 
--- =================================================================================
--- Basic Laws for BUpd
--- =================================================================================
-
-
--- \func bupd_intro {B : BIMixin} {Bu : BiBUpd B} (P : B.E) : P |- Bu.bi_bupd_bupd.bupd P
---   => Bu.bi_bupd_mixin.bi_bupd_mixin_bupd_intro P
---
--- \func bupd_mono {B : BIMixin} {Bu : BiBUpd B} (P Q : B.E) (h : P |- Q)
---   : (Bu.bi_bupd_bupd.bupd P) |- (Bu.bi_bupd_bupd.bupd Q)
---   => Bu.bi_bupd_mixin.bi_bupd_mixin_bupd_mono P Q h
---
--- \func bupd_trans {B : BIMixin} {Bu : BiBUpd B} (P : B.E)
---   : (Bu.bi_bupd_bupd.bupd (Bu.bi_bupd_bupd.bupd P)) |- (Bu.bi_bupd_bupd.bupd P)
---   => Bu.bi_bupd_mixin.bi_bupd_mixin_bupd_trans P
---
--- \func bupd_frame_r {B : BIMixin} {Bu : BiBUpd B} (P R : B.E)
---   : ((Bu.bi_bupd_bupd.bupd P) * R) |- (Bu.bi_bupd_bupd.bupd (P * R))
---   => Bu.bi_bupd_mixin.bi_bupd_mixin_bupd_frame_r P R
-
 
 -- =================================================================================
 -- Derived Laws for BUpd
 -- =================================================================================
 
+
+\lemma bupd_frame_trans {M : UCMRA}
+  (P R Q : ProperUPred M)
+  (h : properUPred_ent (mkProperSep P R) (mkProperBUpd Q))
+  : properUPred_ent (mkProperSep (mkProperBUpd P) R) (mkProperBUpd Q)
+  => properUPred_ent_trans
+      (mkProperSep (mkProperBUpd P) R)
+      (mkProperBUpd (mkProperSep P R))
+      (mkProperBUpd Q)
+      (bupd_frame_r P R)
+      (properUPred_ent_trans
+          (mkProperBUpd (mkProperSep P R))
+          (mkProperBUpd (mkProperBUpd Q))
+          (mkProperBUpd Q)
+          (bupd_mono (mkProperSep P R) (mkProperBUpd Q) h)
+          (bupd_trans Q))
 
 \func bupd_frame_l {Bu : BiBUpd} (R Q : Bu.E)
   : (R * bupd Q) |- bupd (R * Q)
@@ -422,60 +355,3 @@
           (bi_bupd_mixin_bupd_mono (P * bupd Q) (bupd (P * Q))
               (bupd_frame_l P Q))
           (bi_bupd_mixin_bupd_trans (P * Q)))
-
-
--- =================================================================================
--- Basic Laws for FUpd
--- =================================================================================
-
-
--- \func fupd_mask_subseteq {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (h : E2 <= E1)
---   : True {B} |- Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E1 emp)
---   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mask_subseteq E1 E2 h
---
--- \func fupd_mono {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P Q : B.E) (h : P |- Q)
---   : (Fu.bi_fupd_fupd.fupd E1 E2 P) |- (Fu.bi_fupd_fupd.fupd E1 E2 Q)
---   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_mono E1 E2 P Q h
---
--- \func fupd_trans {B : BIMixin} {Fu : BiFUpd B} (E1 E2 E3 : Nat) (P : B.E)
---   : (Fu.bi_fupd_fupd.fupd E1 E2 (Fu.bi_fupd_fupd.fupd E2 E3 P)) |- (Fu.bi_fupd_fupd.fupd E1 E3 P)
---   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_trans E1 E2 E3 P
---
--- \func fupd_frame_r {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (P R : B.E)
---   : ((Fu.bi_fupd_fupd.fupd E1 E2 P) * R) |- (Fu.bi_fupd_fupd.fupd E1 E2 (P * R))
---   => Fu.bi_fupd_mixin.bi_fupd_mixin_fupd_frame_r E1 E2 P R
-
-
--- =================================================================================
--- Derived Laws for FUpd
--- =================================================================================
-
-
--- \func fupd_intro {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P : B.E)
---   : P |- (Fu.bi_fupd_fupd.fupd E E P)
---   => B.<=-transitive
---       (B.bi_mixin_pure_intro (\Sigma) P ())
---       (B.<=-transitive
---         (fupd_mask_subseteq E E <=-refl)
---         (B.<=-transitive
---           (fupd_mono E E (Fu.bi_fupd_fupd.fupd E E emp) (Fu.bi_fupd_fupd.fupd E E P)
---             (fupd_mono E E emp P (emp_sep_2_lemma P)))
---           (fupd_trans E E E P)))
---
--- \func fupd_frame_l {B : BIMixin} {Fu : BiFUpd B} (E1 E2 : Nat) (R Q : B.E)
---   : (R * (Fu.bi_fupd_fupd.fupd E1 E2 Q)) |- (Fu.bi_fupd_fupd.fupd E1 E2 (R * Q))
---   => B.<=-transitive
---       (sep_comm_lemma R (Fu.bi_fupd_fupd.fupd E1 E2 Q))
---       (B.<=-transitive
---         (fupd_frame_r E1 E2 Q R)
---         (fupd_mono E1 E2 (Q * R) (R * Q) (sep_comm_lemma Q R)))
---
--- \func fupd_sep {B : BIMixin} {Fu : BiFUpd B} (E : Nat) (P Q : B.E)
---   : ((Fu.bi_fupd_fupd.fupd E E P) * (Fu.bi_fupd_fupd.fupd E E Q)) |- (Fu.bi_fupd_fupd.fupd E E (P * Q))
---   => B.<=-transitive
---       (fupd_frame_r E E P (Fu.bi_fupd_fupd.fupd E E Q))
---       (B.<=-transitive
---         (fupd_mono E E (P * (Fu.bi_fupd_fupd.fupd E E Q)) (Fu.bi_fupd_fupd.fupd E E (P * Q))
---           (fupd_frame_l E E P Q))
---         (fupd_trans E E E (P * Q)))
-

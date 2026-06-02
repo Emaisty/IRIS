@@ -153,6 +153,22 @@
                         (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
             (Load (Val (LitV (LitLoc l))))
             (\lam s => BasePrim (IfTrueS _ _ idp idp idp))
+            (base_redex_step_det
+              (If (Val (LitV (LitBool true))) (Load (Val (LitV (LitLoc l))))
+                  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+                      (Store (Val (LitV (LitLoc l)))
+                          (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+              (Load (Val (LitV (LitLoc l))))
+              (base_if_true_step_det
+                (Load (Val (LitV (LitLoc l))))
+                (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+                    (Store (Val (LitV (LitLoc l)))
+                        (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+              (if_ctx_absurd true
+                (Load (Val (LitV (LitLoc l))))
+                (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+                    (Store (Val (LitV (LitLoc l)))
+                        (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0)))))))
             idp
             Post
       | thenE : Expr => Load (Val (LitV (LitLoc l)))
@@ -207,6 +223,23 @@
                       (Val (LitV (LitLoc l))))
                   body_after_l
                   (\lam s => BasePrim (BetaS "l" _ _ idp idp idp))
+                  (base_redex_step_det
+                    (App (Val (LamV "l"
+                        (If (IsZero (Val (natV 0))) (Load (Var "l"))
+                            (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                                (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+                        (Val (LitV (LitLoc l))))
+                    body_after_l
+                    (base_lam_beta_step_det "l"
+                      (If (IsZero (Val (natV 0))) (Load (Var "l"))
+                          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+                      (LitV (LitLoc l)))
+                    (app_lam_ctx_absurd "l"
+                      (If (IsZero (Val (natV 0))) (Load (Var "l"))
+                          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+                      (LitV (LitLoc l))))
                   idp
                   Post
           \in
