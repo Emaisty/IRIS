@@ -71,11 +71,6 @@
 \lemma or_mono_r {B : BIMixin} {P P' Q' : B.E} (h : P' |- Q') : (P || P') |- (P || Q')
   => or_mono (B.<=-refl {P}) h
 
-
-\lemma impl_mono {B : BIMixin} {P P' Q Q' : B.E} (h1 : Q |- P) (h2 : P' |- Q')
-  : (P ->> P') |- (Q ->> Q')
-  => {?}
-
 \lemma forall_mono {B : BIMixin} {A : \Type} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
   : (forall A Phi) |- (forall A Psi)
   => B.bi_mixin_forall_intro (forall A Phi) Psi (\lam a => B.<=-transitive (B.bi_mixin_forall_elim Phi a) (h a))

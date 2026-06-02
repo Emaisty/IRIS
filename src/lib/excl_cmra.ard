@@ -177,14 +177,34 @@
   (h  : inclN {ExclUCMRA (DiscreteOFE V)}
       {\new Op _ { | op => (ExclUCMRA (DiscreteOFE V)).op }}
       (just (excl v)) n y)
-  : y = just (excl v) => {?}
+  : y = just (excl v) => \case h \with {
+    | inP (z, hz) =>
+      \case \elim y, \elim z, hv, hz \with {
+        | nothing, nothing, _, hdist => \case hdist \with {}
+        | nothing, just _, _, hdist => \case hdist \with {}
+        | just (excl a), nothing, _, hdist =>
+          pmap just (pmap excl (discrete_dist_to_eq V n a v hdist))
+        | just (excl a), just _, _, hdist => \case hdist \with {}
+        | just exclInvalid, _, hv, _ => \case hv \with {}
+      }
+  }
 
 \func option_dist_to_eq
   (n : Nat) (o1 o2 : Maybe (Excl Value))
   (h : (ExclUCMRA (DiscreteOFE Value)).dist n o1 o2)
   (_ _ : \Type)
   (_ : validN {ExclUCMRA (DiscreteOFE Value)} n o1)
-  : o1 = o2 => {?}
+  : o1 = o2
+  => \case \elim o1, \elim o2, h \with {
+    | nothing, nothing, _ => idp
+    | nothing, just _, hdist => \case hdist \with {}
+    | just _, nothing, hdist => \case hdist \with {}
+    | just (excl v1), just (excl v2), hdist =>
+      pmap just (pmap excl (discrete_dist_to_eq Value n v1 v2 hdist))
+    | just (excl _), just exclInvalid, hdist => \case hdist \with {}
+    | just exclInvalid, just (excl _), hdist => \case hdist \with {}
+    | just exclInvalid, just exclInvalid, _ => idp
+  }
 
 \lemma excl_dist_to_eq
   (V : \Set) (n : Nat) (e1 e2 : Excl V)

@@ -154,6 +154,23 @@
 \func inclN_op_l {M : CMRA} (n : Nat) (x y : M.E) : inclN {M} {\new Op M.E { | op => M.op }} x n (M.op x y)
   => inP (y, M.ofe_dist_refl n (M.op x y))
 
+\func inclN_refl_ucmra {M : UCMRA} (n : Nat) (a : M.E)
+  : inclN {M} {\new Op M.E { | op => M.op }} a n a =>
+  inP (M.unit,
+       transport (\lam w => M.dist n a w)
+           (inv (ucmra_unit_right_id a))
+           (M.ofe_dist_refl n a))
+
+\func inclN_of_dist_unit {M : UCMRA} (n : Nat) (x y : M.E)
+                         (d : M.dist n y x)
+  : inclN {M} {\new Op M.E { | op => M.op }} x n y =>
+  inP (M.unit,
+       M.ofe_dist_trans n y x (M.op x M.unit)
+           d
+           (transport (\lam w => M.dist n x w)
+               (inv (ucmra_unit_right_id x))
+               (M.ofe_dist_refl n x)))
+
 \func inclN_op_r {M : CMRA} (n : Nat) (x1 x2 a : M.E)
                  (h : inclN {M} {\new Op M.E { | op => M.op }} x1 n x2)
   : inclN {M} {\new Op M.E { | op => M.op }} (M.op x1 a) n (M.op x2 a)

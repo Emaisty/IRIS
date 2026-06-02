@@ -53,6 +53,11 @@
   | upred_mono => \lam n1 n2 x1 x2 h_incl incl_x1_x2 n2_le_n1 =>
       heap_incl_trans n1 n2 (heap_frag l v) x1 x2 h_incl incl_x1_x2 n2_le_n1
 
+\lemma pointsTo_frag {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                     (n : Nat) (l : Loc) (v : Val)
+  : (pointsTo l v).upred_holds n (heap_frag l v)
+  => inclN_refl_ucmra n (heap_frag l v)
+
 -- =================================================================================
 -- Helper lemmas for points-to
 -- =================================================================================
@@ -283,14 +288,85 @@
   : Gmap Loc cnt (Maybe (Excl Val)) =>
   ginsert l (just (excl v)) h
 
+\lemma heap_update_glookup_eq {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                              (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+  : glookup (heap_update h l v) l = just (just (excl v))
+  => glookup_insert_eq l (just (excl v)) h
+
+\lemma heap_update_lookup_eq {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                             (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+  : heap_lookup (heap_update h l v) l = just v
+  => pmap (\lam o => \case o \with {
+       | nothing => nothing
+       | just nothing => nothing
+       | just (just (excl w)) => just w
+     | just (just exclInvalid) => nothing
+   }) (heap_update_glookup_eq h l v)
+
+\lemma heap_update_validN {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                          (n : Nat) (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+                          (hvh : (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).validN n h)
+  : (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).validN n (heap_update h l v)
+  => gmap_insert_validN {Loc} {cnt} {ExclUCMRA (DiscreteOFE Val)}
+      n h l (just (excl v)) () hvh
+
+\lemma heap_auth_alloc_validN {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
+                              (n : Nat)
+                              (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
+                              (z yf : (HeapCMRA Loc cnt Val).E)
+                              (fresh : glookup h l = nothing)
+                              (hv : (HeapCMRA Loc cnt Val).validN n
+                                ((HeapCMRA Loc cnt Val).op
+                                  ((HeapCMRA Loc cnt Val).op (heap_auth h) z) yf))
+  : (HeapCMRA Loc cnt Val).validN n
+      ((HeapCMRA Loc cnt Val).op
+        ((HeapCMRA Loc cnt Val).op
+          ((HeapCMRA Loc cnt Val).op (heap_auth (heap_update h l v)) (heap_frag l v)) z) yf)
+  \elim z, yf
+  | (nothing, zf), (nothing, yff) =>
+    \let
+      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | sing : G.E => gmap_singleton l (just (excl v))
+      | frame : G.E => G.op (G.op G.unit zf) yff
+      | hv_old : AuthValidN {G} n (just (excl h), frame) => hv
+      | hincl_new_raw : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op sing frame) n (heap_update h l v) =>
+        gmap_alloc_includedN {Loc} {cnt} {ExclUCMRA (DiscreteOFE Val)}
+          n h frame l (just (excl v)) fresh hv_old.2
+      | hincl_new : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op (G.op (G.op G.unit sing) zf) yff) n (heap_update h l v) =>
+        \case hincl_new_raw \with {
+          | inP (w, hw) =>
+            \let
+              | rearr : G.op sing frame = G.op (G.op (G.op G.unit sing) zf) yff =>
+                G.cmra_assoc sing (G.op G.unit zf) yff
+                *> pmap (\lam t => G.op t yff)
+                    (G.cmra_assoc sing G.unit zf
+                     *> pmap (\lam t => G.op t zf)
+                         (ucmra_unit_right_id sing *> inv (G.ucmra_unit_left_id sing)))
+            \in
+            inP (w,
+              transport
+                (\lam t => G.dist n (heap_update h l v) (G.op t w))
+                rearr
+                hw)
+        }
+    \in (heap_update_validN n h l v hv_old.1, hincl_new)
+  | (nothing, _), (just (excl _), _) => \case hv \with {}
+  | (nothing, _), (just exclInvalid, _) => \case hv \with {}
+  | (just (excl _), _), (nothing, _) => \case hv \with {}
+  | (just (excl _), _), (just (excl _), _) => \case hv \with {}
+  | (just (excl _), _), (just exclInvalid, _) => \case hv \with {}
+  | (just exclInvalid, _), (nothing, _) => \case hv \with {}
+  | (just exclInvalid, _), (just (excl _), _) => \case hv \with {}
+  | (just exclInvalid, _), (just exclInvalid, _) => \case hv \with {}
+
 \func heap_alloc {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
                  (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
   : Gmap Loc cnt (Maybe (Excl Val)) =>
   heap_update h l v
 
 
--- Existence of a fresh location for any concrete state.
--- This is the finite-support fact for concrete heaps.
 \func nat_max (n m : Nat) : Nat \elim n, m
   | 0, m => m
   | suc n, 0 => suc n
@@ -536,36 +612,3 @@
             })
         \in (just pp.2, hg, hg')
     }
-
--- Frame-preserving update: the auth view, opped with anything compatible,
--- can be advanced to the post-allocation auth view, producing a fresh fragment.
--- \func heap_alloc_update {cnt : Countable Loc}
---                         (sigma : State cnt) (l : Loc) (v : Value)
---                         (fresh : glookup sigma.heap l = nothing)
---                         (n : Nat) (a2 : (HeapCMRA Loc cnt Value).E)
---                         (hv : (HeapCMRA Loc cnt Value).validN n
---                             ((HeapCMRA Loc cnt Value).op (heap_auth (heap_state_to_gmap sigma)) a2))
---   : (bu.bupd (mkProperSep
---     (own_heap_auth (\new State cnt { | cnt => sigma.cnt
---                                      | heap => heap_update sigma.heap l v }))
---     (pointsTo l v))).upred_holds n
---     ((HeapCMRA Loc cnt Value).op (heap_auth (heap_state_to_gmap sigma)) a2)
---   => {?}
---
---
--- \func heap_store_update
---   {cnt : Countable Loc}
---   (bu     : BUpdNE)
---   (sigma  : State cnt) (l : Loc) (u v : Value)
---   (lookup : glookup sigma.heap l = just u)
---   (n      : Nat) (a_frag : (HeapCMRA Loc cnt Value).E)
---   (hv     : (HeapCMRA Loc cnt Value).validN n
---       ((HeapCMRA Loc cnt Value).op
---           (heap_auth (heap_state_to_gmap sigma)) a_frag))
---   (hfrag  : (pointsTo l u).upred_holds n a_frag)
---   : (bu.bupd (mkProperSep
---     (own_heap_auth (\new State cnt {
---       | cnt => sigma.cnt
---       | heap => heap_update sigma.heap l v }))
---     (pointsTo l v))).upred_holds n
---     ((HeapCMRA Loc cnt Value).op (heap_auth (heap_state_to_gmap sigma)) a_frag)

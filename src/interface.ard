@@ -16,14 +16,6 @@
   | bi_wand : E -> E -> E
   | bi_persistently : E -> E
   | bi_later : E -> E
-
-
-  --   \func \infixl 6 ∧ (P Q : E) => bi_and P Q
-  --   \func \infixl 5 ∨ (P Q : E) => bi_or P Q
-  --   \func \infixr 3 ->> (P Q : E) => bi_impl P Q
-  --   \func \infixl 6 ∗ (P Q : E) => bi_sep P Q
-  --   \func \infixr 3 -∗ (P Q : E) => bi_wand P Q
-
 }
 
 \func emp {B : BIBase} => B.bi_emp
@@ -105,11 +97,10 @@
 \class BI \extends BIMixin, BIPersistentlyMixin, BILaterMixin
 
 
-
-
 -- =================================================================================
 -- Support lemmas for the BIMixin
 -- =================================================================================
+
 
 \lemma pure_intro_lemma {B : BIMixin} (phi : \Prop) (P : B.E) : phi -> P |- pure phi
   => B.bi_mixin_pure_intro phi P
