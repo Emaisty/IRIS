@@ -8,6 +8,7 @@
 \import lang
 \import hoare
 \import weakestpre
+\import lifting
 \import uPred
 \import cmra
 \import lib.heap
@@ -151,7 +152,7 @@
                     (Store (Val (LitV (LitLoc l)))
                         (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
             (Load (Val (LitV (LitLoc l))))
-            (\lam s => IfTrueS _ _ idp idp idp)
+            (\lam s => BasePrim (IfTrueS _ _ idp idp idp))
             idp
             Post
       | thenE : Expr => Load (Val (LitV (LitLoc l)))
@@ -205,7 +206,7 @@
                               (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
                       (Val (LitV (LitLoc l))))
                   body_after_l
-                  (\lam s => BetaS "l" _ _ idp idp idp)
+                  (\lam s => BasePrim (BetaS "l" _ _ idp idp idp))
                   idp
                   Post
           \in

@@ -5,6 +5,8 @@
 \import Data.Or
 \import Meta
 \import Arith.Nat
+\import lang
+\import lib.gmap_cmra
 \import ofe
 \import cmra
 
@@ -167,6 +169,45 @@
 -- =================================================================================
 -- Inclusion lemmas for Excl
 -- =================================================================================
+
+
+\func excl_option_includedN_eq
+  {V : \Set} (n : Nat) (v : V) (y : Maybe (Excl V))
+  (hv : validN {ExclUCMRA (DiscreteOFE V)} n y)
+  (h  : inclN {ExclUCMRA (DiscreteOFE V)}
+      {\new Op _ { | op => (ExclUCMRA (DiscreteOFE V)).op }}
+      (just (excl v)) n y)
+  : y = just (excl v) => {?}
+
+\func option_dist_to_eq
+  (n : Nat) (o1 o2 : Maybe (Excl Value))
+  (h : (ExclUCMRA (DiscreteOFE Value)).dist n o1 o2)
+  (_ _ : \Type)
+  (_ : validN {ExclUCMRA (DiscreteOFE Value)} n o1)
+  : o1 = o2 => {?}
+
+\lemma excl_dist_to_eq
+  (V : \Set) (n : Nat) (e1 e2 : Excl V)
+  (h : (ExclOFE (DiscreteOFE V)).dist n e1 e2)
+  : e1 = e2
+  => \case \elim e1, \elim e2, h \with {
+    | excl a,        excl b,        h' => pmap excl (discrete_dist_to_eq V n a b h')
+    | exclInvalid,   exclInvalid,   _  => idp
+    | excl _,        exclInvalid,   h' => \case h' \with {}
+    | exclInvalid,   excl _,        h' => \case h' \with {}
+  }
+
+\lemma option_excl_dist_to_eq
+  (V : \Set) (n : Nat) (o1 o2 : Maybe (Excl V))
+  (h : (ExclUCMRA (DiscreteOFE V)).dist n o1 o2)
+  : o1 = o2
+  => \case \elim o1, \elim o2, h \with {
+    | nothing,  nothing,  _  => idp
+    | nothing,  just _,   h' => \case h' \with {}
+    | just _,   nothing,  h' => \case h' \with {}
+    | just e1,  just e2,  h' => pmap just (excl_dist_to_eq V n e1 e2 h')
+  }
+
 
 -- =================================================================================
 -- Excl functor (mapping)
@@ -337,7 +378,7 @@
   }
   | cmra_pcore_l => \lam x cx hp => \case \elim cx, hp \with { | nothing, _ => \case \elim x \with { | nothing => idp | just _ => idp } }
   | cmra_pcore_idemp => \lam x cx hp => \case \elim cx, hp \with { | nothing, _ => idp }
-  | cmra_pcore_mono => \lam x y cx hi hp => \case \elim cx, hp \with { | nothing, _ => (nothing, idp, inP (nothing, idp)) }
+  | cmra_pcore_mono => \lam x y cx hi hp => \case \elim cx, hp \with { | nothing, _ => inP (nothing, idp, inP (nothing, idp)) }
   | cmra_validN_op_l => \lam n me1 me2 hv => \case \elim me1, \elim me2, hv \with {
     | nothing, nothing, _ => ()
     | nothing, just e, hv => ()
@@ -364,4 +405,3 @@
     | just e => idp
   }
   | ucmra_pcore_unit => idp
-

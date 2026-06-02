@@ -264,7 +264,14 @@
 
 \lemma upredDist_later {M : UCMRA} (n : Nat) (P Q : ProperUPred M)
                        (h : \Pi (k : Nat) -> k NatOrder.< n -> upredDist k P Q)
-  : upredDist n (mkProperLater P) (mkProperLater Q) => {?}
+  : upredDist n (mkProperLater P) (mkProperLater Q) =>
+  \lam m a hm hv => \case \elim m, hm, hv \with {
+    | 0, _, _ => (\lam _ => (), \lam _ => ())
+    | suc m', hm', hv' =>
+      \let r => h m' (suc_<=_< hm') m' a <=-refl
+                    (M.cmra_validN_le (suc m') m' a hv' (n<=sucn m'))
+      \in (r.1, r.2)
+  }
 
 \lemma upredDist_forall {M : UCMRA} (T : \Type) (n : Nat)
                         (F G : T -> ProperUPred M)
@@ -277,19 +284,59 @@
 
 \lemma upredDist_impl_r {M : UCMRA} (n : Nat) (P Q Q' : ProperUPred M)
                         (h : upredDist n Q Q')
-  : upredDist n (mkProperImpl P Q) (mkProperImpl P Q') => {?}
+  : upredDist n (mkProperImpl P Q) (mkProperImpl P Q') =>
+  \lam m a hm hv =>
+      ( \lam himpl k k_le_m b incl_a_b hv_b hp =>
+          (h k b (NatSemiring.<=∘ k_le_m hm) hv_b).1
+            (himpl k k_le_m b incl_a_b hv_b hp)
+      , \lam himpl k k_le_m b incl_a_b hv_b hp =>
+          (h k b (NatSemiring.<=∘ k_le_m hm) hv_b).2
+            (himpl k k_le_m b incl_a_b hv_b hp)
+      )
 
 \lemma upredDist_sep_r {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
                        (h : upredDist n P Q)
-  : upredDist n (mkProperSep R P) (mkProperSep R Q) => {?}
+  : upredDist n (mkProperSep R P) (mkProperSep R Q) =>
+  \lam m a hm hv =>
+      ( \lam hsep => \case hsep \with {
+          | inP (a1, a2, dist_a, hr, hp) =>
+            \let
+              | hv_op : M.validN m (M.op a1 a2) =>
+                M.cmra_validN_ne m a (M.op a1 a2) dist_a hv
+              | hv_a2 : M.validN m a2 =>
+                cmra_validN_op_r {M} m a1 a2 hv_op
+            \in inP (a1, a2, dist_a, hr, (h m a2 hm hv_a2).1 hp)
+        }
+      , \lam hsep => \case hsep \with {
+          | inP (a1, a2, dist_a, hr, hq) =>
+            \let
+              | hv_op : M.validN m (M.op a1 a2) =>
+                M.cmra_validN_ne m a (M.op a1 a2) dist_a hv
+              | hv_a2 : M.validN m a2 =>
+                cmra_validN_op_r {M} m a1 a2 hv_op
+            \in inP (a1, a2, dist_a, hr, (h m a2 hm hv_a2).2 hq)
+        }
+      )
 
 \lemma upredDist_and_r {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
                        (h : upredDist n P Q)
-  : upredDist n (mkProperAnd R P) (mkProperAnd R Q) => {?}
+  : upredDist n (mkProperAnd R P) (mkProperAnd R Q) =>
+  \lam m a hm hv =>
+      ( \lam hRP => (hRP.1, (h m a hm hv).1 hRP.2)
+      , \lam hRQ => (hRQ.1, (h m a hm hv).2 hRQ.2)
+      )
 
 \lemma upredDist_wand_r {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
                         (h : upredDist n P Q)
-  : upredDist n (mkProperWand R P) (mkProperWand R Q) => {?}
+  : upredDist n (mkProperWand R P) (mkProperWand R Q) =>
+  \lam m a hm hv =>
+      ( \lam hwand k k_le_m a2 hv_op hr =>
+          (h k (M.op a a2) (NatSemiring.<=∘ k_le_m hm) hv_op).1
+            (hwand k k_le_m a2 hv_op hr)
+      , \lam hwand k k_le_m a2 hv_op hr =>
+          (h k (M.op a a2) (NatSemiring.<=∘ k_le_m hm) hv_op).2
+            (hwand k k_le_m a2 hv_op hr)
+      )
 
 
 -- =================================================================================
