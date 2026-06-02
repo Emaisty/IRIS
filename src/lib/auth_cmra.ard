@@ -213,6 +213,18 @@
       | (just exclInvalid, _), _, _ => \case hvx \with {}
   }
 
+\lemma auth_both_validN
+  {A : UCMRA} (n : Nat) (a b : A.E)
+  (hv : AuthValidN {A} n (AuthOp (just (excl a), A.unit) (nothing, b)))
+  : \Sigma (inclN {A} {\new Op A.E { | op => A.op }} b n a) (validN {A} n a)
+  =>
+    \let
+      | snd_eq : (AuthOp (just (excl a), A.unit) (nothing, b)).2 = b =>
+        A.ucmra_unit_left_id b
+      | hv' : AuthValidN {A} n (just (excl a), b) =>
+        transport (\lam s => AuthValidN {A} n (just (excl a), s)) snd_eq hv
+    \in (hv'.2, hv'.1)
+
 
 -- =================================================================================
 -- AuthCMRA
@@ -300,7 +312,7 @@
             | inP (z, hz) => inP ((nothing, z),
                                   path (\lam i => (nothing, hz @ i)))
           }
-      \in ((nothing, ucmra_core y.2), idp,
+      \in inP ((nothing, ucmra_core y.2), idp,
            transport (\lam c => incl {AuthElem A} {\new BaseSet (AuthElem A)}
                {\new Op (AuthElem A) { | op => AuthOp }} c (nothing, ucmra_core y.2))
                (inv cx_eq) incl_pair)

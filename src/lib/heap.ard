@@ -5,12 +5,14 @@
 \import Set
 \import Data.Maybe
 \import Arith.Nat
+\import Order.LinearOrder
 \import Order.PartialOrder
 \import ofe
 \import cmra
 \import uPred
 \import lang
 \import interface
+\import lib.pmap
 \import lib.excl_cmra
 \import lib.auth_cmra
 \import lib.gmap_cmra
@@ -18,17 +20,12 @@
 
 -- =================================================================================
 -- Heap CMRA: AUTH (gmap (Loc, ExclU(Val)))
---
--- NOTE: After the Gmap redefinition, `Gmap K cnt A` now takes an explicit
--- `Countable K` instance.  Decidability of equality comes from `cnt`, so we no
--- longer thread a separate `dec` parameter through the heap API.
 -- =================================================================================
 
 
 \func HeapCMRA (Loc : \Set) (cnt : Countable Loc) (Val : \Set) : UCMRA =>
   AuthUCMRA (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val)))
 
--- A singleton gmap built from the new gmap API.
 \func gmap_singleton {K : \Set} {cnt : Countable K} {V : \Set} (k : K) (v : V) : Gmap K cnt V =>
   gsingleton k v
 
@@ -99,7 +96,59 @@
     ((GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).op
         (gmap_singleton l (just (excl v1)))
         (gmap_singleton l (just (excl v2))))
-  => {?}
+  =>
+    \let
+      | M => HeapCMRA Loc cnt Val
+      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | frag1 : M.E => heap_frag l v1
+      | frag2 : M.E => heap_frag l v2
+      | hv_frag : validN {G} n (M.op a1 a2).2 =>
+        auth_cmra_extend_proof.auth_extend_frag_valid {G} n (M.op a1 a2) hv_op
+      | snd_op : (M.op a1 a2).2 = G.op a1.2 a2.2 => auth_op_snd {G} a1 a2
+      | hv_op_snd : validN {G} n (G.op a1.2 a2.2) =>
+        transport (validN {G} n) snd_op hv_frag
+      | incl_snd1 : inclN {G} {\new Op G.E { | op => G.op }}
+          (gmap_singleton l (just (excl v1))) n a1.2 =>
+        \case hfrag1 \with {
+          | inP (z, dist_a1_fragz) =>
+            inP (z.2,
+                 transport (\lam w => (G).dist n a1.2 w)
+                     (auth_op_snd {G} frag1 z)
+                     dist_a1_fragz.2)
+        }
+      | incl_snd2 : inclN {G} {\new Op G.E { | op => G.op }}
+          (gmap_singleton l (just (excl v2))) n a2.2 =>
+        \case hfrag2 \with {
+          | inP (z, dist_a2_fragz) =>
+            inP (z.2,
+                 transport (\lam w => (G).dist n a2.2 w)
+                     (auth_op_snd {G} frag2 z)
+                     dist_a2_fragz.2)
+        }
+      | incl_combined : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op (gmap_singleton l (just (excl v1))) (gmap_singleton l (just (excl v2))))
+          n (G.op a1.2 a2.2) =>
+        \case incl_snd1, incl_snd2 \with {
+          | inP (w1, d1), inP (w2, d2) =>
+            \let
+              | s1 : G.E => gmap_singleton l (just (excl v1))
+              | s2 : G.E => gmap_singleton l (just (excl v2))
+              | step1 : G.dist n (G.op a1.2 a2.2) (G.op (G.op s1 w1) (G.op s2 w2)) =>
+                cmra_op_ne_both {G} n a1.2 (G.op s1 w1) a2.2 (G.op s2 w2) d1 d2
+              | rearr : G.op (G.op s1 w1) (G.op s2 w2) = G.op (G.op s1 s2) (G.op w1 w2) =>
+                inv (G.cmra_assoc s1 w1 (G.op s2 w2)) *>
+                pmap (G.op s1) (G.cmra_assoc w1 s2 w2 *>
+                pmap (\lam u => G.op u w2) (G.cmra_comm w1 s2) *>
+                inv (G.cmra_assoc s2 w1 w2)) *>
+                G.cmra_assoc s1 s2 (G.op w1 w2)
+            \in inP (G.op w1 w2,
+                     transport (\lam w => G.dist n (G.op a1.2 a2.2) w) rearr step1)
+        }
+    \in cmra_validN_includedN {G} n
+        (G.op (gmap_singleton l (just (excl v1))) (gmap_singleton l (just (excl v2))))
+        (G.op a1.2 a2.2)
+        hv_op_snd
+        incl_combined
 
 \func heap_agree {Loc : \Set} {cnt : Countable Loc} {Val : \Set} {l : Loc} {v1 v2 : Val}
   : properUPred_ent {HeapCMRA Loc cnt Val}
@@ -217,9 +266,6 @@
 
 -- =================================================================================
 -- Additional heap operations
---
--- These now look up / update through the Gmap API rather than treating the
--- gmap as a plain function.
 -- =================================================================================
 
 
@@ -244,9 +290,252 @@
 
 
 -- Existence of a fresh location for any concrete state.
+-- This is the finite-support fact for concrete heaps.
+\func nat_max (n m : Nat) : Nat \elim n, m
+  | 0, m => m
+  | suc n, 0 => suc n
+  | suc n, suc m => suc (nat_max n m)
+
+\lemma nat_max_le_l (n m : Nat) : n <= nat_max n m \elim n, m
+  | 0, m => zero<=_
+  | suc n, 0 => <=-refl
+  | suc n, suc m => suc<=suc (nat_max_le_l n m)
+
+\lemma nat_max_le_r (n m : Nat) : m <= nat_max n m \elim n, m
+  | 0, m => <=-refl
+  | suc n, 0 => zero<=_
+  | suc n, suc m => suc<=suc (nat_max_le_r n m)
+
+\lemma not_suc_le_self (n : Nat) : Not (suc n <= n)
+  => \lam h => LinearOrder.notLess <=-refl (suc_<=_< h)
+
+\func heap_tree_max {A : \Set} (t : Pmap' (\Sigma Loc A)) : Nat \elim t
+  | PEmpty => 0
+  | PNode nothing l r => nat_max (heap_tree_max l) (heap_tree_max r)
+  | PNode (just p) l r => nat_max p.1 (nat_max (heap_tree_max l) (heap_tree_max r))
+
+\lemma heap_tree_lookup_le {A : \Set} (t : Pmap' (\Sigma Loc A)) (q : Pos) (p : \Sigma Loc A)
+                           (h : plookup' t q = just p)
+  : p.1 <= heap_tree_max t
+\elim t, q
+  | PEmpty, _ => \case h \with {}
+  | PNode nothing l r, xH => \case h \with {}
+  | PNode (just p0) l r, xH =>
+    \let hp : p0.1 = p.1 =>
+      pmap (\lam o => \case o \with {
+        | nothing => p0.1
+        | just p' => p'.1
+      }) h
+    \in transport (\lam a => a <= nat_max p0.1 (nat_max (heap_tree_max l) (heap_tree_max r)))
+         hp
+         (nat_max_le_l p0.1 (nat_max (heap_tree_max l) (heap_tree_max r)))
+  | PNode nothing l r, xO q' =>
+    <=-transitive (heap_tree_lookup_le l q' p h)
+      (nat_max_le_l (heap_tree_max l) (heap_tree_max r))
+  | PNode nothing l r, xI q' =>
+    <=-transitive (heap_tree_lookup_le r q' p h)
+      (nat_max_le_r (heap_tree_max l) (heap_tree_max r))
+  | PNode (just p0) l r, xO q' =>
+    <=-transitive
+      (heap_tree_lookup_le l q' p h)
+      (<=-transitive
+        (nat_max_le_l (heap_tree_max l) (heap_tree_max r))
+        (nat_max_le_r p0.1 (nat_max (heap_tree_max l) (heap_tree_max r))))
+  | PNode (just p0) l r, xI q' =>
+    <=-transitive
+      (heap_tree_lookup_le r q' p h)
+      (<=-transitive
+        (nat_max_le_r (heap_tree_max l) (heap_tree_max r))
+        (nat_max_le_r p0.1 (nat_max (heap_tree_max l) (heap_tree_max r))))
+
 \func heap_fresh_loc {cnt : Countable Loc} (s : State cnt)
   : \Sigma (l : Loc) (glookup s.heap l = nothing)
-  => {?}
+  =>
+    \let
+      | b : Nat => heap_tree_max s.heap.gtree.tree
+      | l : Loc => suc b
+      | fresh : glookup s.heap l = nothing =>
+        \case plookup s.heap.gtree (encode {cnt} l) \as o,
+              idp : plookup s.heap.gtree (encode {cnt} l) = o
+        \return (\case o \with { | nothing => nothing | just p => just p.2 }) = nothing
+        \with {
+          | nothing, _ => idp
+          | just p, hp =>
+            \let
+              | hp_loc : p.1 = l =>
+                encode_inj {cnt} p.1 l (s.heap.gtree_wf (encode {cnt} l) p hp)
+              | le_p : p.1 <= b =>
+                heap_tree_lookup_le s.heap.gtree.tree (encode {cnt} l) p hp
+              | le_l : l <= b =>
+                transport (\lam a => a <= b) hp_loc le_p
+            \in absurd (not_suc_le_self b le_l)
+        }
+    \in (l, fresh)
+
+\func singleton_includedN_l
+  {K : \Set} {cnt : Countable K} {A : UCMRA}
+  (n : Nat) (m : Gmap K cnt A.E) (k : K) (x : A.E)
+  (h : inclN {GmapUCMRA K cnt A}
+      {\new Op _ { | op => (GmapUCMRA K cnt A).op }}
+      (gmap_singleton k x) n m)
+  : \Sigma (y : A.E)
+           ((OptionOFE A).dist n (glookup m k) (just y))
+           (inclN {A} {\new Op A.E { | op => A.op }} x n y)
+  => \case glookup m k \as mx, idp : glookup m k = mx
+  \return \Sigma (y : A.E)
+           ((OptionOFE A).dist n mx (just y))
+           (inclN {A} {\new Op A.E { | op => A.op }} x n y)
+  \with {
+    | nothing, hm => absurd (singleton_includedN_l.empty_absurd n m k x h hm)
+    | just y, hm =>
+      (y,
+       (OptionOFE A).ofe_dist_refl n (just y),
+       singleton_includedN_l.just_incl n m k x y h hm)
+  }
+  \where {
+    \func point_dist
+      {K : \Set} {cnt : Countable K} {A : UCMRA}
+      (n : Nat) (m : Gmap K cnt A.E) (k : K) (x : A.E)
+      (z : Gmap K cnt A.E)
+      (hz : (GmapUCMRA K cnt A).dist n m ((GmapUCMRA K cnt A).op (gmap_singleton k x) z))
+      : (OptionOFE A).dist n (glookup m k) (option_op {A} (just x) (glookup z k))
+      =>
+        \let
+          | rhs_eq : glookup ((GmapUCMRA K cnt A).op (gmap_singleton k x) z) k
+            = option_op {A} (just x) (glookup z k)
+          => glookup_op (gmap_singleton k x) z k
+             *> pmap (\lam o => option_op {A} o (glookup z k))
+                  (glookup_singleton_eq k x)
+        \in transport (\lam o => (OptionOFE A).dist n (glookup m k) o) rhs_eq (hz k)
+
+    \func empty_absurd
+      {K : \Set} {cnt : Countable K} {A : UCMRA}
+      (n : Nat) (m : Gmap K cnt A.E) (k : K) (x : A.E)
+      (h : inclN {GmapUCMRA K cnt A}
+          {\new Op _ { | op => (GmapUCMRA K cnt A).op }}
+          (gmap_singleton k x) n m)
+      (hm : glookup m k = nothing)
+      : Empty
+      => \case h \with {
+        | inP (z, hz) =>
+          empty_absurd_case n x (glookup z k)
+            (transport (\lam o => (OptionOFE A).dist n o (option_op {A} (just x) (glookup z k)))
+              hm
+              (point_dist n m k x z hz))
+      }
+
+    \func empty_absurd_case
+      {A : UCMRA} (n : Nat) (x : A.E) (mz : Maybe A.E)
+      (hdist : (OptionOFE A).dist n nothing (option_op {A} (just x) mz))
+      : Empty
+    \elim mz
+      | nothing => \case hdist \with {}
+      | just w => \case hdist \with {}
+
+    \func just_incl
+      {K : \Set} {cnt : Countable K} {A : UCMRA}
+      (n : Nat) (m : Gmap K cnt A.E) (k : K) (x y : A.E)
+      (h : inclN {GmapUCMRA K cnt A}
+          {\new Op _ { | op => (GmapUCMRA K cnt A).op }}
+          (gmap_singleton k x) n m)
+      (hm : glookup m k = just y)
+      : inclN {A} {\new Op A.E { | op => A.op }} x n y
+      => \case h \with {
+        | inP (z, hz) =>
+          just_incl_case n x y (glookup z k)
+            (transport (\lam o => (OptionOFE A).dist n o (option_op {A} (just x) (glookup z k)))
+              hm
+              (point_dist n m k x z hz))
+      }
+
+    \func just_incl_case
+      {A : UCMRA} (n : Nat) (x y : A.E) (mz : Maybe A.E)
+      (hdist : (OptionOFE A).dist n (just y) (option_op {A} (just x) mz))
+      : inclN {A} {\new Op A.E { | op => A.op }} x n y
+    \elim mz
+      | nothing =>
+        inP (A.unit,
+          transport (\lam a => A.dist n y a)
+            (inv (ucmra_unit_right_id {A} x))
+            hdist)
+      | just w => inP (w, hdist)
+  }
+
+\func excl_some_includedN_eq
+  {V : \Set} (n : Nat) (v : V) (y : Excl V)
+  (hv : validN {ExclUCMRA (DiscreteOFE V)} n (just y))
+  (h  : inclN {ExclUCMRA (DiscreteOFE V)}
+      {\new Op _ { | op => (ExclUCMRA (DiscreteOFE V)).op }}
+      (just (excl v)) n (just y))
+  : y = excl v
+  => \case h \with {
+    | inP (z, hz) =>
+      \case \elim z, \elim y, hv, hz \with {
+        | nothing, excl a,        _,  hdist => excl_dist_to_eq V n (excl a) (excl v) hdist
+        | nothing, exclInvalid,   hv, _     => absurd hv
+        | just e,  excl a,        _,  hdist => \case hdist \with {}
+        | just e,  exclInvalid,   hv, _     => absurd hv
+      }
+  }
+
+\func glookup_of_pomap_pair
+  {K : \Set} {cnt : Countable K} {V V' : \Set}
+  (f : V -> V')
+  (g : Gmap K cnt V) (k : K)
+  (g' : Gmap K cnt V')
+  (gtree_eq : g'.gtree
+    = pomap (\lam (p : \Sigma K V) => just (p.1, f p.2)) g.gtree)
+  : \Sigma (mv : Maybe V)
+           (glookup g k = mv)
+           (glookup g' k = \case mv \with {
+             | nothing => nothing
+             | just w  => just (f w)
+           })
+  =>
+    \let
+      | tag : \Sigma K V -> Maybe (\Sigma K V')
+      => \lam p => just (p.1, f p.2)
+      | q : Pos => encode {cnt} k
+      | pl_pomap : plookup (pomap tag g.gtree) q
+        = pomap_tree.option_bind tag (plookup g.gtree q)
+      => plookup_pomap tag g.gtree q
+      | pl_g' : plookup g'.gtree q
+        = pomap_tree.option_bind tag (plookup g.gtree q)
+      => pmap (\lam t => plookup t q) gtree_eq *> pl_pomap
+    \in \case plookup g.gtree q \as p,
+              idp : plookup g.gtree q = p
+    \with {
+      | nothing, hp =>
+        \let
+          | hg : glookup g k = nothing
+          => path (\lam i => \case hp @ i \with {
+              | nothing  => nothing
+              | just pp  => just pp.2
+            })
+          | pl_g'_n : plookup g'.gtree q = nothing
+          => pl_g' *> pmap (pomap_tree.option_bind tag) hp
+          | hg' : glookup g' k = nothing
+          => path (\lam i => \case pl_g'_n @ i \with {
+              | nothing  => nothing
+              | just pp  => just pp.2
+            })
+        \in (nothing, hg, hg')
+      | just pp, hp =>
+        \let
+          | hg : glookup g k = just pp.2
+          => path (\lam i => \case hp @ i \with {
+              | nothing  => nothing
+              | just qq  => just qq.2
+            })
+          | pl_g'_j : plookup g'.gtree q = just (pp.1, f pp.2)
+          => pl_g' *> pmap (pomap_tree.option_bind tag) hp
+          | hg' : glookup g' k = just (f pp.2)
+          => path (\lam i => \case pl_g'_j @ i \with {
+              | nothing  => nothing
+              | just qq  => just qq.2
+            })
+        \in (just pp.2, hg, hg')
+    }
 
 -- Frame-preserving update: the auth view, opped with anything compatible,
 -- can be advanced to the post-allocation auth view, producing a fresh fragment.

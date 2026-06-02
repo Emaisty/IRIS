@@ -67,7 +67,7 @@
   | cmra_pcore_l (x cx : E) : pcore x = just cx -> op cx x = x
   | cmra_pcore_idemp (x cx : E) : pcore x = just cx -> pcore cx = just cx
   | cmra_pcore_mono (x y cx : E) : incl {E} {\this} {\new Op E { | op => op }} x y -> pcore x = just cx ->
-  \Sigma (cy : E) (pcore y = just cy) (incl {E} {\this} {\new Op E { | op => op }} cx cy)
+  TruncP (\Sigma (cy : E) (pcore y = just cy) (incl {E} {\this} {\new Op E { | op => op }} cx cy))
 
   | cmra_validN_op_l (n : Nat) (x y : E) : validN n (op x y) -> validN n x
 
@@ -305,7 +305,7 @@
     | nothing, _ => ucmra_unit_least (ucmra_core y)
     | just cx, hpx =>
       \case U.cmra_pcore_mono x y cx h hpx \with {
-        | (cy, hpy, hincl_cy) =>
+        | inP (cy, hpy, hincl_cy) =>
           transport
               (\lam py => incl {U.E} {U} {\new Op U.E { | op => U.op }}
                   cx

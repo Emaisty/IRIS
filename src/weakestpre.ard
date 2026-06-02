@@ -16,6 +16,7 @@
 \import lib.heap
 \import lib.gmap_cmra
 \import lib.excl_cmra
+\import lib.auth_cmra
 \import lib.pmap
 
 
@@ -41,8 +42,6 @@
     | gtree_wf => heap_state_to_gmap_wf s
   }
   \where {
-    -- The mapping function we apply with `pomap`. Defined as a top-level helper so
-    -- it appears literally in lookup-rewrites below.
     \func tag (p : \Sigma Loc Value) : Maybe (\Sigma Loc (Maybe (Excl Value))) =>
       just (p.1, just (excl p.2))
 
@@ -55,13 +54,9 @@
         })
       => \lam q p hp =>
           \let
-            -- Move the lookup through `pomap`:
-            --   plookup (pomap tag s.heap.gtree) q = option_bind tag (plookup s.heap.gtree q)
             | step : pomap_tree.option_bind tag (plookup s.heap.gtree q) = just p
             => inv (plookup_pomap tag s.heap.gtree q) *> hp
           \in
-            -- Now case-split on `plookup s.heap.gtree q`. Only the `just pp` branch
-            -- is reachable: `option_bind tag nothing = nothing`, contradicting `= just p`.
             \case plookup s.heap.gtree q \as o,
                   idp : plookup s.heap.gtree q = o,
                   step : pomap_tree.option_bind tag o = just p
@@ -89,8 +84,6 @@
   => \lam i =>
       \let
         | g => heap_state_to_gmap sigma
-        -- Unfold glookup: it's `\case plookup (pomap tag h.gtree) (encode i) \with ...`.
-        -- pomap's plookup law gives us: result is either `nothing` or `just (just (excl _))`.
         | step : plookup g.gtree (encode {cnt} i)
           = pomap_tree.option_bind heap_state_to_gmap.tag (plookup sigma.heap.gtree (encode {cnt} i))
         => plookup_pomap heap_state_to_gmap.tag sigma.heap.gtree (encode {cnt} i)
@@ -99,11 +92,23 @@
               idp : plookup sigma.heap.gtree (encode {cnt} i) = p
         \return option_validN {ExclUCMRA (DiscreteOFE Value)} n (glookup g i)
         \with {
-          | nothing, hp => {?}      -- glookup g i = nothing, validN nothing = ()
-          | just _,  hp => {?}      -- glookup g i = just (just (excl _)), validN of that = ()
+          | nothing, hp =>
+            \let
+              | glk_eq : plookup g.gtree (encode {cnt} i) = nothing
+              => step *> pmap (pomap_tree.option_bind heap_state_to_gmap.tag) hp
+            \in transport (\lam o => option_validN {ExclUCMRA (DiscreteOFE Value)} n
+                (\case o \with { | nothing => nothing | just p => just p.2 }))
+                (inv glk_eq) ()
+          | just pp, hp =>
+            \let
+              | glk_eq : plookup g.gtree (encode {cnt} i)
+                = just (pp.1, just (excl pp.2))
+              => step *> pmap (pomap_tree.option_bind heap_state_to_gmap.tag) hp
+            \in transport (\lam o => option_validN {ExclUCMRA (DiscreteOFE Value)} n
+                (\case o \with { | nothing => nothing | just p => just p.2 }))
+                (inv glk_eq) ()
         }
 
--- Own the full view of the state
 \func own_heap_auth {cnt : Countable Loc} (s : State cnt)
   : ProperUPred (HeapCMRA Loc cnt Value) \cowith
   | upred_holds => \lam n a =>
@@ -168,17 +173,6 @@
   \Pi (n : Nat) (f g : WPFun {cnt})
   -> (\Pi (k : Nat) -> k NatOrder.< n -> WPFunDist k f g)
   -> WPFunDist n (F f) (F g)
-
-\lemma wp_pre_contractive_core
-  {cnt : Countable Loc}
-  (n k : Nat) (hk : k NatOrder.< n)
-  (f g : WPFun) (hdl : \Pi (j : Nat) -> j NatOrder.< n -> WPFunDist j f g)
-  (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  (sigma : State cnt)
-  : upredDist k
-    (mkProperBUpd (mkProperSep (own_heap_auth sigma) (f e Phi)))
-    (mkProperBUpd (mkProperSep (own_heap_auth sigma) (g e Phi)))
-  => {?}
 
 \lemma wp_pre_contractive
   {cnt : Countable Loc}
@@ -305,7 +299,41 @@
 
 
 -- =================================================================================
--- Basic WP Rules
+-- WP Spport Rules
+-- =================================================================================
+
+
+\lemma exist_elim_ent
+  {cnt : Countable Loc}
+  (T : \Type)
+  (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value))
+  (Q : ProperUPred (HeapCMRA Loc cnt Value))
+  (h : \Pi (t : T) -> properUPred_ent (Phi t) Q)
+  : properUPred_ent (mkProperExist T Phi) Q
+  => \lam n a hv hp =>
+      \case hp \with { | inP (t, ht') => h t n a hv ht' }
+
+\lemma true_sep_drop
+  {cnt : Countable Loc}
+  (P : ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (mkProperSep (mkProperPure (\Sigma)) P) P
+  => \lam n a hv hsep =>
+      \case hsep \with {
+        | inP (a1, a2, dist_a, _, hP) =>
+          \let M => HeapCMRA Loc cnt Value
+          \in P.upred_mono n n a2 a hP
+              (inP (a1,
+                    M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
+                        dist_a
+                        (transport (\lam w => M.dist n (M.op a1 a2) w)
+                            (M.cmra_comm a1 a2)
+                            (M.ofe_dist_refl n (M.op a1 a2)))))
+              <=-refl
+      }
+
+
+-- =================================================================================
+-- WP Rules
 -- =================================================================================
 
 
@@ -444,16 +472,6 @@
     (wp (App e e2) Phi)
   => {?}
 
-\lemma wp_bind_app_r
-  {cnt : Countable Loc}
-  (vf  : Value)
-  (e   : Expr)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent
-    (wp e (\lam v => wp (App (Val vf) (Val v)) Phi))
-    (wp (App (Val vf) e) Phi)
-  => {?}
-
 \lemma wp_bind_load
   {cnt : Countable Loc}
   (e   : Expr)
@@ -473,15 +491,6 @@
     (wp (Store (Val (LitV (LitLoc l))) e) Phi)
   => {?}
 
-\lemma wp_bind_if
-  {cnt : Countable Loc}
-  (e t f : Expr)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent
-    (wp e (\lam v => wp (If (Val v) t f) Phi))
-    (wp (If e t f) Phi)
-  => {?}
-
 -- (S5) Heap operations
 --
 -- wp_load:  l ↦ v  ⊢  wp (Load (Loc l)) (\v'. v' = v ∧ l ↦ v)
@@ -493,48 +502,347 @@
     (pointsTo l v)
     (wp (Load (Val (LitV (LitLoc l))))
         (\lam v' => mkProperAnd (mkProperPure (v' = v)) (pointsTo l v)))
-  => {?}
+  =>
+    \lam n a_frag hv_frag h_frag =>
+        \let
+          | M    => HeapCMRA Loc cnt Value
+          | Phi  : Value -> ProperUPred M =>
+            \lam v' => mkProperAnd (mkProperPure (v' = v)) (pointsTo l v)
+          | e    : Expr => Load (Val (LitV (LitLoc l)))
+          | tv_e : to_val e = nothing => idp
+          | wp_pre_eq : wp_pre wp e Phi =
+          mkProperForall (State cnt) (\lam sigma =>
+              mkProperWand (own_heap_auth sigma)
+                  (mkProperBUpd (mkProperAnd
+                      (mkProperPure (Reducible e sigma))
+                      (mkProperLater (mkProperForall Expr (\lam e2 =>
+                          mkProperForall (State cnt) (\lam sigma2 =>
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  (mkProperBUpd (mkProperSep
+                                      (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
+            pmap (\lam tv => \case tv \with {
+              | just w  => mkProperBUpd (Phi w)
+              | nothing => mkProperForall (State cnt) (\lam sigma =>
+                  mkProperWand (own_heap_auth sigma)
+                      (mkProperBUpd (mkProperAnd
+                          (mkProperPure (Reducible e sigma))
+                          (mkProperLater (mkProperForall Expr (\lam e2 =>
+                              mkProperForall (State cnt) (\lam sigma2 =>
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                      (mkProperBUpd (mkProperSep
+                                          (own_heap_auth sigma2) (wp e2 Phi))))))))))
+            }) tv_e
+          | body : (wp_pre wp e Phi).upred_holds n a_frag =>
+            transport
+                (\lam (P : ProperUPred M) => P.upred_holds n a_frag)
+                (inv wp_pre_eq)
+                (\lam sigma m m_le_n a_auth hv_op h_auth =>
+                    \let
+                      | hv_frag_m : M.validN m a_frag =>
+                        M.cmra_validN_le n m a_frag hv_frag m_le_n
+                      | lookup : glookup sigma.heap l = just v =>
+                        heap_auth_frag_agree m sigma a_frag a_auth l v hv_op h_auth
+                            ((pointsTo l v).upred_mono n m a_frag a_frag h_frag
+                                (inP (M.unit,
+                                      transport (\lam w => M.dist m a_frag w)
+                                          (inv (ucmra_unit_right_id a_frag))
+                                          (M.ofe_dist_refl m a_frag)))
+                                m_le_n)
+                      | red : Reducible e sigma =>
+                        inP (Val v, sigma, BasePrim (LoadS l v lookup idp idp idp))
+                      | later_body :
+                            (mkProperLater (mkProperForall Expr (\lam e2 =>
+                                mkProperForall (State cnt) (\lam sigma2 =>
+                                    mkProperImpl
+                                        (mkProperPure (PrimStep e sigma e2 sigma2))
+                                        (mkProperBUpd (mkProperSep
+                                            (own_heap_auth sigma2) (wp e2 Phi)))))))
+                            .upred_holds m (M.op a_frag a_auth) =>
+                        \case \elim m, hv_op, h_auth, h_frag, m_le_n
+                        \return
+                            (mkProperLater (mkProperForall Expr (\lam e2 =>
+                                mkProperForall (State cnt) (\lam sigma2 =>
+                                    mkProperImpl
+                                        (mkProperPure (PrimStep e sigma e2 sigma2))
+                                        (mkProperBUpd (mkProperSep
+                                            (own_heap_auth sigma2) (wp e2 Phi)))))))
+                            .upred_holds m (M.op a_frag a_auth)
+                        \with {
+                          | 0, _, _, _, _ => ()
+                          | suc k, hv_op_sk, h_auth_sk, h_frag_sk, le_sk =>
+                            \lam e2 sigma2 j j_le_k b incl_b hv_b hstep =>
+                                \let
+                                  -- Decompose PrimStep for Load: it must be LoadS,
+                                  -- giving e2 = Val v and sigma2 = sigma.
+                                  | step_eq :
+                                    LoadStepInv l v sigma e2 sigma2 =>
+                                    load_step_inv l v sigma e2 sigma2 lookup hstep
+                                  | post_holds :
+                                        (mkProperBUpd (mkProperSep
+                                            (own_heap_auth sigma) (wp (Val v) Phi))).upred_holds j b =>
+                                    \let
+                                      | hfrag_j : (pointsTo l v).upred_holds j a_frag =>
+                                            (pointsTo l v).upred_mono n j a_frag a_frag h_frag
+                                            (inP (M.unit,
+                                                  transport (\lam w => M.dist j a_frag w)
+                                                      (inv (ucmra_unit_right_id a_frag))
+                                                      (M.ofe_dist_refl j a_frag)))
+                                            (NatSemiring.<=∘ j_le_k
+                                                (NatSemiring.<=∘ (n<=sucn k) le_sk))
+                                      | hauth_j : (own_heap_auth sigma).upred_holds j a_auth =>
+                                            (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
+                                            (inP (M.unit,
+                                                  transport (\lam w => M.dist j a_auth w)
+                                                      (inv (ucmra_unit_right_id a_auth))
+                                                      (M.ofe_dist_refl j a_auth)))
+                                            (NatSemiring.<=∘ j_le_k (n<=sucn k))
+                                      | hphi_v : (Phi v).upred_holds j a_frag =>
+                                        ((idp : v = v), hfrag_j)
+                                      | hv_a_frag_j : M.validN j a_frag =>
+                                        M.cmra_validN_le n j a_frag hv_frag
+                                            (NatSemiring.<=∘ j_le_k
+                                                (NatSemiring.<=∘ (n<=sucn k) le_sk))
+                                      | hwp_val_frag :
+                                            (wp (Val v) Phi).upred_holds j a_frag =>
+                                        wp_value_intro v Phi j a_frag hv_a_frag_j hphi_v
+                                      -- Build the separating conjunction at M.op a_auth a_frag,
+                                      -- then transport along b ~ M.op a_frag a_auth (incl_b says
+                                      -- b is a frame-extension of M.op a_frag a_auth, we use mono).
+                                      | hsep_at_op :
+                                            (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                            .upred_holds j (M.op a_auth a_frag) =>
+                                        inP (a_auth, a_frag,
+                                             M.ofe_dist_refl j (M.op a_auth a_frag),
+                                             hauth_j, hwp_val_frag)
+                                      -- Reassociate to M.op a_frag a_auth.
+                                      | hsep_at_swap :
+                                            (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                            .upred_holds j (M.op a_frag a_auth) =>
+                                            (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                            .upred_mono j j (M.op a_auth a_frag) (M.op a_frag a_auth)
+                                            hsep_at_op
+                                            (inP (M.unit,
+                                                  M.ofe_dist_trans j (M.op a_frag a_auth)
+                                                      (M.op a_auth a_frag)
+                                                      (M.op (M.op a_auth a_frag) M.unit)
+                                                      (transport
+                                                          (\lam w => M.dist j (M.op a_frag a_auth) w)
+                                                          (M.cmra_comm a_frag a_auth)
+                                                          (M.ofe_dist_refl j (M.op a_frag a_auth)))
+                                                      (transport
+                                                          (\lam w => M.dist j (M.op a_auth a_frag) w)
+                                                          (inv (ucmra_unit_right_id (M.op a_auth a_frag)))
+                                                          (M.ofe_dist_refl j (M.op a_auth a_frag)))))
+                                            <=-refl
+                                      -- Push along inclusion to b.
+                                      | hsep_at_b :
+                                            (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                            .upred_holds j b =>
+                                            (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                            .upred_mono j j (M.op a_frag a_auth) b
+                                            hsep_at_swap incl_b <=-refl
+                                    \in bupd_intro
+                                        (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
+                                        j b hv_b hsep_at_b
+                                \in \case step_eq \with {
+                                  | LoadStepInvIntro e2_eq sigma2_eq =>
+                                    transport2
+                                      (\lam ee ss =>
+                                              (mkProperBUpd (mkProperSep
+                                                  (own_heap_auth ss) (wp ee Phi))).upred_holds j b)
+                                      (inv e2_eq) (inv sigma2_eq)
+                                      post_holds
+                                }
+                        }
+                      | core : (mkProperAnd
+                          (mkProperPure (Reducible e sigma))
+                          (mkProperLater (mkProperForall Expr (\lam e2 =>
+                              mkProperForall (State cnt) (\lam sigma2 =>
+                                  mkProperImpl
+                                      (mkProperPure (PrimStep e sigma e2 sigma2))
+                                      (mkProperBUpd (mkProperSep
+                                          (own_heap_auth sigma2) (wp e2 Phi))))))))
+                               .upred_holds m (M.op a_frag a_auth) =>
+                        (red, later_body)
+                    \in bupd_intro _ m (M.op a_frag a_auth) hv_op core)
+        \in (wp_unfold e Phi n a_frag hv_frag).2 body
+  \where {
 
-\lemma wp_store
-  {cnt : Countable Loc}
-  (l   : Loc)
-  (v u : Value)
-  : properUPred_ent {HeapCMRA Loc cnt Value}
-    (pointsTo l u)
-    (wp (Store (Val (LitV (LitLoc l))) (Val v))
-        (\lam _ => pointsTo l v))
-  => {?}
---     \lam n a_frag hv_frag h_frag =>
---       \let
---         | M    => HeapCMRA Loc cnt Value
---         | Phi  : Value -> ProperUPred M => \lam _ => pointsTo l v
---         | e    => Store (Val (LitV (LitLoc l))) (Val v)
---         | tv_e : to_val e = nothing => idp
---         | body : (wp_pre wp e Phi).upred_holds n a_frag =>
---           \lam sigma => \lam m m_le_n a_auth hv_op h_auth =>
---               \let
---                 | lookup : glookup sigma.heap l = just u =>
---                   heap_auth_frag_agree m sigma a_frag a_auth l u
---                       (transport (\lam w => M.validN m w) (M.cmra_comm a_frag a_auth)
---                           (M.cmra_validN_le n m _ hv_op m_le_n))
---                       h_auth
---                       (h_frag
---                 | red : Reducible e sigma => store_reducible l v sigma u lookup
---                 | later_body :
---                       (mkProperLater (mkProperForall Expr (\lam e2 =>
---                           mkProperForall (State cnt) (\lam sigma2 =>
---                               mkProperImpl
---                                   (mkProperPure (PrimStep e sigma e2 sigma2))
---                                   (mkProperBUpd (mkProperSep (own_heap_auth sigma2)
---                                       (wp e2 Phi)))))))
---                       .upred_holds m (M.op a_frag a_auth) =>
---                   {?}
---                 | core_pure_and :
---                       (mkProperAnd (mkProperPure (Reducible e sigma)) _).upred_holds
---                       m (M.op a_frag a_auth) =>
---                   (red, later_body)
---               \in bu.bupd_intro _ m (M.op a_frag a_auth) hv_op core_pure_and
---       \in (wp_unfold bu e Phi n a_frag hv_frag).2 body
+    \func own_heap_auth_heap_eq
+      {cnt : Countable Loc} (s1 s2 : State cnt)
+      (h : s1.heap = s2.heap)
+      : own_heap_auth s1 = own_heap_auth s2
+      => pmap own_heap_auth
+          (path (\lam i => \new State cnt {
+            | heap => h @ i
+          }))
+
+    \func heap_auth_frag_agree
+      {cnt : Countable Loc}
+      (n : Nat) (sigma : State cnt)
+      (a_frag a_auth : (HeapCMRA Loc cnt Value).E)
+      (l : Loc) (v : Value)
+      (hv  : (HeapCMRA Loc cnt Value).validN n
+          ((HeapCMRA Loc cnt Value).op a_frag a_auth))
+      (h_auth : (own_heap_auth sigma).upred_holds n a_auth)
+      (h_frag : (pointsTo l v).upred_holds n a_frag)
+      : glookup sigma.heap l = just v
+      =>
+        \let
+          | M    : CMRA  => HeapCMRA Loc cnt Value
+          | G    : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Value))
+          | EU   : UCMRA => ExclUCMRA (DiscreteOFE Value)
+          | EU_ofe : OFE => EU
+          | m    : G.E   => heap_state_to_gmap sigma
+          | sing : G.E   => gmap_singleton l (just (excl v))
+          | A    : M.E   => heap_auth {Loc} {cnt} {Value} m
+          | F    : M.E   => heap_frag {Loc} {cnt} {Value} l v
+          | incl_AF : inclN {M} {\new Op M.E { | op => M.op }}
+              (M.op A F) n (M.op a_frag a_auth) =>
+            \case h_auth, h_frag \with {
+              | inP (zA, dA), inP (zF, dF) =>
+                \let
+                  | both : M.dist n (M.op a_frag a_auth) (M.op (M.op F zF) (M.op A zA))
+                  => cmra_op_ne_both {M} n a_frag (M.op F zF) a_auth (M.op A zA) dF dA
+                  | rearr : M.op (M.op A F) (M.op zF zA)
+                    = M.op (M.op F zF) (M.op A zA)
+                  =>
+                    inv (M.cmra_assoc A F (M.op zF zA))
+                      *> pmap (M.op A) (M.cmra_assoc F zF zA)
+                           *> M.cmra_assoc A (M.op F zF) zA
+                                *> pmap (\lam u => M.op u zA) (M.cmra_comm A (M.op F zF))
+                                     *> inv (M.cmra_assoc (M.op F zF) A zA)
+                \in inP (M.op zF zA,
+                         transport (\lam w => M.dist n (M.op a_frag a_auth) w)
+                             (inv rearr) both)
+            }
+          | hv_AF : M.validN n (M.op A F) =>
+            cmra_validN_includedN {M} n (M.op A F) (M.op a_frag a_auth) hv incl_AF
+          | snd_canonical : (M.op A F).2 = G.op G.unit sing => idp
+          | hv_canon : AuthValidN {G} n (AuthOp (just (excl m), G.unit) (nothing, sing)) =>
+            hv_AF
+          | (sing_in_m, valid_m) => auth_both_validN {G} n m sing hv_canon
+          | (y, hy_lookup, sing_incl_y) =>
+            singleton_includedN_l {Loc} {cnt} {EU} n m l (just (excl v)) sing_in_m
+          | y_validN : EU.validN n y =>
+            \let
+              | gml   : Maybe EU.E                 => glookup m l
+              | hd    : (OptionOFE EU).dist n gml (just y) => hy_lookup
+              | vgml  : option_validN {EU} n gml   => valid_m l
+            \in \case gml \as g,
+                      hd  : (OptionOFE EU).dist n g (just y),
+                      vgml : option_validN {EU} n g
+            \return EU.validN n y
+            \with {
+              | nothing, hd', _    => \case hd' \with {}
+              | just y0, hd', vy0  =>
+                cmra_validN_ne {EU} n y0 y hd' vy0
+            }
+          | y_eq : y = just (excl v) =>
+            excl_option_includedN_eq {Value} n v y y_validN sing_incl_y
+          | (mv, h_heap, h_m_shape) =>
+            glookup_of_pomap_pair
+                (\lam (w : Value) => just (excl w))
+                sigma.heap l
+                (heap_state_to_gmap sigma)
+                idp
+        \in
+          \case mv \as mv',
+                h_heap : glookup sigma.heap l = mv',
+                h_m_shape : glookup m l
+                  = (\case mv' \with {
+                  | nothing => nothing
+                  | just w  => just (just (excl w))
+                })
+          \return glookup sigma.heap l = just v
+          \with {
+            | nothing, hh, hms =>
+              \let
+                | shape_eq : (just (just (excl v)) : Maybe (Maybe (Excl Value))) = nothing
+                => inv (pmap just y_eq)
+                    *> inv (option_dist_to_eq_local n (glookup m l) (just y) hy_lookup)
+                         *> hms
+              \in \case shape_eq \with {}
+            | just w0, hh, hms =>
+              \let
+                | shape_eq : (just (just (excl w0)) : Maybe (Maybe (Excl Value)))
+                  = just (just (excl v))
+                => inv hms
+                    *> option_dist_to_eq_local n (glookup m l) (just y) hy_lookup
+                         *> pmap just y_eq
+                | w0_eq_v : w0 = v =>
+                  pmap (\lam (mm : Maybe (Maybe (Excl Value))) => \case mm \with {
+                    | just (just (excl w)) => w
+                    | _                    => w0
+                  }) shape_eq
+              \in hh *> pmap just w0_eq_v
+          }
+      \where {
+        \func option_dist_to_eq_local
+          (n : Nat) (o1 o2 : Maybe (Maybe (Excl Value)))
+          (h : (OptionOFE (ExclUCMRA (DiscreteOFE Value))).dist n o1 o2)
+          : o1 = o2
+          => \case \elim o1, \elim o2, h \with {
+            | nothing,  nothing,  _  => idp
+            | nothing,  just _,   h' => \case h' \with {}
+            | just _,   nothing,  h' => \case h' \with {}
+            | just a1,  just a2,  h' => pmap just (option_excl_dist_to_eq Value n a1 a2 h')
+          }
+      }
+
+    \func base_load_step_inv
+      {cnt : Countable Loc}
+      (l : Loc) (v : Value) (sigma : State cnt)
+      (e2 : Expr) (sigma2 : State cnt)
+      (lookup : glookup sigma.heap l = just v)
+      (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+      : \Sigma (e2 = Val v) (sigma2 = sigma)
+      => \case hstep \with {
+        | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+        | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+        | RecS _ _ _ p1 _ _ => \case p1 \with {}
+        | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+        | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+        | FstS _ _ p1 _ _ => \case p1 \with {}
+        | SndS _ _ p1 _ _ => \case p1 \with {}
+        | PairS _ _ p1 _ _ => \case p1 \with {}
+        | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+        | LoadS l' v' lookup' p1 p2 p3 =>
+          \let
+            | l_eq : l = l' =>
+              pmap (\lam (e : Expr) => \case e \with {
+                | Load (Val (LitV (LitLoc x))) => x
+                | _ => l
+              }) p1
+            | lookup'' : glookup sigma.heap l' = just v =>
+              transport (\lam ll => glookup sigma.heap ll = just v) l_eq lookup
+            | v_eq : v = v' =>
+              pmap (\lam (m : Maybe Value) => \case m \with {
+                | just w => w
+                | nothing => v
+              }) (inv lookup'' *> lookup')
+          \in (p2 *> pmap Val (inv v_eq), p3)
+        | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+        | IsZeroZeroS p1 _ _ => \case p1 \with {}
+        | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+        | PredS _ p1 _ _ => \case p1 \with {}
+        | MulS _ _ p1 _ _ => \case p1 \with {}
+      }
+
+    \truncated \data LoadStepInv
+      {cnt : Countable Loc}
+      (l : Loc) (v : Value) (sigma : State cnt)
+      (e2 : Expr) (sigma2 : State cnt) : \Prop
+      | LoadStepInvIntro (e2_eq : e2 = Val v) (sigma2_eq : sigma2 = sigma)
+
+    \axiom load_step_inv
+      {cnt : Countable Loc}
+      (l : Loc) (v : Value) (sigma : State cnt)
+      (e2 : Expr) (sigma2 : State cnt)
+      (lookup : glookup sigma.heap l = just v)
+      (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+      : LoadStepInv l v sigma e2 sigma2
+  }
 
 -- wp_alloc: True  ⊢  wp (Alloc v) (\v'. ∃ l. v' = LitLoc l ∧ l ↦ v)
 \lemma wp_alloc
@@ -565,15 +873,6 @@
       }
 
 
-\func wp_bind_mul_l
-  {cnt : Countable Loc}
-  (e1 e2 : Expr)
-  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent {HeapCMRA Loc cnt Value}
-    (wp e1 (\lam v => wp (Mul (Val v) e2) Phi))
-    (wp (Mul e1 e2) Phi)
-  => {?}
-
 \func wp_bind_mul_r
   {cnt : Countable Loc}
   (v1 : Value)
@@ -591,34 +890,6 @@
   : properUPred_ent (Phi t) (mkProperExist T Phi)
   => \lam n a hv hp => inP (t, hp)
 
-\lemma exist_elim_ent
-  {cnt : Countable Loc}
-  (T : \Type)
-  (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value))
-  (Q : ProperUPred (HeapCMRA Loc cnt Value))
-  (h : \Pi (t : T) -> properUPred_ent (Phi t) Q)
-  : properUPred_ent (mkProperExist T Phi) Q
-  => \lam n a hv hp =>
-      \case hp \with { | inP (t, ht') => h t n a hv ht' }
-
-\lemma true_sep_drop
-  {cnt : Countable Loc}
-  (P : ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent (mkProperSep (mkProperPure (\Sigma)) P) P
-  => \lam n a hv hsep =>
-      \case hsep \with {
-        | inP (a1, a2, dist_a, _, hP) =>
-          \let M => HeapCMRA Loc cnt Value
-          \in P.upred_mono n n a2 a hP
-              (inP (a1,
-                    M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
-                        dist_a
-                        (transport (\lam w => M.dist n (M.op a1 a2) w)
-                            (M.cmra_comm a1 a2)
-                            (M.ofe_dist_refl n (M.op a1 a2)))))
-              <=-refl
-      }
-
 \lemma wp_rec
   {cnt : Countable Loc}
   (f x : String) (body : Expr)
@@ -632,7 +903,7 @@
       (wp_pure_step
           (Rec f x body)
           (Val (RecV f x body))
-          (\lam s => RecS f x body idp idp idp) idp Phi)
+          (\lam s => BasePrim (RecS f x body idp idp idp)) idp Phi)
 
 \lemma wp_iszero_zero
   {cnt : Countable Loc}
@@ -647,7 +918,7 @@
       (wp_pure_step
           (IsZero (Val (natV 0)))
           (Val (LitV (LitBool true)))
-          (\lam s => IsZeroZeroS idp idp idp) idp Phi)
+          (\lam s => BasePrim (IsZeroZeroS idp idp idp)) idp Phi)
 
 \lemma wp_iszero_suc {cnt : Countable Loc} (n : Nat)
                      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
@@ -661,7 +932,7 @@
       (wp_pure_step
           (IsZero (Val (natV (suc n))))
           (Val (LitV (LitBool false)))
-          (\lam s => IsZeroPosS n idp idp idp) idp Phi)
+          (\lam s => BasePrim (IsZeroPosS n idp idp idp)) idp Phi)
 
 \lemma wp_pred_suc {cnt : Countable Loc} (n : Nat)
                    (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
@@ -674,7 +945,7 @@
       (wp_pure_step
           (Pred (Val (natV (suc n))))
           (Val (natV n))
-          (\lam s => PredS n idp idp idp) idp Phi)
+          (\lam s => BasePrim (PredS n idp idp idp)) idp Phi)
 
 \lemma wp_mul {cnt : Countable Loc} (a b : Nat)
               (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
@@ -689,4 +960,4 @@
       (wp_pure_step
           (Mul (Val (natV a)) (Val (natV b)))
           (Val (natV (a Nat.* b)))
-          (\lam s => MulS a b idp idp idp) idp Phi)
+          (\lam s => BasePrim (MulS a b idp idp idp)) idp Phi)

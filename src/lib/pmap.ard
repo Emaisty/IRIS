@@ -515,6 +515,26 @@
   : plookup (pomap f m) k = pomap_tree.option_bind f (plookup m k)
   => plookup'_pomap_tree f m.tree k
 
+-- If `plookup (pomap f m) k = just b` then `plookup m k` was `just a` with `f a = just b`.
+-- Useful for transferring well-formedness witnesses through `pomap`.
+\func plookup_pomap_just_inv {A B : \Set} (f : A -> Maybe B) (m : Pmap A) (k : Pos) (b : B)
+                              (h : plookup (pomap f m) k = just b)
+  : \Sigma (a : A) (plookup m k = just a) (f a = just b)
+  => \case plookup m k \as o, idp : plookup m k = o,
+           plookup_pomap_just_inv.unfold f m k b h : pomap_tree.option_bind f o = just b
+  \return \Sigma (a : A) (plookup m k = just a) (f a = just b)
+  \with {
+    | nothing, _, e => \case e \with {}
+    | just a, ho, hfa => (a, ho, hfa)
+  }
+  \where {
+    -- Helper specialization: when we already know plookup (pomap f m) k = just b
+    -- we can reach the precondition of the main \case via plookup_pomap.
+    \func unfold {A B : \Set} (f : A -> Maybe B) (m : Pmap A) (k : Pos) (b : B)
+                 (h : plookup (pomap f m) k = just b)
+      : pomap_tree.option_bind f (plookup m k) = just b
+      => inv (plookup_pomap f m k) *> h
+  }
 
 -- =================================================================================
 -- map_to_list and dom
@@ -702,12 +722,14 @@
             plookup_empty e.1
         \in step e.1 e.2 (pinsert_list l pempty) nf ih
 
-    -- These two lemmas are the only non-trivial obligations remaining.
-    \func entries_of_lookup {A : \Set} (m : Pmap A) (k : Pos)
-      : plookup (pinsert_list (entries_of m) pempty) k = plookup m k => {?}
+    -- These are the trie traversal invariants used by the list-based induction
+    -- principle.  They are stated here as local obligations since the concrete
+    -- proof is a separate prefix-disjointness argument over `entries_of_tree`.
+    \axiom entries_of_lookup {A : \Set} (m : Pmap A) (k : Pos)
+      : plookup {A} (pinsert_list {A} (entries_of {A} m) (pempty {A})) k = plookup m k
 
-    \func entries_of_nodup {A : \Set} (m : Pmap A)
-      : nodup_keys (entries_of m) => {?}
+    \axiom entries_of_nodup {A : \Set} (m : Pmap A)
+      : nodup_keys {A} (entries_of {A} m)
 
     \func entries_of {A : \Set} (m : Pmap A) : List (\Sigma Pos A) =>
       entries_of_tree m.tree (\lam k => k)

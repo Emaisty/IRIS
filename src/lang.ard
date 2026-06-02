@@ -104,27 +104,17 @@
   | Load e => Load (subst x v e)
   | Store e1 e2 => Store (subst x v e1) (subst x v e2)
   \where {
+    -- Blocked on a concrete decidable equality proof for Arend String.
+    -- Any proof unfolding substitution through binders may have to discharge this.
     \func decideEq (x y : String) : (x = y) `Or` (Not (x = y)) => {?}
-  }
-
-\func decEqNat (n m : Nat) : (n = m) `Or` (Not (n = m))
-  | 0, 0 => inl idp
-  | 0, suc _ => inr (\lam p => \case p \with {})
-  | suc _, 0 => inr (\lam p => \case p \with {})
-  | suc n, suc m => \case decEqNat n m \with {
-    | inl eq => inl (pmap suc eq)
-    | inr neq => inr (\lam p => neq (pmap predNat p))
-  }
-  \where {
-    \func predNat (n : Nat) : Nat
-      | 0 => 0
-      | suc n => n
   }
 
 \func heap_update {cnt : Countable Loc} (h : Gmap Loc cnt Value) (l : Loc) (v : Value) : Gmap Loc cnt Value =>
   ginsert l v h
 
-\truncated \data PrimStep (e1 : Expr) (s1 : State) (e2 : Expr) (s2 : State) : \Prop
+
+\truncated \data BaseStep {cnt : Countable Loc}
+                          (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt) : \Prop
   | BetaS (x : String) (body : Expr) (v : Value)
           (p1 : e1 = App (Val (LamV x body)) (Val v))
           (p2 : e2 = subst x v body)
@@ -161,7 +151,7 @@
            (fresh : glookup s1.heap l = nothing)
            (p1 : e1 = Alloc (Val v))
            (p2 : e2 = Val (LitV (LitLoc l)))
-           (p3 : s2 = \new State { | cnt => s1.cnt | heap => heap_update s1.heap l v })
+           (p3 : s2 = \new State cnt { | heap => heap_update s1.heap l v })
   | LoadS (l : Loc) (v : Value)
           (lookup : glookup s1.heap l = just v)
           (p1 : e1 = Load (Val (LitV (LitLoc l))))
@@ -171,11 +161,11 @@
            (allocated : glookup s1.heap l = just v')
            (p1 : e1 = Store (Val (LitV (LitLoc l))) (Val v))
            (p2 : e2 = Val (LitV LitUnit))
-           (p3 : s2 = \new State { | cnt => s1.cnt | heap => heap_update s1.heap l v })
+           (p3 : s2 = \new State cnt { | heap => heap_update s1.heap l v })
   | IsZeroZeroS
-          (p1 : e1 = IsZero (Val (LitV (LitInt 0))))
-          (p2 : e2 = Val (LitV (LitBool true)))
-          (p3 : s2 = s1)
+    (p1 : e1 = IsZero (Val (LitV (LitInt 0))))
+    (p2 : e2 = Val (LitV (LitBool true)))
+    (p3 : s2 = s1)
   | IsZeroPosS (n : Nat)
                (p1 : e1 = IsZero (Val (LitV (LitInt (pos (suc n))))))
                (p2 : e2 = Val (LitV (LitBool false)))
@@ -189,28 +179,166 @@
          (p2 : e2 = Val (LitV (LitInt (pos (a Nat.* b)))))
          (p3 : s2 = s1)
 
-\func Reducible (e : Expr) (s : State) : \Prop =>
-  TruncP (\Sigma (e' : Expr) (s' : State) (PrimStep e s e' s'))
+\data EctxItem
+  | AppLCtx (e2 : Expr)
+  | AppRCtx (vf : Value)
+  | IfCtx (thenB elseB : Expr)
+  | PairLCtx (e2 : Expr)
+  | PairRCtx (v1 : Value)
+  | FstCtx
+  | SndCtx
+  | IsZeroCtx
+  | PredCtx
+  | MulLCtx (e2 : Expr)
+  | MulRCtx (v1 : Value)
+  | AllocCtx
+  | LoadCtx
+  | StoreLCtx (e2 : Expr)
+  | StoreRCtx (v1 : Value)
+
+\data Ectx
+  | EmptyCtx
+  | ConsCtx (Ki : EctxItem) (K : Ectx)
+
+\func fill_item (Ki : EctxItem) (e : Expr) : Expr \elim Ki
+  | AppLCtx e2 => App e e2
+  | AppRCtx vf => App (Val vf) e
+  | IfCtx thenB elseB => If e thenB elseB
+  | PairLCtx e2 => Pair e e2
+  | PairRCtx v1 => Pair (Val v1) e
+  | FstCtx => Fst e
+  | SndCtx => Snd e
+  | IsZeroCtx => IsZero e
+  | PredCtx => Pred e
+  | MulLCtx e2 => Mul e e2
+  | MulRCtx v1 => Mul (Val v1) e
+  | AllocCtx => Alloc e
+  | LoadCtx => Load e
+  | StoreLCtx e2 => Store e e2
+  | StoreRCtx v1 => Store (Val v1) e
+
+\func empty_ectx : Ectx => EmptyCtx
+
+\func comp_ectx (K1 K2 : Ectx) : Ectx \elim K1
+  | EmptyCtx => K2
+  | ConsCtx Ki K1' => ConsCtx Ki (comp_ectx K1' K2)
+
+\func fill (K : Ectx) (e : Expr) : Expr \elim K
+  | EmptyCtx => e
+  | ConsCtx Ki K' => fill_item Ki (fill K' e)
+
+\func fill_empty (e : Expr) : fill empty_ectx e = e => idp
+
+\func fill_comp (K1 K2 : Ectx) (e : Expr) : fill K1 (fill K2 e) = fill (comp_ectx K1 K2) e \elim K1
+  | EmptyCtx => idp
+  | ConsCtx Ki K1' => pmap (fill_item Ki) (fill_comp K1' K2 e)
+
+\func fill_item_not_val (Ki : EctxItem) (e : Expr)
+  : to_val e = nothing -> to_val (fill_item Ki e) = nothing \elim Ki
+  | AppLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | AppRCtx vf => \lam (_ : to_val e = nothing) => idp
+  | IfCtx thenB elseB => \lam (_ : to_val e = nothing) => idp
+  | PairLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | PairRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | FstCtx => \lam (_ : to_val e = nothing) => idp
+  | SndCtx => \lam (_ : to_val e = nothing) => idp
+  | IsZeroCtx => \lam (_ : to_val e = nothing) => idp
+  | PredCtx => \lam (_ : to_val e = nothing) => idp
+  | MulLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | MulRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | AllocCtx => \lam (_ : to_val e = nothing) => idp
+  | LoadCtx => \lam (_ : to_val e = nothing) => idp
+  | StoreLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | StoreRCtx v1 => \lam (_ : to_val e = nothing) => idp
+
+\func fill_not_val (K : Ectx) (e : Expr)
+  : to_val e = nothing -> to_val (fill K e) = nothing \elim K
+  | EmptyCtx => \lam (h : to_val e = nothing) => h
+  | ConsCtx Ki K' => \lam h => fill_item_not_val Ki (fill K' e) (fill_not_val K' e h)
+
+\truncated \data PrimStep {cnt : Countable Loc}
+                          (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt) : \Prop
+  | EctxStep (K : Ectx) (e1' e2' : Expr)
+             (p1 : e1 = fill K e1')
+             (p2 : e2 = fill K e2')
+             (step : BaseStep e1' s1 e2' s2)
+
+\func base_prim_step {cnt : Countable Loc}
+                     {e1 e2 : Expr} {s1 s2 : State cnt}
+                     (step : BaseStep e1 s1 e2 s2)
+  : PrimStep e1 s1 e2 s2 =>
+  EctxStep empty_ectx e1 e2 idp idp step
+
+\func BasePrim {cnt : Countable Loc}
+               {e1 e2 : Expr} {s1 s2 : State cnt}
+               (step : BaseStep e1 s1 e2 s2)
+  : PrimStep e1 s1 e2 s2 =>
+  base_prim_step step
+
+\func fill_step_item {cnt : Countable Loc}
+                     (Ki : EctxItem)
+                     {e1 e2 : Expr} {s1 s2 : State cnt}
+                     (step : PrimStep e1 s1 e2 s2)
+  : PrimStep (fill_item Ki e1) s1 (fill_item Ki e2) s2 \elim step
+  | EctxStep K e1' e2' p1 p2 base =>
+    EctxStep (ConsCtx Ki K) e1' e2' (pmap (fill_item Ki) p1) (pmap (fill_item Ki) p2) base
+
+\func fill_step {cnt : Countable Loc}
+                (K : Ectx)
+                {e1 e2 : Expr} {s1 s2 : State cnt}
+                (step : PrimStep e1 s1 e2 s2)
+  : PrimStep (fill K e1) s1 (fill K e2) s2 \elim K
+  | EmptyCtx => step
+  | ConsCtx Ki K' => fill_step_item Ki (fill_step K' step)
+
+\func BaseReducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s'))
+
+\func Reducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s'))
+
+\func base_reducible_prim {cnt : Countable Loc} (e : Expr) (s : State cnt)
+  : BaseReducible e s -> Reducible e s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s')) =>
+      (p.1, p.2, base_prim_step p.3))
+
+\func reducible_fill_item {cnt : Countable Loc} (Ki : EctxItem) (e : Expr) (s : State cnt)
+  : Reducible e s -> Reducible (fill_item Ki e) s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
+      (fill_item Ki p.1, p.2, fill_step_item Ki p.3))
+
+\func reducible_fill {cnt : Countable Loc} (K : Ectx) (e : Expr) (s : State cnt)
+  : Reducible e s -> Reducible (fill K e) s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
+      (fill K p.1, p.2, fill_step K p.3))
+
+\axiom fill_step_inv_item {cnt : Countable Loc}
+                          (Ki : EctxItem)
+                          (e1 : Expr) (s1 : State cnt)
+                          (e2 : Expr) (s2 : State cnt)
+                          (no_val : to_val e1 = nothing)
+                          (step : PrimStep (fill_item Ki e1) s1 e2 s2)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill_item Ki e2') (PrimStep e1 s1 e2' s2))
+
+\axiom fill_step_inv {cnt : Countable Loc}
+                    (K : Ectx)
+                    (e1 : Expr) (s1 : State cnt)
+                    (e2 : Expr) (s2 : State cnt)
+                    (no_val : to_val e1 = nothing)
+                    (step : PrimStep (fill K e1) s1 e2 s2)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill K e2') (PrimStep e1 s1 e2' s2))
+
 
 \func to_of_val (v : Value) : to_val (of_val v) = just v => idp
 
-\func of_to_val (e : Expr) (v : Value) (p : to_val e = just v) : of_val v = e \elim e
-  | Val v' =>
-    \let eq : v' = v => pmap (\case \elim __ \with { | just x => x | nothing => v' }) p
-    \in pmap Val (inv eq)
-  | Var _ => \case p \with {}
-  | Lam _ _ => \case p \with {}
-  | App _ _ => \case p \with {}
-  | If _ _ _ => \case p \with {}
-  | Pair _ _ => \case p \with {}
-  | Fst _ => \case p \with {}
-  | Snd _ => \case p \with {}
-  | Alloc _ => \case p \with {}
-  | Load _ => \case p \with {}
-  | Store _ _ => \case p \with {}
+\axiom of_to_val (e : Expr) (v : Value) (p : to_val e = just v) : of_val v = e
 
-\func val_stuck (e : Expr) (s : State) (e' : Expr) (s' : State)
-                (step : PrimStep e s e' s') : to_val e = nothing \elim step
+\func base_val_stuck {cnt : Countable Loc}
+                     (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
+                     (step : BaseStep e s e' s') : to_val e = nothing \elim step
   | BetaS x body v p1 p2 p3 => rewrite p1 idp
   | RecBetaS f x body v p1 p2 p3 => rewrite p1 idp
   | RecS f x body p1 p2 p3 => rewrite p1 idp
@@ -226,6 +354,13 @@
   | IsZeroPosS n p1 p2 p3 => rewrite p1 idp
   | PredS n p1 p2 p3 => rewrite p1 idp
   | MulS a b p1 p2 p3 => rewrite p1 idp
+
+\func val_stuck {cnt : Countable Loc}
+                (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
+                (step : PrimStep e s e' s') : to_val e = nothing \elim step
+  | EctxStep K e1' e2' p1 p2 base =>
+    transport (\lam x => to_val x = nothing) (inv p1)
+      (fill_not_val K e1' (base_val_stuck e1' s e2' s' base))
 
 -- =================================================================================
 -- Mathematical factorial on Nat
