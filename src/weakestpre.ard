@@ -229,6 +229,93 @@
           \in inP (a', hv_new_z_yf, hsep)
       }
 
+\lemma own_heap_store_bupd
+  {cnt : Countable Loc}
+  (sigma : State cnt) (l : Loc) (old v : Value)
+  (lookup : glookup sigma.heap l = just old)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+    (mkProperBUpd
+      (mkProperSep
+        (own_heap_auth (\new State cnt { | heap => heap_update sigma.heap l v }))
+        (pointsTo l v)))
+  =>
+    \lam n a hv_a hsep k k_le_n yf hv_a_yf =>
+      \let
+        | M : UCMRA => HeapCMRA Loc cnt Value
+        | oldMap => heap_state_to_gmap sigma
+        | newState : State cnt => \new State cnt { | heap => heap_update sigma.heap l v }
+        | newMap => lib.heap.heap_update oldMap l v
+        | authOld : M.E => heap_auth oldMap
+        | fragOld : M.E => heap_frag l old
+        | authNew : M.E => heap_auth newMap
+        | fragNew : M.E => heap_frag l v
+        | hsep_k : (mkProperSep (own_heap_auth sigma) (pointsTo l old)).upred_holds k a =>
+          (mkProperSep (own_heap_auth sigma) (pointsTo l old)).upred_mono n k a a hsep
+            (inP (M.unit,
+              transport (\lam w => M.dist k a w)
+                (inv (ucmra_unit_right_id a))
+                (M.ofe_dist_refl k a)))
+            k_le_n
+      \in \case hsep_k \with {
+        | inP (a_auth, a_frag, dist_a, h_auth, h_frag) =>
+          \case h_auth, h_frag \with {
+            | inP (zA, dzA), inP (zF, dzF) =>
+              \let
+                | z : M.E => M.op zA zF
+                | dist_auth_frag : M.dist k (M.op a_auth a_frag)
+                    (M.op (M.op authOld zA) (M.op fragOld zF)) =>
+                  cmra_op_ne_both {M} k a_auth (M.op authOld zA) a_frag (M.op fragOld zF) dzA dzF
+                | rearr_inner : M.op (M.op authOld zA) (M.op fragOld zF)
+                    = M.op (M.op authOld fragOld) z =>
+                  inv (M.cmra_assoc authOld zA (M.op fragOld zF))
+                  *> pmap (M.op authOld) (M.cmra_assoc zA fragOld zF)
+                  *> pmap (\lam t => M.op authOld (M.op t zF)) (M.cmra_comm zA fragOld)
+                  *> pmap (M.op authOld) (inv (M.cmra_assoc fragOld zA zF))
+                  *> M.cmra_assoc authOld fragOld z
+                | dist_a_old : M.dist k a (M.op (M.op authOld fragOld) z) =>
+                  M.ofe_dist_trans k a (M.op a_auth a_frag) (M.op (M.op authOld fragOld) z)
+                    dist_a
+                    (transport
+                      (\lam w => M.dist k (M.op a_auth a_frag) w)
+                      rearr_inner
+                      dist_auth_frag)
+                | dist_a_yf_old : M.dist k (M.op a yf)
+                    (M.op (M.op (M.op authOld fragOld) z) yf) =>
+                  M.cmra_op_ne_2 yf k a (M.op (M.op authOld fragOld) z) dist_a_old
+                | hv_old_z_yf : M.validN k (M.op (M.op (M.op authOld fragOld) z) yf) =>
+                  M.cmra_validN_ne k (M.op a yf) (M.op (M.op (M.op authOld fragOld) z) yf)
+                    dist_a_yf_old
+                    hv_a_yf
+                | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                  heap_state_to_gmap_lookup sigma l
+                  *> pmap (\lam o => \case o \with {
+                    | nothing => nothing
+                    | just w => just (just (excl w))
+                  }) lookup
+                | hv_new_z_yf : M.validN k
+                    (M.op (M.op (M.op authNew fragNew) z) yf) =>
+                  heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                | a' : M.E => M.op (M.op authNew fragNew) z
+                | h_auth_new : (own_heap_auth newState).upred_holds k authNew =>
+                  transport
+                    (\lam mm => inclN {M} {\new Op M.E { | op => M.op }}
+                      (heap_auth mm) k authNew)
+                    (inv (heap_state_to_gmap_update sigma l v))
+                    (inclN_refl_ucmra k authNew)
+                | h_frag_new_z : (pointsTo l v).upred_holds k (M.op fragNew z) =>
+                  inclN_op_l k fragNew z
+                | hsep_new : (mkProperSep (own_heap_auth newState) (pointsTo l v)).upred_holds k a' =>
+                  inP (authNew, M.op fragNew z,
+                    transport (\lam w => M.dist k a' w)
+                      (inv (M.cmra_assoc authNew fragNew z))
+                      (M.ofe_dist_refl k a'),
+                    h_auth_new,
+                    h_frag_new_z)
+              \in inP (a', hv_new_z_yf, hsep_new)
+          }
+      }
+
 
 -- =================================================================================
 -- WP Definition via Fixpoint
@@ -1082,6 +1169,7 @@
       => \case hstep \with {
         | BetaS _ _ _ p1 _ _ => \case p1 \with {}
         | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+        | LamS _ _ p1 _ _ => \case p1 \with {}
         | RecS _ _ _ p1 _ _ => \case p1 \with {}
         | IfTrueS _ _ p1 _ _ => \case p1 \with {}
         | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1186,6 +1274,196 @@
           load_step_inv_ctx l v sigma e2 sigma2 lookup K e1' e2' p1 p2 base
       }
   }
+
+\lemma wp_store
+  {cnt : Countable Loc}
+  (l    : Loc)
+  (old  : Value)
+  (v    : Value)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l old)
+    (wp (Store (Val (LitV (LitLoc l))) (Val v))
+        (\lam v' => mkProperAnd
+            (mkProperPure (v' = LitV LitUnit))
+            (pointsTo l v)))
+  =>
+    \lam n a_frag hv_frag h_frag =>
+      \let
+        | M    => HeapCMRA Loc cnt Value
+        | Phi  : Value -> ProperUPred M =>
+          \lam v' => mkProperAnd (mkProperPure (v' = LitV LitUnit)) (pointsTo l v)
+        | e    : Expr => Store (Val (LitV (LitLoc l))) (Val v)
+        | tv_e : to_val e = nothing => idp
+        | wp_pre_eq : wp_pre wp e Phi =
+          mkProperForall (State cnt) (\lam sigma =>
+              mkProperWand (own_heap_auth sigma)
+                  (mkProperBUpd (mkProperAnd
+                      (mkProperPure (Reducible e sigma))
+                      (mkProperLater (mkProperForall Expr (\lam e2 =>
+                          mkProperForall (State cnt) (\lam sigma2 =>
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  (mkProperBUpd (mkProperSep
+                                      (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
+            pmap (\lam tv => \case tv \with {
+              | just w  => mkProperBUpd (Phi w)
+              | nothing => mkProperForall (State cnt) (\lam sigma =>
+                  mkProperWand (own_heap_auth sigma)
+                      (mkProperBUpd (mkProperAnd
+                          (mkProperPure (Reducible e sigma))
+                          (mkProperLater (mkProperForall Expr (\lam e2 =>
+                              mkProperForall (State cnt) (\lam sigma2 =>
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                      (mkProperBUpd (mkProperSep
+                                          (own_heap_auth sigma2) (wp e2 Phi))))))))))
+            }) tv_e
+        | body : (wp_pre wp e Phi).upred_holds n a_frag =>
+          transport
+            (\lam (P : ProperUPred M) => P.upred_holds n a_frag)
+            (inv wp_pre_eq)
+            (\lam sigma m m_le_n a_auth hv_op h_auth =>
+              \let
+                | hv_frag_m : M.validN m a_frag =>
+                  M.cmra_validN_le n m a_frag hv_frag m_le_n
+                | lookup : glookup sigma.heap l = just old =>
+                  wp_load.heap_auth_frag_agree m sigma a_frag a_auth l old hv_op h_auth
+                    ((pointsTo l old).upred_mono n m a_frag a_frag h_frag
+                      (inP (M.unit,
+                        transport (\lam w => M.dist m a_frag w)
+                          (inv (ucmra_unit_right_id a_frag))
+                          (M.ofe_dist_refl m a_frag)))
+                      m_le_n)
+                | red : Reducible e sigma =>
+                  inP (Val (LitV LitUnit),
+                       \new State cnt { | heap => heap_update sigma.heap l v },
+                       BasePrim (StoreS l v old lookup idp idp idp))
+                | later_body :
+                    (mkProperLater (mkProperForall Expr (\lam e2 =>
+                        mkProperForall (State cnt) (\lam sigma2 =>
+                            mkProperImpl
+                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperBUpd (mkProperSep
+                                    (own_heap_auth sigma2) (wp e2 Phi)))))))
+                    .upred_holds m (M.op a_frag a_auth) =>
+                  \case \elim m, hv_op, h_auth, h_frag, m_le_n
+                  \return
+                    (mkProperLater (mkProperForall Expr (\lam e2 =>
+                        mkProperForall (State cnt) (\lam sigma2 =>
+                            mkProperImpl
+                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperBUpd (mkProperSep
+                                    (own_heap_auth sigma2) (wp e2 Phi)))))))
+                    .upred_holds m (M.op a_frag a_auth)
+                  \with {
+                    | 0, _, _, _, _ => ()
+                    | suc k, hv_op_sk, h_auth_sk, h_frag_sk, le_sk =>
+                      \lam e2 sigma2 j j_le_k b incl_b hv_b hstep =>
+                        \let
+                          | step_inv : StoreStepInv l v sigma e2 sigma2 =>
+                            store_step_inv l v sigma e2 sigma2 hstep
+                        \in \case step_inv \with {
+                          | StoreStepInvIntro old' allocated e2_eq sigma2_eq =>
+                            \let
+                              | newState : State cnt =>
+                                \new State cnt { | heap => heap_update sigma.heap l v }
+                              | hfrag_j : (pointsTo l old).upred_holds j a_frag =>
+                                (pointsTo l old).upred_mono n j a_frag a_frag h_frag
+                                  (inP (M.unit,
+                                    transport (\lam w => M.dist j a_frag w)
+                                      (inv (ucmra_unit_right_id a_frag))
+                                      (M.ofe_dist_refl j a_frag)))
+                                  (NatSemiring.<=∘ j_le_k
+                                    (NatSemiring.<=∘ (n<=sucn k) le_sk))
+                              | hauth_j : (own_heap_auth sigma).upred_holds j a_auth =>
+                                (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
+                                  (inP (M.unit,
+                                    transport (\lam w => M.dist j a_auth w)
+                                      (inv (ucmra_unit_right_id a_auth))
+                                      (M.ofe_dist_refl j a_auth)))
+                                  (NatSemiring.<=∘ j_le_k (n<=sucn k))
+                              | hsep_old_op :
+                                  (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+                                  .upred_holds j (M.op a_auth a_frag) =>
+                                inP (a_auth, a_frag,
+                                  M.ofe_dist_refl j (M.op a_auth a_frag),
+                                  hauth_j, hfrag_j)
+                              | hsep_old_swap :
+                                  (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+                                  .upred_holds j (M.op a_frag a_auth) =>
+                                (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+                                  .upred_mono j j (M.op a_auth a_frag) (M.op a_frag a_auth)
+                                  hsep_old_op
+                                  (inP (M.unit,
+                                    M.ofe_dist_trans j (M.op a_frag a_auth)
+                                      (M.op a_auth a_frag)
+                                      (M.op (M.op a_auth a_frag) M.unit)
+                                      (transport
+                                        (\lam w => M.dist j (M.op a_frag a_auth) w)
+                                        (M.cmra_comm a_frag a_auth)
+                                        (M.ofe_dist_refl j (M.op a_frag a_auth)))
+                                      (transport
+                                        (\lam w => M.dist j (M.op a_auth a_frag) w)
+                                        (inv (ucmra_unit_right_id (M.op a_auth a_frag)))
+                                        (M.ofe_dist_refl j (M.op a_auth a_frag)))))
+                                  <=-refl
+                              | hsep_old_b :
+                                  (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+                                  .upred_holds j b =>
+                                (mkProperSep (own_heap_auth sigma) (pointsTo l old))
+                                  .upred_mono j j (M.op a_frag a_auth) b
+                                  hsep_old_swap incl_b <=-refl
+                              | hbupd_store_b :
+                                  (mkProperBUpd (mkProperSep (own_heap_auth newState) (pointsTo l v)))
+                                  .upred_holds j b =>
+                                own_heap_store_bupd sigma l old v lookup j b hv_b hsep_old_b
+                              | pointsto_to_wp : properUPred_ent {M}
+                                  (pointsTo l v)
+                                  (wp (Val (LitV LitUnit)) Phi) =>
+                                \lam r x hv_x hp_x =>
+                                  wp_value_intro (LitV LitUnit) Phi r x hv_x
+                                    ((idp : LitV LitUnit = LitV LitUnit), hp_x)
+                              | sep_to_wp : properUPred_ent {M}
+                                  (mkProperSep (own_heap_auth newState) (pointsTo l v))
+                                  (mkProperSep (own_heap_auth newState) (wp (Val (LitV LitUnit)) Phi)) =>
+                                \lam r x hv_x hsep_new =>
+                                  \case hsep_new \with {
+                                    | inP (x1, x2, dx, ha, hp) =>
+                                      \let
+                                        | hv_op_x : M.validN r (M.op x1 x2) =>
+                                          M.cmra_validN_ne r x (M.op x1 x2) dx hv_x
+                                        | hv_x2 : M.validN r x2 =>
+                                          cmra_validN_op_r {M} r x1 x2 hv_op_x
+                                      \in inP (x1, x2, dx, ha, pointsto_to_wp r x2 hv_x2 hp)
+                                  }
+                              | post_holds :
+                                  (mkProperBUpd (mkProperSep
+                                    (own_heap_auth newState) (wp (Val (LitV LitUnit)) Phi)))
+                                  .upred_holds j b =>
+                                bupd_mono
+                                  (mkProperSep (own_heap_auth newState) (pointsTo l v))
+                                  (mkProperSep (own_heap_auth newState) (wp (Val (LitV LitUnit)) Phi))
+                                  sep_to_wp
+                                  j b hv_b hbupd_store_b
+                            \in transport2
+                              (\lam ee ss =>
+                                (mkProperBUpd (mkProperSep
+                                  (own_heap_auth ss) (wp ee Phi))).upred_holds j b)
+                              (inv e2_eq) (inv sigma2_eq)
+                              post_holds
+                        }
+                  }
+                | core : (mkProperAnd
+                    (mkProperPure (Reducible e sigma))
+                    (mkProperLater (mkProperForall Expr (\lam e2 =>
+                        mkProperForall (State cnt) (\lam sigma2 =>
+                            mkProperImpl
+                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperBUpd (mkProperSep
+                                    (own_heap_auth sigma2) (wp e2 Phi))))))))
+                    .upred_holds m (M.op a_frag a_auth) =>
+                  (red, later_body)
+              \in
+                bupd_intro _ m (M.op a_frag a_auth) hv_op core)
+      \in (wp_unfold e Phi n a_frag hv_frag).2 body
 
 \lemma wp_alloc
   {cnt : Countable Loc}
@@ -1437,6 +1715,27 @@
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
 
+\func lam_ctx_absurd
+  {cnt : Countable Loc} (x : String) (body : Expr)
+  (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
+  (p1 : Lam x body = fill_item Ki (fill K e1'))
+  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+
 \func iszero_ctx_absurd
   {cnt : Countable Loc} (arg : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
@@ -1598,6 +1897,43 @@
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
 
+\func app_rec_ctx_absurd
+  {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
+  (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
+  (p1 : App (Val (RecV f x body)) (Val v) = fill_item Ki (fill K e1'))
+  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  | AppLCtx _ =>
+    \let
+      | inner_eq : Val (RecV f x body) = fill K e1' =>
+        pmap (app_l_arg (Val (RecV f x body))) p1
+      | inner_not_val : to_val (fill K e1') = nothing =>
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just (RecV f x body) = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+  | AppRCtx _ =>
+    \let
+      | inner_eq : Val v = fill K e1' =>
+        pmap (app_r_arg (Val v)) p1
+      | inner_not_val : to_val (fill K e1') = nothing =>
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just v = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+
 \func base_rec_step_det
   {cnt : Countable Loc} (f x : String) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
@@ -1614,6 +1950,37 @@
       \in (p2 *> pmap Val v_eq, p3)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\func base_lam_step_det
+  {cnt : Countable Loc} (x : String) (body : Expr)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (base : BaseStep (Lam x body) sigma e2 sigma2)
+  : \Sigma (e2 = Val (LamV x body)) (sigma2 = sigma)
+  => \case base \with {
+    | LamS x' body' p1 p2 p3 =>
+      \let
+        | x_eq : x = x' => pmap (\lam e => \case e \with { | Lam xx _ => xx | _ => x }) p1
+        | body_eq : body = body' => pmap (\lam e => \case e \with { | Lam _ bb => bb | _ => body }) p1
+        | v_eq : LamV x' body' = LamV x body =>
+          path (\lam i => LamV (inv x_eq @ i) (inv body_eq @ i))
+      \in (p2 *> pmap Val v_eq, p3)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
     | FstS _ _ p1 _ _ => \case p1 \with {}
@@ -1638,6 +2005,7 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1661,6 +2029,7 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1692,6 +2061,7 @@
       \in (p2 *> pmap (\lam k => Val (natV k)) (inv n_eq), p3)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1720,6 +2090,35 @@
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+  | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\func base_if_false_step_det
+  {cnt : Countable Loc} (thenE elseE : Expr)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (base : BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2)
+  : \Sigma (e2 = elseE) (sigma2 = sigma)
+  => \case base \with {
+    | IfFalseS t f p1 p2 p3 =>
+      \let
+        | else_eq : elseE = f =>
+          pmap (\lam e => \case e \with { | If _ _ ff => ff | _ => elseE }) p1
+      \in (p2 *> inv else_eq, p3)
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | FstS _ _ p1 _ _ => \case p1 \with {}
     | SndS _ _ p1 _ _ => \case p1 \with {}
@@ -1751,6 +2150,48 @@
           path (\lam i => subst (inv x_eq @ i) (inv v_eq @ i) (inv body_eq @ i))
       \in (p2 *> subst_eq, p3)
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\func base_rec_beta_step_det
+  {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2)
+  : \Sigma (e2 = subst x v (subst f (RecV f x body) body)) (sigma2 = sigma)
+  => \case base \with {
+    | RecBetaS f' x' body' v' p1 p2 p3 =>
+      \let
+        | f_eq : f = f' =>
+          pmap (\lam e => \case e \with { | App (Val (RecV ff _ _)) _ => ff | _ => f }) p1
+        | x_eq : x = x' =>
+          pmap (\lam e => \case e \with { | App (Val (RecV _ xx _)) _ => xx | _ => x }) p1
+        | body_eq : body = body' =>
+          pmap (\lam e => \case e \with { | App (Val (RecV _ _ bb)) _ => bb | _ => body }) p1
+        | v_eq : v = v' =>
+          pmap (\lam e => \case e \with { | App _ (Val vv) => vv | _ => v }) p1
+        | subst_eq :
+          subst x' v' (subst f' (RecV f' x' body') body') =
+          subst x v (subst f (RecV f x body) body) =>
+          path (\lam i => subst (inv x_eq @ i) (inv v_eq @ i)
+            (subst (inv f_eq @ i)
+              (RecV (inv f_eq @ i) (inv x_eq @ i) (inv body_eq @ i))
+              (inv body_eq @ i)))
+      \in (p2 *> subst_eq, p3)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1796,6 +2237,7 @@
       \in (p2 *> pmap (\lam k => Val (natV k)) (inv prod_eq), p3)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
     | RecS _ _ _ p1 _ _ => \case p1 \with {}
     | IfTrueS _ _ p1 _ _ => \case p1 \with {}
     | IfFalseS _ _ p1 _ _ => \case p1 \with {}
@@ -1830,6 +2272,99 @@
             (base_rec_step_det f x body)
             (rec_ctx_absurd f x body))
           idp Phi)
+
+\lemma wp_lam
+  {cnt : Countable Loc}
+  (x : String) (body : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (Phi (LamV x body)) (wp (Lam x body) Phi)
+  => properUPred_ent_trans
+      (Phi (LamV x body))
+      (wp (Val (LamV x body)) Phi)
+      (wp (Lam x body) Phi)
+      (wp_value_intro (LamV x body) Phi)
+      (wp_pure_step
+          (Lam x body)
+          (Val (LamV x body))
+          (\lam s => BasePrim (LamS x body idp idp idp))
+          (base_redex_step_det
+            (Lam x body)
+            (Val (LamV x body))
+            (base_lam_step_det x body)
+            (lam_ctx_absurd x body))
+          idp Phi)
+
+\lemma wp_lam_beta
+  {cnt : Countable Loc}
+  (x : String) (body : Expr) (v : Value)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp (subst x v body) Phi)
+      (wp (App (Val (LamV x body)) (Val v)) Phi)
+  => wp_pure_step
+      (App (Val (LamV x body)) (Val v))
+      (subst x v body)
+      (\lam s => BasePrim (BetaS x body v idp idp idp))
+      (base_redex_step_det
+        (App (Val (LamV x body)) (Val v))
+        (subst x v body)
+        (base_lam_beta_step_det x body v)
+        (app_lam_ctx_absurd x body v))
+      idp
+      Phi
+
+\lemma wp_lam_beta_to
+  {cnt : Countable Loc}
+  (x : String) (body body' : Expr) (v : Value)
+  (subst_eq : subst x v body = body')
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp body' Phi)
+      (wp (App (Val (LamV x body)) (Val v)) Phi)
+  => properUPred_ent_trans
+      (wp body' Phi)
+      (wp (subst x v body) Phi)
+      (wp (App (Val (LamV x body)) (Val v)) Phi)
+      (\lam n a hv h =>
+        transport
+          (\lam e => (wp e Phi).upred_holds n a)
+          (inv subst_eq)
+          h)
+      (wp_lam_beta x body v Phi)
+
+\lemma wp_rec_beta
+  {cnt : Countable Loc}
+  (f x : String) (body : Expr) (v : Value)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp (subst x v (subst f (RecV f x body) body)) Phi)
+      (wp (App (Val (RecV f x body)) (Val v)) Phi)
+  => wp_pure_step
+      (App (Val (RecV f x body)) (Val v))
+      (subst x v (subst f (RecV f x body) body))
+      (\lam s => BasePrim (RecBetaS f x body v idp idp idp))
+      (base_redex_step_det
+        (App (Val (RecV f x body)) (Val v))
+        (subst x v (subst f (RecV f x body) body))
+        (base_rec_beta_step_det f x body v)
+        (app_rec_ctx_absurd f x body v))
+      idp
+      Phi
+
+\lemma wp_rec_beta_to
+  {cnt : Countable Loc}
+  (f x : String) (body body' : Expr) (v : Value)
+  (subst_eq : subst x v (subst f (RecV f x body) body) = body')
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp body' Phi)
+      (wp (App (Val (RecV f x body)) (Val v)) Phi)
+  => properUPred_ent_trans
+      (wp body' Phi)
+      (wp (subst x v (subst f (RecV f x body) body)) Phi)
+      (wp (App (Val (RecV f x body)) (Val v)) Phi)
+      (\lam n a hv h =>
+        transport
+          (\lam e => (wp e Phi).upred_holds n a)
+          (inv subst_eq)
+          h)
+      (wp_rec_beta f x body v Phi)
 
 \lemma wp_iszero_zero
   {cnt : Countable Loc}
