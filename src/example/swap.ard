@@ -1,0 +1,56 @@
+-- =================================================================================
+-- Swap example
+-- =================================================================================
+--
+-- Purpose:
+--   A two-location heap example.  This is the minimal example that needs two
+--   points-to resources and shows why frame/consequence rules are useful.
+--   This file intentionally contains only commented sketches.
+--
+-- ---------------------------------------------------------------------------------
+-- swap
+-- ---------------------------------------------------------------------------------
+--
+--   swap l1 l2 :=
+--     let x = !l1 in
+--     let y = !l2 in
+--     l1 <- y;
+--     l2 <- x
+--
+-- In the current expression language, this can be represented with lambda
+-- sequencing:
+--
+--   \func swap_body : Expr =>
+--     Lam "l1" (Lam "l2"
+--       (App
+--         (Lam "x"
+--           (App
+--             (Lam "y"
+--               (App
+--                 (Lam "_" (Store (Var "l2") (Var "x")))
+--                 (Store (Var "l1") (Var "y"))))
+--             (Load (Var "l2"))))
+--         (Load (Var "l1"))))
+--
+-- Intended Hoare triple:
+--
+--   { l1 |-> v1 * l2 |-> v2 }
+--     swap l1 l2
+--   { r. r = #() * l1 |-> v2 * l2 |-> v1 }
+--
+-- More concretely:
+--
+--   ht (mkProperSep (pointsTo l1 v1) (pointsTo l2 v2))
+--      (App (App swap_body (Val (LitV (LitLoc l1)))) (Val (LitV (LitLoc l2))))
+--      (\lam r => mkProperAnd
+--        (mkProperPure (r = LitV LitUnit))
+--        (mkProperSep (pointsTo l1 v2) (pointsTo l2 v1)))
+--
+-- Useful variants:
+--
+--   { l1 |-> v1 * l2 |-> v2 * R }
+--     swap l1 l2
+--   { r. r = #() * l1 |-> v2 * l2 |-> v1 * R }
+--
+-- This variant is the natural first client of a Hoare frame rule.
+

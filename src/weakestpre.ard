@@ -731,6 +731,530 @@
   : properUPred_ent (wp e Phi) (wp e Psi)
   => wp_mono e Phi Psi h
 
+-- =================================================================================
+-- WP Frame Rule
+-- =================================================================================
+--
+-- wp e {{ Phi }} * R |- wp e {{ v. Phi v * R }}
+--
+-- The proof is by step-indexed induction on N (counting down through the inner
+-- `later` modality of wp_pre).  At each step we manually unfold the bupd of
+-- wp_pre on the (wp e Phi)-side, then re-pack with R on the side to obtain a
+-- bupd of the goal shape.  The IH is used inside the later-guarded forall, at
+-- step index strictly less than N.
+
+-- Helper: the framed postcondition.
+\func sep_post
+  {cnt : Countable Loc}
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (R : ProperUPred (HeapCMRA Loc cnt Value))
+  : Value -> ProperUPred (HeapCMRA Loc cnt Value)
+  => \lam v => mkProperSep (Phi v) R
+
+\lemma wp_frame_r
+  {cnt : Countable Loc}
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (R   : ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+      (mkProperSep (wp e Phi) R)
+      (wp e (sep_post Phi R))
+  => \lam n a hv hsep => wp_frame_at_le Phi R n n <=-refl e a hv hsep
+  \where {
+    \func wp_frame_at_le
+      {cnt : Countable Loc}
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (R : ProperUPred (HeapCMRA Loc cnt Value))
+      (N : Nat) (n : Nat) (n_le_N : n <= N)
+      (e : Expr)
+      (a : (HeapCMRA Loc cnt Value).E)
+      (hv : (HeapCMRA Loc cnt Value).validN n a)
+      (hsep : (mkProperSep (wp e Phi) R).upred_holds n a)
+      : (wp e (sep_post Phi R)).upred_holds n a
+      \elim N
+      | 0 => \case \elim n, n_le_N, hv, hsep \with {
+        | 0, _, hv0, hsep0 =>
+          (wp_unfold e (sep_post Phi R) 0 a hv0).2
+            (wp_pre_frame_zero Phi R e a hv0 hsep0)
+        | suc n', le, _, _ => absurd (le NatOrder.zero<suc)
+      }
+      | suc N' => \case \elim n, n_le_N, hv, hsep \with {
+        | 0, _, hv0, hsep0 =>
+          (wp_unfold e (sep_post Phi R) 0 a hv0).2
+            (wp_pre_frame_zero Phi R e a hv0 hsep0)
+        | suc n', le, hvS, hsepS =>
+          \let
+            | n'_le_N' : n' <= N' => suc<=suc.conv le
+            | ih : \Pi (k : Nat) -> k <= N' -> \Pi (e' : Expr)
+                  (a' : (HeapCMRA Loc cnt Value).E)
+              -> (HeapCMRA Loc cnt Value).validN k a'
+              -> (mkProperSep (wp e' Phi) R).upred_holds k a'
+              -> (wp e' (sep_post Phi R)).upred_holds k a'
+              => \lam k k_le_N' e' a' hv' hsep' =>
+                wp_frame_at_le Phi R N' k k_le_N' e' a' hv' hsep'
+          \in (wp_unfold e (sep_post Phi R) (suc n') a hvS).2
+                (wp_pre_frame_step Phi R e a n' hvS hsepS ih)
+      }
+
+    -- Helper: validN m (a ⊕ a_auth) and dist_n a (a1 ⊕ a2) implies
+    -- validN m (a1 ⊕ a_auth) (for m ≤ n).
+    \func validN_drop_a2
+      {cnt : Countable Loc}
+      (n m : Nat) (m_le_n : m <= n)
+      (a a1 a2 a_auth : (HeapCMRA Loc cnt Value).E)
+      (dist_a : (HeapCMRA Loc cnt Value).dist n a
+          ((HeapCMRA Loc cnt Value).op a1 a2))
+      (hv_a_auth : (HeapCMRA Loc cnt Value).validN m
+          ((HeapCMRA Loc cnt Value).op a a_auth))
+      : (HeapCMRA Loc cnt Value).validN m
+          ((HeapCMRA Loc cnt Value).op a1 a_auth)
+      => \let
+        | M => HeapCMRA Loc cnt Value
+        | dist_a_m : M.dist m a (M.op a1 a2) =>
+          M.ofe_dist_le n m a (M.op a1 a2) dist_a m_le_n
+        | dist_op : M.dist m (M.op a a_auth) (M.op (M.op a1 a2) a_auth) =>
+          M.cmra_op_ne_2 a_auth m a (M.op a1 a2) dist_a_m
+        | hv_a1a2_auth : M.validN m (M.op (M.op a1 a2) a_auth) =>
+          M.cmra_validN_ne m (M.op a a_auth) (M.op (M.op a1 a2) a_auth) dist_op hv_a_auth
+        -- (a1 ⊕ a2) ⊕ a_auth = a1 ⊕ (a2 ⊕ a_auth) by assoc.
+        | hv_a1_a2_auth : M.validN m (M.op a1 (M.op a2 a_auth)) =>
+          transport (M.validN m) (inv (M.cmra_assoc a1 a2 a_auth)) hv_a1a2_auth
+        -- a1 ⊕ a_auth ⊑_m a1 ⊕ (a2 ⊕ a_auth), via a2 (commuted into the middle).
+        -- (a1 ⊕ a_auth) ⊕ a2 = a1 ⊕ (a_auth ⊕ a2) = a1 ⊕ (a2 ⊕ a_auth).
+        | path_swap : M.op (M.op a1 a_auth) a2 = M.op a1 (M.op a2 a_auth) =>
+          inv (M.cmra_assoc a1 a_auth a2) *>
+          pmap (M.op a1) (M.cmra_comm a_auth a2)
+        | dist_witness : M.dist m (M.op a1 (M.op a2 a_auth)) (M.op (M.op a1 a_auth) a2) =>
+          transport (\lam w => M.dist m (M.op a1 (M.op a2 a_auth)) w)
+              (inv path_swap)
+              (M.ofe_dist_refl m (M.op a1 (M.op a2 a_auth)))
+        | incl_a1_auth : inclN {M} {\new Op M.E { | op => M.op }}
+            (M.op a1 a_auth) m (M.op a1 (M.op a2 a_auth)) =>
+          inP (a2, dist_witness)
+      \in cmra_validN_includedN {M} m (M.op a1 a_auth) (M.op a1 (M.op a2 a_auth))
+              hv_a1_a2_auth incl_a1_auth
+
+    -- Helper: the path (a1 ⊕ a_auth) ⊕ a2 = a1 ⊕ (a2 ⊕ a_auth).
+    -- Used to rearrange resources without dist.
+    \func path_reassoc
+      {cnt : Countable Loc}
+      (a1 a2 a_auth : (HeapCMRA Loc cnt Value).E)
+      : (HeapCMRA Loc cnt Value).op ((HeapCMRA Loc cnt Value).op a1 a_auth) a2 =
+        (HeapCMRA Loc cnt Value).op a1 ((HeapCMRA Loc cnt Value).op a2 a_auth)
+      => \let M => HeapCMRA Loc cnt Value
+         \in inv (M.cmra_assoc a1 a_auth a2) *> pmap (M.op a1) (M.cmra_comm a_auth a2)
+
+    -- ---------------------------------------------------------------------------
+    -- wp_pre_frame at step index 0.
+    -- ---------------------------------------------------------------------------
+    \func wp_pre_frame_zero
+      {cnt : Countable Loc}
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (R : ProperUPred (HeapCMRA Loc cnt Value))
+      (e : Expr)
+      (a : (HeapCMRA Loc cnt Value).E)
+      (hv : (HeapCMRA Loc cnt Value).validN 0 a)
+      (hsep : (mkProperSep (wp e Phi) R).upred_holds 0 a)
+      : (wp_pre wp e (sep_post Phi R)).upred_holds 0 a =>
+      \case hsep \with {
+        | inP (a1, a2, dist_a, hwp_a1, hR_a2) =>
+          \let
+            | M => HeapCMRA Loc cnt Value
+            | PhiR : Value -> ProperUPred M => \lam v => mkProperSep (Phi v) R
+            | hv_a1a2 : M.validN 0 (M.op a1 a2) =>
+              M.cmra_validN_ne 0 a (M.op a1 a2) dist_a hv
+            | hv_a1 : M.validN 0 a1 => M.cmra_validN_op_l 0 a1 a2 hv_a1a2
+            | hpre_a1 : (wp_pre wp e Phi).upred_holds 0 a1 =>
+              (wp_unfold e Phi 0 a1 hv_a1).1 hwp_a1
+          \in \case to_val e \as tv, idp : to_val e = tv
+            \return (wp_pre_body wp e PhiR tv).upred_holds 0 a
+            \with {
+              | just v, peq =>
+                \let
+                  | hbupd_phi_a1 : (mkProperBUpd (Phi v)).upred_holds 0 a1 =>
+                    transport (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds 0 a1)
+                        peq hpre_a1
+                  | hsep_bupd : (mkProperSep (mkProperBUpd (Phi v)) R).upred_holds 0 a =>
+                    inP (a1, a2, dist_a, hbupd_phi_a1, hR_a2)
+                  | hbupd_sep : (mkProperBUpd (mkProperSep (Phi v) R)).upred_holds 0 a =>
+                    bupd_frame_r (Phi v) R 0 a hv hsep_bupd
+                \in transport (\lam tv' => (wp_pre_body wp e PhiR tv').upred_holds 0 a)
+                      (inv peq) hbupd_sep
+              | nothing, peq =>
+                transport (\lam tv' => (wp_pre_body wp e PhiR tv').upred_holds 0 a) (inv peq)
+                  (\let
+                    | hpre_a1_n : (wp_pre_body wp e Phi nothing).upred_holds 0 a1 =>
+                      transport (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds 0 a1)
+                          peq hpre_a1
+                  \in \lam sigma m m_le_0 a_auth hv_op h_auth =>
+                    \lam k k_le_m yf hv_kyf =>
+                      \let
+                        | m_is_0 : m = 0 =>
+                          <=-antisymmetric m_le_0 zero<=_
+                        | k_is_0 : k = 0 =>
+                          <=-antisymmetric (transport (\lam mm => k <= mm) m_is_0 k_le_m) zero<=_
+                        -- Apply hpre_a1_n at sigma, m=0, a_auth.
+                        -- Need validN 0 (a1 ⊕ a_auth).
+                        | hv_a1_auth : M.validN m (M.op a1 a_auth) =>
+                          validN_drop_a2 0 m m_le_0 a a1 a2 a_auth dist_a hv_op
+                        | hbupd_inner : (mkProperBUpd
+                            (mkProperAnd (mkProperPure (Reducible e sigma))
+                                (mkProperLater (mkProperForall Expr (\lam e2 =>
+                                    mkProperForall (State cnt) (\lam sigma2 =>
+                                        mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                            (mkProperBUpd (mkProperSep
+                                                (own_heap_auth sigma2) (wp e2 Phi))))))))
+                            .upred_holds m (M.op a1 a_auth) =>
+                          hpre_a1_n sigma m m_le_0 a_auth hv_a1_auth h_auth
+                        -- Use hbupd_inner with yf' = a2 ⊕ yf, k' = k.
+                        -- Need validN k ((a1 ⊕ a_auth) ⊕ (a2 ⊕ yf)).
+                        | path1 : M.op (M.op a1 a_auth) (M.op a2 yf) =
+                                  M.op (M.op (M.op a1 a_auth) a2) yf =>
+                          M.cmra_assoc (M.op a1 a_auth) a2 yf
+                        | path2 : M.op (M.op a1 a_auth) a2 = M.op a1 (M.op a2 a_auth) =>
+                          path_reassoc a1 a2 a_auth
+                        | path3 : M.op a1 (M.op a2 a_auth) = M.op (M.op a1 a2) a_auth =>
+                          M.cmra_assoc a1 a2 a_auth
+                        -- Combining: (a1 ⊕ a_auth) ⊕ (a2 ⊕ yf) = ((a1 ⊕ a2) ⊕ a_auth) ⊕ yf.
+                        | path_total : M.op (M.op a1 a_auth) (M.op a2 yf) =
+                                       M.op (M.op (M.op a1 a2) a_auth) yf =>
+                          path1 *> pmap (\lam w => M.op w yf) (path2 *> path3)
+                        | dist_k_a : M.dist k a (M.op a1 a2) =>
+                          M.ofe_dist_le 0 k a (M.op a1 a2) dist_a
+                              (transport (\lam kk => kk <= 0) (inv k_is_0) <=-refl)
+                        | dist_aux_kyf : M.dist k
+                              (M.op (M.op a a_auth) yf)
+                              (M.op (M.op (M.op a1 a2) a_auth) yf) =>
+                          M.cmra_op_ne_2 yf k (M.op a a_auth) (M.op (M.op a1 a2) a_auth)
+                              (M.cmra_op_ne_2 a_auth k a (M.op a1 a2) dist_k_a)
+                        | hv_full_at_k : M.validN k (M.op (M.op (M.op a1 a2) a_auth) yf) =>
+                          M.cmra_validN_ne k (M.op (M.op a a_auth) yf)
+                              (M.op (M.op (M.op a1 a2) a_auth) yf) dist_aux_kyf hv_kyf
+                        | hv_yf_shift : M.validN k (M.op (M.op a1 a_auth) (M.op a2 yf)) =>
+                          transport (M.validN k) (inv path_total) hv_full_at_k
+                      \in \case hbupd_inner k k_le_m (M.op a2 yf) hv_yf_shift \with {
+                        | inP (c', hv_c'_a2yf, h_and_at_c') =>
+                          \let
+                            | c : M.E => M.op c' a2
+                            | hv_c_yf : M.validN k (M.op c yf) =>
+                              transport (M.validN k) (inv (M.cmra_assoc c' a2 yf)) hv_c'_a2yf
+                            -- The inner predicate at level 0 (= k): Reducible and trivial later.
+                            -- Build the new inner predicate at (k=0, c) for PhiR.
+                            | reducible_at_c : (mkProperPure (Reducible e sigma)).upred_holds k c =>
+                              h_and_at_c'.1
+                            | later_trivial : (mkProperLater
+                                (mkProperForall Expr (\lam e2 =>
+                                    mkProperForall (State cnt) (\lam sigma2 =>
+                                        mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                            (mkProperBUpd (mkProperSep
+                                                (own_heap_auth sigma2) (wp e2 PhiR)))))))
+                                .upred_holds k c =>
+                              transport (\lam kk =>
+                                (mkProperLater
+                                    (mkProperForall Expr (\lam e2 =>
+                                        mkProperForall (State cnt) (\lam sigma2 =>
+                                            mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                                (mkProperBUpd (mkProperSep
+                                                    (own_heap_auth sigma2) (wp e2 PhiR)))))))
+                                    .upred_holds kk c)
+                                (inv k_is_0) ()
+                          \in inP (c, hv_c_yf, (reducible_at_c, later_trivial))
+                      })
+            }
+      }
+
+    -- ---------------------------------------------------------------------------
+    -- wp_pre_frame at step index (suc n).
+    -- This is where the IH (for indices < suc n) gets used.
+    -- ---------------------------------------------------------------------------
+    \func wp_pre_frame_step
+      {cnt : Countable Loc}
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (R : ProperUPred (HeapCMRA Loc cnt Value))
+      (e : Expr)
+      (a : (HeapCMRA Loc cnt Value).E)
+      (n : Nat)
+      (hv : (HeapCMRA Loc cnt Value).validN (suc n) a)
+      (hsep : (mkProperSep (wp e Phi) R).upred_holds (suc n) a)
+      (ih : \Pi (k : Nat) -> k <= n -> \Pi (e' : Expr)
+            (a' : (HeapCMRA Loc cnt Value).E)
+        -> (HeapCMRA Loc cnt Value).validN k a'
+        -> (mkProperSep (wp e' Phi) R).upred_holds k a'
+        -> (wp e' (sep_post Phi R)).upred_holds k a')
+      : (wp_pre wp e (sep_post Phi R)).upred_holds (suc n) a =>
+      \let M => HeapCMRA Loc cnt Value
+           | PhiR => \lam (v : Value) => mkProperSep (Phi v) R
+      \in \case hsep \with {
+        | inP (a1, a2, dist_a, hwp_a1, hR_a2) =>
+          \let
+            | hv_a1a2 : M.validN (suc n) (M.op a1 a2) =>
+              M.cmra_validN_ne (suc n) a (M.op a1 a2) dist_a hv
+            | hv_a1 : M.validN (suc n) a1 => M.cmra_validN_op_l (suc n) a1 a2 hv_a1a2
+            | hpre_a1 : (wp_pre wp e Phi).upred_holds (suc n) a1 =>
+              (wp_unfold e Phi (suc n) a1 hv_a1).1 hwp_a1
+          \in \case to_val e \as tv, idp : to_val e = tv
+            \return (wp_pre_body wp e PhiR tv).upred_holds (suc n) a
+            \with {
+              | just v, peq =>
+                \let
+                  | hbupd_phi_a1 : (mkProperBUpd (Phi v)).upred_holds (suc n) a1 =>
+                    transport (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds (suc n) a1)
+                        peq hpre_a1
+                  | hsep_bupd : (mkProperSep (mkProperBUpd (Phi v)) R).upred_holds (suc n) a =>
+                    inP (a1, a2, dist_a, hbupd_phi_a1, hR_a2)
+                  | hbupd_sep : (mkProperBUpd (mkProperSep (Phi v) R)).upred_holds (suc n) a =>
+                    bupd_frame_r (Phi v) R (suc n) a hv hsep_bupd
+                \in transport (\lam tv' => (wp_pre_body wp e PhiR tv').upred_holds (suc n) a)
+                      (inv peq) hbupd_sep
+              | nothing, peq =>
+                transport (\lam tv' => (wp_pre_body wp e PhiR tv').upred_holds (suc n) a)
+                    (inv peq)
+                  (\let
+                    | hpre_a1_n : (wp_pre_body wp e Phi nothing).upred_holds (suc n) a1 =>
+                      transport (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds (suc n) a1)
+                          peq hpre_a1
+                  \in \lam sigma m m_le_sucn a_auth hv_op h_auth =>
+                    -- Apply hpre_a1_n at sigma, m, a_auth.
+                    -- Need validN m (a1 ⊕ a_auth).
+                    \let
+                      | hv_a1_auth : M.validN m (M.op a1 a_auth) =>
+                        validN_drop_a2 (suc n) m m_le_sucn a a1 a2 a_auth dist_a hv_op
+                      | hbupd_inner : (mkProperBUpd
+                          (mkProperAnd (mkProperPure (Reducible e sigma))
+                              (mkProperLater (mkProperForall Expr (\lam e2 =>
+                                  mkProperForall (State cnt) (\lam sigma2 =>
+                                      mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                          (mkProperBUpd (mkProperSep
+                                              (own_heap_auth sigma2) (wp e2 Phi))))))))
+                          .upred_holds m (M.op a1 a_auth) =>
+                        hpre_a1_n sigma m m_le_sucn a_auth hv_a1_auth h_auth
+                    \in \lam k k_le_m yf hv_kyf =>
+                      \let
+                        -- Derive validN k ((a1 ⊕ a_auth) ⊕ (a2 ⊕ yf))
+                        -- from validN k ((a ⊕ a_auth) ⊕ yf) and dist_a.
+                        | k_le_sucn : k <= suc n => NatSemiring.<=∘ k_le_m m_le_sucn
+                        | dist_k_a : M.dist k a (M.op a1 a2) =>
+                          M.ofe_dist_le (suc n) k a (M.op a1 a2) dist_a k_le_sucn
+                        | path1 : M.op (M.op a1 a_auth) (M.op a2 yf) =
+                                  M.op (M.op (M.op a1 a_auth) a2) yf =>
+                          M.cmra_assoc (M.op a1 a_auth) a2 yf
+                        | path2 : M.op (M.op a1 a_auth) a2 = M.op a1 (M.op a2 a_auth) =>
+                          path_reassoc a1 a2 a_auth
+                        | path3 : M.op a1 (M.op a2 a_auth) = M.op (M.op a1 a2) a_auth =>
+                          M.cmra_assoc a1 a2 a_auth
+                        | path_total : M.op (M.op a1 a_auth) (M.op a2 yf) =
+                                       M.op (M.op (M.op a1 a2) a_auth) yf =>
+                          path1 *> pmap (\lam w => M.op w yf) (path2 *> path3)
+                        | dist_aux_kyf : M.dist k
+                              (M.op (M.op a a_auth) yf)
+                              (M.op (M.op (M.op a1 a2) a_auth) yf) =>
+                          M.cmra_op_ne_2 yf k (M.op a a_auth) (M.op (M.op a1 a2) a_auth)
+                              (M.cmra_op_ne_2 a_auth k a (M.op a1 a2) dist_k_a)
+                        | hv_full_at_k : M.validN k (M.op (M.op (M.op a1 a2) a_auth) yf) =>
+                          M.cmra_validN_ne k (M.op (M.op a a_auth) yf)
+                              (M.op (M.op (M.op a1 a2) a_auth) yf) dist_aux_kyf hv_kyf
+                        | hv_yf_shift : M.validN k (M.op (M.op a1 a_auth) (M.op a2 yf)) =>
+                          transport (M.validN k) (inv path_total) hv_full_at_k
+                      \in \case hbupd_inner k k_le_m (M.op a2 yf) hv_yf_shift \with {
+                        | inP (c', hv_c'_a2yf, h_and_at_c') =>
+                          \let
+                            | c : M.E => M.op c' a2
+                            | hv_c_yf : M.validN k (M.op c yf) =>
+                              transport (M.validN k) (inv (M.cmra_assoc c' a2 yf)) hv_c'_a2yf
+                            -- Reducible is pure; carries to any resource.
+                            | reducible_at_c : (mkProperPure (Reducible e sigma)).upred_holds k c =>
+                              h_and_at_c'.1
+                            -- The later-guarded forall: convert it.
+                            | later_at_c : (mkProperLater
+                                (mkProperForall Expr (\lam e2 =>
+                                    mkProperForall (State cnt) (\lam sigma2 =>
+                                        mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                            (mkProperBUpd (mkProperSep
+                                                (own_heap_auth sigma2) (wp e2 PhiR)))))))
+                                .upred_holds k c =>
+                              \case \elim k, k_le_m, m_le_sucn, k_le_sucn, h_and_at_c'.2,
+                                    hv_c_yf, hv_c'_a2yf, hR_a2
+                              \return (mkProperLater
+                                (mkProperForall Expr (\lam e2 =>
+                                    mkProperForall (State cnt) (\lam sigma2 =>
+                                        mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                            (mkProperBUpd (mkProperSep
+                                                (own_heap_auth sigma2) (wp e2 PhiR)))))))
+                                .upred_holds k c
+                              \with {
+                                | 0, _, _, _, _, _, _, _ => ()
+                                | suc k', k_le_m', m_le_sucn', k_le_sucn', stuff_Phi_k',
+                                  hv_c_yf', hv_c'_a2yf', hR_a2' =>
+                                  \let
+                                    -- stuff_Phi_k' : forall e2 sigma2, impl ... at (k', c')
+                                    | k'_le_n : k' <= n =>
+                                      suc<=suc.conv k_le_sucn'
+                                  \in \lam e2 sigma2 j j_le_k' b incl_b hv_b hstep =>
+                                    \let
+                                      -- We have stuff_Phi_k' (at k', c'); apply at (e2, sigma2)
+                                      -- then impl at (j, c' ⊕ z') for an appropriate z'.
+                                      -- We use a smaller resource than b so we can frame R.
+                                      | impl_at_c' :
+                                          (mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                              (mkProperBUpd (mkProperSep
+                                                  (own_heap_auth sigma2) (wp e2 Phi))))
+                                          .upred_holds k' c' =>
+                                        stuff_Phi_k' e2 sigma2
+                                      -- From inclN_j c b: ∃z. dist_j b (c ⊕ z).
+                                    \in \case incl_b \with {
+                                      | inP (z, dist_b_cz) =>
+                                        \let
+                                          -- b ≈_j c ⊕ z = (c' ⊕ a2) ⊕ z = c' ⊕ (a2 ⊕ z).
+                                          | path_cz : M.op c z = M.op c' (M.op a2 z) =>
+                                            inv (M.cmra_assoc c' a2 z)
+                                          | dist_b_c'_a2z : M.dist j b (M.op c' (M.op a2 z)) =>
+                                            transport (\lam w => M.dist j b w) path_cz dist_b_cz
+                                          -- Apply impl at (j, c' ⊕ z), needs inclN_j c' (c' ⊕ z),
+                                          -- validN j (c' ⊕ z), and step at (j, c' ⊕ z).
+                                          | smaller_b : M.E => M.op c' z
+                                          | incl_c'_smaller : inclN {M}
+                                              {\new Op M.E { | op => M.op }} c' j smaller_b =>
+                                            inP (z, M.ofe_dist_refl j smaller_b)
+                                          -- validN j (c' ⊕ z): from validN j b and the dist.
+                                          | hv_b_at_j : M.validN j b => hv_b
+                                          | hv_c'_a2_z : M.validN j (M.op c' (M.op a2 z)) =>
+                                            M.cmra_validN_ne j b (M.op c' (M.op a2 z))
+                                                dist_b_c'_a2z hv_b_at_j
+                                          | path_c'_a2z : M.op (M.op c' z) a2 =
+                                                          M.op c' (M.op a2 z) =>
+                                            path_reassoc c' a2 z
+                                              -- gives (c' ⊕ z) ⊕ a2 = c' ⊕ (a2 ⊕ z)
+                                          | hv_smaller_a2 : M.validN j (M.op smaller_b a2) =>
+                                            transport (M.validN j) (inv path_c'_a2z) hv_c'_a2_z
+                                          | hv_smaller : M.validN j smaller_b =>
+                                            M.cmra_validN_op_l j smaller_b a2 hv_smaller_a2
+                                          -- step at (j, smaller_b): pure, just the prop.
+                                          | hstep_at_smaller : (mkProperPure
+                                              (PrimStep e sigma e2 sigma2)).upred_holds j smaller_b =>
+                                            hstep
+                                          | hbupd_phi_smaller : (mkProperBUpd
+                                              (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))
+                                              .upred_holds j smaller_b =>
+                                            impl_at_c' j j_le_k' smaller_b
+                                                incl_c'_smaller hv_smaller hstep_at_smaller
+                                          -- Now construct bupd(... wp e2 PhiR ...) at (j, b).
+                                          -- Manually: take r ≤ j, yf2, validN(b ⊕ yf2).
+                                        \in \lam r r_le_j yf2 hv_byf2 =>
+                                          \let
+                                            -- Use the inner bupd with yf2' = a2 ⊕ yf2, r' = r.
+                                            | r_le_n : r <= n =>
+                                              NatSemiring.<=∘ r_le_j
+                                                (NatSemiring.<=∘ j_le_k' k'_le_n)
+                                            -- Need validN r ((smaller_b) ⊕ (a2 ⊕ yf2))
+                                            -- = validN r ((c' ⊕ z) ⊕ (a2 ⊕ yf2)).
+                                            -- From validN r (b ⊕ yf2), dist_r b (c' ⊕ (a2 ⊕ z)):
+                                            -- ≈ ((c' ⊕ (a2 ⊕ z)) ⊕ yf2) ≈ (c' ⊕ z) ⊕ (a2 ⊕ yf2).
+                                            | dist_b_c'a2z_r : M.dist r b
+                                                (M.op c' (M.op a2 z)) =>
+                                              M.ofe_dist_le j r b (M.op c' (M.op a2 z))
+                                                  dist_b_c'_a2z r_le_j
+                                            | dist_byf2_at_r : M.dist r
+                                                (M.op b yf2)
+                                                (M.op (M.op c' (M.op a2 z)) yf2) =>
+                                              M.cmra_op_ne_2 yf2 r b
+                                                  (M.op c' (M.op a2 z))
+                                                  dist_b_c'a2z_r
+                                            | hv_c'_a2z_yf2 : M.validN r
+                                                (M.op (M.op c' (M.op a2 z)) yf2) =>
+                                              M.cmra_validN_ne r (M.op b yf2)
+                                                  (M.op (M.op c' (M.op a2 z)) yf2)
+                                                  dist_byf2_at_r hv_byf2
+                                            -- Rearrange ((c' ⊕ (a2 ⊕ z)) ⊕ yf2) to ((c' ⊕ z) ⊕ (a2 ⊕ yf2)):
+                                            -- (c' ⊕ (a2 ⊕ z)) ⊕ yf2 = (c' ⊕ a2 ⊕ z) ⊕ yf2
+                                            --                       = (c' ⊕ z ⊕ a2) ⊕ yf2  -- comm of a2,z
+                                            --                       = (c' ⊕ z) ⊕ (a2 ⊕ yf2)
+                                            -- c' ⊕ (a2 ⊕ z) = c' ⊕ (z ⊕ a2) = (c' ⊕ z) ⊕ a2.
+                                            | path_rearrange2 :
+                                                M.op c' (M.op a2 z) = M.op (M.op c' z) a2 =>
+                                              pmap (M.op c') (M.cmra_comm a2 z) *>
+                                                M.cmra_assoc c' z a2
+                                            | path_full :
+                                                M.op (M.op c' (M.op a2 z)) yf2 =
+                                                M.op (M.op c' z) (M.op a2 yf2) =>
+                                              pmap (\lam w => M.op w yf2) path_rearrange2 *>
+                                                inv (M.cmra_assoc (M.op c' z) a2 yf2)
+                                            | hv_smaller_yf2' : M.validN r
+                                                (M.op smaller_b (M.op a2 yf2)) =>
+                                              transport (M.validN r) path_full hv_c'_a2z_yf2
+                                          \in \case hbupd_phi_smaller r r_le_j (M.op a2 yf2)
+                                                  hv_smaller_yf2'
+                                          \with {
+                                            | inP (d', hv_d'_a2yf2, hsep_phi_at_d') =>
+                                              \let
+                                                | d : M.E => M.op d' a2
+                                                | hv_d_yf2 : M.validN r (M.op d yf2) =>
+                                                  transport (M.validN r)
+                                                      (inv (M.cmra_assoc d' a2 yf2))
+                                                      hv_d'_a2yf2
+                                              \in \case hsep_phi_at_d' \with {
+                                                | inP (d1, d2, dist_d', hauth_d1, hwp_d2) =>
+                                                  \let
+                                                    -- Use IH at r ≤ n on (e2, Phi, R) to push R
+                                                    -- into wp e2.
+                                                    | hR_at_r : R.upred_holds r a2 =>
+                                                      R.upred_mono (suc n) r a2 a2 hR_a2'
+                                                          (inclN_refl_ucmra r a2) r_le_n
+                                                    -- Build sep (wp e2 Phi) R at (r, d2 ⊕ a2).
+                                                    -- Need validN r (d2 ⊕ a2) for IH.
+                                                    | hv_d : M.validN r d =>
+                                                      M.cmra_validN_op_l r d yf2 hv_d_yf2
+                                                    | dist_d_at_r : M.dist r d
+                                                        (M.op d1 (M.op d2 a2)) =>
+                                                      \let
+                                                        | dist_d'_d1d2 : M.dist r d' (M.op d1 d2) =>
+                                                          dist_d'
+                                                        | dist_d : M.dist r (M.op d' a2)
+                                                            (M.op (M.op d1 d2) a2) =>
+                                                          M.cmra_op_ne_2 a2 r d' (M.op d1 d2)
+                                                              dist_d'_d1d2
+                                                        | path_assoc :
+                                                            M.op (M.op d1 d2) a2 =
+                                                            M.op d1 (M.op d2 a2) =>
+                                                          inv (M.cmra_assoc d1 d2 a2)
+                                                      \in transport (\lam w => M.dist r d w)
+                                                          path_assoc dist_d
+                                                    | hv_d_alt : M.validN r (M.op d1 (M.op d2 a2)) =>
+                                                      M.cmra_validN_ne r d
+                                                          (M.op d1 (M.op d2 a2)) dist_d_at_r hv_d
+                                                    | hv_d2_a2 : M.validN r (M.op d2 a2) =>
+                                                      \let
+                                                        | hv_swap : M.validN r
+                                                            (M.op (M.op d2 a2) d1) =>
+                                                          transport (M.validN r)
+                                                              (M.cmra_comm d1 (M.op d2 a2))
+                                                              hv_d_alt
+                                                      \in M.cmra_validN_op_l r (M.op d2 a2) d1
+                                                          hv_swap
+                                                    | hsep_for_ih :
+                                                        (mkProperSep (wp e2 Phi) R).upred_holds r
+                                                            (M.op d2 a2) =>
+                                                      inP (d2, a2, M.ofe_dist_refl r (M.op d2 a2),
+                                                           hwp_d2, hR_at_r)
+                                                    | hwp_PhiR : (wp e2 PhiR).upred_holds r
+                                                        (M.op d2 a2) =>
+                                                      ih r r_le_n e2 (M.op d2 a2) hv_d2_a2
+                                                          hsep_for_ih
+                                                    | hsep_result :
+                                                        (mkProperSep (own_heap_auth sigma2)
+                                                            (wp e2 PhiR)).upred_holds r d =>
+                                                      inP (d1, M.op d2 a2, dist_d_at_r,
+                                                           hauth_d1, hwp_PhiR)
+                                                  \in inP (d, hv_d_yf2, hsep_result)
+                                              }
+                                          }
+                                    }
+                                }
+                          \in (reducible_at_c, later_at_c)
+                      })
+            }
+      }
+  }
+
 \lemma wp_pure_step
   {cnt : Countable Loc}
   (e e' : Expr)

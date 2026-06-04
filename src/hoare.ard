@@ -1,8 +1,12 @@
 \import interface
+\import Logic
+\import Arith.Nat
 \import lang
 \import Paths
+\import Order.PartialOrder
 \import uPred
 \import cmra
+\import updates
 \import weakestpre
 \import lib.heap
 \import lib.gmap_cmra
@@ -49,3 +53,123 @@
                   | h_wp_b_a' : (wp e Phi).upred_holds k (M.op b a') =>
                     hwand k k_le_m a' hv_b_a' hP_a'
                 \in wp_post_mono e Phi Phi' hPhi k (M.op b a') hv_b_a' h_wp_b_a'
+
+\lemma ht_conseq_pre
+  {cnt : Countable Loc}
+  (P P' : ProperUPred (HeapCMRA Loc cnt Value))
+  (e    : Expr)
+  (Phi  : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (hP   : properUPred_ent P' P)
+  : properUPred_ent (ht P e Phi) (ht P' e Phi)
+  => ht_conseq P P' e Phi Phi hP (\lam v => properUPred_ent_refl (Phi v))
+
+\lemma ht_conseq_post
+  {cnt : Countable Loc}
+  (P    : ProperUPred (HeapCMRA Loc cnt Value))
+  (e    : Expr)
+  (Phi Phi' : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (hPhi : \Pi (v : Value) -> properUPred_ent (Phi v) (Phi' v))
+  : properUPred_ent (ht P e Phi) (ht P e Phi')
+  => ht_conseq P P e Phi Phi' (properUPred_ent_refl P) hPhi
+
+\lemma ht_value
+  {cnt : Countable Loc}
+  (P   : ProperUPred (HeapCMRA Loc cnt Value))
+  (v   : Value)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (h   : properUPred_ent P (Phi v))
+  : properUPred_ent (mkProperPure (\Sigma)) (ht P (Val v) Phi)
+  =>
+    \let M => HeapCMRA Loc cnt Value
+    \in \lam n a hv _ =>
+      \lam m m_le_n b unit_incl_b =>
+        \lam k k_le_m a' hv_ba' hP =>
+          \let
+            | hv_a' : M.validN k a' =>
+              M.cmra_validN_op_l k a' b
+                (transport (\lam w => M.validN k w)
+                  (M.cmra_comm b a')
+                  hv_ba')
+            | hPhi_a' : (Phi v).upred_holds k a' =>
+              h k a' hv_a' hP
+            | incl_a'_ba' : inclN {M} {\new Op M.E { | op => M.op }} a' k (M.op b a') =>
+              inP (b,
+                transport (\lam w => M.dist k (M.op b a') w)
+                  (inv (M.cmra_comm a' b))
+                  (M.ofe_dist_refl k (M.op b a')))
+            | hPhi_ba' : (Phi v).upred_holds k (M.op b a') =>
+              (Phi v).upred_mono k k a' (M.op b a') hPhi_a' incl_a'_ba' <=-refl
+          \in
+          wp_value_intro v Phi k (M.op b a') hv_ba'
+            hPhi_ba'
+
+\lemma ht_frame_r_from_wp_frame
+  {cnt : Countable Loc}
+  (P R : ProperUPred (HeapCMRA Loc cnt Value))
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (wp_frame : properUPred_ent
+    (mkProperSep (wp e Phi) R)
+    (wp e (\lam v => mkProperSep (Phi v) R)))
+  : properUPred_ent
+      (ht P e Phi)
+      (ht (mkProperSep P R) e (\lam v => mkProperSep (Phi v) R))
+  =>
+    \let M => HeapCMRA Loc cnt Value
+    \in \lam n a hv h_pers =>
+      \lam m m_le_n b unit_incl_b =>
+        \lam k k_le_m a' hv_ba' hsep =>
+          \case hsep \with {
+            | inP (aP, aR, dist_a', hP, hR) =>
+              \let
+                | hwand : (mkProperWand P (wp e Phi)).upred_holds m b =>
+                  h_pers m m_le_n b unit_incl_b
+                | dist_a'_k : M.dist k a' (M.op aP aR) =>
+                  M.ofe_dist_le k k a' (M.op aP aR) dist_a' <=-refl
+                | dist_ba'_k : M.dist k (M.op b a') (M.op b (M.op aP aR)) =>
+                  M.cmra_op_ne b k a' (M.op aP aR) dist_a'_k
+                | hv_b_aP_aR : M.validN k (M.op b (M.op aP aR)) =>
+                  M.cmra_validN_ne k (M.op b a') (M.op b (M.op aP aR)) dist_ba'_k hv_ba'
+                | hv_baP_aR : M.validN k (M.op (M.op b aP) aR) =>
+                  transport (M.validN k) (M.cmra_assoc b aP aR) hv_b_aP_aR
+                | hv_baP : M.validN k (M.op b aP) =>
+                  M.cmra_validN_op_l k (M.op b aP) aR hv_baP_aR
+                | hwp : (wp e Phi).upred_holds k (M.op b aP) =>
+                  hwand k k_le_m aP hv_baP hP
+                | hsep_wp_R : (mkProperSep (wp e Phi) R).upred_holds k (M.op b a') =>
+                  inP (M.op b aP, aR,
+                    M.ofe_dist_trans k (M.op b a') (M.op b (M.op aP aR)) (M.op (M.op b aP) aR)
+                      dist_ba'_k
+                      (transport (\lam w => M.dist k (M.op b (M.op aP aR)) w)
+                        (M.cmra_assoc b aP aR)
+                        (M.ofe_dist_refl k (M.op b (M.op aP aR)))),
+                    hwp,
+                    hR)
+              \in wp_frame k (M.op b a') hv_ba' hsep_wp_R
+          }
+
+\lemma ht_frame_l_from_wp_frame
+  {cnt : Countable Loc}
+  (P R : ProperUPred (HeapCMRA Loc cnt Value))
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (wp_frame : properUPred_ent
+    (mkProperSep (wp e Phi) R)
+    (wp e (\lam v => mkProperSep (Phi v) R)))
+  : properUPred_ent
+      (ht P e Phi)
+      (ht (mkProperSep R P) e (\lam v => mkProperSep R (Phi v)))
+  =>
+    properUPred_ent_trans
+      (ht P e Phi)
+      (ht (mkProperSep P R) e (\lam v => mkProperSep (Phi v) R))
+      (ht (mkProperSep R P) e (\lam v => mkProperSep R (Phi v)))
+      (ht_frame_r_from_wp_frame P R e Phi wp_frame)
+      (ht_conseq
+        (mkProperSep P R)
+        (mkProperSep R P)
+        e
+        (\lam v => mkProperSep (Phi v) R)
+        (\lam v => mkProperSep R (Phi v))
+        (sep_comm_lemma R P)
+        (\lam v => sep_comm_lemma (Phi v) R))

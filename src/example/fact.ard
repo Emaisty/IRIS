@@ -88,8 +88,6 @@
         (App (Val h) (Val (natV k)))
         (factorial_post k)))
 
--- Q-style version for a hidden fresh allocation per call.  Since every call
--- allocates its own accumulator, the public reusable resource is trivial.
 \func factorial_spec_Q
   {cnt : Countable Loc}
   : ProperUPred (HeapCMRA Loc cnt Value) =>
@@ -102,13 +100,9 @@
               (App (Val h) (Val (natV k)))
               (factorial_post k)))))
 
--- Factorial-specific substitution/beta facts.  These are deliberately kept in
--- the example: they are not generic language laws, and their missing proofs are
--- blocked by the String comparisons inside lang.subst.
-
 \lemma subst_fact_zero_l
   (l : Loc) (recV : Value)
-  : (subst "l" (LitV (LitLoc l))
+  : subst "l" (LitV (LitLoc l))
       (If (IsZero (Val (natV 0)))
           (Load (Var "l"))
           (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
@@ -118,7 +112,7 @@
         (Load (Val (LitV (LitLoc l))))
         (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
           (Store (Val (LitV (LitLoc l)))
-            (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+            (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0)))))
   =>
     -- BLOCKED by lang.subst.decideEq for concrete String comparisons.
     subst_by_string_decisions "l" (LitV (LitLoc l))

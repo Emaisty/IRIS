@@ -1,0 +1,74 @@
+-- =================================================================================
+-- Sum with accumulator example
+-- =================================================================================
+--
+-- Purpose:
+--   A recursive heap program structurally similar to factorial, but with an
+--   additive accumulator.  This is a good future regression test for recursive
+--   calls, allocation, and arithmetic postcondition normalization.
+--   This file intentionally contains only commented sketches.
+--
+-- ---------------------------------------------------------------------------------
+-- sum_to
+-- ---------------------------------------------------------------------------------
+--
+-- Mathematical target:
+--
+--   sum_to k = 0 + 1 + ... + k
+--
+-- Program shape:
+--
+--   go n l :=
+--     if n = 0 then !l
+--     else
+--       l <- !l + n;
+--       go (pred n) l
+--
+--   sum_to k :=
+--     let l = ref 0 in
+--     go k l
+--
+-- The recursive body mirrors factorial:
+--
+--   \func sum_go_body : Expr =>
+--     Lam "l" (
+--       If (IsZero (Var "n"))
+--          (Load (Var "l"))
+--          (App
+--            (Lam "_" (App (App (Var "go") (Pred (Var "n"))) (Var "l")))
+--            (Store (Var "l")
+--              (Add (Load (Var "l")) (Var "n")))))
+--
+--   \func sum_go : Expr =>
+--     Val (RecV "go" "n" sum_go_body)
+--
+--   \func sum_to_body : Expr =>
+--     Lam "k"
+--       (App
+--         (Lam "l" (App (App sum_go (Var "k")) (Var "l")))
+--         (Alloc (Val (natV 0))))
+--
+-- Intended worker specification:
+--
+--   { l |-> acc }
+--     go n l
+--   { v. v = acc + tri(n) * l |-> (acc + tri(n)) }
+--
+-- where:
+--
+--   tri(0) = 0
+--   tri(suc n) = suc n + tri(n)
+--
+-- Intended public Hoare triple:
+--
+--   { True }
+--     sum_to k
+--   { v. v = tri(k) * exists l, l |-> tri(k) }
+--
+-- This example should exercise:
+--   - the same recursive unfolding pattern as factorial
+--   - wp_alloc
+--   - wp_load / wp_store
+--   - a future wp_add or equivalent arithmetic primitive
+--   - postcondition arithmetic normalization for accumulator lemmas
+

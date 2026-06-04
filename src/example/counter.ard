@@ -1,0 +1,59 @@
+-- =================================================================================
+-- Counter examples
+-- =================================================================================
+--
+-- Purpose:
+--   Small heap-manipulating examples for load/store and sequencing.
+--   This file intentionally contains only commented sketches: no definitions,
+--   no proof obligations.
+--
+-- ---------------------------------------------------------------------------------
+-- increment
+-- ---------------------------------------------------------------------------------
+--
+--   inc l :=
+--     l <- !l + 1
+--
+-- In the current language, addition is not primitive, so this can be encoded later
+-- either by adding Add or by using a helper arithmetic function.  With Add, the
+-- expression would be:
+--
+--   \func inc_body : Expr =>
+--     Lam "l"
+--       (Store (Var "l")
+--         (Add (Load (Var "l")) (Val (natV 1))))
+--
+-- Intended Hoare triple:
+--
+--   { l |-> n }
+--     inc l
+--   { v. v = #() * l |-> (n + 1) }
+--
+-- More concretely:
+--
+--   ht (pointsTo l (natV n))
+--      (App inc_body (Val (LitV (LitLoc l))))
+--      (\lam v => mkProperAnd
+--        (mkProperPure (v = LitV LitUnit))
+--        (pointsTo l (natV (n Nat.+ 1))))
+--
+-- ---------------------------------------------------------------------------------
+-- increment_twice
+-- ---------------------------------------------------------------------------------
+--
+--   inc2 l :=
+--     inc l;
+--     inc l
+--
+-- Intended Hoare triple:
+--
+--   { l |-> n }
+--     inc2 l
+--   { v. v = #() * l |-> (n + 2) }
+--
+-- This example should exercise:
+--   - wp_load
+--   - wp_store
+--   - wp_bind_app_r / sequencing lambda
+--   - arithmetic postcondition rewriting
+
