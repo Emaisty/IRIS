@@ -1,0 +1,1117 @@
+\import Arith.Nat
+\import Data.Bool
+\import Data.Maybe
+\import Logic
+\import Paths
+\import Paths.Meta
+\import Meta
+\import lib.gmap_cmra
+\import lang
+
+\func fill_item_not_val (Ki : EctxItem) (e : Expr)
+  : to_val e = nothing -> to_val (fill_item Ki e) = nothing \elim Ki
+  | AppLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | AppRCtx vf => \lam (_ : to_val e = nothing) => idp
+  | IfCtx thenB elseB => \lam (_ : to_val e = nothing) => idp
+  | PairLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | PairRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | FstCtx => \lam (_ : to_val e = nothing) => idp
+  | SndCtx => \lam (_ : to_val e = nothing) => idp
+  | IsZeroCtx => \lam (_ : to_val e = nothing) => idp
+  | PredCtx => \lam (_ : to_val e = nothing) => idp
+  | MulLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | MulRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | AllocCtx => \lam (_ : to_val e = nothing) => idp
+  | LoadCtx => \lam (_ : to_val e = nothing) => idp
+  | StoreLCtx e2 => \lam (_ : to_val e = nothing) => idp
+  | StoreRCtx v1 => \lam (_ : to_val e = nothing) => idp
+
+\func fill_not_val (K : Ectx) (e : Expr)
+  : to_val e = nothing -> to_val (fill K e) = nothing \elim K
+  | EmptyCtx => \lam (h : to_val e = nothing) => h
+  | ConsCtx Ki K' => \lam h => fill_item_not_val Ki (fill K' e) (fill_not_val K' e h)
+
+\func fill_step_item {cnt : Countable Loc}
+                     (Ki : EctxItem)
+                     {e1 e2 : Expr} {s1 s2 : State cnt}
+                     (step : PrimStep e1 s1 e2 s2)
+  : PrimStep (fill_item Ki e1) s1 (fill_item Ki e2) s2 \elim step
+  | EctxStep K e1' e2' p1 p2 base =>
+    EctxStep (ConsCtx Ki K) e1' e2' (pmap (fill_item Ki) p1) (pmap (fill_item Ki) p2) base
+
+\func fill_step {cnt : Countable Loc}
+                (K : Ectx)
+                {e1 e2 : Expr} {s1 s2 : State cnt}
+                (step : PrimStep e1 s1 e2 s2)
+  : PrimStep (fill K e1) s1 (fill K e2) s2 \elim K
+  | EmptyCtx => step
+  | ConsCtx Ki K' => fill_step_item Ki (fill_step K' step)
+
+\func no_val_val_absurd (e : Expr) (v : Value)
+                         (no_val : to_val e = nothing)
+                         (p : e = Val v) : Empty =>
+  \case inv no_val *> pmap to_val p \with {}
+
+\func base_step_not_val {cnt : Countable Loc}
+                        (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
+                        (step : BaseStep e s e' s') : to_val e = nothing \elim step
+  | BetaS x body v p1 p2 p3 => rewrite p1 idp
+  | RecBetaS f x body v p1 p2 p3 => rewrite p1 idp
+  | LamS x body p1 p2 p3 => rewrite p1 idp
+  | RecS f x body p1 p2 p3 => rewrite p1 idp
+  | IfTrueS t f p1 p2 p3 => rewrite p1 idp
+  | IfFalseS t f p1 p2 p3 => rewrite p1 idp
+  | FstS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | SndS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | PairS v1 v2 p1 p2 p3 => rewrite p1 idp
+  | AllocS v l fresh p1 p2 p3 => rewrite p1 idp
+  | LoadS l v lookup p1 p2 p3 => rewrite p1 idp
+  | StoreS l v v' allocated p1 p2 p3 => rewrite p1 idp
+  | IsZeroZeroS p1 p2 p3 => rewrite p1 idp
+  | IsZeroPosS n p1 p2 p3 => rewrite p1 idp
+  | PredS n p1 p2 p3 => rewrite p1 idp
+  | MulS a b p1 p2 p3 => rewrite p1 idp
+
+\func val_fill_absurd {cnt : Countable Loc}
+                       (K : Ectx) (e1 : Expr) (s1 : State cnt)
+                       (e2 : Expr) (s2 : State cnt) (v : Value)
+                       (base : BaseStep e1 s1 e2 s2)
+                       (p : Val v = fill K e1) : Empty =>
+  \case pmap to_val p *> fill_not_val K e1 (base_step_not_val e1 s1 e2 s2 base) \with {}
+
+\func maybe_val (d : Value) (m : Maybe Value) : Value \elim m
+  | just v => v
+  | nothing => d
+
+\func app_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | App e1 _ => e1
+  | _ => d
+
+\func app_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | App _ e2 => e2
+  | _ => d
+
+\func if_arg (d : Expr) (e : Expr) : Expr \elim e
+  | If c _ _ => c
+  | _ => d
+
+\func if_then_arg (d : Expr) (e : Expr) : Expr \elim e
+  | If _ t _ => t
+  | _ => d
+
+\func if_else_arg (d : Expr) (e : Expr) : Expr \elim e
+  | If _ _ f => f
+  | _ => d
+
+\func pair_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Pair e1 _ => e1
+  | _ => d
+
+\func pair_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Pair _ e2 => e2
+  | _ => d
+
+\func fst_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Fst e1 => e1
+  | _ => d
+
+\func snd_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Snd e1 => e1
+  | _ => d
+
+\func iszero_arg (d : Expr) (e : Expr) : Expr \elim e
+  | IsZero e1 => e1
+  | _ => d
+
+\func pred_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Pred e1 => e1
+  | _ => d
+
+\func mul_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Mul e1 _ => e1
+  | _ => d
+
+\func mul_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Mul _ e2 => e2
+  | _ => d
+
+\func alloc_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Alloc e1 => e1
+  | _ => d
+
+\func load_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Load e1 => e1
+  | _ => d
+
+\func store_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Store e1 _ => e1
+  | _ => d
+
+\func store_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Store _ e2 => e2
+  | _ => d
+
+\func base_step_fill_item_absurd {cnt : Countable Loc}
+                                 (Ki : EctxItem)
+                                 (e1 : Expr) (s1 : State cnt)
+                                 (e2 : Expr) (s2 : State cnt)
+                                 (no_val : to_val e1 = nothing)
+                                 (base : BaseStep (fill_item Ki e1) s1 e2 s2)
+  : Empty \elim Ki
+  | AppLCtx arg => \case base \with {
+    | BetaS x body v p1 _ _ =>
+      no_val_val_absurd e1 (LamV x body) no_val (pmap (app_l_arg e1) p1)
+    | RecBetaS f x body v p1 _ _ =>
+      no_val_val_absurd e1 (RecV f x body) no_val (pmap (app_l_arg e1) p1)
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | AppRCtx vf => \case base \with {
+    | BetaS x body v p1 _ _ =>
+      no_val_val_absurd e1 v no_val (pmap (app_r_arg e1) p1)
+    | RecBetaS f x body v p1 _ _ =>
+      no_val_val_absurd e1 v no_val (pmap (app_r_arg e1) p1)
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | IfCtx t f => \case base \with {
+    | IfTrueS _ _ p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitBool true)) no_val (pmap (if_arg e1) p1)
+    | IfFalseS _ _ p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitBool false)) no_val (pmap (if_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | PairLCtx arg => \case base \with {
+    | PairS v1 v2 p1 _ _ =>
+      no_val_val_absurd e1 v1 no_val (pmap (pair_l_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | PairRCtx v1 => \case base \with {
+    | PairS w1 w2 p1 _ _ =>
+      no_val_val_absurd e1 w2 no_val (pmap (pair_r_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | FstCtx => \case base \with {
+    | FstS v1 v2 p1 _ _ =>
+      no_val_val_absurd e1 (PairV v1 v2) no_val (pmap (fst_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | SndCtx => \case base \with {
+    | SndS v1 v2 p1 _ _ =>
+      no_val_val_absurd e1 (PairV v1 v2) no_val (pmap (snd_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | IsZeroCtx => \case base \with {
+    | IsZeroZeroS p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitInt 0)) no_val (pmap (iszero_arg e1) p1)
+    | IsZeroPosS n p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitInt (pos (suc n)))) no_val (pmap (iszero_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | PredCtx => \case base \with {
+    | PredS n p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitInt (pos (suc n)))) no_val (pmap (pred_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | MulLCtx arg => \case base \with {
+    | MulS a b p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitInt (pos a))) no_val (pmap (mul_l_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+  }
+  | MulRCtx v1 => \case base \with {
+    | MulS a b p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitInt (pos b))) no_val (pmap (mul_r_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+  }
+  | AllocCtx => \case base \with {
+    | AllocS v _ _ p1 _ _ =>
+      no_val_val_absurd e1 v no_val (pmap (alloc_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | LoadCtx => \case base \with {
+    | LoadS l v _ p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitLoc l)) no_val (pmap (load_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | StoreLCtx arg => \case base \with {
+    | StoreS l v _ _ p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitLoc l)) no_val (pmap (store_l_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | StoreRCtx v1 => \case base \with {
+    | StoreS l v _ _ p1 _ _ =>
+      no_val_val_absurd e1 v no_val (pmap (store_r_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\lemma fill_step_inv_item_ctx_cons {cnt : Countable Loc}
+                                   (Ki Ki' : EctxItem)
+                                   (e1 : Expr) (s1 : State cnt)
+                                   (e2 : Expr) (s2 : State cnt)
+                                   (no_val : to_val e1 = nothing)
+                                   (K' : Ectx) (e1' e2' : Expr)
+                                   (p1 : fill_item Ki e1 = fill_item Ki' (fill K' e1'))
+                                   (p2 : e2 = fill_item Ki' (fill K' e2'))
+                                   (base : BaseStep e1' s1 e2' s2)
+  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2))
+  \elim Ki, Ki'
+  | AppLCtx arg, AppLCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (app_l_arg e1) p1
+      | arg_eq : arg = arg' => pmap (app_r_arg arg) p1
+      | e2_eq : e2 = fill_item (AppLCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => App (fill K' e2') a) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | AppLCtx arg, AppRCtx vf =>
+    absurd (no_val_val_absurd e1 vf no_val (pmap (app_l_arg e1) p1))
+  | AppLCtx _, IfCtx _ _ => \case p1 \with {}
+  | AppLCtx _, PairLCtx _ => \case p1 \with {}
+  | AppLCtx _, PairRCtx _ => \case p1 \with {}
+  | AppLCtx _, FstCtx => \case p1 \with {}
+  | AppLCtx _, SndCtx => \case p1 \with {}
+  | AppLCtx _, IsZeroCtx => \case p1 \with {}
+  | AppLCtx _, PredCtx => \case p1 \with {}
+  | AppLCtx _, MulLCtx _ => \case p1 \with {}
+  | AppLCtx _, MulRCtx _ => \case p1 \with {}
+  | AppLCtx _, AllocCtx => \case p1 \with {}
+  | AppLCtx _, LoadCtx => \case p1 \with {}
+  | AppLCtx _, StoreLCtx _ => \case p1 \with {}
+  | AppLCtx _, StoreRCtx _ => \case p1 \with {}
+  | AppRCtx vf, AppLCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 vf base (pmap (app_l_arg (Val vf)) p1))
+  | AppRCtx vf, AppRCtx vf' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (app_r_arg e1) p1
+      | vf_eq : vf = vf' =>
+        pmap (maybe_val vf) (pmap to_val (pmap (app_l_arg (Val vf)) p1))
+      | e2_eq : e2 = fill_item (AppRCtx vf) (fill K' e2') =>
+        p2 *> pmap (\lam v => App (Val v) (fill K' e2')) (inv vf_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | AppRCtx _, IfCtx _ _ => \case p1 \with {}
+  | AppRCtx _, PairLCtx _ => \case p1 \with {}
+  | AppRCtx _, PairRCtx _ => \case p1 \with {}
+  | AppRCtx _, FstCtx => \case p1 \with {}
+  | AppRCtx _, SndCtx => \case p1 \with {}
+  | AppRCtx _, IsZeroCtx => \case p1 \with {}
+  | AppRCtx _, PredCtx => \case p1 \with {}
+  | AppRCtx _, MulLCtx _ => \case p1 \with {}
+  | AppRCtx _, MulRCtx _ => \case p1 \with {}
+  | AppRCtx _, AllocCtx => \case p1 \with {}
+  | AppRCtx _, LoadCtx => \case p1 \with {}
+  | AppRCtx _, StoreLCtx _ => \case p1 \with {}
+  | AppRCtx _, StoreRCtx _ => \case p1 \with {}
+  | IfCtx t f, IfCtx t' f' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (if_arg e1) p1
+      | t_eq : t = t' => pmap (if_then_arg t) p1
+      | f_eq : f = f' => pmap (if_else_arg f) p1
+      | e2_eq : e2 = fill_item (IfCtx t f) (fill K' e2') =>
+        p2
+        *> pmap (\lam tt => If (fill K' e2') tt f') (inv t_eq)
+        *> pmap (\lam ff => If (fill K' e2') t ff) (inv f_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | IfCtx _ _, AppLCtx _ => \case p1 \with {}
+  | IfCtx _ _, AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _, PairLCtx _ => \case p1 \with {}
+  | IfCtx _ _, PairRCtx _ => \case p1 \with {}
+  | IfCtx _ _, FstCtx => \case p1 \with {}
+  | IfCtx _ _, SndCtx => \case p1 \with {}
+  | IfCtx _ _, IsZeroCtx => \case p1 \with {}
+  | IfCtx _ _, PredCtx => \case p1 \with {}
+  | IfCtx _ _, MulLCtx _ => \case p1 \with {}
+  | IfCtx _ _, MulRCtx _ => \case p1 \with {}
+  | IfCtx _ _, AllocCtx => \case p1 \with {}
+  | IfCtx _ _, LoadCtx => \case p1 \with {}
+  | IfCtx _ _, StoreLCtx _ => \case p1 \with {}
+  | IfCtx _ _, StoreRCtx _ => \case p1 \with {}
+  | PairLCtx arg, PairLCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (pair_l_arg e1) p1
+      | arg_eq : arg = arg' => pmap (pair_r_arg arg) p1
+      | e2_eq : e2 = fill_item (PairLCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Pair (fill K' e2') a) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | PairLCtx _, PairRCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (pair_l_arg e1) p1))
+  | PairLCtx _, AppLCtx _ => \case p1 \with {}
+  | PairLCtx _, AppRCtx _ => \case p1 \with {}
+  | PairLCtx _, IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _, FstCtx => \case p1 \with {}
+  | PairLCtx _, SndCtx => \case p1 \with {}
+  | PairLCtx _, IsZeroCtx => \case p1 \with {}
+  | PairLCtx _, PredCtx => \case p1 \with {}
+  | PairLCtx _, MulLCtx _ => \case p1 \with {}
+  | PairLCtx _, MulRCtx _ => \case p1 \with {}
+  | PairLCtx _, AllocCtx => \case p1 \with {}
+  | PairLCtx _, LoadCtx => \case p1 \with {}
+  | PairLCtx _, StoreLCtx _ => \case p1 \with {}
+  | PairLCtx _, StoreRCtx _ => \case p1 \with {}
+  | PairRCtx v, PairLCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (pair_l_arg (Val v)) p1))
+  | PairRCtx v, PairRCtx v' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (pair_r_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (pair_l_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (PairRCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Pair (Val vv) (fill K' e2')) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | PairRCtx _, AppLCtx _ => \case p1 \with {}
+  | PairRCtx _, AppRCtx _ => \case p1 \with {}
+  | PairRCtx _, IfCtx _ _ => \case p1 \with {}
+  | PairRCtx _, FstCtx => \case p1 \with {}
+  | PairRCtx _, SndCtx => \case p1 \with {}
+  | PairRCtx _, IsZeroCtx => \case p1 \with {}
+  | PairRCtx _, PredCtx => \case p1 \with {}
+  | PairRCtx _, MulLCtx _ => \case p1 \with {}
+  | PairRCtx _, MulRCtx _ => \case p1 \with {}
+  | PairRCtx _, AllocCtx => \case p1 \with {}
+  | PairRCtx _, LoadCtx => \case p1 \with {}
+  | PairRCtx _, StoreLCtx _ => \case p1 \with {}
+  | PairRCtx _, StoreRCtx _ => \case p1 \with {}
+  | FstCtx, FstCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (fst_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | FstCtx, AppLCtx _ => \case p1 \with {}
+  | FstCtx, AppRCtx _ => \case p1 \with {}
+  | FstCtx, IfCtx _ _ => \case p1 \with {}
+  | FstCtx, PairLCtx _ => \case p1 \with {}
+  | FstCtx, PairRCtx _ => \case p1 \with {}
+  | FstCtx, SndCtx => \case p1 \with {}
+  | FstCtx, IsZeroCtx => \case p1 \with {}
+  | FstCtx, PredCtx => \case p1 \with {}
+  | FstCtx, MulLCtx _ => \case p1 \with {}
+  | FstCtx, MulRCtx _ => \case p1 \with {}
+  | FstCtx, AllocCtx => \case p1 \with {}
+  | FstCtx, LoadCtx => \case p1 \with {}
+  | FstCtx, StoreLCtx _ => \case p1 \with {}
+  | FstCtx, StoreRCtx _ => \case p1 \with {}
+  | SndCtx, SndCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (snd_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | SndCtx, AppLCtx _ => \case p1 \with {}
+  | SndCtx, AppRCtx _ => \case p1 \with {}
+  | SndCtx, IfCtx _ _ => \case p1 \with {}
+  | SndCtx, PairLCtx _ => \case p1 \with {}
+  | SndCtx, PairRCtx _ => \case p1 \with {}
+  | SndCtx, FstCtx => \case p1 \with {}
+  | SndCtx, IsZeroCtx => \case p1 \with {}
+  | SndCtx, PredCtx => \case p1 \with {}
+  | SndCtx, MulLCtx _ => \case p1 \with {}
+  | SndCtx, MulRCtx _ => \case p1 \with {}
+  | SndCtx, AllocCtx => \case p1 \with {}
+  | SndCtx, LoadCtx => \case p1 \with {}
+  | SndCtx, StoreLCtx _ => \case p1 \with {}
+  | SndCtx, StoreRCtx _ => \case p1 \with {}
+  | IsZeroCtx, IsZeroCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (iszero_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | IsZeroCtx, AppLCtx _ => \case p1 \with {}
+  | IsZeroCtx, AppRCtx _ => \case p1 \with {}
+  | IsZeroCtx, IfCtx _ _ => \case p1 \with {}
+  | IsZeroCtx, PairLCtx _ => \case p1 \with {}
+  | IsZeroCtx, PairRCtx _ => \case p1 \with {}
+  | IsZeroCtx, FstCtx => \case p1 \with {}
+  | IsZeroCtx, SndCtx => \case p1 \with {}
+  | IsZeroCtx, PredCtx => \case p1 \with {}
+  | IsZeroCtx, MulLCtx _ => \case p1 \with {}
+  | IsZeroCtx, MulRCtx _ => \case p1 \with {}
+  | IsZeroCtx, AllocCtx => \case p1 \with {}
+  | IsZeroCtx, LoadCtx => \case p1 \with {}
+  | IsZeroCtx, StoreLCtx _ => \case p1 \with {}
+  | IsZeroCtx, StoreRCtx _ => \case p1 \with {}
+  | PredCtx, PredCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (pred_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | PredCtx, AppLCtx _ => \case p1 \with {}
+  | PredCtx, AppRCtx _ => \case p1 \with {}
+  | PredCtx, IfCtx _ _ => \case p1 \with {}
+  | PredCtx, PairLCtx _ => \case p1 \with {}
+  | PredCtx, PairRCtx _ => \case p1 \with {}
+  | PredCtx, FstCtx => \case p1 \with {}
+  | PredCtx, SndCtx => \case p1 \with {}
+  | PredCtx, IsZeroCtx => \case p1 \with {}
+  | PredCtx, MulLCtx _ => \case p1 \with {}
+  | PredCtx, MulRCtx _ => \case p1 \with {}
+  | PredCtx, AllocCtx => \case p1 \with {}
+  | PredCtx, LoadCtx => \case p1 \with {}
+  | PredCtx, StoreLCtx _ => \case p1 \with {}
+  | PredCtx, StoreRCtx _ => \case p1 \with {}
+  | MulLCtx arg, MulLCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (mul_l_arg e1) p1
+      | arg_eq : arg = arg' => pmap (mul_r_arg arg) p1
+      | e2_eq : e2 = fill_item (MulLCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Mul (fill K' e2') a) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | MulLCtx _, MulRCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (mul_l_arg e1) p1))
+  | MulLCtx _, AppLCtx _ => \case p1 \with {}
+  | MulLCtx _, AppRCtx _ => \case p1 \with {}
+  | MulLCtx _, IfCtx _ _ => \case p1 \with {}
+  | MulLCtx _, PairLCtx _ => \case p1 \with {}
+  | MulLCtx _, PairRCtx _ => \case p1 \with {}
+  | MulLCtx _, FstCtx => \case p1 \with {}
+  | MulLCtx _, SndCtx => \case p1 \with {}
+  | MulLCtx _, IsZeroCtx => \case p1 \with {}
+  | MulLCtx _, PredCtx => \case p1 \with {}
+  | MulLCtx _, AllocCtx => \case p1 \with {}
+  | MulLCtx _, LoadCtx => \case p1 \with {}
+  | MulLCtx _, StoreLCtx _ => \case p1 \with {}
+  | MulLCtx _, StoreRCtx _ => \case p1 \with {}
+  | MulRCtx v, MulLCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (mul_l_arg (Val v)) p1))
+  | MulRCtx v, MulRCtx v' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (mul_r_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (mul_l_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (MulRCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Mul (Val vv) (fill K' e2')) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | MulRCtx _, AppLCtx _ => \case p1 \with {}
+  | MulRCtx _, AppRCtx _ => \case p1 \with {}
+  | MulRCtx _, IfCtx _ _ => \case p1 \with {}
+  | MulRCtx _, PairLCtx _ => \case p1 \with {}
+  | MulRCtx _, PairRCtx _ => \case p1 \with {}
+  | MulRCtx _, FstCtx => \case p1 \with {}
+  | MulRCtx _, SndCtx => \case p1 \with {}
+  | MulRCtx _, IsZeroCtx => \case p1 \with {}
+  | MulRCtx _, PredCtx => \case p1 \with {}
+  | MulRCtx _, AllocCtx => \case p1 \with {}
+  | MulRCtx _, LoadCtx => \case p1 \with {}
+  | MulRCtx _, StoreLCtx _ => \case p1 \with {}
+  | MulRCtx _, StoreRCtx _ => \case p1 \with {}
+  | AllocCtx, AllocCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (alloc_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | AllocCtx, AppLCtx _ => \case p1 \with {}
+  | AllocCtx, AppRCtx _ => \case p1 \with {}
+  | AllocCtx, IfCtx _ _ => \case p1 \with {}
+  | AllocCtx, PairLCtx _ => \case p1 \with {}
+  | AllocCtx, PairRCtx _ => \case p1 \with {}
+  | AllocCtx, FstCtx => \case p1 \with {}
+  | AllocCtx, SndCtx => \case p1 \with {}
+  | AllocCtx, IsZeroCtx => \case p1 \with {}
+  | AllocCtx, PredCtx => \case p1 \with {}
+  | AllocCtx, MulLCtx _ => \case p1 \with {}
+  | AllocCtx, MulRCtx _ => \case p1 \with {}
+  | AllocCtx, LoadCtx => \case p1 \with {}
+  | AllocCtx, StoreLCtx _ => \case p1 \with {}
+  | AllocCtx, StoreRCtx _ => \case p1 \with {}
+  | LoadCtx, LoadCtx =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (load_arg e1) p1
+    \in inP (fill K' e2', p2, EctxStep K' e1' e2' e1_eq idp base)
+  | LoadCtx, AppLCtx _ => \case p1 \with {}
+  | LoadCtx, AppRCtx _ => \case p1 \with {}
+  | LoadCtx, IfCtx _ _ => \case p1 \with {}
+  | LoadCtx, PairLCtx _ => \case p1 \with {}
+  | LoadCtx, PairRCtx _ => \case p1 \with {}
+  | LoadCtx, FstCtx => \case p1 \with {}
+  | LoadCtx, SndCtx => \case p1 \with {}
+  | LoadCtx, IsZeroCtx => \case p1 \with {}
+  | LoadCtx, PredCtx => \case p1 \with {}
+  | LoadCtx, MulLCtx _ => \case p1 \with {}
+  | LoadCtx, MulRCtx _ => \case p1 \with {}
+  | LoadCtx, AllocCtx => \case p1 \with {}
+  | LoadCtx, StoreLCtx _ => \case p1 \with {}
+  | LoadCtx, StoreRCtx _ => \case p1 \with {}
+  | StoreLCtx arg, StoreLCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (store_l_arg e1) p1
+      | arg_eq : arg = arg' => pmap (store_r_arg arg) p1
+      | e2_eq : e2 = fill_item (StoreLCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Store (fill K' e2') a) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | StoreLCtx _, StoreRCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (store_l_arg e1) p1))
+  | StoreLCtx _, AppLCtx _ => \case p1 \with {}
+  | StoreLCtx _, AppRCtx _ => \case p1 \with {}
+  | StoreLCtx _, IfCtx _ _ => \case p1 \with {}
+  | StoreLCtx _, PairLCtx _ => \case p1 \with {}
+  | StoreLCtx _, PairRCtx _ => \case p1 \with {}
+  | StoreLCtx _, FstCtx => \case p1 \with {}
+  | StoreLCtx _, SndCtx => \case p1 \with {}
+  | StoreLCtx _, IsZeroCtx => \case p1 \with {}
+  | StoreLCtx _, PredCtx => \case p1 \with {}
+  | StoreLCtx _, MulLCtx _ => \case p1 \with {}
+  | StoreLCtx _, MulRCtx _ => \case p1 \with {}
+  | StoreLCtx _, AllocCtx => \case p1 \with {}
+  | StoreLCtx _, LoadCtx => \case p1 \with {}
+  | StoreRCtx v, StoreLCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (store_l_arg (Val v)) p1))
+  | StoreRCtx v, StoreRCtx v' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (store_r_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (store_l_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (StoreRCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Store (Val vv) (fill K' e2')) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | StoreRCtx _, AppLCtx _ => \case p1 \with {}
+  | StoreRCtx _, AppRCtx _ => \case p1 \with {}
+  | StoreRCtx _, IfCtx _ _ => \case p1 \with {}
+  | StoreRCtx _, PairLCtx _ => \case p1 \with {}
+  | StoreRCtx _, PairRCtx _ => \case p1 \with {}
+  | StoreRCtx _, FstCtx => \case p1 \with {}
+  | StoreRCtx _, SndCtx => \case p1 \with {}
+  | StoreRCtx _, IsZeroCtx => \case p1 \with {}
+  | StoreRCtx _, PredCtx => \case p1 \with {}
+  | StoreRCtx _, MulLCtx _ => \case p1 \with {}
+  | StoreRCtx _, MulRCtx _ => \case p1 \with {}
+  | StoreRCtx _, AllocCtx => \case p1 \with {}
+  | StoreRCtx _, LoadCtx => \case p1 \with {}
+
+\lemma fill_step_inv_item_ctx {cnt : Countable Loc}
+                              (Ki : EctxItem)
+                              (e1 : Expr) (s1 : State cnt)
+                              (e2 : Expr) (s2 : State cnt)
+                              (no_val : to_val e1 = nothing)
+                              (K : Ectx) (e1' e2' : Expr)
+                              (p1 : fill_item Ki e1 = fill K e1')
+                              (p2 : e2 = fill K e2')
+                              (base : BaseStep e1' s1 e2' s2)
+  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2))
+  \elim K
+  | EmptyCtx =>
+    absurd (base_step_fill_item_absurd Ki e1 s1 e2' s2 no_val
+      (transportInv (\lam e => BaseStep e s1 e2' s2) p1 base))
+  | ConsCtx Ki' K' =>
+    fill_step_inv_item_ctx_cons Ki Ki' e1 s1 e2 s2 no_val K' e1' e2' p1 p2 base
+
+
+
+\func BaseReducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s'))
+
+\func Reducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s'))
+
+\func base_reducible_prim {cnt : Countable Loc} (e : Expr) (s : State cnt)
+  : BaseReducible e s -> Reducible e s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s')) =>
+      (p.1, p.2, base_prim_step p.3))
+
+\func reducible_fill_item {cnt : Countable Loc} (Ki : EctxItem) (e : Expr) (s : State cnt)
+  : Reducible e s -> Reducible (fill_item Ki e) s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
+      (fill_item Ki p.1, p.2, fill_step_item Ki p.3))
+
+\func reducible_fill {cnt : Countable Loc} (K : Ectx) (e : Expr) (s : State cnt)
+  : Reducible e s -> Reducible (fill K e) s =>
+  \lam red => TruncP.map red
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
+      (fill K p.1, p.2, fill_step K p.3))
+
+\lemma fill_step_inv_item {cnt : Countable Loc}
+                          (Ki : EctxItem)
+                          (e1 : Expr) (s1 : State cnt)
+                          (e2 : Expr) (s2 : State cnt)
+                          (no_val : to_val e1 = nothing)
+                          (step : PrimStep (fill_item Ki e1) s1 e2 s2)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill_item Ki e2') (PrimStep e1 s1 e2' s2))
+  => \case step \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      fill_step_inv_item_ctx Ki e1 s1 e2 s2 no_val K e1' e2' p1 p2 base
+  }
+
+\lemma fill_step_inv {cnt : Countable Loc}
+                    (K : Ectx)
+                    (e1 : Expr) (s1 : State cnt)
+                    (e2 : Expr) (s2 : State cnt)
+                    (no_val : to_val e1 = nothing)
+                    (step : PrimStep (fill K e1) s1 e2 s2)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill K e2') (PrimStep e1 s1 e2' s2)) \elim K
+  | EmptyCtx => inP (e2, idp, step)
+  | ConsCtx Ki K' =>
+    \case fill_step_inv_item Ki (fill K' e1) s1 e2 s2
+            (fill_not_val K' e1 no_val) step \with {
+      | inP (e2i, e2_eq_item, step_inner) =>
+        TruncP.map (fill_step_inv K' e1 s1 e2i s2 no_val step_inner)
+          (\lam (p : \Sigma (e2' : Expr) (e2i = fill K' e2') (PrimStep e1 s1 e2' s2)) =>
+            (p.1, e2_eq_item *> pmap (fill_item Ki) p.2, p.3))
+    }
+
+
+\func to_of_val (v : Value) : to_val (of_val v) = just v => idp
+
+\lemma of_to_val (e : Expr) (v : Value) (p : to_val e = just v) : of_val v = e \elim e
+  | Val w =>
+    pmap Val (inv (pmap (\lam (m : Maybe Value) => \case m \with {
+      | just w' => w'
+      | nothing => w
+    }) p))
+  | Var _ => \case p \with {}
+  | Lam _ _ => \case p \with {}
+  | Rec _ _ _ => \case p \with {}
+  | App _ _ => \case p \with {}
+  | If _ _ _ => \case p \with {}
+  | Pair _ _ => \case p \with {}
+  | Fst _ => \case p \with {}
+  | Snd _ => \case p \with {}
+  | IsZero _ => \case p \with {}
+  | Pred _ => \case p \with {}
+  | Mul _ _ => \case p \with {}
+  | Load _ => \case p \with {}
+  | Store _ _ => \case p \with {}
+  | Alloc _ => \case p \with {}
+
+\func base_val_stuck {cnt : Countable Loc}
+                     (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
+                     (step : BaseStep e s e' s') : to_val e = nothing =>
+  base_step_not_val e s e' s' step
+
+\func val_stuck {cnt : Countable Loc}
+                (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
+                (step : PrimStep e s e' s') : to_val e = nothing \elim step
+  | EctxStep K e1' e2' p1 p2 base =>
+    transport (\lam x => to_val x = nothing) (inv p1)
+      (fill_not_val K e1' (base_val_stuck e1' s e2' s' base))
+
+\truncated \data AllocStepInv
+  {cnt : Countable Loc}
+  (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  | AllocStepInvIntro
+      (l : Loc)
+      (fresh : glookup sigma.heap l = nothing)
+      (e2_eq : e2 = Val (LitV (LitLoc l)))
+      (sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v })
+
+\func base_alloc_step_inv
+  {cnt : Countable Loc}
+  (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (hstep : BaseStep (Alloc (Val v)) sigma e2 sigma2)
+  : AllocStepInv v sigma e2 sigma2
+  => \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS v' l fresh p1 p2 p3 =>
+      \let
+        | v_eq : v = v' =>
+          pmap (maybe_val v) (pmap to_val (pmap (alloc_arg (Val v)) p1))
+        | sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v } =>
+          p3 *> pmap (\lam vv => \new State cnt { | heap => heap_update sigma.heap l vv }) (inv v_eq)
+      \in AllocStepInvIntro l fresh p2 sigma2_eq
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\func alloc_step_inv_ctx_item
+  {cnt : Countable Loc}
+  (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : Alloc (Val v) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2)
+  : AllocStepInv v sigma e2 sigma2 \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx =>
+    \let
+      | inner_eq : Val v = fill K' e1' =>
+        pmap (\lam e => \case e \with {
+          | Alloc e' => e'
+          | _ => Val v
+        }) p1
+      | inner_not_val : to_val (fill K' e1') = nothing =>
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just v = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+
+\func alloc_step_inv_ctx
+  {cnt : Countable Loc}
+  (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : Alloc (Val v) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2)
+  : AllocStepInv v sigma e2 sigma2 \elim K
+  | EmptyCtx =>
+    \let
+      | base' : BaseStep (Alloc (Val v)) sigma e2' sigma2 =>
+        transport (\lam e => BaseStep e sigma e2' sigma2) (inv p1) base
+    \in \case base_alloc_step_inv v sigma e2' sigma2 base' \with {
+      | AllocStepInvIntro l fresh e2'_eq sigma2_eq =>
+        AllocStepInvIntro l fresh (p2 *> e2'_eq) sigma2_eq
+    }
+  | ConsCtx Ki K' =>
+    alloc_step_inv_ctx_item v sigma e2 sigma2 Ki K' e1' e2' p1 p2 base
+
+\func alloc_step_inv
+  {cnt : Countable Loc}
+  (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (hstep : PrimStep (Alloc (Val v)) sigma e2 sigma2)
+  : AllocStepInv v sigma e2 sigma2
+  => \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      alloc_step_inv_ctx v sigma e2 sigma2 K e1' e2' p1 p2 base
+  }
+
+\truncated \data StoreStepInv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  | StoreStepInvIntro
+      (old : Value)
+      (allocated : glookup sigma.heap l = just old)
+      (e2_eq : e2 = Val (LitV LitUnit))
+      (sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v })
+
+\func base_store_step_inv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (hstep : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2)
+  : StoreStepInv l v sigma e2 sigma2
+  => \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS l' v' old allocated p1 p2 p3 =>
+      \let
+        | l_eq : l = l' =>
+          pmap (\lam (e : Expr) => \case e \with {
+            | Store (Val (LitV (LitLoc x))) _ => x
+            | _ => l
+          }) p1
+        | v_eq : v = v' =>
+          pmap (maybe_val v) (pmap to_val (pmap (store_r_arg (Val v)) p1))
+        | allocated' : glookup sigma.heap l = just old =>
+          transport (\lam ll => glookup sigma.heap ll = just old) (inv l_eq) allocated
+        | sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v } =>
+          p3
+          *> pmap (\lam ll => \new State cnt { | heap => heap_update sigma.heap ll v' }) (inv l_eq)
+          *> pmap (\lam vv => \new State cnt { | heap => heap_update sigma.heap l vv }) (inv v_eq)
+      \in StoreStepInvIntro old allocated' p2 sigma2_eq
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\func store_step_inv_ctx_item
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : Store (Val (LitV (LitLoc l))) (Val v) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2)
+  : StoreStepInv l v sigma e2 sigma2 \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx arg =>
+    \let
+      | inner_eq : Val (LitV (LitLoc l)) = fill K' e1' =>
+        pmap (\lam e => \case e \with {
+          | Store e' _ => e'
+          | _ => Val (LitV (LitLoc l))
+        }) p1
+      | inner_not_val : to_val (fill K' e1') = nothing =>
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just (LitV (LitLoc l)) = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+  | StoreRCtx v1 =>
+    \let
+      | inner_eq : Val v = fill K' e1' =>
+        pmap (\lam e => \case e \with {
+          | Store _ e' => e'
+          | _ => Val v
+        }) p1
+      | inner_not_val : to_val (fill K' e1') = nothing =>
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just v = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+
+\func store_step_inv_ctx
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : Store (Val (LitV (LitLoc l))) (Val v) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2)
+  : StoreStepInv l v sigma e2 sigma2 \elim K
+  | EmptyCtx =>
+    \let
+      | base' : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2' sigma2 =>
+        transport (\lam e => BaseStep e sigma e2' sigma2) (inv p1) base
+    \in \case base_store_step_inv l v sigma e2' sigma2 base' \with {
+      | StoreStepInvIntro old allocated e2'_eq sigma2_eq =>
+        StoreStepInvIntro old allocated (p2 *> e2'_eq) sigma2_eq
+    }
+  | ConsCtx Ki K' =>
+    store_step_inv_ctx_item l v sigma e2 sigma2 Ki K' e1' e2' p1 p2 base
+
+\func store_step_inv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (hstep : PrimStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2)
+  : StoreStepInv l v sigma e2 sigma2
+  => \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      store_step_inv_ctx l v sigma e2 sigma2 K e1' e2' p1 p2 base
+  }

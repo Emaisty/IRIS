@@ -310,6 +310,178 @@
   => gmap_insert_validN {Loc} {cnt} {ExclUCMRA (DiscreteOFE Val)}
       n h l (just (excl v)) () hvh
 
+\lemma heap_replace_point_dist {Val : \Set}
+  (n : Nat) (old new : Val)
+  (f z : Maybe (Maybe (Excl Val)))
+  (hd : (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n
+      (just (just (excl old)))
+      (option_op {ExclUCMRA (DiscreteOFE Val)}
+        (option_op {ExclUCMRA (DiscreteOFE Val)} (just (just (excl old))) f) z))
+  : (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n
+      (just (just (excl new)))
+      (option_op {ExclUCMRA (DiscreteOFE Val)}
+        (option_op {ExclUCMRA (DiscreteOFE Val)} (just (just (excl new))) f) z)
+  \elim f, z
+  | nothing, nothing => (DiscreteOFE Val).ofe_dist_refl n new
+  | nothing, just nothing => (DiscreteOFE Val).ofe_dist_refl n new
+  | nothing, just (just (excl _)) => \case hd \with {}
+  | nothing, just (just exclInvalid) => \case hd \with {}
+  | just nothing, nothing => (DiscreteOFE Val).ofe_dist_refl n new
+  | just nothing, just nothing => (DiscreteOFE Val).ofe_dist_refl n new
+  | just nothing, just (just (excl _)) => \case hd \with {}
+  | just nothing, just (just exclInvalid) => \case hd \with {}
+  | just (just (excl _)), nothing => \case hd \with {}
+  | just (just (excl _)), just nothing => \case hd \with {}
+  | just (just (excl _)), just (just (excl _)) => \case hd \with {}
+  | just (just (excl _)), just (just exclInvalid) => \case hd \with {}
+  | just (just exclInvalid), nothing => \case hd \with {}
+  | just (just exclInvalid), just nothing => \case hd \with {}
+  | just (just exclInvalid), just (just (excl _)) => \case hd \with {}
+  | just (just exclInvalid), just (just exclInvalid) => \case hd \with {}
+
+\lemma gmap_replace_includedN {cnt : Countable Loc} {Val : \Set}
+  (n : Nat)
+  (m frame : Gmap Loc cnt (Maybe (Excl Val)))
+  (k : Loc) (old new : Val)
+  (lookup_old : glookup m k = just (just (excl old)))
+  (hincl : inclN {GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))}
+      {\new Op _ { | op => (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).op }}
+      ((GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).op
+        (gmap_singleton k (just (excl old))) frame)
+      n m)
+  : inclN {GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))}
+      {\new Op _ { | op => (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).op }}
+      ((GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))).op
+        (gmap_singleton k (just (excl new))) frame)
+      n (heap_update m k new)
+  => \case hincl \with {
+    | inP (z, hz) =>
+      \let
+        | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      \in inP (z, \lam k' =>
+        \case NatSemiring.decideEq k' k \with {
+          | yes p =>
+            transport
+              (\lam kk => (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n
+                (glookup (heap_update m k new) kk)
+                (glookup (G.op (G.op (gmap_singleton k (just (excl new))) frame) z) kk))
+              (inv p)
+              (\let
+                | lhs_eq : glookup (heap_update m k new) k = just (just (excl new)) =>
+                  heap_update_glookup_eq m k new
+                | rhs_step : glookup (G.op (G.op (gmap_singleton k (just (excl new))) frame) z) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (glookup (G.op (gmap_singleton k (just (excl new))) frame) k)
+                        (glookup z k) =>
+                  glookup_op (G.op (gmap_singleton k (just (excl new))) frame) z k
+                | inner_step_new : glookup (G.op (gmap_singleton k (just (excl new))) frame) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (glookup (gmap_singleton k (just (excl new))) k)
+                        (glookup frame k) =>
+                  glookup_op (gmap_singleton k (just (excl new))) frame k
+                | rhs_new_eq :
+                    glookup (G.op (G.op (gmap_singleton k (just (excl new))) frame) z) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (option_op {ExclUCMRA (DiscreteOFE Val)}
+                          (just (just (excl new))) (glookup frame k))
+                        (glookup z k) =>
+                  rhs_step
+                  *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup z k))
+                      (inner_step_new
+                       *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup frame k))
+                           (glookup_singleton_eq k (just (excl new))))
+                | rhs_old_step : glookup (G.op (G.op (gmap_singleton k (just (excl old))) frame) z) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (glookup (G.op (gmap_singleton k (just (excl old))) frame) k)
+                        (glookup z k) =>
+                  glookup_op (G.op (gmap_singleton k (just (excl old))) frame) z k
+                | inner_step_old : glookup (G.op (gmap_singleton k (just (excl old))) frame) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (glookup (gmap_singleton k (just (excl old))) k)
+                        (glookup frame k) =>
+                  glookup_op (gmap_singleton k (just (excl old))) frame k
+                | rhs_old_eq :
+                    glookup (G.op (G.op (gmap_singleton k (just (excl old))) frame) z) k
+                    = option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (option_op {ExclUCMRA (DiscreteOFE Val)}
+                          (just (just (excl old))) (glookup frame k))
+                        (glookup z k) =>
+                  rhs_old_step
+                  *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup z k))
+                      (inner_step_old
+                       *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup frame k))
+                           (glookup_singleton_eq k (just (excl old))))
+                | old_point : (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n
+                    (just (just (excl old)))
+                    (option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (option_op {ExclUCMRA (DiscreteOFE Val)}
+                        (just (just (excl old))) (glookup frame k))
+                      (glookup z k)) =>
+                  transport2
+                    (\lam u v => (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n u v)
+                    lookup_old
+                    rhs_old_eq
+                    (hz k)
+              \in transport2
+                  (\lam u v => (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n u v)
+                  (inv lhs_eq)
+                  (inv rhs_new_eq)
+                  (heap_replace_point_dist n old new (glookup frame k) (glookup z k) old_point))
+          | no np =>
+            \let
+              | ne : Not (k = k') => \lam q => np (inv q)
+              | lhs_ne : glookup (heap_update m k new) k' = glookup m k' =>
+                glookup_insert_ne k k' (just (excl new)) m ne
+              | sing_new_ne : glookup (gmap_singleton k (just (excl new))) k' = nothing =>
+                glookup_insert_ne k k' (just (excl new)) gempty ne *> glookup_empty k'
+              | sing_old_ne : glookup (gmap_singleton k (just (excl old))) k' = nothing =>
+                glookup_insert_ne k k' (just (excl old)) gempty ne *> glookup_empty k'
+              | rhs_new_step : glookup (G.op (G.op (gmap_singleton k (just (excl new))) frame) z) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup (G.op (gmap_singleton k (just (excl new))) frame) k')
+                      (glookup z k') =>
+                glookup_op (G.op (gmap_singleton k (just (excl new))) frame) z k'
+              | inner_new : glookup (G.op (gmap_singleton k (just (excl new))) frame) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup (gmap_singleton k (just (excl new))) k')
+                      (glookup frame k') =>
+                glookup_op (gmap_singleton k (just (excl new))) frame k'
+              | rhs_new_simpl :
+                  glookup (G.op (G.op (gmap_singleton k (just (excl new))) frame) z) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup frame k') (glookup z k') =>
+                rhs_new_step
+                *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup z k'))
+                    (inner_new
+                     *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup frame k')) sing_new_ne
+                     *> option_op_nothing_l (glookup frame k'))
+              | rhs_old_step : glookup (G.op (G.op (gmap_singleton k (just (excl old))) frame) z) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup (G.op (gmap_singleton k (just (excl old))) frame) k')
+                      (glookup z k') =>
+                glookup_op (G.op (gmap_singleton k (just (excl old))) frame) z k'
+              | inner_old : glookup (G.op (gmap_singleton k (just (excl old))) frame) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup (gmap_singleton k (just (excl old))) k')
+                      (glookup frame k') =>
+                glookup_op (gmap_singleton k (just (excl old))) frame k'
+              | rhs_old_simpl :
+                  glookup (G.op (G.op (gmap_singleton k (just (excl old))) frame) z) k'
+                  = option_op {ExclUCMRA (DiscreteOFE Val)}
+                      (glookup frame k') (glookup z k') =>
+                rhs_old_step
+                *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup z k'))
+                    (inner_old
+                     *> pmap (\lam o => option_op {ExclUCMRA (DiscreteOFE Val)} o (glookup frame k')) sing_old_ne
+                     *> option_op_nothing_l (glookup frame k'))
+            \in transport2
+                (\lam u v => (OptionOFE (ExclUCMRA (DiscreteOFE Val))).dist n u v)
+                (inv lhs_ne)
+                (rhs_old_simpl *> inv rhs_new_simpl)
+                (hz k')
+        })
+  }
+
 \lemma heap_auth_alloc_validN {Loc : \Set} {cnt : Countable Loc} {Val : \Set}
                               (n : Nat)
                               (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc) (v : Val)
@@ -352,6 +524,69 @@
                 hw)
         }
     \in (heap_update_validN n h l v hv_old.1, hincl_new)
+  | (nothing, _), (just (excl _), _) => \case hv \with {}
+  | (nothing, _), (just exclInvalid, _) => \case hv \with {}
+  | (just (excl _), _), (nothing, _) => \case hv \with {}
+  | (just (excl _), _), (just (excl _), _) => \case hv \with {}
+  | (just (excl _), _), (just exclInvalid, _) => \case hv \with {}
+  | (just exclInvalid, _), (nothing, _) => \case hv \with {}
+  | (just exclInvalid, _), (just (excl _), _) => \case hv \with {}
+  | (just exclInvalid, _), (just exclInvalid, _) => \case hv \with {}
+
+\lemma heap_auth_store_validN {cnt : Countable Loc} {Val : \Set}
+                              (n : Nat)
+                              (h : Gmap Loc cnt (Maybe (Excl Val))) (l : Loc)
+                              (old new : Val)
+                              (z yf : (HeapCMRA Loc cnt Val).E)
+                              (lookup_old : glookup h l = just (just (excl old)))
+                              (hv : (HeapCMRA Loc cnt Val).validN n
+                                ((HeapCMRA Loc cnt Val).op
+                                  ((HeapCMRA Loc cnt Val).op
+                                    ((HeapCMRA Loc cnt Val).op (heap_auth h) (heap_frag l old)) z) yf))
+  : (HeapCMRA Loc cnt Val).validN n
+      ((HeapCMRA Loc cnt Val).op
+        ((HeapCMRA Loc cnt Val).op
+          ((HeapCMRA Loc cnt Val).op (heap_auth (heap_update h l new)) (heap_frag l new)) z) yf)
+  \elim z, yf
+  | (nothing, zf), (nothing, yff) =>
+    \let
+      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | singNew : G.E => gmap_singleton l (just (excl new))
+      | frame : G.E => G.op (G.op G.unit zf) yff
+      | hv_old : AuthValidN {G} n (just (excl h),
+          G.op (G.op (G.op G.unit (gmap_singleton l (just (excl old)))) zf) yff) => hv
+      | hincl_new_raw : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op singNew frame) n (heap_update h l new) =>
+        gmap_replace_includedN {cnt} {Val}
+          n h frame l old new lookup_old
+          (transport
+            (\lam fr => inclN {G} {\new Op G.E { | op => G.op }} fr n h)
+            (inv (G.cmra_assoc (gmap_singleton l (just (excl old))) (G.op G.unit zf) yff
+             *> pmap (\lam t => G.op t yff)
+                  (G.cmra_assoc (gmap_singleton l (just (excl old))) G.unit zf
+                   *> pmap (\lam t => G.op t zf)
+                       (ucmra_unit_right_id {G} (gmap_singleton l (just (excl old)))
+                        *> inv (G.ucmra_unit_left_id (gmap_singleton l (just (excl old))))))))
+            hv_old.2)
+      | hincl_new : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op (G.op (G.op G.unit singNew) zf) yff) n (heap_update h l new) =>
+        \case hincl_new_raw \with {
+          | inP (w, hw) =>
+            \let
+              | rearr : G.op singNew frame = G.op (G.op (G.op G.unit singNew) zf) yff =>
+                G.cmra_assoc singNew (G.op G.unit zf) yff
+                *> pmap (\lam t => G.op t yff)
+                    (G.cmra_assoc singNew G.unit zf
+                     *> pmap (\lam t => G.op t zf)
+                         (ucmra_unit_right_id {G} singNew *> inv (G.ucmra_unit_left_id singNew)))
+            \in
+            inP (w,
+              transport
+                (\lam t => G.dist n (heap_update h l new) (G.op t w))
+                rearr
+                hw)
+        }
+    \in (heap_update_validN n h l new hv_old.1, hincl_new)
   | (nothing, _), (just (excl _), _) => \case hv \with {}
   | (nothing, _), (just exclInvalid, _) => \case hv \with {}
   | (just (excl _), _), (nothing, _) => \case hv \with {}
