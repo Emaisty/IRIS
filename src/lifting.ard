@@ -1,0 +1,603 @@
+\import Logic
+\import Arith.Nat
+\import Data.Maybe
+\import Order.PartialOrder
+\import Paths
+\import Set
+\import interface
+\import updates
+\import lang
+\import lang_ectx
+\import ofe
+\import uPred
+\import cmra
+\import weakestpre
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+\import lib.auth_cmra
+\import lib.pmap
+
+-- =================================================================================
+-- WP lifting and evaluation-context rules
+-- =================================================================================
+
+\lemma wp_bupd
+  {cnt : Countable Loc}
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+      (mkProperBUpd {HeapCMRA Loc cnt Value} (wp e Phi))
+      (wp e Phi)
+  => \lam n a hv hbupd_wp =>
+    \let M => HeapCMRA Loc cnt Value \in
+    (wp_unfold e Phi n a hv).2
+      (\case to_val e \as tv, idp : to_val e = tv
+       \return (wp_pre wp e Phi).upred_holds n a
+       \with {
+         | just v, peq =>
+           transport
+             (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds n a)
+             (inv peq)
+             (bupd_trans (Phi v) n a hv
+               (bupd_mono
+                 (wp e Phi)
+                 (mkProperBUpd (Phi v))
+                 (\lam k b hv_b hwp_b =>
+                    \let
+                      | hpre_b : (wp_pre wp e Phi).upred_holds k b =>
+                        (wp_unfold e Phi k b hv_b).1 hwp_b
+                    \in transport
+                        (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds k b)
+                        peq
+                        hpre_b)
+                 n a hv hbupd_wp))
+         | nothing, peq =>
+           transport
+             (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds n a)
+             (inv peq)
+             (\lam sigma m m_le_n a_auth hv_op h_auth =>
+               \let
+                 | core : ProperUPred M =>
+                   mkProperAnd
+                     (mkProperPure (Reducible e sigma))
+                     (mkProperLater
+                       (mkProperForall Expr (\lam e2 =>
+                         mkProperForall (State cnt) (\lam sigma2 =>
+                           mkProperImpl
+                             (mkProperPure (PrimStep e sigma e2 sigma2))
+                             (mkProperBUpd
+                               (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))))))
+                 | hbupd_wp_m : (mkProperBUpd (wp e Phi)).upred_holds m a =>
+                   (mkProperBUpd (wp e Phi)).upred_mono n m a a hbupd_wp
+                     (inclN_refl_ucmra m a)
+                     m_le_n
+                 | hsep : (mkProperSep (mkProperBUpd (wp e Phi)) (own_heap_auth sigma))
+                     .upred_holds m (M.op a a_auth) =>
+                   inP (a, a_auth, M.ofe_dist_refl m (M.op a a_auth), hbupd_wp_m, h_auth)
+                 | h_ent : properUPred_ent
+                     (mkProperSep (wp e Phi) (own_heap_auth sigma))
+                     (mkProperBUpd core) =>
+                   \lam k c hv_c hsep_wp_auth =>
+                     \case hsep_wp_auth \with {
+                       | inP (a_wp, a_auth2, dist_c, hwp_a, hauth2) =>
+                         \let
+                           | hv_wp_auth : M.validN k (M.op a_wp a_auth2) =>
+                             M.cmra_validN_ne k c (M.op a_wp a_auth2) dist_c hv_c
+                           | hv_wp : M.validN k a_wp =>
+                             M.cmra_validN_op_l k a_wp a_auth2 hv_wp_auth
+                           | hpre_wp : (wp_pre wp e Phi).upred_holds k a_wp =>
+                             (wp_unfold e Phi k a_wp hv_wp).1 hwp_a
+                           | hpre_none : (wp_pre_body wp e Phi nothing).upred_holds k a_wp =>
+                             transport
+                               (\lam tv' => (wp_pre_body wp e Phi tv').upred_holds k a_wp)
+                               peq
+                               hpre_wp
+                           | hbupd_core_at_op : (mkProperBUpd core).upred_holds k (M.op a_wp a_auth2) =>
+                             hpre_none sigma k <=-refl a_auth2 hv_wp_auth hauth2
+                         \in (mkProperBUpd core).upred_mono k k (M.op a_wp a_auth2) c
+                              hbupd_core_at_op
+                              (inclN_of_dist_unit k (M.op a_wp a_auth2) c dist_c)
+                              <=-refl
+                     }
+               \in bupd_frame_trans
+                    (wp e Phi)
+                    (own_heap_auth sigma)
+                    core
+                    h_ent
+                    m (M.op a a_auth) hv_op hsep)
+       })
+
+\func wp_bind_post
+  {cnt : Countable Loc}
+  (K   : Ectx)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : Value -> ProperUPred (HeapCMRA Loc cnt Value)
+  => \lam v => wp (fill K (Val v)) Phi
+
+\func wp_bind_at_le
+      {cnt : Countable Loc}
+      (K   : Ectx)
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (N n : Nat) (n_le_N : n <= N)
+      (e : Expr) (a : (HeapCMRA Loc cnt Value).E)
+      (hv : (HeapCMRA Loc cnt Value).validN n a)
+      (hp : (wp e (wp_bind_post K Phi)).upred_holds n a)
+      : (wp (fill K e) Phi).upred_holds n a \elim N
+      | 0 => \case \elim n, n_le_N, hv, hp \with {
+        | 0, _, hv0, hp0 =>
+          \let
+            | M => HeapCMRA Loc cnt Value
+            | src_pre : (wp_pre wp e (wp_bind_post K Phi)).upred_holds 0 a =>
+              (wp_unfold e (wp_bind_post K Phi) 0 a hv0).1 hp0
+            | tgt_pre : (wp_pre wp (fill K e) Phi).upred_holds 0 a =>
+              wp_bind_pre_zero K Phi e a hv0 src_pre
+          \in (wp_unfold (fill K e) Phi 0 a hv0).2 tgt_pre
+        | suc n', le, _, _ => absurd (le NatOrder.zero<suc)
+      }
+      | suc N' => \case \elim n, n_le_N, hv, hp \with {
+        | 0, _, hv0, hp0 =>
+          \let
+            | src_pre : (wp_pre wp e (wp_bind_post K Phi)).upred_holds 0 a =>
+              (wp_unfold e (wp_bind_post K Phi) 0 a hv0).1 hp0
+            | tgt_pre : (wp_pre wp (fill K e) Phi).upred_holds 0 a =>
+              wp_bind_pre_zero K Phi e a hv0 src_pre
+          \in (wp_unfold (fill K e) Phi 0 a hv0).2 tgt_pre
+        | suc n', le, hvS, hpS =>
+          \let
+            | n'_le_N' : n' <= N' => suc<=suc.conv le
+            | src_pre : (wp_pre wp e (wp_bind_post K Phi)).upred_holds (suc n') a =>
+              (wp_unfold e (wp_bind_post K Phi) (suc n') a hvS).1 hpS
+            | tgt_pre : (wp_pre wp (fill K e) Phi).upred_holds (suc n') a =>
+              wp_bind_pre_step K Phi e a hvS src_pre
+                (\lam k k_le_n' e' a' hv' hp' =>
+                  wp_bind_at_le K Phi N' k
+                    (NatSemiring.<=∘ k_le_n' n'_le_N')
+                    e' a' hv' hp')
+          \in (wp_unfold (fill K e) Phi (suc n') a hvS).2 tgt_pre
+      }
+
+\func wp_bind_pre_zero
+      {cnt : Countable Loc}
+      (K   : Ectx)
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (e : Expr) (a : (HeapCMRA Loc cnt Value).E)
+      (hv : (HeapCMRA Loc cnt Value).validN 0 a)
+      (hp : (wp_pre wp e (wp_bind_post K Phi)).upred_holds 0 a)
+      : (wp_pre wp (fill K e) Phi).upred_holds 0 a =>
+      \case to_val e \as tv, idp : to_val e = tv
+       \return (wp_pre wp (fill K e) Phi).upred_holds 0 a
+       \with {
+         | just v, peq =>
+           \let
+             | hval : (mkProperBUpd (wp (fill K (Val v)) Phi)).upred_holds 0 a =>
+               transport
+                 (\lam tv' => (wp_pre_body wp e (wp_bind_post K Phi) tv').upred_holds 0 a)
+                 peq
+                 hp
+             | hwp : (wp (fill K (Val v)) Phi).upred_holds 0 a =>
+               wp_bupd (fill K (Val v)) Phi 0 a hv hval
+             | e_eq : Val v = e => of_to_val e v peq
+             | fill_eq : fill K (Val v) = fill K e =>
+               pmap (\lam ee => fill K ee) e_eq
+           \in transport
+                (\lam ee => (wp_pre wp ee Phi).upred_holds 0 a)
+                fill_eq
+                ((wp_unfold (fill K (Val v)) Phi 0 a hv).1 hwp)
+         | nothing, peq =>
+           \let
+             | no_fill : to_val (fill K e) = nothing => fill_not_val K e peq
+             | src_none : (wp_pre_body wp e (wp_bind_post K Phi) nothing).upred_holds 0 a =>
+               transport
+                 (\lam tv' => (wp_pre_body wp e (wp_bind_post K Phi) tv').upred_holds 0 a)
+                 peq
+                 hp
+             | tgt_none : (wp_pre_body wp (fill K e) Phi nothing).upred_holds 0 a =>
+               \lam sigma m m_le_0 a_auth hv_op h_auth =>
+                 \let
+                   | hbupd_src => src_none sigma m m_le_0 a_auth hv_op h_auth
+                 \in \lam k k_le_m yf hv_k =>
+                   \case hbupd_src k k_le_m yf hv_k \with {
+                     | inP (b, hv_b_yf, hcore) =>
+                       \let
+                         | later_tgt : (mkProperLater
+                             (mkProperForall Expr (\lam e2 =>
+                               mkProperForall (State cnt) (\lam sigma2 =>
+                                 mkProperImpl
+                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2))
+                                   (mkProperBUpd
+                                     (mkProperSep (own_heap_auth sigma2) (wp e2 Phi))))))).upred_holds k b =>
+                           \case \elim k, k_le_m, m_le_0, hcore.2 \with {
+                             | 0, _, _, _ => ()
+                             | suc k', le1, le2, _ => absurd ((NatSemiring.<=∘ le1 le2) NatOrder.zero<suc)
+                           }
+                       \in inP (b, hv_b_yf, (reducible_fill K e sigma hcore.1, later_tgt))
+                   }
+           \in transport
+                (\lam tv' => (wp_pre_body wp (fill K e) Phi tv').upred_holds 0 a)
+                (inv no_fill)
+                tgt_none
+       }
+
+\func wp_bind_pre_step
+      {cnt : Countable Loc}
+      (K   : Ectx)
+      (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+      (e : Expr) (a : (HeapCMRA Loc cnt Value).E) {n : Nat}
+      (hv : (HeapCMRA Loc cnt Value).validN (suc n) a)
+      (hp : (wp_pre wp e (wp_bind_post K Phi)).upred_holds (suc n) a)
+      (ih : \Pi (k : Nat) -> k <= n -> \Pi (e' : Expr) (a' : (HeapCMRA Loc cnt Value).E)
+        -> (HeapCMRA Loc cnt Value).validN k a'
+        -> (wp e' (wp_bind_post K Phi)).upred_holds k a'
+        -> (wp (fill K e') Phi).upred_holds k a')
+      : (wp_pre wp (fill K e) Phi).upred_holds (suc n) a =>
+      \case to_val e \as tv, idp : to_val e = tv
+       \return (wp_pre wp (fill K e) Phi).upred_holds (suc n) a
+       \with {
+         | just v, peq =>
+           \let
+             | hval : (mkProperBUpd (wp (fill K (Val v)) Phi)).upred_holds (suc n) a =>
+               transport
+                 (\lam tv' => (wp_pre_body wp e (wp_bind_post K Phi) tv').upred_holds (suc n) a)
+                 peq
+                 hp
+             | hwp : (wp (fill K (Val v)) Phi).upred_holds (suc n) a =>
+               wp_bupd (fill K (Val v)) Phi (suc n) a hv hval
+             | e_eq : Val v = e => of_to_val e v peq
+             | fill_eq : fill K (Val v) = fill K e =>
+               pmap (\lam ee => fill K ee) e_eq
+           \in transport
+                (\lam ee => (wp_pre wp ee Phi).upred_holds (suc n) a)
+                fill_eq
+                ((wp_unfold (fill K (Val v)) Phi (suc n) a hv).1 hwp)
+         | nothing, peq =>
+           \let
+             | M => HeapCMRA Loc cnt Value
+             | no_fill : to_val (fill K e) = nothing => fill_not_val K e peq
+             | src_none : (wp_pre_body wp e (wp_bind_post K Phi) nothing).upred_holds (suc n) a =>
+               transport
+                 (\lam tv' => (wp_pre_body wp e (wp_bind_post K Phi) tv').upred_holds (suc n) a)
+                 peq
+                 hp
+             | tgt_none : (wp_pre_body wp (fill K e) Phi nothing).upred_holds (suc n) a =>
+               \lam sigma m m_le_sucn a_auth hv_op h_auth =>
+                 \let
+                   | hbupd_src => src_none sigma m m_le_sucn a_auth hv_op h_auth
+                 \in \lam k k_le_m yf hv_k =>
+                   \case hbupd_src k k_le_m yf hv_k \with {
+                     | inP (b, hv_b_yf, hcore) =>
+                       \let
+                         | later_tgt : (mkProperLater
+                             (mkProperForall Expr (\lam e2 =>
+                               mkProperForall (State cnt) (\lam sigma2 =>
+                                 mkProperImpl
+                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2))
+                                   (mkProperBUpd
+                                     (mkProperSep (own_heap_auth sigma2) (wp e2 Phi))))))).upred_holds k b =>
+                           \case \elim k, k_le_m, hcore.2 \with {
+                             | 0, _, _ => ()
+                             | suc k', k_le_m_suc, later_src =>
+                               \let
+                                 | k'_le_n : k' <= n =>
+                                   suc<=suc.conv (NatSemiring.<=∘ k_le_m_suc m_le_sucn)
+                               \in \lam e2 sigma2 j j_le_k' c incl_c hv_c hstep_fill =>
+                                 \case fill_step_inv K e sigma e2 sigma2 peq hstep_fill \with {
+                                   | inP (e2', e2_eq, hstep_inner) =>
+                                     \let
+                                       | hbupd_inner : (mkProperBUpd
+                                           (mkProperSep (own_heap_auth sigma2) (wp e2' (wp_bind_post K Phi))))
+                                           .upred_holds j c =>
+                                         later_src e2' sigma2 j j_le_k' c incl_c hv_c hstep_inner
+                                     \in \lam r r_le_j yf2 hv_r =>
+                                       \case hbupd_inner r r_le_j yf2 hv_r \with {
+                                         | inP (d, hv_d_yf2, hsep) =>
+                                           \case hsep \with {
+                                             | inP (a_auth2, a_wp, dist_d, hauth2, hwp_inner) =>
+                                               \let
+                                                 | hv_d : M.validN r d =>
+                                                   M.cmra_validN_op_l r d yf2 hv_d_yf2
+                                                 | hv_auth_wp : M.validN r (M.op a_auth2 a_wp) =>
+                                                   M.cmra_validN_ne r d (M.op a_auth2 a_wp) dist_d hv_d
+                                                 | hv_wp : M.validN r a_wp =>
+                                                   cmra_validN_op_r {M} r a_auth2 a_wp hv_auth_wp
+                                                 | r_le_n : r <= n =>
+                                                   NatSemiring.<=∘ r_le_j (NatSemiring.<=∘ j_le_k' k'_le_n)
+                                                 | hwp_fill : (wp (fill K e2') Phi).upred_holds r a_wp =>
+                                                   ih r r_le_n e2' a_wp hv_wp hwp_inner
+                                                 | hwp_e2 : (wp e2 Phi).upred_holds r a_wp =>
+                                                   transport
+                                                     (\lam ee => (wp ee Phi).upred_holds r a_wp)
+                                                     (inv e2_eq)
+                                                     hwp_fill
+                                             \in inP (d, hv_d_yf2, inP (a_auth2, a_wp, dist_d, hauth2, hwp_e2))
+                                           }
+                                       }
+                                 }
+                           }
+                       \in inP (b, hv_b_yf, (reducible_fill K e sigma hcore.1, later_tgt))
+                   }
+           \in transport
+                (\lam tv' => (wp_pre_body wp (fill K e) Phi tv').upred_holds (suc n) a)
+                (inv no_fill)
+                tgt_none
+       }
+
+\func wp_bind
+  {cnt : Countable Loc}
+  (K   : Ectx)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e (\lam v => wp (fill K (Val v)) Phi))
+    (wp (fill K e) Phi)
+  => \lam n a hv hp => wp_bind_at_le K Phi n n <=-refl e a hv hp
+
+\lemma wp_bind_item
+  {cnt : Countable Loc}
+  (Ki  : EctxItem)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e (\lam v => wp (fill_item Ki (Val v)) Phi))
+    (wp (fill_item Ki e) Phi)
+  => wp_bind (ConsCtx Ki EmptyCtx) e Phi
+
+\lemma wp_bind_app_r
+  {cnt : Countable Loc}
+  (vf  : Value)
+  (e   : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e (\lam v => wp (App (Val vf) (Val v)) Phi))
+    (wp (App (Val vf) e) Phi)
+  => wp_bind_item (AppRCtx vf) e Phi
+
+\lemma wp_bind_app_l
+  {cnt : Countable Loc}
+  (e1 e2 : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e1 (\lam v => wp (App (Val v) e2) Phi))
+    (wp (App e1 e2) Phi)
+  => wp_bind_item (AppLCtx e2) e1 Phi
+
+\lemma wp_rec_lam_app2_to
+  {cnt : Countable Loc}
+  (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value)
+  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (subst_lam_eq : subst y v2 body1 = body2)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp body2 Phi)
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi)
+  => properUPred_ent_trans
+      (wp body2 Phi)
+      (wp (App (Val (LamV y body1)) (Val v2)) Phi)
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi)
+      (wp_lam_beta_to y body1 body2 v2 subst_lam_eq Phi)
+      (properUPred_ent_trans
+        (wp (App (Val (LamV y body1)) (Val v2)) Phi)
+        (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi)
+        (wp_lam y body1 (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (properUPred_ent_trans
+          (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (wp (App (Val (RecV f x (Lam y body))) (Val v1)) (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi)
+          (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+            (wp_bind_app_l
+              (App (Val (RecV f x (Lam y body))) (Val v1))
+              (Val v2)
+              Phi)))
+
+\lemma wp_rec_lam_app1_to
+  {cnt : Countable Loc}
+  (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr)
+  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) arg) Phi)
+  => properUPred_ent_trans
+      (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+        (\lam vf => wp (App (Val vf) arg) Phi))
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) arg) Phi)
+      (properUPred_ent_trans
+        (wp (App (Val (LamV y body1)) arg) Phi)
+        (wp (Lam y body1) (\lam vf => wp (App (Val vf) arg) Phi))
+        (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+          (\lam vf => wp (App (Val vf) arg) Phi))
+        (wp_lam y body1 (\lam vf => wp (App (Val vf) arg) Phi))
+        (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
+          (\lam vf => wp (App (Val vf) arg) Phi)))
+      (wp_bind_app_l (App (Val (RecV f x (Lam y body))) (Val v1)) arg Phi)
+
+\lemma wp_rec_expr_lam_app2_to
+  {cnt : Countable Loc}
+  (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value)
+  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (subst_lam_eq : subst y v2 body1 = body2)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp body2 Phi)
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi)
+  => properUPred_ent_trans
+      (wp body2 Phi)
+      (wp (App (Rec f x (Lam y body)) (Val v1))
+        (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi)
+      (properUPred_ent_trans
+        (wp body2 Phi)
+        (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+          (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (wp (App (Rec f x (Lam y body)) (Val v1))
+          (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (properUPred_ent_trans
+          (wp body2 Phi)
+          (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (properUPred_ent_trans
+            (wp body2 Phi)
+            (wp (App (Val (LamV y body1)) (Val v2)) Phi)
+            (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+            (wp_lam_beta_to y body1 body2 v2 subst_lam_eq Phi)
+            (wp_lam y body1 (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
+          (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
+        (properUPred_ent_trans
+          (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (wp (Rec f x (Lam y body))
+            (\lam vr => wp (App (Val vr) (Val v1))
+              (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
+          (wp (App (Rec f x (Lam y body)) (Val v1))
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+          (wp_rec f x (Lam y body)
+            (\lam vr => wp (App (Val vr) (Val v1))
+              (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
+          (wp_bind_app_l (Rec f x (Lam y body)) (Val v1)
+            (\lam vf => wp (App (Val vf) (Val v2)) Phi))))
+      (properUPred_ent_trans
+        (wp (App (Rec f x (Lam y body)) (Val v1))
+          (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (wp (App (Rec f x (Lam y body)) (Val v1))
+          (\lam vf => wp (App (Val vf) (Val v2)) Phi))
+        (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi)
+        (properUPred_ent_refl (wp (App (Rec f x (Lam y body)) (Val v1))
+          (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
+        (wp_bind_app_l (App (Rec f x (Lam y body)) (Val v1)) (Val v2) Phi))
+
+\lemma wp_lam_expr_app_to
+  {cnt : Countable Loc}
+  (x : String) (body body' : Expr) (v : Value)
+  (subst_eq : subst x v body = body')
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp body' Phi)
+      (wp (App (Lam x body) (Val v)) Phi)
+  => properUPred_ent_trans
+      (wp body' Phi)
+      (wp (Lam x body) (\lam vf => wp (App (Val vf) (Val v)) Phi))
+      (wp (App (Lam x body) (Val v)) Phi)
+      (properUPred_ent_trans
+        (wp body' Phi)
+        (wp (App (Val (LamV x body)) (Val v)) Phi)
+        (wp (Lam x body) (\lam vf => wp (App (Val vf) (Val v)) Phi))
+        (wp_lam_beta_to x body body' v subst_eq Phi)
+        (wp_lam x body (\lam vf => wp (App (Val vf) (Val v)) Phi)))
+      (wp_bind_app_l (Lam x body) (Val v) Phi)
+
+\lemma wp_lam_expr_app_arg_to
+  {cnt : Countable Loc}
+  (x : String) (body : Expr) (arg : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+      (wp (App (Val (LamV x body)) arg) Phi)
+      (wp (App (Lam x body) arg) Phi)
+  => properUPred_ent_trans
+      (wp (App (Val (LamV x body)) arg) Phi)
+      (wp (Lam x body) (\lam vf => wp (App (Val vf) arg) Phi))
+      (wp (App (Lam x body) arg) Phi)
+      (wp_lam x body (\lam vf => wp (App (Val vf) arg) Phi))
+      (wp_bind_app_l (Lam x body) arg Phi)
+
+\lemma wp_lam_expr_app_r_to
+  {cnt : Countable Loc}
+  (x : String) (body body' arg : Expr)
+  (subst_eq : \Pi (v : Value) -> subst x v body = body')
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent
+      (wp arg (\lam _ => wp body' Phi))
+      (wp (App (Lam x body) arg) Phi)
+  => properUPred_ent_trans
+      (wp arg (\lam _ => wp body' Phi))
+      (wp (App (Val (LamV x body)) arg) Phi)
+      (wp (App (Lam x body) arg) Phi)
+      (properUPred_ent_trans
+        (wp arg (\lam _ => wp body' Phi))
+        (wp arg (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi))
+        (wp (App (Val (LamV x body)) arg) Phi)
+        (wp_post_mono arg
+          (\lam _ => wp body' Phi)
+          (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi)
+          (\lam v => wp_lam_beta_to x body body' v (subst_eq v) Phi))
+        (wp_bind_app_r (LamV x body) arg Phi))
+      (wp_lam_expr_app_arg_to x body arg Phi)
+
+\lemma wp_rec_expr_lam_app1_to
+  {cnt : Countable Loc}
+  (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr)
+  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) arg) Phi)
+  => properUPred_ent_trans
+      (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (Rec f x (Lam y body)) (Val v1))
+        (\lam vf => wp (App (Val vf) arg) Phi))
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) arg) Phi)
+      (properUPred_ent_trans
+        (wp (App (Val (LamV y body1)) arg) Phi)
+        (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+          (\lam vf => wp (App (Val vf) arg) Phi))
+        (wp (App (Rec f x (Lam y body)) (Val v1))
+          (\lam vf => wp (App (Val vf) arg) Phi))
+        (properUPred_ent_trans
+          (wp (App (Val (LamV y body1)) arg) Phi)
+          (wp (Lam y body1) (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+            (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp_lam y body1 (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
+            (\lam vf => wp (App (Val vf) arg) Phi)))
+        (properUPred_ent_trans
+          (wp (App (Val (RecV f x (Lam y body))) (Val v1))
+            (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp (Rec f x (Lam y body))
+            (\lam vr => wp (App (Val vr) (Val v1))
+              (\lam vf => wp (App (Val vf) arg) Phi)))
+          (wp (App (Rec f x (Lam y body)) (Val v1))
+            (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp_rec f x (Lam y body)
+            (\lam vr => wp (App (Val vr) (Val v1))
+              (\lam vf => wp (App (Val vf) arg) Phi)))
+          (wp_bind_app_l (Rec f x (Lam y body)) (Val v1)
+            (\lam vf => wp (App (Val vf) arg) Phi))))
+      (wp_bind_app_l (App (Rec f x (Lam y body)) (Val v1)) arg Phi)
+
+\lemma wp_bind_if
+  {cnt : Countable Loc}
+  (e t f : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e (\lam v => wp (If (Val v) t f) Phi))
+    (wp (If e t f) Phi)
+  => wp_bind_item (IfCtx t f) e Phi
+
+\lemma wp_bind_mul_l
+  {cnt : Countable Loc}
+  (e1 e2 : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e1 (\lam v => wp (Mul (Val v) e2) Phi))
+    (wp (Mul e1 e2) Phi)
+  => wp_bind_item (MulLCtx e2) e1 Phi
+
+\lemma wp_bind_mul_r
+  {cnt : Countable Loc}
+  (v1 : Value)
+  (e2 : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e2 (\lam v => wp (Mul (Val v1) (Val v)) Phi))
+    (wp (Mul (Val v1) e2) Phi)
+  => wp_bind_item (MulRCtx v1) e2 Phi
+
+\lemma wp_bind_store_r
+  {cnt : Countable Loc}
+  (v1 : Value)
+  (e2 : Expr)
+  (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (wp e2 (\lam v => wp (Store (Val v1) (Val v)) Phi))
+    (wp (Store (Val v1) e2) Phi)
+  => wp_bind_item (StoreRCtx v1) e2 Phi

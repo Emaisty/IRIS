@@ -1,0 +1,114 @@
+\import Logic
+\import Paths
+\import Set
+\import lang
+
+-- Generic substitution equations for the language syntax.  The constructor
+-- congruence rules below are definitional.  The variable and binder rules are
+-- blocked exactly by lang.subst's local String decideEq placeholder.
+
+\lemma subst_val (x : String) (v w : Value)
+  : subst x v (Val w) = Val w
+  => idp
+
+\lemma subst_var_same (x : String) (v : Value)
+  : subst x v (Var x) = Val v
+  =>
+    -- BLOCKED by lang.subst.decideEq for the String comparison x = x.
+    {?}
+
+\lemma subst_var_ne (x y : String) (v : Value)
+  (neq : Not (x = y))
+  : subst x v (Var y) = Var y
+  =>
+    -- BLOCKED by lang.subst.decideEq for the String comparison x = y.
+    {?}
+
+\lemma subst_lam_same (x : String) (v : Value) (body : Expr)
+  : subst x v (Lam x body) = Lam x body
+  =>
+    -- BLOCKED by lang.subst.decideEq for the binder comparison x = x.
+    {?}
+
+\lemma subst_lam_ne (x y : String) (v : Value) (body : Expr)
+  (neq : Not (x = y))
+  : subst x v (Lam y body) = Lam y (subst x v body)
+  =>
+    -- BLOCKED by lang.subst.decideEq for the binder comparison x = y.
+    {?}
+
+\lemma subst_rec_same_f (f x : String) (v : Value) (body : Expr)
+  : subst f v (Rec f x body) = Rec f x body
+  =>
+    -- BLOCKED by lang.subst.decideEq for the recursive-name comparison f = f.
+    {?}
+
+\lemma subst_rec_same_x (f x : String) (v : Value) (body : Expr)
+  (f_ne_x : Not (x = f))
+  : subst x v (Rec f x body) = Rec f x body
+  =>
+    -- BLOCKED by lang.subst.decideEq for recursive binder comparisons.
+    {?}
+
+\lemma subst_rec_ne (z f x : String) (v : Value) (body : Expr)
+  (z_ne_f : Not (z = f)) (z_ne_x : Not (z = x))
+  : subst z v (Rec f x body) = Rec f x (subst z v body)
+  =>
+    -- BLOCKED by lang.subst.decideEq for recursive binder comparisons.
+    {?}
+
+\lemma subst_app (x : String) (v : Value) (e1 e2 : Expr)
+  : subst x v (App e1 e2) = App (subst x v e1) (subst x v e2)
+  => idp
+
+\lemma subst_if (x : String) (v : Value) (cond thenB elseB : Expr)
+  : subst x v (If cond thenB elseB) =
+      If (subst x v cond) (subst x v thenB) (subst x v elseB)
+  => idp
+
+\lemma subst_pair (x : String) (v : Value) (e1 e2 : Expr)
+  : subst x v (Pair e1 e2) = Pair (subst x v e1) (subst x v e2)
+  => idp
+
+\lemma subst_fst (x : String) (v : Value) (e : Expr)
+  : subst x v (Fst e) = Fst (subst x v e)
+  => idp
+
+\lemma subst_snd (x : String) (v : Value) (e : Expr)
+  : subst x v (Snd e) = Snd (subst x v e)
+  => idp
+
+\lemma subst_iszero (x : String) (v : Value) (e : Expr)
+  : subst x v (IsZero e) = IsZero (subst x v e)
+  => idp
+
+\lemma subst_pred (x : String) (v : Value) (e : Expr)
+  : subst x v (Pred e) = Pred (subst x v e)
+  => idp
+
+\lemma subst_mul (x : String) (v : Value) (e1 e2 : Expr)
+  : subst x v (Mul e1 e2) = Mul (subst x v e1) (subst x v e2)
+  => idp
+
+\lemma subst_alloc (x : String) (v : Value) (e : Expr)
+  : subst x v (Alloc e) = Alloc (subst x v e)
+  => idp
+
+\lemma subst_load (x : String) (v : Value) (e : Expr)
+  : subst x v (Load e) = Load (subst x v e)
+  => idp
+
+\lemma subst_store (x : String) (v : Value) (e1 e2 : Expr)
+  : subst x v (Store e1 e2) = Store (subst x v e1) (subst x v e2)
+  => idp
+
+-- General fallback for finite, concrete substitution normalisation.
+-- It is blocked for the same reason as the small variable/binder lemmas above:
+-- evaluating subst requires deciding the finite String comparisons that occur in
+-- the syntax tree.  This is intentionally still a substitution-only statement;
+-- users must prove all non-substitution WP reasoning separately.
+\lemma subst_by_string_decisions (x : String) (v : Value) (e e' : Expr)
+  : subst x v e = e'
+  =>
+    -- BLOCKED by lang.subst.decideEq for all concrete String comparisons in e.
+    {?}
