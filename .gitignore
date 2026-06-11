@@ -1,0 +1,17 @@
+# Arend typechecker binaries
+bin/
+
+# Compiled extension classes (rebuilt by `cd ext-src && gradle build`)
+ext/
+
+# Gradle build outputs and caches
+ext-src/build/
+ext-src/.gradle/
+
+# IntelliJ workspace state (per-user)
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+
+# OS junk
+.DS_Store

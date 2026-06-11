@@ -66,9 +66,9 @@
     \lam hPI n a hv hpq =>
         hPI n a hv hpq.1 n <=-refl a
             (inP (M.unit,
-                  transport (\lam w => M.dist n a w)
-                      (inv (ucmra_unit_right_id a))
-                      (M.ofe_dist_refl n a)))
+                  M.ofe_dist_trans n a a (M.op a M.unit)
+                    (M.ofe_dist_refl n a)
+                    (M.ofe_dist_sym n (M.op a M.unit) a (ucmra_unit_right_id_dist n a))))
             hv hpq.2
   | bi_mixin_forall_intro {A} P Phi =>
     \lam h n a hv hp t => h t n a hv hp
@@ -92,12 +92,13 @@
   | bi_mixin_emp_sep_1 P =>
     \lam n a hv hp =>
         inP (M.unit, a,
-             transport (\lam w => M.dist n a w) (inv (M.ucmra_unit_left_id a))
-                 (M.ofe_dist_refl n a),
+             M.ofe_dist_trans n a a (M.op M.unit a)
+               (M.ofe_dist_refl n a)
+               (M.ofe_dist_sym n (M.op M.unit a) a (ucmra_unit_left_id_dist n a)),
              inP (M.unit,
-                  transport (\lam w => M.dist n M.unit w)
-                      (inv (M.ucmra_unit_left_id M.unit))
-                      (M.ofe_dist_refl n M.unit)),
+                  M.ofe_dist_trans n M.unit M.unit (M.op M.unit M.unit)
+                    (M.ofe_dist_refl n M.unit)
+                    (M.ofe_dist_sym n (M.op M.unit M.unit) M.unit (ucmra_unit_left_id_dist n M.unit))),
              hp)
   | bi_mixin_emp_sep_2 P =>
     \lam n a hv hsep => \case hsep \with {
@@ -106,7 +107,7 @@
           | dist_swap : M.dist n a (M.op a2 a1) =>
             M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
                 dist_a
-                (equiv_dist_n {M} (M.op a1 a2) (M.op a2 a1) (M.cmra_comm a1 a2) n)
+                (cmra_comm_dist {M} n a1 a2)
           | inclN_a2_a : inclN {M} {\new Op M.E { | op => M.op }} a2 n a =>
             inP (a1, dist_swap)
         \in P.upred_mono n n a2 a hp inclN_a2_a <=-refl
@@ -117,7 +118,7 @@
         inP (a2, a1,
              M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
                  dist_a
-                 (equiv_dist_n {M} (M.op a1 a2) (M.op a2 a1) (M.cmra_comm a1 a2) n),
+                 (cmra_comm_dist {M} n a1 a2),
              hq, hp)
     }
   | bi_mixin_sep_assoc P Q R =>
@@ -130,7 +131,10 @@
             | dist_a_op : M.dist n a (M.op (M.op b1 b2) a2) =>
               M.ofe_dist_trans n a (M.op a1 a2) (M.op (M.op b1 b2) a2) dist_a dist_op
             | dist_a_assoc : M.dist n a (M.op b1 (M.op b2 a2)) =>
-              transport (\lam w => M.dist n a w) (inv (M.cmra_assoc b1 b2 a2)) dist_a_op
+              M.ofe_dist_trans n a (M.op (M.op b1 b2) a2) (M.op b1 (M.op b2 a2))
+                dist_a_op
+                (M.ofe_dist_sym n (M.op b1 (M.op b2 a2)) (M.op (M.op b1 b2) a2)
+                  (cmra_assoc_dist n b1 b2 a2))
           \in inP (b1, M.op b2 a2, dist_a_assoc, hp,
                    inP (b2, a2, M.ofe_dist_refl n (M.op b2 a2), hq, hr))
       }
@@ -140,8 +144,10 @@
         h m (M.op a1 a2) hv_op
             (inP (a1, a2, M.ofe_dist_refl m (M.op a1 a2),
                   P.upred_mono n m a1 a1 hp
-                      (inP (M.unit, transport (\lam w => M.dist m a1 w)
-                          (inv (ucmra_unit_right_id a1)) (M.ofe_dist_refl m a1)))
+                      (inP (M.unit,
+                          M.ofe_dist_trans m a1 a1 (M.op a1 M.unit)
+                            (M.ofe_dist_refl m a1)
+                            (M.ofe_dist_sym m (M.op a1 M.unit) a1 (ucmra_unit_right_id_dist m a1))))
                       m_le_n,
                   hq))
   | bi_mixin_wand_elim P Q =>
@@ -151,7 +157,7 @@
           | hv_op : M.validN n (M.op a1 a2) =>
             M.cmra_validN_ne n a (M.op a1 a2) dist_a hv
           | dist_swap : M.dist n (M.op a1 a2) (M.op a2 a1) =>
-            equiv_dist_n {M} (M.op a1 a2) (M.op a2 a1) (M.cmra_comm a1 a2) n
+            cmra_comm_dist {M} n a1 a2
           | hv_swap : M.validN n (M.op a2 a1) =>
             M.cmra_validN_ne n (M.op a1 a2) (M.op a2 a1) dist_swap hv_op
           | hq_swap : Q.upred_holds n (M.op a2 a1) =>
@@ -160,9 +166,10 @@
             M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1) dist_a dist_swap
           | inclN_swap_a : inclN {M} {\new Op M.E { | op => M.op }} (M.op a2 a1) n a =>
             inP (M.unit,
-                 transport (\lam w => M.dist n a w)
-                     (inv (ucmra_unit_right_id (M.op a2 a1)))
-                     dist_a_swap)
+                 M.ofe_dist_trans n a (M.op a2 a1) (M.op (M.op a2 a1) M.unit)
+                   dist_a_swap
+                   (M.ofe_dist_sym n (M.op (M.op a2 a1) M.unit) (M.op a2 a1)
+                     (ucmra_unit_right_id_dist n (M.op a2 a1))))
         \in Q.upred_mono n n (M.op a2 a1) a hq_swap inclN_swap_a <=-refl
     }
 
@@ -218,9 +225,9 @@
       inP (a, hv_op,
            P.upred_mono n k a a hP
                (inP (M.unit,
-                     transport (\lam w => M.dist k a w)
-                         (inv (ucmra_unit_right_id a))
-                         (M.ofe_dist_refl k a)))
+                     M.ofe_dist_trans k a a (M.op a M.unit)
+                       (M.ofe_dist_refl k a)
+                       (M.ofe_dist_sym k (M.op a M.unit) a (ucmra_unit_right_id_dist k a))))
                k_le_n)
 
 \lemma bupd_trans {M : UCMRA} (P : ProperUPred M)
@@ -247,7 +254,9 @@
             | hv_assoc_l : M.validN k (M.op (M.op a1 a2) yf) =>
               M.cmra_validN_ne k (M.op a yf) (M.op (M.op a1 a2) yf) dist_op_yf hv_op
             | hv_a1_a2yf : M.validN k (M.op a1 (M.op a2 yf)) =>
-              transport (M.validN k) (inv (M.cmra_assoc a1 a2 yf)) hv_assoc_l
+              cmra_validN_proper {M} k (M.op (M.op a1 a2) yf) (M.op a1 (M.op a2 yf))
+                (M.equiv_sym (M.op a1 (M.op a2 yf)) (M.op (M.op a1 a2) yf)
+                  (M.cmra_assoc a1 a2 yf)) hv_assoc_l
             | hP_step : TruncP (\Sigma (a1' : M.E)
                                        (M.validN k (M.op a1' (M.op a2 yf)))
                                        (P.upred_holds k a1')) =>
@@ -256,12 +265,13 @@
             | inP (a1', hv_a1'_a2yf, hP_a1') =>
               \let
                 | hv_a1'a2_yf : M.validN k (M.op (M.op a1' a2) yf) =>
-                  transport (M.validN k) (M.cmra_assoc a1' a2 yf) hv_a1'_a2yf
+                  cmra_validN_proper {M} k (M.op a1' (M.op a2 yf)) (M.op (M.op a1' a2) yf)
+                    (M.cmra_assoc a1' a2 yf) hv_a1'_a2yf
                 | inclN_a2 : inclN {M} {\new Op M.E { | op => M.op }} a2 k a2 =>
                   inP (M.unit,
-                       transport (\lam w => M.dist k a2 w)
-                           (inv (ucmra_unit_right_id a2))
-                           (M.ofe_dist_refl k a2))
+                       M.ofe_dist_trans k a2 a2 (M.op a2 M.unit)
+                         (M.ofe_dist_refl k a2)
+                         (M.ofe_dist_sym k (M.op a2 M.unit) a2 (ucmra_unit_right_id_dist k a2)))
                 | hR_k : R.upred_holds k a2 =>
                   R.upred_mono n k a2 a2 hR inclN_a2 k_le_n
                 | hsep_new : (mkProperSep P R).upred_holds k (M.op a1' a2) =>
@@ -277,7 +287,8 @@
   \lam hv hbupd =>
       \let
         | hv_op : M.validN n (M.op a M.unit) =>
-          transport (M.validN n) (inv (ucmra_unit_right_id a)) hv
+          cmra_validN_proper {M} n a (M.op a M.unit)
+            (M.equiv_sym (M.op a M.unit) a (ucmra_unit_right_id a)) hv
       \in \case hbupd n <=-refl M.unit hv_op \with {
         | inP (_, _, hphi) => hphi
       }
@@ -291,7 +302,8 @@
   | suc k => \lam hv h =>
       \let
         | hv_op : M.validN (suc k) (M.op a M.unit) =>
-          transport (M.validN (suc k)) (inv (ucmra_unit_right_id a)) hv
+          cmra_validN_proper {M} (suc k) a (M.op a M.unit)
+            (M.equiv_sym (M.op a M.unit) a (ucmra_unit_right_id a)) hv
       \in \case h (suc k) <=-refl M.unit hv_op \with {
         | inP (a', hv'_op, hlater_a') =>
           \let

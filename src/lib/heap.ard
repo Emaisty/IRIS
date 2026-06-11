@@ -77,10 +77,11 @@
       \in inP (M.op z1 z2,
                M.ofe_dist_trans n2 c (M.op b z2) (M.op a (M.op z1 z2))
                    dist_c_bz2
-                   (transport (\lam w => M.dist n2 (M.op b z2) w)
-                       (inv (M.cmra_assoc a z1 z2))
+                   (M.ofe_dist_trans n2 (M.op b z2) (M.op (M.op a z1) z2) (M.op a (M.op z1 z2))
                        (M.cmra_op_ne_2 z2 n2 b (M.op a z1)
-                           (M.ofe_dist_le n1 n2 b (M.op a z1) dist_b_az1 le))))
+                           (M.ofe_dist_le n1 n2 b (M.op a z1) dist_b_az1 le))
+                       (M.ofe_dist_sym n2 (M.op a (M.op z1 z2)) (M.op (M.op a z1) z2)
+                           (cmra_assoc_dist n2 a z1 z2))))
   }
 
 
@@ -140,14 +141,41 @@
               | s2 : G.E => gmap_singleton l (just (excl v2))
               | step1 : G.dist n (G.op a1.2 a2.2) (G.op (G.op s1 w1) (G.op s2 w2)) =>
                 cmra_op_ne_both {G} n a1.2 (G.op s1 w1) a2.2 (G.op s2 w2) d1 d2
-              | rearr : G.op (G.op s1 w1) (G.op s2 w2) = G.op (G.op s1 s2) (G.op w1 w2) =>
-                inv (G.cmra_assoc s1 w1 (G.op s2 w2)) *>
-                pmap (G.op s1) (G.cmra_assoc w1 s2 w2 *>
-                pmap (\lam u => G.op u w2) (G.cmra_comm w1 s2) *>
-                inv (G.cmra_assoc s2 w1 w2)) *>
-                G.cmra_assoc s1 s2 (G.op w1 w2)
+              -- Reassociate `(s1·w1)·(s2·w2)` to `(s1·s2)·(w1·w2)` as a dist chain.
+              | rearr_dist : G.dist n
+                  (G.op (G.op s1 w1) (G.op s2 w2))
+                  (G.op (G.op s1 s2) (G.op w1 w2)) =>
+                \let
+                  | step_a : G.dist n (G.op (G.op s1 w1) (G.op s2 w2)) (G.op s1 (G.op w1 (G.op s2 w2))) =>
+                    G.ofe_dist_sym n (G.op s1 (G.op w1 (G.op s2 w2))) (G.op (G.op s1 w1) (G.op s2 w2))
+                        (cmra_assoc_dist n s1 w1 (G.op s2 w2))
+                  | step_b : G.dist n (G.op w1 (G.op s2 w2)) (G.op (G.op w1 s2) w2) =>
+                    cmra_assoc_dist n w1 s2 w2
+                  | step_c : G.dist n (G.op (G.op w1 s2) w2) (G.op (G.op s2 w1) w2) =>
+                    G.cmra_op_ne_2 w2 n (G.op w1 s2) (G.op s2 w1) (cmra_comm_dist n w1 s2)
+                  | step_d : G.dist n (G.op (G.op s2 w1) w2) (G.op s2 (G.op w1 w2)) =>
+                    G.ofe_dist_sym n (G.op s2 (G.op w1 w2)) (G.op (G.op s2 w1) w2)
+                        (cmra_assoc_dist n s2 w1 w2)
+                  | step_e : G.dist n (G.op s1 (G.op s2 (G.op w1 w2))) (G.op (G.op s1 s2) (G.op w1 w2)) =>
+                    cmra_assoc_dist n s1 s2 (G.op w1 w2)
+                \in G.ofe_dist_trans n
+                      (G.op (G.op s1 w1) (G.op s2 w2))
+                      (G.op s1 (G.op s2 (G.op w1 w2)))
+                      (G.op (G.op s1 s2) (G.op w1 w2))
+                      (G.ofe_dist_trans n
+                        (G.op (G.op s1 w1) (G.op s2 w2))
+                        (G.op s1 (G.op w1 (G.op s2 w2)))
+                        (G.op s1 (G.op s2 (G.op w1 w2)))
+                        step_a
+                        (G.cmra_op_ne s1 n (G.op w1 (G.op s2 w2)) (G.op s2 (G.op w1 w2))
+                          (G.ofe_dist_trans n (G.op w1 (G.op s2 w2)) (G.op (G.op s2 w1) w2) (G.op s2 (G.op w1 w2))
+                            (G.ofe_dist_trans n (G.op w1 (G.op s2 w2)) (G.op (G.op w1 s2) w2) (G.op (G.op s2 w1) w2)
+                              step_b step_c)
+                            step_d)))
+                      step_e
             \in inP (G.op w1 w2,
-                     transport (\lam w => G.dist n (G.op a1.2 a2.2) w) rearr step1)
+                     G.ofe_dist_trans n (G.op a1.2 a2.2) (G.op (G.op s1 w1) (G.op s2 w2)) (G.op (G.op s1 s2) (G.op w1 w2))
+                         step1 rearr_dist)
         }
     \in cmra_validN_includedN {G} n
         (G.op (gmap_singleton l (just (excl v1))) (gmap_singleton l (just (excl v2))))
@@ -230,13 +258,12 @@
       \in \case h_incl \with {
         | inP (z, dist_a_fragz) =>
           inP (frag, M.op M.unit z,
-               transport (\lam w => M.dist n a w)
-                   (pmap (M.op frag) (inv (M.ucmra_unit_left_id z)))
-                   dist_a_fragz,
+               M.ofe_dist_trans n a (M.op frag z) (M.op frag (M.op M.unit z))
+                   dist_a_fragz
+                   (M.cmra_op_ne frag n z (M.op M.unit z)
+                       (M.ofe_dist_sym n (M.op M.unit z) z (ucmra_unit_left_id_dist n z))),
                inP (M.unit,
-                    transport (\lam w => M.dist n frag w)
-                        (inv (ucmra_unit_right_id frag))
-                        (M.ofe_dist_refl n frag)),
+                    M.ofe_dist_sym n (M.op frag M.unit) frag (ucmra_unit_right_id_dist n frag)),
                inP (z, M.ofe_dist_refl n (M.op M.unit z)))
       }
 
@@ -510,18 +537,31 @@
         \case hincl_new_raw \with {
           | inP (w, hw) =>
             \let
-              | rearr : G.op sing frame = G.op (G.op (G.op G.unit sing) zf) yff =>
-                G.cmra_assoc sing (G.op G.unit zf) yff
-                *> pmap (\lam t => G.op t yff)
-                    (G.cmra_assoc sing G.unit zf
-                     *> pmap (\lam t => G.op t zf)
-                         (ucmra_unit_right_id sing *> inv (G.ucmra_unit_left_id sing)))
+              -- Need: G.dist n (G.op sing frame) (G.op (G.op (G.op G.unit sing) zf) yff).
+              -- frame = G.op (G.op G.unit zf) yff. Reassoc step-by-step.
+              | step_inner : G.dist n (G.op sing G.unit) (G.op G.unit sing) =>
+                G.ofe_dist_trans n (G.op sing G.unit) sing (G.op G.unit sing)
+                    (ucmra_unit_right_id_dist n sing)
+                    (G.ofe_dist_sym n (G.op G.unit sing) sing (ucmra_unit_left_id_dist n sing))
+              | step_mid : G.dist n (G.op sing (G.op G.unit zf)) (G.op (G.op G.unit sing) zf) =>
+                G.ofe_dist_trans n
+                    (G.op sing (G.op G.unit zf))
+                    (G.op (G.op sing G.unit) zf)
+                    (G.op (G.op G.unit sing) zf)
+                    (cmra_assoc_dist n sing G.unit zf)
+                    (G.cmra_op_ne_2 zf n (G.op sing G.unit) (G.op G.unit sing) step_inner)
+              | rearr_dist : G.dist n (G.op sing frame) (G.op (G.op (G.op G.unit sing) zf) yff) =>
+                G.ofe_dist_trans n
+                    (G.op sing frame)
+                    (G.op (G.op sing (G.op G.unit zf)) yff)
+                    (G.op (G.op (G.op G.unit sing) zf) yff)
+                    (cmra_assoc_dist n sing (G.op G.unit zf) yff)
+                    (G.cmra_op_ne_2 yff n (G.op sing (G.op G.unit zf)) (G.op (G.op G.unit sing) zf) step_mid)
             \in
             inP (w,
-              transport
-                (\lam t => G.dist n (heap_update h l v) (G.op t w))
-                rearr
-                hw)
+              G.ofe_dist_trans n (heap_update h l v) (G.op (G.op sing frame) w) (G.op (G.op (G.op (G.op G.unit sing) zf) yff) w)
+                  hw
+                  (G.cmra_op_ne_2 w n (G.op sing frame) (G.op (G.op (G.op G.unit sing) zf) yff) rearr_dist))
         }
     \in (heap_update_validN n h l v hv_old.1, hincl_new)
   | (nothing, _), (just (excl _), _) => \case hv \with {}
@@ -532,6 +572,30 @@
   | (just exclInvalid, _), (nothing, _) => \case hv \with {}
   | (just exclInvalid, _), (just (excl _), _) => \case hv \with {}
   | (just exclInvalid, _), (just exclInvalid, _) => \case hv \with {}
+
+-- Helper: rearrange `G.op X (G.op (G.op G.unit Y) Z)` to
+-- `G.op (G.op (G.op G.unit X) Y) Z` up to `dist n`. Used by alloc/store proofs.
+\lemma frame_rearr_dist {G : UCMRA} (n : Nat) (X Y Z : G.E)
+  : G.dist n (G.op X (G.op (G.op G.unit Y) Z))
+             (G.op (G.op (G.op G.unit X) Y) Z) =>
+  \let
+    | step_inner : G.dist n (G.op X G.unit) (G.op G.unit X) =>
+      G.ofe_dist_trans n (G.op X G.unit) X (G.op G.unit X)
+          (ucmra_unit_right_id_dist n X)
+          (G.ofe_dist_sym n (G.op G.unit X) X (ucmra_unit_left_id_dist n X))
+    | step_mid : G.dist n (G.op X (G.op G.unit Y)) (G.op (G.op G.unit X) Y) =>
+      G.ofe_dist_trans n
+          (G.op X (G.op G.unit Y))
+          (G.op (G.op X G.unit) Y)
+          (G.op (G.op G.unit X) Y)
+          (cmra_assoc_dist n X G.unit Y)
+          (G.cmra_op_ne_2 Y n (G.op X G.unit) (G.op G.unit X) step_inner)
+  \in G.ofe_dist_trans n
+        (G.op X (G.op (G.op G.unit Y) Z))
+        (G.op (G.op X (G.op G.unit Y)) Z)
+        (G.op (G.op (G.op G.unit X) Y) Z)
+        (cmra_assoc_dist n X (G.op G.unit Y) Z)
+        (G.cmra_op_ne_2 Z n (G.op X (G.op G.unit Y)) (G.op (G.op G.unit X) Y) step_mid)
 
 \lemma heap_auth_store_validN {cnt : Countable Loc} {Val : \Set}
                               (n : Nat)
@@ -555,36 +619,44 @@
       | frame : G.E => G.op (G.op G.unit zf) yff
       | hv_old : AuthValidN {G} n (just (excl h),
           G.op (G.op (G.op G.unit (gmap_singleton l (just (excl old)))) zf) yff) => hv
+      | hincl_old_rearranged : inclN {G} {\new Op G.E { | op => G.op }}
+          (G.op (gmap_singleton l (just (excl old))) frame) n h =>
+        \case hv_old.2 \with {
+          | inP (w, hw) => inP (w,
+            \let
+              | sing_old : G.E => gmap_singleton l (just (excl old))
+              | rearr_dist_sym : G.dist n
+                  (G.op (G.op (G.op G.unit sing_old) zf) yff)
+                  (G.op sing_old frame) =>
+                G.ofe_dist_sym n (G.op sing_old frame)
+                                 (G.op (G.op (G.op G.unit sing_old) zf) yff)
+                    (frame_rearr_dist n sing_old zf yff)
+            \in G.ofe_dist_trans n h
+                  (G.op (G.op (G.op (G.op G.unit sing_old) zf) yff) w)
+                  (G.op (G.op sing_old frame) w)
+                  hw
+                  (G.cmra_op_ne_2 w n
+                    (G.op (G.op (G.op G.unit sing_old) zf) yff)
+                    (G.op sing_old frame)
+                    rearr_dist_sym))
+        }
       | hincl_new_raw : inclN {G} {\new Op G.E { | op => G.op }}
           (G.op singNew frame) n (heap_update h l new) =>
         gmap_replace_includedN {cnt} {Val}
-          n h frame l old new lookup_old
-          (transport
-            (\lam fr => inclN {G} {\new Op G.E { | op => G.op }} fr n h)
-            (inv (G.cmra_assoc (gmap_singleton l (just (excl old))) (G.op G.unit zf) yff
-             *> pmap (\lam t => G.op t yff)
-                  (G.cmra_assoc (gmap_singleton l (just (excl old))) G.unit zf
-                   *> pmap (\lam t => G.op t zf)
-                       (ucmra_unit_right_id {G} (gmap_singleton l (just (excl old)))
-                        *> inv (G.ucmra_unit_left_id (gmap_singleton l (just (excl old))))))))
-            hv_old.2)
+          n h frame l old new lookup_old hincl_old_rearranged
       | hincl_new : inclN {G} {\new Op G.E { | op => G.op }}
           (G.op (G.op (G.op G.unit singNew) zf) yff) n (heap_update h l new) =>
         \case hincl_new_raw \with {
           | inP (w, hw) =>
-            \let
-              | rearr : G.op singNew frame = G.op (G.op (G.op G.unit singNew) zf) yff =>
-                G.cmra_assoc singNew (G.op G.unit zf) yff
-                *> pmap (\lam t => G.op t yff)
-                    (G.cmra_assoc singNew G.unit zf
-                     *> pmap (\lam t => G.op t zf)
-                         (ucmra_unit_right_id {G} singNew *> inv (G.ucmra_unit_left_id singNew)))
-            \in
             inP (w,
-              transport
-                (\lam t => G.dist n (heap_update h l new) (G.op t w))
-                rearr
-                hw)
+              G.ofe_dist_trans n (heap_update h l new)
+                  (G.op (G.op singNew frame) w)
+                  (G.op (G.op (G.op (G.op G.unit singNew) zf) yff) w)
+                  hw
+                  (G.cmra_op_ne_2 w n
+                    (G.op singNew frame)
+                    (G.op (G.op (G.op G.unit singNew) zf) yff)
+                    (frame_rearr_dist n singNew zf yff)))
         }
     \in (heap_update_validN n h l new hv_old.1, hincl_new)
   | (nothing, _), (just (excl _), _) => \case hv \with {}
@@ -766,9 +838,9 @@
     \elim mz
       | nothing =>
         inP (A.unit,
-          transport (\lam a => A.dist n y a)
-            (inv (ucmra_unit_right_id {A} x))
-            hdist)
+          A.ofe_dist_trans n y x (A.op x A.unit)
+              hdist
+              (A.ofe_dist_sym n (A.op x A.unit) x (ucmra_unit_right_id_dist n x)))
       | just w => inP (w, hdist)
   }
 

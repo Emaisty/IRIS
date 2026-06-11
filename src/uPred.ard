@@ -43,14 +43,41 @@
     \case h_incl, incl \with {
       | inP (z1, dist_x1_uz1), inP (z2, dist_x2_x1z2) =>
         inP (M.op z1 z2,
-             transport (\lam w => M.dist n2 x2 w) (inv (M.ucmra_unit_left_id (M.op z1 z2)))
+             M.ofe_dist_trans n2 x2 (M.op z1 z2) (M.op M.unit (M.op z1 z2))
                (M.ofe_dist_trans n2 x2 (M.op x1 z2) (M.op z1 z2)
                  dist_x2_x1z2
                  (M.cmra_op_ne_2 z2 n2 x1 z1
-                   (transport (\lam w => M.dist n2 x1 w) (M.ucmra_unit_left_id z1)
-                     (M.ofe_dist_le n1 n2 x1 (M.op M.unit z1) dist_x1_uz1 n2_le_n1)))))
+                   (M.ofe_dist_trans n2 x1 (M.op M.unit z1) z1
+                     (M.ofe_dist_le n1 n2 x1 (M.op M.unit z1) dist_x1_uz1 n2_le_n1)
+                     (ucmra_unit_left_id_dist n2 z1))))
+               (M.ofe_dist_sym n2 (M.op M.unit (M.op z1 z2)) (M.op z1 z2)
+                 (ucmra_unit_left_id_dist n2 (M.op z1 z2))))
 
     }
+
+
+-- =================================================================================
+-- Primitive ownership and validity
+-- =================================================================================
+--
+-- `mkProperOwn a` is the primitive resource-ownership predicate:
+-- `ownM a` holds at `(n, x)` iff `a` is `n`-included in `x`.
+-- It is the basic building block for ghost state and invariants.
+
+\func mkProperOwn {M : UCMRA} (a : M.E) : ProperUPred M \cowith
+  | upred_holds => \lam n x => inclN {M} {\new Op M.E { | op => M.op }} a n x
+  | upred_mono  => \lam n1 n2 x1 x2 h_a_x1 h_x1_x2 n2_le_n1 =>
+      inclN_trans n2 a x1 x2
+          (inclN_le {M} {\new Op M.E { | op => M.op }} a x1 n1 n2 h_a_x1 n2_le_n1)
+          h_x1_x2
+
+-- `mkProperCMRAValid a` lifts CMRA validity into uPred:
+-- holds at `(n, _)` iff `validN n a`. Resource-independent.
+
+\func mkProperCMRAValid {M : UCMRA} (a : M.E) : ProperUPred M \cowith
+  | upred_holds => \lam n _ => M.validN n a
+  | upred_mono  => \lam n1 n2 _ _ hv _ n2_le_n1 =>
+      M.cmra_validN_le n1 n2 a hv n2_le_n1
 
 
 \func mkProperAnd {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
@@ -92,14 +119,18 @@
   | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h, incl \with {
     | inP (a1, a2, dist_x1, hp, hq), inP (z, dist_x2) =>
       \let inclN_refl : \Pi (a : M.E) -> inclN {M} {\new Op M.E { | op => M.op }} a n2 a =>
-        \lam a => inP (M.unit, transport (\lam w => M.dist n2 a w) (inv (ucmra_unit_right_id a)) (M.ofe_dist_refl n2 a))
+        \lam a => inP (M.unit,
+          M.ofe_dist_trans n2 a a (M.op a M.unit)
+            (M.ofe_dist_refl n2 a)
+            (M.ofe_dist_sym n2 (M.op a M.unit) a (ucmra_unit_right_id_dist n2 a)))
       \in inP (a1, M.op a2 z,
                M.ofe_dist_trans n2 x2 (M.op x1 z) (M.op a1 (M.op a2 z))
                  dist_x2
-                 (transport (\lam w => M.dist n2 (M.op x1 z) w)
-                   (inv (M.cmra_assoc a1 a2 z))
+                 (M.ofe_dist_trans n2 (M.op x1 z) (M.op (M.op a1 a2) z) (M.op a1 (M.op a2 z))
                    (M.cmra_op_ne_2 z n2 x1 (M.op a1 a2)
-                     (M.ofe_dist_le n1 n2 x1 (M.op a1 a2) dist_x1 n2_le_n1))),
+                     (M.ofe_dist_le n1 n2 x1 (M.op a1 a2) dist_x1 n2_le_n1))
+                   (M.ofe_dist_sym n2 (M.op a1 (M.op a2 z)) (M.op (M.op a1 a2) z)
+                     (cmra_assoc_dist n2 a1 a2 z))),
                P.upred_mono n1 n2 a1 a1 hp (inclN_refl a1) n2_le_n1,
                Q.upred_mono n1 n2 a2 (M.op a2 z) hq (cmra_includedN_l n2 a2 z) n2_le_n1)
   }
@@ -246,8 +277,10 @@
       , \lam h => \lam n' n'_le_m hv' =>
           (hc.chain_cauchy n' n (NatSemiring.<=∘ n'_le_m hle) n' a <=-refl hv').1
               ((c n).upred_mono m n' a a h
-                  (inP (M.unit, transport (\lam w => M.dist n' a w)
-                      (inv (ucmra_unit_right_id a)) (M.ofe_dist_refl n' a)))
+                  (inP (M.unit,
+                      M.ofe_dist_trans n' a a (M.op a M.unit)
+                        (M.ofe_dist_refl n' a)
+                        (M.ofe_dist_sym n' (M.op a M.unit) a (ucmra_unit_right_id_dist n' a))))
                   n'_le_m)
       )
 
@@ -360,15 +393,153 @@
             | hv_x1x3_yf : M.validN k (M.op (M.op x1 x3) yf) =>
               M.cmra_validN_ne k (M.op x2 yf) (M.op (M.op x1 x3) yf) dist_op_yf hv
             | hv_x1_x3yf : M.validN k (M.op x1 (M.op x3 yf)) =>
-              transport (M.validN k) (inv (M.cmra_assoc x1 x3 yf)) hv_x1x3_yf
+              cmra_validN_proper {M} k (M.op (M.op x1 x3) yf) (M.op x1 (M.op x3 yf))
+                (M.equiv_sym (M.op x1 (M.op x3 yf)) (M.op (M.op x1 x3) yf)
+                  (M.cmra_assoc x1 x3 yf)) hv_x1x3_yf
             | step => h k k_le_n1 (M.op x3 yf) hv_x1_x3yf
           \in \case step \with {
             | inP (a', hv_a'_x3yf, hp_a') =>
               \let
                 | hv_a'x3_yf : M.validN k (M.op (M.op a' x3) yf) =>
-                  transport (M.validN k) (M.cmra_assoc a' x3 yf) hv_a'_x3yf
+                  cmra_validN_proper {M} k (M.op a' (M.op x3 yf)) (M.op (M.op a' x3) yf)
+                    (M.cmra_assoc a' x3 yf) hv_a'_x3yf
               \in inP (M.op a' x3, hv_a'x3_yf,
                        P.upred_mono k k a' (M.op a' x3) hp_a'
                            (inclN_op_l k a' x3) <=-refl)
+          }
+      }
+
+
+-- =================================================================================
+-- Derived laws for primitive ownership
+-- =================================================================================
+
+
+\lemma own_op_1 {M : UCMRA} (a b : M.E)
+  : properUPred_ent (mkProperOwn (M.op a b)) (mkProperSep (mkProperOwn a) (mkProperOwn b)) =>
+  \lam n x _ h_incl => \case h_incl \with {
+    | inP (z, dist_x_abz) =>
+      \let
+        | dist_x_a_bz : M.dist n x (M.op a (M.op b z)) =>
+          M.ofe_dist_trans n x (M.op (M.op a b) z) (M.op a (M.op b z))
+            dist_x_abz
+            (M.ofe_dist_sym n (M.op a (M.op b z)) (M.op (M.op a b) z)
+              (cmra_assoc_dist n a b z))
+      \in inP (a, M.op b z, dist_x_a_bz,
+               inclN_refl_ucmra n a,
+               inclN_op_l n b z)
+  }
+
+\lemma own_op_2 {M : UCMRA} (a b : M.E)
+  : properUPred_ent (mkProperSep (mkProperOwn a) (mkProperOwn b)) (mkProperOwn (M.op a b)) =>
+  \lam n x _ h_sep => \case h_sep \with {
+    | inP (x1, x2, dist_x_x1x2, h_a_x1, h_b_x2) =>
+      \case h_a_x1, h_b_x2 \with {
+        | inP (z1, dist_x1_az1), inP (z2, dist_x2_bz2) =>
+          \let
+            | step1 : M.dist n (M.op x1 x2) (M.op (M.op a z1) x2) =>
+              M.cmra_op_ne_2 x2 n x1 (M.op a z1) dist_x1_az1
+            | step2 : M.dist n (M.op (M.op a z1) x2) (M.op (M.op a z1) (M.op b z2)) =>
+              M.cmra_op_ne (M.op a z1) n x2 (M.op b z2) dist_x2_bz2
+            | dist_x_full : M.dist n x (M.op (M.op a z1) (M.op b z2)) =>
+              M.ofe_dist_trans n x (M.op x1 x2) (M.op (M.op a z1) (M.op b z2))
+                  dist_x_x1x2
+                  (M.ofe_dist_trans n (M.op x1 x2) (M.op (M.op a z1) x2)
+                      (M.op (M.op a z1) (M.op b z2))
+                      step1 step2)
+            -- (a · z1) · (b · z2) ≡ (a · b) · (z1 · z2), by assoc/comm shuffling.
+            | reassoc : M.equiv (M.op (M.op a z1) (M.op b z2)) (M.op (M.op a b) (M.op z1 z2)) =>
+              M.equiv_trans (M.op (M.op a z1) (M.op b z2)) (M.op a (M.op z1 (M.op b z2))) (M.op (M.op a b) (M.op z1 z2))
+                (M.equiv_sym (M.op a (M.op z1 (M.op b z2))) (M.op (M.op a z1) (M.op b z2))
+                  (M.cmra_assoc a z1 (M.op b z2)))
+                (M.equiv_trans (M.op a (M.op z1 (M.op b z2))) (M.op a (M.op (M.op z1 b) z2)) (M.op (M.op a b) (M.op z1 z2))
+                  (op_proper_l {M} (M.cmra_assoc z1 b z2))
+                  (M.equiv_trans (M.op a (M.op (M.op z1 b) z2)) (M.op a (M.op (M.op b z1) z2)) (M.op (M.op a b) (M.op z1 z2))
+                    (op_proper_l {M} (op_proper_r {M} (M.cmra_comm z1 b)))
+                    (M.equiv_trans (M.op a (M.op (M.op b z1) z2)) (M.op a (M.op b (M.op z1 z2))) (M.op (M.op a b) (M.op z1 z2))
+                      (op_proper_l {M} (M.equiv_sym (M.op b (M.op z1 z2)) (M.op (M.op b z1) z2)
+                        (M.cmra_assoc b z1 z2)))
+                      (M.cmra_assoc a b (M.op z1 z2)))))
+            | dist_x_target : M.dist n x (M.op (M.op a b) (M.op z1 z2)) =>
+              M.ofe_dist_trans n x (M.op (M.op a z1) (M.op b z2)) (M.op (M.op a b) (M.op z1 z2))
+                dist_x_full
+                (equiv_dist {M} reassoc n)
+          \in inP (M.op z1 z2, dist_x_target)
+      }
+  }
+
+\lemma own_mono {M : UCMRA} (a b : M.E)
+                (h : incl {M} {\new Op M.E { | op => M.op }} a b)
+  : properUPred_ent (mkProperOwn b) (mkProperOwn a) =>
+  \lam n x _ h_b_x => \case h, h_b_x \with {
+    | inP (z, b_eq), inP (w, dist_x_bw) =>
+      \let
+        | dist_x_azw : M.dist n x (M.op a (M.op z w)) =>
+          \let
+            | dist_x_azw_unassoc : M.dist n x (M.op (M.op a z) w) =>
+              M.ofe_dist_trans n x (M.op b w) (M.op (M.op a z) w)
+                dist_x_bw
+                (M.cmra_op_ne_2 w n b (M.op a z) (equiv_dist {M} b_eq n))
+          \in M.ofe_dist_trans n x (M.op (M.op a z) w) (M.op a (M.op z w))
+                dist_x_azw_unassoc
+                (M.ofe_dist_sym n (M.op a (M.op z w)) (M.op (M.op a z) w)
+                  (cmra_assoc_dist n a z w))
+      \in inP (M.op z w, dist_x_azw)
+  }
+
+\lemma own_unit {M : UCMRA}
+  : properUPred_ent (mkProperPure (\Sigma)) (mkProperOwn M.unit) =>
+  \lam n x _ _ =>
+      inP (x,
+        M.ofe_dist_trans n x x (M.op M.unit x)
+          (M.ofe_dist_refl n x)
+          (M.ofe_dist_sym n (M.op M.unit x) x (ucmra_unit_left_id_dist n x)))
+
+\lemma own_valid {M : UCMRA} (a : M.E)
+  : properUPred_ent (mkProperOwn a) (mkProperCMRAValid a) =>
+  \lam n x hv h_own => cmra_validN_includedN {M} n a x hv h_own
+
+
+-- =================================================================================
+-- Frame-preserving update for ownership
+-- =================================================================================
+--
+-- If `a ~~>: Φ` is a frame-preserving update, then
+--
+--     ownM a ⊢ |==> ∃ b, ⌜Φ b⌝ ∧ ownM b
+--
+-- This is the engine that drives invariant allocation in IRIS: every
+-- `inv_alloc` / `inv_acc` ultimately bottoms out in a call to this lemma.
+
+\lemma bupd_ownM_updateP {M : UCMRA} (a : M.E) (Phi : M.E -> \Prop)
+                         (h : cmra_updateP {M} a Phi)
+  : properUPred_ent
+      (mkProperOwn a)
+      (mkProperBUpd (mkProperExist M.E (\lam b =>
+         mkProperAnd (mkProperPure (Phi b)) (mkProperOwn b)))) =>
+  \lam n x _ h_own k k_le_n yf hv_op =>
+      \case h_own \with {
+        | inP (z, dist_x_az) =>
+          \let
+            | dist_x_az_k : M.dist k x (M.op a z) =>
+              M.ofe_dist_le n k x (M.op a z) dist_x_az k_le_n
+            | dist_op_yf : M.dist k (M.op x yf) (M.op (M.op a z) yf) =>
+              M.cmra_op_ne_2 yf k x (M.op a z) dist_x_az_k
+            | hv_az_yf : M.validN k (M.op (M.op a z) yf) =>
+              M.cmra_validN_ne k (M.op x yf) (M.op (M.op a z) yf) dist_op_yf hv_op
+            | hv_a_zyf : M.validN k (M.op a (M.op z yf)) =>
+              cmra_validN_proper {M} k (M.op (M.op a z) yf) (M.op a (M.op z yf))
+                (M.equiv_sym (M.op a (M.op z yf)) (M.op (M.op a z) yf)
+                  (M.cmra_assoc a z yf)) hv_az_yf
+            | step => h k (M.op z yf) hv_a_zyf
+          \in \case step \with {
+            | inP (b, hPhi, hv_b_zyf) =>
+              \let
+                | hv_bz_yf : M.validN k (M.op (M.op b z) yf) =>
+                  cmra_validN_proper {M} k (M.op b (M.op z yf)) (M.op (M.op b z) yf)
+                    (M.cmra_assoc b z yf) hv_b_zyf
+                | own_b_at_bz : (mkProperOwn b).upred_holds k (M.op b z) =>
+                  inclN_op_l k b z
+              \in inP (M.op b z, hv_bz_yf, inP (b, (hPhi, own_b_at_bz)))
           }
       }

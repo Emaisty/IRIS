@@ -1,0 +1,732 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.Bool
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import lib.pmap
+
+
+-- =================================================================================
+-- gset over Pos: finite subsets, backed by `Pmap (\Sigma)`.
+-- =================================================================================
+--
+-- Mirrors Iris-Coq's `gset positive` from stdpp: a finite subset of `positive`
+-- represented as a finite partial map. The value type `\Sigma` (unit) makes
+-- it a set: a key `p` is in the set iff `plookup m p = just ()`.
+
+\func Gset : \Set => Pmap (\Sigma)
+
+\func gset_in (p : Pos) (X : Gset) : \Prop => plookup X p = just ()
+
+\func gset_empty : Gset => pempty
+
+\func gset_singleton (p : Pos) : Gset => psingleton p ()
+
+-- Pointwise "set union" on Maybe (\Sigma): both nothing -> nothing, otherwise just ().
+\func gset_union_fn (ox oy : Maybe (\Sigma)) : Maybe (\Sigma) \elim ox, oy
+  | nothing, nothing => nothing
+  | nothing, just _  => just ()
+  | just _,  nothing => just ()
+  | just _,  just _  => just ()
+
+\lemma gset_union_fn_left_id (oy : Maybe (\Sigma)) : gset_union_fn nothing oy = oy \elim oy
+  | nothing => idp
+  | just () => idp
+
+\lemma gset_union_fn_comm (ox oy : Maybe (\Sigma)) : gset_union_fn ox oy = gset_union_fn oy ox
+  \elim ox, oy
+  | nothing, nothing => idp
+  | nothing, just () => idp
+  | just (), nothing => idp
+  | just (), just () => idp
+
+\lemma gset_union_fn_assoc (ox oy oz : Maybe (\Sigma))
+  : gset_union_fn ox (gset_union_fn oy oz) = gset_union_fn (gset_union_fn ox oy) oz
+  \elim ox, oy, oz
+  | nothing, nothing, nothing => idp
+  | nothing, nothing, just () => idp
+  | nothing, just (), nothing => idp
+  | nothing, just (), just () => idp
+  | just (), nothing, nothing => idp
+  | just (), nothing, just () => idp
+  | just (), just (), nothing => idp
+  | just (), just (), just () => idp
+
+\func gset_union (X Y : Gset) : Gset => pmerge gset_union_fn X Y
+
+\lemma plookup_gset_union (X Y : Gset) (p : Pos)
+  : plookup (gset_union X Y) p = gset_union_fn (plookup X p) (plookup Y p) =>
+  plookup_merge gset_union_fn idp X Y p
+
+\lemma gset_union_comm (X Y : Gset) : gset_union X Y = gset_union Y X =>
+  pmap_eq (gset_union X Y) (gset_union Y X) (\lam p =>
+    plookup_gset_union X Y p *>
+    gset_union_fn_comm (plookup X p) (plookup Y p) *>
+    inv (plookup_gset_union Y X p))
+
+\lemma gset_union_assoc (X Y Z : Gset)
+  : gset_union X (gset_union Y Z) = gset_union (gset_union X Y) Z =>
+  pmap_eq (gset_union X (gset_union Y Z)) (gset_union (gset_union X Y) Z) (\lam p =>
+    plookup_gset_union X (gset_union Y Z) p *>
+    pmap (\lam o => gset_union_fn (plookup X p) o) (plookup_gset_union Y Z p) *>
+    gset_union_fn_assoc (plookup X p) (plookup Y p) (plookup Z p) *>
+    inv (pmap (\lam o => gset_union_fn o (plookup Z p)) (plookup_gset_union X Y p)) *>
+    inv (plookup_gset_union (gset_union X Y) Z p))
+
+
+\lemma gset_in_empty (p : Pos) : Not (gset_in p gset_empty) =>
+  \lam h => \case (inv h *> plookup_empty p) \with {}
+
+\lemma gset_in_singleton_eq (p : Pos) : gset_in p (gset_singleton p) =>
+  plookup_singleton_eq p ()
+
+
+-- =================================================================================
+-- gset_disj: the disjoint-union variant.
+-- =================================================================================
+--
+-- `Inductive gset_disj := GSet : Gset → gset_disj | GSetInvalid : gset_disj.`
+-- Op is disjoint union (invalid on overlap); validity is `¬ Invalid`;
+-- unit is `GSet ∅`. The OFE is discrete.
+
+\data gset_disj
+  | GSet Gset
+  | GSetInvalid
+
+
+-- =================================================================================
+-- Decidable overlap on Gset
+-- =================================================================================
+--
+-- Two Pmap-backed sets overlap iff some key has `just ()` in both. We compute
+-- this by structural recursion on the underlying `Pmap'` tree.
+
+\func gset_overlap_tree (X Y : Pmap' (\Sigma)) : Bool \elim X, Y
+  | PEmpty, _ => false
+  | _, PEmpty => false
+  | PNode v1 L1 R1, PNode v2 L2 R2 =>
+      both_just v1 v2 or gset_overlap_tree L1 L2 or gset_overlap_tree R1 R2
+  \where
+    \func both_just (o1 o2 : Maybe (\Sigma)) : Bool \elim o1, o2
+      | just _, just _ => true
+      | _, _ => false
+
+\func gset_overlap (X Y : Gset) : Bool => gset_overlap_tree X.tree Y.tree
+
+\lemma gset_overlap_tree_PEmpty_l (X : Pmap' (\Sigma))
+  : gset_overlap_tree PEmpty X = false \elim X
+  | PEmpty => idp
+  | PNode _ _ _ => idp
+
+\lemma gset_overlap_tree_PEmpty_r (X : Pmap' (\Sigma))
+  : gset_overlap_tree X PEmpty = false \elim X
+  | PEmpty => idp
+  | PNode _ _ _ => idp
+
+-- A boolean disjunction that is `true` lets us pick the true side.
+\func bool_or_inv (a b : Bool) (h : (a or b) = true) : Or (a = true) (b = true) \elim a
+  | true => inl idp
+  | false => inr h
+
+-- Maybe (\Sigma) characterization: every element is `nothing` or `just ()`.
+\func maybe_unit_eta (o : Maybe (\Sigma)) : Or (o = nothing) (o = just ()) \elim o
+  | nothing => inl idp
+  | just () => inr idp
+
+-- both_just is true iff both sides are just ()
+\lemma both_just_true_inv (v1 v2 : Maybe (\Sigma))
+                          (h : gset_overlap_tree.both_just v1 v2 = true)
+  : \Sigma (v1 = just ()) (v2 = just ()) \elim v1, v2
+  | nothing, _       => \case h \with {}
+  | just (), nothing => \case h \with {}
+  | just (), just () => (idp, idp)
+
+\lemma both_just_true_from (v1 v2 : Maybe (\Sigma))
+                           (hv1 : v1 = just ()) (hv2 : v2 = just ())
+  : gset_overlap_tree.both_just v1 v2 = true =>
+  transport (\lam o1 => gset_overlap_tree.both_just o1 v2 = true) (inv hv1)
+    (transport (\lam o2 => gset_overlap_tree.both_just (just ()) o2 = true) (inv hv2) idp)
+
+-- =================================================================================
+-- Soundness/completeness of `gset_overlap_tree` wrt pointwise membership
+-- =================================================================================
+
+\func gset_overlap_tree_sound (X Y : Pmap' (\Sigma))
+                              (h : gset_overlap_tree X Y = true)
+  : \Sigma (p : Pos) (plookup' X p = just ()) (plookup' Y p = just ())
+\elim X, Y
+  | PEmpty,         Y           => \case (inv (gset_overlap_tree_PEmpty_l Y) *> h) \with {}
+  | PNode v L R,    PEmpty      => \case (inv (gset_overlap_tree_PEmpty_r (PNode v L R)) *> h) \with {}
+  | PNode v1 L1 R1, PNode v2 L2 R2 =>
+    -- h : ((both_just v1 v2) or (overlap L1 L2)) or (overlap R1 R2) = true
+    \case bool_or_inv (gset_overlap_tree.both_just v1 v2 or gset_overlap_tree L1 L2)
+                      (gset_overlap_tree R1 R2)
+                      h
+    \with {
+      | inr h_R =>
+        \let | rec => gset_overlap_tree_sound R1 R2 h_R
+        \in (xI rec.1, rec.2, rec.3)
+      | inl h_bjL =>
+        \case bool_or_inv (gset_overlap_tree.both_just v1 v2) (gset_overlap_tree L1 L2) h_bjL \with {
+          | inl h_bj =>
+            \let | (hv1, hv2) => both_just_true_inv v1 v2 h_bj
+            \in (xH, hv1, hv2)
+          | inr h_L =>
+            \let | rec => gset_overlap_tree_sound L1 L2 h_L
+            \in (xO rec.1, rec.2, rec.3)
+        }
+    }
+
+\lemma gset_overlap_tree_complete (X Y : Pmap' (\Sigma)) (p : Pos)
+                                   (hX : plookup' X p = just ())
+                                   (hY : plookup' Y p = just ())
+  : gset_overlap_tree X Y = true
+\elim X, Y, p
+  | PEmpty, _, _ => \case hX \with {}
+  | PNode _ _ _, PEmpty, _ => \case hY \with {}
+  | PNode v1 L1 R1, PNode v2 L2 R2, xH =>
+    -- hX : v1 = just (), hY : v2 = just ()
+    pmap (\lam u => (u or gset_overlap_tree L1 L2) or gset_overlap_tree R1 R2)
+      (both_just_true_from v1 v2 hX hY)
+  | PNode v1 L1 R1, PNode v2 L2 R2, xO q =>
+    -- hX : plookup' L1 q = just (), hY : plookup' L2 q = just ()
+    \let
+      | h_rec : gset_overlap_tree L1 L2 = true =>
+        gset_overlap_tree_complete L1 L2 q hX hY
+    \in pmap (\lam u => (gset_overlap_tree.both_just v1 v2 or u) or gset_overlap_tree R1 R2)
+              h_rec
+        *> bool_or_xx_true (gset_overlap_tree.both_just v1 v2) (gset_overlap_tree R1 R2)
+  | PNode v1 L1 R1, PNode v2 L2 R2, xI q =>
+    \let
+      | h_rec : gset_overlap_tree R1 R2 = true =>
+        gset_overlap_tree_complete R1 R2 q hX hY
+    \in pmap (\lam u => (gset_overlap_tree.both_just v1 v2 or gset_overlap_tree L1 L2) or u)
+              h_rec
+        *> bool_or_true_r (gset_overlap_tree.both_just v1 v2 or gset_overlap_tree L1 L2)
+  \where {
+    \lemma bool_or_true_r (a : Bool) : (a or true) = true \elim a
+      | true => idp
+      | false => idp
+    \lemma bool_or_xx_true (a b : Bool) : ((a or true) or b) = true \elim a, b
+      | true, true => idp
+      | true, false => idp
+      | false, true => idp
+      | false, false => idp
+  }
+
+-- Same with `gset_overlap` (wrapped).
+\func gset_overlap_sound (X Y : Gset)
+                         (h : gset_overlap X Y = true)
+  : \Sigma (p : Pos) (plookup X p = just ()) (plookup Y p = just ()) =>
+  gset_overlap_tree_sound X.tree Y.tree h
+
+\lemma gset_overlap_complete (X Y : Gset) (p : Pos)
+                             (hX : plookup X p = just ()) (hY : plookup Y p = just ())
+  : gset_overlap X Y = true =>
+  gset_overlap_tree_complete X.tree Y.tree p hX hY
+
+-- The "false" form: pointwise disjoint <-> overlap is false.
+\lemma gset_overlap_tree_false_witness (X Y : Pmap' (\Sigma))
+                                       (h : gset_overlap_tree X Y = false)
+                                       (p : Pos)
+                                       (hX : plookup' X p = just ())
+                                       (hY : plookup' Y p = just ())
+  : Empty =>
+  \case (inv (gset_overlap_tree_complete X Y p hX hY)) *> h \with {}
+
+\lemma gset_overlap_tree_disjoint
+       (X Y : Pmap' (\Sigma))
+       (h : \Pi (p : Pos) -> plookup' X p = just () -> plookup' Y p = just () -> Empty)
+  : gset_overlap_tree X Y = false =>
+  \case gset_overlap_tree X Y \as o, idp : gset_overlap_tree X Y = o
+  \return o = false \with {
+    | true,  e =>
+      \let | rec : \Sigma (q : Pos) (plookup' X q = just ()) (plookup' Y q = just ()) =>
+        gset_overlap_tree_sound X Y e
+      \in \case h rec.1 rec.2 rec.3 \with {}
+    | false, _ => idp
+  }
+
+\lemma gset_overlap_disjoint (X Y : Gset)
+       (h : \Pi (p : Pos) -> plookup X p = just () -> plookup Y p = just () -> Empty)
+  : gset_overlap X Y = false =>
+  gset_overlap_tree_disjoint X.tree Y.tree h
+
+-- =================================================================================
+-- Overlap distributes over union (the key fact for op_assoc).
+-- =================================================================================
+
+-- "p is in union X Y as just ()" iff p is in X or p is in Y as just ().
+\func plookup_gset_union_just (X Y : Gset) (p : Pos)
+                              (h : plookup (gset_union X Y) p = just ())
+  : Or (plookup X p = just ()) (plookup Y p = just ()) =>
+  \let
+    | e : gset_union_fn (plookup X p) (plookup Y p) = just () =>
+      inv (plookup_gset_union X Y p) *> h
+  \in \case plookup X p \as ox, idp : plookup X p = ox,
+            plookup Y p \as oy, idp : plookup Y p = oy,
+            e : gset_union_fn ox oy = just ()
+      \return Or (plookup X p = just ()) (plookup Y p = just ())
+      \with {
+        | nothing, _,  nothing, _,  he => \case he \with {}
+        | nothing, _,  just (), hy, _  => inr hy
+        | just (), hx, _,       _,  _  => inl hx
+      }
+
+\lemma plookup_gset_union_just_inl (X Y : Gset) (p : Pos)
+                                   (h : plookup X p = just ())
+  : plookup (gset_union X Y) p = just () =>
+  plookup_gset_union X Y p *>
+  pmap (\lam o => gset_union_fn o (plookup Y p)) h *>
+  union_fn_just_l (plookup Y p)
+  \where {
+    \lemma union_fn_just_l (oy : Maybe (\Sigma)) : gset_union_fn (just ()) oy = just () \elim oy
+      | nothing => idp
+      | just () => idp
+  }
+
+\lemma plookup_gset_union_just_inr (X Y : Gset) (p : Pos)
+                                   (h : plookup Y p = just ())
+  : plookup (gset_union X Y) p = just () =>
+  plookup_gset_union X Y p *>
+  pmap (\lam o => gset_union_fn (plookup X p) o) h *>
+  union_fn_just_r (plookup X p)
+  \where {
+    \lemma union_fn_just_r (ox : Maybe (\Sigma)) : gset_union_fn ox (just ()) = just () \elim ox
+      | nothing => idp
+      | just () => idp
+  }
+
+-- overlap X (union Y Z) = overlap X Y or overlap X Z
+\lemma gset_overlap_union_r (X Y Z : Gset)
+  : gset_overlap X (gset_union Y Z) = (gset_overlap X Y or gset_overlap X Z) =>
+  \case gset_overlap X Y \as oXY, idp : gset_overlap X Y = oXY,
+        gset_overlap X Z \as oXZ, idp : gset_overlap X Z = oXZ
+  \return gset_overlap X (gset_union Y Z) = (oXY or oXZ)
+  \with {
+    | true,  eXY, _,     _   =>
+      \let | (p, hX, hY) => gset_overlap_sound X Y eXY
+      \in gset_overlap_complete X (gset_union Y Z) p hX
+            (plookup_gset_union_just_inl Y Z p hY)
+    | false, _,   true,  eXZ =>
+      \let | (p, hX, hZ) => gset_overlap_sound X Z eXZ
+      \in gset_overlap_complete X (gset_union Y Z) p hX
+            (plookup_gset_union_just_inr Y Z p hZ)
+    | false, eXY, false, eXZ =>
+      gset_overlap_disjoint X (gset_union Y Z) (\lam p hX hUYZ =>
+        \case plookup_gset_union_just Y Z p hUYZ \with {
+          | inl hY => \case (inv (gset_overlap_complete X Y p hX hY)) *> eXY \with {}
+          | inr hZ => \case (inv (gset_overlap_complete X Z p hX hZ)) *> eXZ \with {}
+        })
+  }
+
+\lemma gset_overlap_union_l (X Y Z : Gset)
+  : gset_overlap (gset_union X Y) Z = (gset_overlap X Z or gset_overlap Y Z) =>
+  \case gset_overlap X Z \as oXZ, idp : gset_overlap X Z = oXZ,
+        gset_overlap Y Z \as oYZ, idp : gset_overlap Y Z = oYZ
+  \return gset_overlap (gset_union X Y) Z = (oXZ or oYZ)
+  \with {
+    | true,  eXZ, _,     _   =>
+      \let | (p, hX, hZ) => gset_overlap_sound X Z eXZ
+      \in gset_overlap_complete (gset_union X Y) Z p
+            (plookup_gset_union_just_inl X Y p hX) hZ
+    | false, _,   true,  eYZ =>
+      \let | (p, hY, hZ) => gset_overlap_sound Y Z eYZ
+      \in gset_overlap_complete (gset_union X Y) Z p
+            (plookup_gset_union_just_inr X Y p hY) hZ
+    | false, eXZ, false, eYZ =>
+      gset_overlap_disjoint (gset_union X Y) Z (\lam p hUXY hZ =>
+        \case plookup_gset_union_just X Y p hUXY \with {
+          | inl hX => \case (inv (gset_overlap_complete X Z p hX hZ)) *> eXZ \with {}
+          | inr hY => \case (inv (gset_overlap_complete Y Z p hY hZ)) *> eYZ \with {}
+        })
+  }
+
+-- =================================================================================
+-- Helpers for `gset_disj_op` and `gset_disj_equiv`.
+-- =================================================================================
+
+\lemma bool_or_true_r (a : Bool) : (a or true) = true \elim a
+  | true => idp
+  | false => idp
+
+\lemma gset_disj_op_invalid_l (y : gset_disj) : gset_disj_op GSetInvalid y = GSetInvalid \elim y
+  | GSet _ => idp
+  | GSetInvalid => idp
+
+\lemma gset_disj_op_invalid_r (x : gset_disj) : gset_disj_op x GSetInvalid = GSetInvalid \elim x
+  | GSet _ => idp
+  | GSetInvalid => idp
+
+\lemma op_GSet_eq_invalid (X Y : Gset) (h : gset_overlap X Y = true)
+  : gset_disj_op (GSet X) (GSet Y) = GSetInvalid =>
+  pmap (\lam o => \case o \with { | true => GSetInvalid | false => GSet (gset_union X Y) }) h
+
+\lemma op_GSet_eq_GSet (X Y : Gset) (h : gset_overlap X Y = false)
+  : gset_disj_op (GSet X) (GSet Y) = GSet (gset_union X Y) =>
+  pmap (\lam o => \case o \with { | true => GSetInvalid | false => GSet (gset_union X Y) }) h
+
+\lemma gset_disj_equiv_via_invalid (a b : gset_disj)
+                                    (ha : a = GSetInvalid) (hb : b = GSetInvalid)
+  : gset_disj_equiv a b =>
+  transport (\lam x => gset_disj_equiv x b) (inv ha)
+    (transport (\lam y => gset_disj_equiv GSetInvalid y) (inv hb) ())
+
+\lemma gset_disj_equiv_via_GSet (a b : gset_disj) (A B : Gset)
+                                 (ha : a = GSet A) (hb : b = GSet B)
+                                 (e : A = B)
+  : gset_disj_equiv a b =>
+  transport (\lam x => gset_disj_equiv x b) (inv ha)
+    (transport (\lam y => gset_disj_equiv (GSet A) y) (inv hb) e)
+
+
+-- =================================================================================
+-- OFE: discrete (equiv = propositional equality)
+-- =================================================================================
+--
+-- Since Pmap has canonicity (via the wf invariant), propositional equality on
+-- Gset is decidable. We could use `LeibnizOFE`, but we follow the
+-- equiv-flavoured style for uniformity with the rest of the project.
+
+\func gset_disj_equiv (x y : gset_disj) : \Prop \elim x, y
+  | GSet X, GSet Y => X = Y
+  | GSetInvalid, GSetInvalid => \Sigma
+  | _, _ => Empty
+
+\func gset_disj_dist (n : Nat) (x y : gset_disj) : \Prop => gset_disj_equiv x y
+
+
+\lemma gset_disj_equiv_refl (x : gset_disj) : gset_disj_equiv x x \elim x
+  | GSet X => idp
+  | GSetInvalid => ()
+
+\lemma gset_disj_equiv_sym (x y : gset_disj) (h : gset_disj_equiv x y)
+  : gset_disj_equiv y x \elim x, y
+  | GSet X, GSet Y => inv h
+  | GSetInvalid, GSetInvalid => ()
+  | GSet _, GSetInvalid => \case h \with {}
+  | GSetInvalid, GSet _ => \case h \with {}
+
+\lemma gset_disj_equiv_trans (x y z : gset_disj)
+                              (h1 : gset_disj_equiv x y) (h2 : gset_disj_equiv y z)
+  : gset_disj_equiv x z \elim x, y, z
+  | GSet X, GSet Y, GSet Z => h1 *> h2
+  | GSetInvalid, GSetInvalid, GSetInvalid => ()
+  | GSet _, GSetInvalid, _ => \case h1 \with {}
+  | GSetInvalid, GSet _, _ => \case h1 \with {}
+  | _, GSet _, GSetInvalid => \case h2 \with {}
+  | _, GSetInvalid, GSet _ => \case h2 \with {}
+
+
+\instance gset_disj_OFE : OFE \cowith
+  | E => gset_disj
+  | dist => gset_disj_dist
+  | equiv => gset_disj_equiv
+  | equiv_refl => gset_disj_equiv_refl
+  | equiv_sym => gset_disj_equiv_sym
+  | equiv_trans => gset_disj_equiv_trans
+  | ofe_equiv_dist => \lam x y => (\lam h _ => h, \lam h => h 0)
+  | ofe_dist_refl => \lam _ => gset_disj_equiv_refl
+  | ofe_dist_sym => \lam _ => gset_disj_equiv_sym
+  | ofe_dist_trans => \lam _ => gset_disj_equiv_trans
+  | ofe_dist_le => \lam _ _ _ _ h _ => h
+
+
+-- =================================================================================
+-- Op, pcore, valid, validN
+-- =================================================================================
+
+\func gset_disj_op (x y : gset_disj) : gset_disj \elim x, y
+  | GSet X, GSet Y => \case gset_overlap X Y \with {
+      | true => GSetInvalid
+      | false => GSet (gset_union X Y)
+    }
+  | _, _ => GSetInvalid
+
+\func gset_disj_pcore (x : gset_disj) : Maybe gset_disj => just (GSet gset_empty)
+
+\func gset_disj_valid (x : gset_disj) : \Prop \elim x
+  | GSet _ => \Sigma
+  | GSetInvalid => Empty
+
+\func gset_disj_validN (n : Nat) (x : gset_disj) : \Prop => gset_disj_valid x
+
+
+-- =================================================================================
+-- Overlap is commutative, and preserved by Gset equality (trivially).
+-- =================================================================================
+
+\lemma both_just_comm (o1 o2 : Maybe (\Sigma)) :
+  gset_overlap_tree.both_just o1 o2 = gset_overlap_tree.both_just o2 o1 \elim o1, o2
+  | nothing, nothing => idp
+  | nothing, just _ => idp
+  | just _, nothing => idp
+  | just _, just _ => idp
+
+\lemma bool_or_comm (a b : Bool) : (a or b) = (b or a) \elim a, b
+  | true, true => idp
+  | true, false => idp
+  | false, true => idp
+  | false, false => idp
+
+\lemma gset_overlap_tree_comm (X Y : Pmap' (\Sigma))
+  : gset_overlap_tree X Y = gset_overlap_tree Y X \elim X, Y
+  | PEmpty, PEmpty => idp
+  | PEmpty, PNode _ _ _ => idp
+  | PNode _ _ _, PEmpty => idp
+  | PNode v1 L1 R1, PNode v2 L2 R2 =>
+    pmap (\lam u => (u or gset_overlap_tree L1 L2) or gset_overlap_tree R1 R2)
+      (both_just_comm v1 v2)
+    *> pmap (\lam u => (gset_overlap_tree.both_just v2 v1 or u) or gset_overlap_tree R1 R2)
+      (gset_overlap_tree_comm L1 L2)
+    *> pmap (\lam u => (gset_overlap_tree.both_just v2 v1 or gset_overlap_tree L2 L1) or u)
+      (gset_overlap_tree_comm R1 R2)
+
+\lemma gset_overlap_comm (X Y : Gset) : gset_overlap X Y = gset_overlap Y X =>
+  gset_overlap_tree_comm X.tree Y.tree
+
+
+-- =================================================================================
+-- The CMRA mixin
+-- =================================================================================
+
+\instance gset_disj_CMRA : CMRA \cowith
+  | OFE => gset_disj_OFE
+  | PCore => \new PCore gset_disj { | pcore => gset_disj_pcore }
+  | Op => \new Op gset_disj { | op => gset_disj_op }
+  | Valid => \new Valid gset_disj { | valid => gset_disj_valid }
+  | ValidN => \new ValidN gset_disj { | validN => gset_disj_validN }
+
+  | cmra_op_ne => \lam x n y1 y2 hd => op_proper_inner x y1 y2 hd
+  | cmra_op_ne_2 => \lam y n x1 x2 hd => op_proper_outer x1 x2 y hd
+  | cmra_pcore_ne => \lam n x y cx _ hpx =>
+      \let
+        | cx_eq : cx = GSet gset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => GSet gset_empty }) (inv hpx)
+      \in (GSet gset_empty, idp,
+           transport (\lam c => gset_disj_equiv c (GSet gset_empty))
+             (inv cx_eq) (gset_disj_equiv_refl (GSet gset_empty)))
+  | cmra_validN_ne => validN_ne
+  | cmra_valid_validN => \lam x => (\lam h _ => h, \lam h => h 0)
+  | cmra_validN_le => \lam _ _ _ hv _ => hv
+
+  | cmra_assoc => op_assoc
+  | cmra_comm => op_comm
+  | cmra_pcore_l => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = GSet gset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => GSet gset_empty }) (inv hpx)
+      \in transport (\lam c => gset_disj_equiv (gset_disj_op c x) x)
+            (inv cx_eq) (pcore_l x)
+  | cmra_pcore_idemp => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = GSet gset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => GSet gset_empty }) (inv hpx)
+      \in transport (\lam c => (OptionOFE gset_disj_OFE).equiv (gset_disj_pcore c) (just c))
+            (inv cx_eq) (gset_disj_equiv_refl (GSet gset_empty))
+  | cmra_pcore_mono => \lam x y cx _ hpx =>
+      \let
+        | cx_eq : cx = GSet gset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => GSet gset_empty }) (inv hpx)
+      \in inP (GSet gset_empty, idp,
+            transport (\lam c => incl {gset_disj_OFE}
+              {\new Op gset_disj { | op => gset_disj_op }} c (GSet gset_empty))
+              (inv cx_eq) (inP (GSet gset_empty, gset_disj_equiv_refl (GSet gset_empty))))
+
+  | cmra_validN_op_l => validN_op_l
+  | cmra_extend => \lam n x y1 y2 _ hd =>
+      (y1, y2, hd, gset_disj_equiv_refl y1, gset_disj_equiv_refl y2)
+  \where {
+    \func op_proper_inner (x y1 y2 : gset_disj) (hd : gset_disj_equiv y1 y2)
+      : gset_disj_equiv (gset_disj_op x y1) (gset_disj_op x y2) \elim x, y1, y2
+      | GSet X, GSet Y1, GSet Y2 =>
+        \let
+          | y_eq : Y1 = Y2 => hd
+        \in transport (\lam q => gset_disj_equiv (gset_disj_op (GSet X) (GSet Y1)) (gset_disj_op (GSet X) (GSet q)))
+              y_eq (gset_disj_equiv_refl _)
+      | GSet _, GSet _, GSetInvalid => \case hd \with {}
+      | GSet _, GSetInvalid, GSet _ => \case hd \with {}
+      | GSet _, GSetInvalid, GSetInvalid => ()
+      | GSetInvalid, _, _ => ()
+
+    \func op_proper_outer (x1 x2 y : gset_disj) (hd : gset_disj_equiv x1 x2)
+      : gset_disj_equiv (gset_disj_op x1 y) (gset_disj_op x2 y) \elim x1, x2, y
+      | GSet X1, GSet X2, GSet Y =>
+        \let
+          | x_eq : X1 = X2 => hd
+        \in transport (\lam q => gset_disj_equiv (gset_disj_op (GSet X1) (GSet Y)) (gset_disj_op (GSet q) (GSet Y)))
+              x_eq (gset_disj_equiv_refl _)
+      | GSet _, GSet _, GSetInvalid => ()
+      | GSet _, GSetInvalid, _ => \case hd \with {}
+      | GSetInvalid, GSet _, _ => \case hd \with {}
+      | GSetInvalid, GSetInvalid, _ => ()
+
+    \func validN_ne (n : Nat) (x y : gset_disj)
+                     (hd : gset_disj_equiv x y)
+                     (hv : gset_disj_valid x) : gset_disj_valid y \elim x, y
+      | GSet _, GSet _ => ()
+      | GSet _, GSetInvalid => \case hd \with {}
+      | GSetInvalid, _ => \case hv \with {}
+
+    \func validN_op_l (n : Nat) (x y : gset_disj)
+                       (hv : gset_disj_valid (gset_disj_op x y))
+      : gset_disj_valid x \elim x, y
+      | GSet _, GSet _ => ()
+      | GSet _, GSetInvalid => \case hv \with {}
+      | GSetInvalid, _ => \case hv \with {}
+
+    \func pcore_l (x : gset_disj)
+      : gset_disj_equiv (gset_disj_op (GSet gset_empty) x) x \elim x
+      | GSet X => pcore_l_GSet X
+      | GSetInvalid => ()
+
+    \func pcore_l_GSet (X : Gset)
+      : gset_disj_equiv (gset_disj_op (GSet gset_empty) (GSet X)) (GSet X) =>
+      \case gset_overlap gset_empty X \as o, idp : gset_overlap gset_empty X = o,
+            gset_overlap_empty_l X : gset_overlap gset_empty X = false
+      \return gset_disj_equiv
+                (\case o \with { | true => GSetInvalid | false => GSet (gset_union gset_empty X) })
+                (GSet X)
+      \with {
+        | true, eq, abs => \case (inv eq *> abs) \with {}
+        | false, _, _ => gset_union_empty_l X
+      }
+
+    \lemma gset_overlap_empty_l (X : Gset) : gset_overlap gset_empty X = false =>
+      gset_overlap_tree_PEmpty_l X.tree
+
+    \lemma gset_union_empty_l (X : Gset)
+      : gset_disj_equiv (GSet (gset_union gset_empty X)) (GSet X) =>
+      pmap_eq (gset_union gset_empty X) X (\lam p =>
+        plookup_gset_union gset_empty X p *>
+        gset_union_fn_left_id (plookup X p))
+
+    \lemma op_comm (x y : gset_disj)
+      : gset_disj_equiv (gset_disj_op x y) (gset_disj_op y x) \elim x, y
+      | GSet X, GSet Y =>
+        \case gset_overlap X Y \as oxy, idp : gset_overlap X Y = oxy,
+              gset_overlap Y X \as oyx, idp : gset_overlap Y X = oyx,
+              gset_overlap_comm X Y : gset_overlap X Y = gset_overlap Y X
+        \return gset_disj_equiv
+                  (\case oxy \with { | true => GSetInvalid | false => GSet (gset_union X Y) })
+                  (\case oyx \with { | true => GSetInvalid | false => GSet (gset_union Y X) })
+        \with {
+          | true, _, true, _, _ => ()
+          | false, _, false, _, _ => gset_union_comm X Y
+          | true, e1, false, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+          | false, e1, true, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+        }
+      | GSet _, GSetInvalid => ()
+      | GSetInvalid, GSet _ => ()
+      | GSetInvalid, GSetInvalid => ()
+
+    \lemma op_assoc (x y z : gset_disj)
+      : gset_disj_equiv (gset_disj_op x (gset_disj_op y z))
+                        (gset_disj_op (gset_disj_op x y) z) \elim x, y, z
+      | GSetInvalid, _, _ => ()
+      | GSet _, GSetInvalid, _ => ()
+      | GSet X, GSet Y, GSetInvalid =>
+        gset_disj_equiv_via_invalid _ _
+          idp
+          (pmap (\lam xy => gset_disj_op xy GSetInvalid)
+            (idp : gset_disj_op (GSet X) (GSet Y) = gset_disj_op (GSet X) (GSet Y))
+            *> gset_disj_op_invalid_r (gset_disj_op (GSet X) (GSet Y)))
+      | GSet X, GSet Y, GSet Z => op_assoc_GSet X Y Z
+
+    \func op_assoc_GSet (X Y Z : Gset)
+      : gset_disj_equiv
+          (gset_disj_op (GSet X) (gset_disj_op (GSet Y) (GSet Z)))
+          (gset_disj_op (gset_disj_op (GSet X) (GSet Y)) (GSet Z)) =>
+      \case gset_overlap X Y \as oXY, idp : gset_overlap X Y = oXY,
+            gset_overlap Y Z \as oYZ, idp : gset_overlap Y Z = oYZ,
+            gset_overlap X Z \as oXZ, idp : gset_overlap X Z = oXZ
+      \with {
+        | true, eXY, true, eYZ, _, _ =>
+          gset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_YZ X Y Z eYZ)
+            (rhs_invalid_via_XY X Y Z eXY)
+        | true, eXY, false, eYZ, _, _ =>
+          gset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_XY_or_XZ X Y Z eYZ (byLeftOr (gset_overlap X Z) eXY))
+            (rhs_invalid_via_XY X Y Z eXY)
+        | false, eXY, true, eYZ, _, _ =>
+          gset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_YZ X Y Z eYZ)
+            (rhs_invalid_via_XY_or_YZ X Y Z eXY (byRightOr (gset_overlap X Z) eYZ))
+        | false, eXY, false, eYZ, true, eXZ =>
+          gset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_XY_or_XZ X Y Z eYZ (byRightOr (gset_overlap X Y) eXZ))
+            (rhs_invalid_via_XY_or_YZ X Y Z eXY (byLeftOr (gset_overlap Y Z) eXZ))
+        | false, eXY, false, eYZ, false, eXZ =>
+          \let
+            | h_uYZ : gset_overlap X (gset_union Y Z) = false =>
+              gset_overlap_union_r X Y Z *>
+              pmap (\lam u => u or gset_overlap X Z) eXY *>
+              pmap (\lam u => false or u) eXZ
+            | h_uXY : gset_overlap (gset_union X Y) Z = false =>
+              gset_overlap_union_l X Y Z *>
+              pmap (\lam u => u or gset_overlap Y Z) eXZ *>
+              pmap (\lam u => false or u) eYZ
+            | h_YZ : gset_disj_op (GSet Y) (GSet Z) = GSet (gset_union Y Z) =>
+              op_GSet_eq_GSet Y Z eYZ
+            | h_XY : gset_disj_op (GSet X) (GSet Y) = GSet (gset_union X Y) =>
+              op_GSet_eq_GSet X Y eXY
+            | h_LHS : gset_disj_op (GSet X) (gset_disj_op (GSet Y) (GSet Z))
+                      = GSet (gset_union X (gset_union Y Z)) =>
+              pmap (\lam yz => gset_disj_op (GSet X) yz) h_YZ *>
+              op_GSet_eq_GSet X (gset_union Y Z) h_uYZ
+            | h_RHS : gset_disj_op (gset_disj_op (GSet X) (GSet Y)) (GSet Z)
+                      = GSet (gset_union (gset_union X Y) Z) =>
+              pmap (\lam xy => gset_disj_op xy (GSet Z)) h_XY *>
+              op_GSet_eq_GSet (gset_union X Y) Z h_uXY
+          \in gset_disj_equiv_via_GSet _ _ _ _ h_LHS h_RHS (gset_union_assoc X Y Z)
+      }
+    \where {
+      -- LHS = GSetInvalid because op(Y,Z) = GSetInvalid.
+      \lemma lhs_invalid_via_YZ (X Y Z : Gset) (eYZ : gset_overlap Y Z = true)
+        : gset_disj_op (GSet X) (gset_disj_op (GSet Y) (GSet Z)) = GSetInvalid =>
+        pmap (\lam yz => gset_disj_op (GSet X) yz) (op_GSet_eq_invalid Y Z eYZ)
+
+      -- LHS = GSetInvalid via overlap X (union Y Z) being true, derived from oXY or oXZ.
+      \lemma lhs_invalid_via_XY_or_XZ (X Y Z : Gset) (eYZ : gset_overlap Y Z = false)
+                                       (h : (gset_overlap X Y or gset_overlap X Z) = true)
+        : gset_disj_op (GSet X) (gset_disj_op (GSet Y) (GSet Z)) = GSetInvalid =>
+        pmap (\lam yz => gset_disj_op (GSet X) yz) (op_GSet_eq_GSet Y Z eYZ) *>
+        op_GSet_eq_invalid X (gset_union Y Z) (gset_overlap_union_r X Y Z *> h)
+
+      -- RHS = GSetInvalid because op(X,Y) = GSetInvalid.
+      \lemma rhs_invalid_via_XY (X Y Z : Gset) (eXY : gset_overlap X Y = true)
+        : gset_disj_op (gset_disj_op (GSet X) (GSet Y)) (GSet Z) = GSetInvalid =>
+        pmap (\lam xy => gset_disj_op xy (GSet Z)) (op_GSet_eq_invalid X Y eXY)
+
+      -- RHS = GSetInvalid via overlap (union X Y) Z being true.
+      \lemma rhs_invalid_via_XY_or_YZ (X Y Z : Gset) (eXY : gset_overlap X Y = false)
+                                       (h : (gset_overlap X Z or gset_overlap Y Z) = true)
+        : gset_disj_op (gset_disj_op (GSet X) (GSet Y)) (GSet Z) = GSetInvalid =>
+        pmap (\lam xy => gset_disj_op xy (GSet Z)) (op_GSet_eq_GSet X Y eXY) *>
+        op_GSet_eq_invalid (gset_union X Y) Z (gset_overlap_union_l X Y Z *> h)
+
+      \lemma byLeftOr {a : Bool} (b : Bool) (h : a = true) : (a or b) = true =>
+        pmap (\lam u => u or b) h
+      \lemma byRightOr (a : Bool) {b : Bool} (h : b = true) : (a or b) = true =>
+        pmap (\lam u => a or u) h *> bool_or_true_r a
+    }
+  }
+
+
+-- =================================================================================
+-- UCMRA: unit = GSet ∅
+-- =================================================================================
+
+\instance gset_disj_UCMRA : UCMRA \cowith
+  | CMRA => gset_disj_CMRA
+  | unit => GSet gset_empty
+  | ucmra_unit_valid => ()
+  | ucmra_unit_left_id => gset_disj_CMRA.pcore_l
+  | ucmra_pcore_unit => gset_disj_equiv_refl (GSet gset_empty)

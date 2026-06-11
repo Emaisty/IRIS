@@ -50,6 +50,9 @@
   \Pi (n : Nat) (x y : A.E) (x' y' : B.E) ->
     A.dist n x y -> B.dist n x' y' -> C.dist n (f x x') (f y y')
 
+\func ContractiveMap {A B : OFE} (f : A.E -> B.E) : \Prop =>
+  \Pi (n : Nat) (x y : A.E) -> DistLater {A} n x y -> B.dist n (f x) (f y)
+
 
 \func Discrete {O : OFE} (x : O.E) : \Prop =>
   \Pi (y : O.E) -> O.dist 0 x y -> x = y
@@ -135,19 +138,158 @@
 -- OFE Morphisms (non-expansive functions)
 -- =================================================================================
 
-\record OFEMor (A B : OFE) (f : A.E -> B.E)
-  | ofe_mor_ne : NonExpansive f
+\record OFEMor (A B : OFE)
+  | ofe_mor_car : A.E -> B.E
+  | ofe_mor_ne : NonExpansive ofe_mor_car
 
-\func ofe_mor_id {A : OFE} : OFEMor A A (\lam x => x) \cowith
+\instance OFEMorOFE (A B : OFE) : OFE \cowith
+  | E => OFEMor A B
+  | dist => \lam n f g => \Pi (x : A.E) -> B.dist n (f.ofe_mor_car x) (g.ofe_mor_car x)
+  | equiv => \lam f g => \Pi (x : A.E) -> B.equiv (f.ofe_mor_car x) (g.ofe_mor_car x)
+  | equiv_refl => \lam f x => B.equiv_refl (f.ofe_mor_car x)
+  | equiv_sym => \lam f g h x => B.equiv_sym (f.ofe_mor_car x) (g.ofe_mor_car x) (h x)
+  | equiv_trans => \lam f g h hfg hgh x =>
+      B.equiv_trans (f.ofe_mor_car x) (g.ofe_mor_car x) (h.ofe_mor_car x) (hfg x) (hgh x)
+  | ofe_equiv_dist => \lam f g => (
+      \lam he n x => (B.ofe_equiv_dist (f.ofe_mor_car x) (g.ofe_mor_car x)).1 (he x) n,
+      \lam hd x => (B.ofe_equiv_dist (f.ofe_mor_car x) (g.ofe_mor_car x)).2 (\lam n => hd n x)
+    )
+  | ofe_dist_refl => \lam n f x => B.ofe_dist_refl n (f.ofe_mor_car x)
+  | ofe_dist_sym => \lam n f g h x => B.ofe_dist_sym n (f.ofe_mor_car x) (g.ofe_mor_car x) (h x)
+  | ofe_dist_trans => \lam n f g h hfg hgh x =>
+      B.ofe_dist_trans n (f.ofe_mor_car x) (g.ofe_mor_car x) (h.ofe_mor_car x) (hfg x) (hgh x)
+  | ofe_dist_le => \lam n m f g h le x =>
+      B.ofe_dist_le n m (f.ofe_mor_car x) (g.ofe_mor_car x) (h x) le
+
+\instance OFEMorCOFE (A : OFE) (B : COFE) : COFE \cowith
+  | OFE => OFEMorOFE A B
+  | compl => \lam c hc => \new OFEMor A B {
+      | ofe_mor_car => \lam x =>
+          B.compl
+            (\lam n => (c n).ofe_mor_car x)
+            (\new Chain { | chain_cauchy => \lam n m le => hc.chain_cauchy n m le x })
+      | ofe_mor_ne => \lam n x y hxy =>
+          \let
+            | cx : Nat -> B.E => \lam k => (c k).ofe_mor_car x
+            | cy : Nat -> B.E => \lam k => (c k).ofe_mor_car y
+            | hcx : Chain cx => \new Chain { | chain_cauchy => \lam k l le => hc.chain_cauchy k l le x }
+            | hcy : Chain cy => \new Chain { | chain_cauchy => \lam k l le => hc.chain_cauchy k l le y }
+          \in B.ofe_dist_trans n
+              (B.compl cx hcx)
+              ((c n).ofe_mor_car x)
+              (B.compl cy hcy)
+              (B.cofe_conv_compl cx hcx n)
+              (B.ofe_dist_trans n
+                ((c n).ofe_mor_car x)
+                ((c n).ofe_mor_car y)
+                (B.compl cy hcy)
+                ((c n).ofe_mor_ne n x y hxy)
+                (B.ofe_dist_sym n (B.compl cy hcy) ((c n).ofe_mor_car y)
+                  (B.cofe_conv_compl cy hcy n)))
+    }
+  | cofe_conv_compl => \lam c hc n x =>
+      B.cofe_conv_compl
+        (\lam k => (c k).ofe_mor_car x)
+        (\new Chain { | chain_cauchy => \lam k l le => hc.chain_cauchy k l le x })
+        n
+
+\func ofe_mor_id {A : OFE} : OFEMor A A \cowith
+  | ofe_mor_car => \lam x => x
   | ofe_mor_ne => \lam n x y h => h
 
-\func ofe_mor_comp {A B C : OFE} (g : OFEMor B C) (f : OFEMor A B) :
-  OFEMor A C (\lam x => g.f (f.f x)) \cowith
-  | ofe_mor_ne => \lam n x y h => g.ofe_mor_ne n (f.f x) (f.f y) (f.ofe_mor_ne n x y h)
+\func ofe_mor_comp {A B C : OFE} (g : OFEMor B C) (f : OFEMor A B) : OFEMor A C \cowith
+  | ofe_mor_car => \lam x => g.ofe_mor_car (f.ofe_mor_car x)
+  | ofe_mor_ne => \lam n x y h => g.ofe_mor_ne n (f.ofe_mor_car x) (f.ofe_mor_car y) (f.ofe_mor_ne n x y h)
 
-\func ofe_mor_const {A B : OFE} (b : B.E) : OFEMor A B (\lam _ => b) \cowith
+\func ofe_mor_const {A B : OFE} (b : B.E) : OFEMor A B \cowith
+  | ofe_mor_car => \lam _ => b
   | ofe_mor_ne => \lam n x y h => B.ofe_dist_refl n b
 
+\lemma ofe_mor_car_ne {A B : OFE} (n : Nat) (f g : OFEMor A B) (x y : A.E)
+                       (hfg : (OFEMorOFE A B).dist n f g) (hxy : A.dist n x y)
+  : B.dist n (f.ofe_mor_car x) (g.ofe_mor_car y) =>
+  B.ofe_dist_trans n
+    (f.ofe_mor_car x)
+    (f.ofe_mor_car y)
+    (g.ofe_mor_car y)
+    (f.ofe_mor_ne n x y hxy)
+    (hfg y)
+
+\lemma ofe_mor_comp_ne {A B C : OFE} (n : Nat)
+                       (g1 g2 : OFEMor B C) (f1 f2 : OFEMor A B)
+                       (hg : (OFEMorOFE B C).dist n g1 g2)
+                       (hf : (OFEMorOFE A B).dist n f1 f2)
+  : (OFEMorOFE A C).dist n (ofe_mor_comp g1 f1) (ofe_mor_comp g2 f2) =>
+  \lam x =>
+    C.ofe_dist_trans n
+      (g1.ofe_mor_car (f1.ofe_mor_car x))
+      (g1.ofe_mor_car (f2.ofe_mor_car x))
+      (g2.ofe_mor_car (f2.ofe_mor_car x))
+      (g1.ofe_mor_ne n (f1.ofe_mor_car x) (f2.ofe_mor_car x) (hf x))
+      (hg (f2.ofe_mor_car x))
+
+\lemma ofe_mor_proper {A B : OFE} (f : OFEMor A B) (x y : A.E)
+                      (h : A.equiv x y) :
+  B.equiv (f.ofe_mor_car x) (f.ofe_mor_car y) =>
+  (B.ofe_equiv_dist (f.ofe_mor_car x) (f.ofe_mor_car y)).2
+    (\lam n => f.ofe_mor_ne n x y ((A.ofe_equiv_dist x y).1 h n))
+
+\func ofe_mor_ext {A B : OFE} (f g : OFEMor A B)
+  : (OFEMorOFE A B).equiv f g <-> (\Pi (x : A.E) -> B.equiv (f.ofe_mor_car x) (g.ofe_mor_car x)) =>
+  (\lam h => h, \lam h => h)
+
+
+-- =================================================================================
+-- OFE Isomorphisms
+-- =================================================================================
+
+\record OFEIso (A B : OFE)
+  | ofe_iso_1 : OFEMor A B
+  | ofe_iso_2 : OFEMor B A
+  | ofe_iso_12 (y : B.E) : B.equiv (ofe_iso_1.ofe_mor_car (ofe_iso_2.ofe_mor_car y)) y
+  | ofe_iso_21 (x : A.E) : A.equiv (ofe_iso_2.ofe_mor_car (ofe_iso_1.ofe_mor_car x)) x
+
+\instance OFEIsoOFE (A B : OFE) : OFE \cowith
+  | E => OFEIso A B
+  | dist => \lam n I J => \Sigma
+      ((OFEMorOFE A B).dist n I.ofe_iso_1 J.ofe_iso_1)
+      ((OFEMorOFE B A).dist n I.ofe_iso_2 J.ofe_iso_2)
+  | equiv => \lam I J => \Sigma
+      ((OFEMorOFE A B).equiv I.ofe_iso_1 J.ofe_iso_1)
+      ((OFEMorOFE B A).equiv I.ofe_iso_2 J.ofe_iso_2)
+  | equiv_refl => \lam I => ((OFEMorOFE A B).equiv_refl I.ofe_iso_1, (OFEMorOFE B A).equiv_refl I.ofe_iso_2)
+  | equiv_sym => \lam I J h => ((OFEMorOFE A B).equiv_sym I.ofe_iso_1 J.ofe_iso_1 h.1,
+                                (OFEMorOFE B A).equiv_sym I.ofe_iso_2 J.ofe_iso_2 h.2)
+  | equiv_trans => \lam I J K hIJ hJK =>
+      ((OFEMorOFE A B).equiv_trans I.ofe_iso_1 J.ofe_iso_1 K.ofe_iso_1 hIJ.1 hJK.1,
+       (OFEMorOFE B A).equiv_trans I.ofe_iso_2 J.ofe_iso_2 K.ofe_iso_2 hIJ.2 hJK.2)
+  | ofe_equiv_dist => \lam I J => (
+      \lam he n => (((OFEMorOFE A B).ofe_equiv_dist I.ofe_iso_1 J.ofe_iso_1).1 he.1 n,
+                    ((OFEMorOFE B A).ofe_equiv_dist I.ofe_iso_2 J.ofe_iso_2).1 he.2 n),
+      \lam hd => (((OFEMorOFE A B).ofe_equiv_dist I.ofe_iso_1 J.ofe_iso_1).2 (\lam n => (hd n).1),
+                  ((OFEMorOFE B A).ofe_equiv_dist I.ofe_iso_2 J.ofe_iso_2).2 (\lam n => (hd n).2))
+    )
+  | ofe_dist_refl => \lam n I => ((OFEMorOFE A B).ofe_dist_refl n I.ofe_iso_1,
+                                  (OFEMorOFE B A).ofe_dist_refl n I.ofe_iso_2)
+  | ofe_dist_sym => \lam n I J h => ((OFEMorOFE A B).ofe_dist_sym n I.ofe_iso_1 J.ofe_iso_1 h.1,
+                                     (OFEMorOFE B A).ofe_dist_sym n I.ofe_iso_2 J.ofe_iso_2 h.2)
+  | ofe_dist_trans => \lam n I J K hIJ hJK =>
+      ((OFEMorOFE A B).ofe_dist_trans n I.ofe_iso_1 J.ofe_iso_1 K.ofe_iso_1 hIJ.1 hJK.1,
+       (OFEMorOFE B A).ofe_dist_trans n I.ofe_iso_2 J.ofe_iso_2 K.ofe_iso_2 hIJ.2 hJK.2)
+  | ofe_dist_le => \lam n m I J h le => ((OFEMorOFE A B).ofe_dist_le n m I.ofe_iso_1 J.ofe_iso_1 h.1 le,
+                                         (OFEMorOFE B A).ofe_dist_le n m I.ofe_iso_2 J.ofe_iso_2 h.2 le)
+
+\func iso_ofe_refl {A : OFE} : OFEIso A A \cowith
+  | ofe_iso_1 => ofe_mor_id
+  | ofe_iso_2 => ofe_mor_id
+  | ofe_iso_12 => \lam y => A.equiv_refl y
+  | ofe_iso_21 => \lam x => A.equiv_refl x
+
+\func iso_ofe_sym {A B : OFE} (I : OFEIso A B) : OFEIso B A \cowith
+  | ofe_iso_1 => I.ofe_iso_2
+  | ofe_iso_2 => I.ofe_iso_1
+  | ofe_iso_12 => I.ofe_iso_21
+  | ofe_iso_21 => I.ofe_iso_12
 
 
 -- =================================================================================
@@ -208,6 +350,108 @@
     A.cofe_conv_compl (\lam n => (c n).1) _ n,
     B.cofe_conv_compl (\lam n => (c n).2) _ n
   )
+
+-- =================================================================================
+-- COFE -> OFE Functors
+-- =================================================================================
+
+\record OFunctor
+  | oFunctor_car (A B : COFE) : OFE
+  | oFunctor_map {A1 A2 B1 B2 : COFE} :
+      \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
+      OFEMor (oFunctor_car A1 B1) (oFunctor_car A2 B2)
+  | oFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+      NonExpansive
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (oFunctor_car A1 B1) (oFunctor_car A2 B2)}
+        oFunctor_map
+  | oFunctor_map_id {A B : COFE} (x : (oFunctor_car A B).E) :
+      (oFunctor_car A B).equiv
+        ((oFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
+        x
+  | oFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+      (f : OFEMor A2 A1) (g : OFEMor A3 A2)
+      (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
+      (x : (oFunctor_car A1 B1).E) :
+      (oFunctor_car A3 B3).equiv
+        ((oFunctor_map (g, g')).ofe_mor_car
+          ((oFunctor_map (f, f')).ofe_mor_car x))
+        ((oFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
+
+\record OFunctorContractive (F : OFunctor)
+  | oFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+      ContractiveMap
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (F.oFunctor_car A1 B1) (F.oFunctor_car A2 B2)}
+        (F.oFunctor_map {A1} {A2} {B1} {B2})
+
+\func oFunctor_apply (F : OFunctor) (A : COFE) : OFE =>
+  F.oFunctor_car A A
+
+\func constOF (B : OFE) : OFunctor \cowith
+  | oFunctor_car => \lam _ _ => B
+  | oFunctor_map => \lam _ => ofe_mor_id
+  | oFunctor_map_ne => \lam n fg fg' hfg x => B.ofe_dist_refl n x
+  | oFunctor_map_id => \lam x => B.equiv_refl x
+  | oFunctor_map_compose {A1} {A2} {A3} {B1} {B2} {B3} => \lam f g f' g' x => B.equiv_refl x
+
+\func idOF : OFunctor \cowith
+  | oFunctor_car => \lam _ B => B
+  | oFunctor_map => \lam fg => fg.2
+  | oFunctor_map_ne => \lam n fg fg' hfg => hfg.2
+  | oFunctor_map_id {A} {B} => \lam x => B.equiv_refl x
+  | oFunctor_map_compose {A1} {A2} {A3} {B1} {B2} {B3} =>
+      \lam f g f' g' x => B3.equiv_refl (g'.ofe_mor_car (f'.ofe_mor_car x))
+
+\func prodOF (F1 F2 : OFunctor) : OFunctor \cowith
+  | oFunctor_car => \lam A B => ProdOFE (F1.oFunctor_car A B) (F2.oFunctor_car A B)
+  | oFunctor_map => \lam fg => \new OFEMor _ _ {
+      | ofe_mor_car => \lam x =>
+          ((F1.oFunctor_map fg).ofe_mor_car x.1,
+           (F2.oFunctor_map fg).ofe_mor_car x.2)
+      | ofe_mor_ne => \lam n x y hxy =>
+          ((F1.oFunctor_map fg).ofe_mor_ne n x.1 y.1 hxy.1,
+           (F2.oFunctor_map fg).ofe_mor_ne n x.2 y.2 hxy.2)
+    }
+  | oFunctor_map_ne => \lam n fg fg' hfg x =>
+      (F1.oFunctor_map_ne n fg fg' hfg x.1,
+       F2.oFunctor_map_ne n fg fg' hfg x.2)
+  | oFunctor_map_id => \lam x =>
+      (F1.oFunctor_map_id x.1, F2.oFunctor_map_id x.2)
+  | oFunctor_map_compose => \lam f g f' g' x =>
+      (F1.oFunctor_map_compose f g f' g' x.1,
+       F2.oFunctor_map_compose f g f' g' x.2)
+
+\func constOF_contractive (B : OFE) : OFunctorContractive (constOF B) \cowith
+  | oFunctor_map_contractive => \lam n fg fg' hfg x => B.ofe_dist_refl n x
+
+\func prodOF_contractive (F1 F2 : OFunctor)
+                         (h1 : OFunctorContractive F1)
+                         (h2 : OFunctorContractive F2)
+  : OFunctorContractive (prodOF F1 F2) \cowith
+  | oFunctor_map_contractive => \lam n fg fg' hfg x =>
+      (h1.oFunctor_map_contractive n fg fg' hfg x.1,
+       h2.oFunctor_map_contractive n fg fg' hfg x.2)
+
+\record OFunctorCOFE (F : OFunctor)
+  | oFunctor_cofe (A B : COFE) : COFE
+  | oFunctor_cofe_OFE (A B : COFE) : oFunctor_cofe A B = F.oFunctor_car A B
+
+\func constOF_cofe (B : COFE) : OFunctorCOFE (constOF B) \cowith
+  | oFunctor_cofe => \lam _ _ => B
+  | oFunctor_cofe_OFE => \lam _ _ => idp
+
+\func idOF_cofe : OFunctorCOFE idOF \cowith
+  | oFunctor_cofe => \lam _ B => B
+  | oFunctor_cofe_OFE => \lam _ _ => idp
+
+\func prodOF_cofe (F1 F2 : OFunctor)
+                  (h1 : OFunctorCOFE F1)
+                  (h2 : OFunctorCOFE F2)
+  : OFunctorCOFE (prodOF F1 F2) \cowith
+  | oFunctor_cofe => \lam A B => ProdCOFE (h1.oFunctor_cofe A B) (h2.oFunctor_cofe A B)
+  | oFunctor_cofe_OFE => \lam A B =>
+      pmap2 ProdOFE (h1.oFunctor_cofe_OFE A B) (h2.oFunctor_cofe_OFE A B)
 
 \instance SumOFE (A B : OFE) : OFE \cowith
   | E => Or A.E B.E
@@ -340,6 +584,143 @@
     | just _, nothing => \lam e => \case e \with {}
   }
 
+-- =================================================================================
+-- Later OFE: the step-indexed shift
+-- =================================================================================
+--
+-- `Later A` wraps an `A` value so that distance is shifted down by one:
+-- `dist n (next x) (next y) ↔ dist_later n x y`. The constructor `next` is
+-- *contractive*, which is the key fact that breaks the recursion when
+-- defining `iProp` via `Agree (Later iProp)`-style algebras.
+
+\data Later (A : \Set)
+  | next A
+
+\func laterUnNext {A : \Set} (l : Later A) : A \elim l
+  | next x => x
+
+\instance LaterOFE (A : OFE) : OFE \cowith
+  | E => Later A.E
+  | dist => \lam n l1 l2 => DistLater {A} n (laterUnNext l1) (laterUnNext l2)
+  | equiv => \lam l1 l2 => A.equiv (laterUnNext l1) (laterUnNext l2)
+  | equiv_refl => \lam l => A.equiv_refl (laterUnNext l)
+  | equiv_sym => \lam l1 l2 => A.equiv_sym (laterUnNext l1) (laterUnNext l2)
+  | equiv_trans => \lam l1 l2 l3 =>
+      A.equiv_trans (laterUnNext l1) (laterUnNext l2) (laterUnNext l3)
+  | ofe_equiv_dist => \lam l1 l2 =>
+      (\lam he n => \new DistLater {
+         | dist_later_lt m _ => (A.ofe_equiv_dist (laterUnNext l1) (laterUnNext l2)).1 he m
+       },
+       \lam h => (A.ofe_equiv_dist (laterUnNext l1) (laterUnNext l2)).2
+                 (\lam m => (h (suc m)).dist_later_lt m id<suc))
+  | ofe_dist_refl => \lam n l => \new DistLater {
+      | dist_later_lt m _ => A.ofe_dist_refl m (laterUnNext l)
+    }
+  | ofe_dist_sym => \lam n l1 l2 h => \new DistLater {
+      | dist_later_lt m hm =>
+        A.ofe_dist_sym m (laterUnNext l1) (laterUnNext l2) (h.dist_later_lt m hm)
+    }
+  | ofe_dist_trans => \lam n l1 l2 l3 h1 h2 => \new DistLater {
+      | dist_later_lt m hm =>
+        A.ofe_dist_trans m (laterUnNext l1) (laterUnNext l2) (laterUnNext l3)
+            (h1.dist_later_lt m hm) (h2.dist_later_lt m hm)
+    }
+  | ofe_dist_le => \lam n k l1 l2 h le => \new DistLater {
+      | dist_later_lt m hm =>
+        h.dist_later_lt m (NatSemiring.<-transitive-left hm le)
+    }
+
+\instance LaterCOFE (A : COFE) : COFE \cowith
+  | OFE => LaterOFE A
+  | compl => \lam c hc => next (A.compl
+      (\lam n => laterUnNext (c (suc n)))
+      (\new Chain {
+        | chain_cauchy => \lam n m le =>
+            dist_later_suc_to_dist n
+              (laterUnNext (c (suc m)))
+              (laterUnNext (c (suc n)))
+              (hc.chain_cauchy (suc n) (suc m) (suc<=suc le))
+      }))
+  | cofe_conv_compl => \lam c hc n => \new DistLater {
+      | dist_later_lt => \lam m hm =>
+          \let
+            | d : Nat -> A.E => \lam k => laterUnNext (c (suc k))
+            | hd : Chain d => \new Chain {
+                | chain_cauchy => \lam k l le =>
+                    dist_later_suc_to_dist k
+                      (laterUnNext (c (suc l)))
+                      (laterUnNext (c (suc k)))
+                      (hc.chain_cauchy (suc k) (suc l) (suc<=suc le))
+              }
+            | left : A.dist m (A.compl d hd) (d m) =>
+                A.cofe_conv_compl d hd m
+            | right : A.dist m (d m) (laterUnNext (c n)) =>
+                A.ofe_dist_sym m
+                  (laterUnNext (c n))
+                  (d m)
+                  ((hc.chain_cauchy (suc m) n (suc_<_<= hm)).dist_later_lt m id<suc)
+          \in A.ofe_dist_trans m (A.compl d hd) (d m) (laterUnNext (c n)) left right
+    }
+
+-- `next` shifts distance down by one: `dist n x y → dist (suc n) (next x) (next y)`.
+-- This is the contractivity fact about `next : A.E → Later A.E`.
+\lemma dist_later_next {A : OFE} (n : Nat) (x y : A.E) (h : A.dist n x y)
+  : (LaterOFE A).dist (suc n) (next x) (next y) =>
+  dist_to_dist_later_suc n x y h
+
+-- A `DistLater` witness on the underlying values lifts to a `dist` on `next`.
+\lemma next_dist {A : OFE} (n : Nat) (x y : A.E) (h : DistLater {A} n x y)
+  : (LaterOFE A).dist n (next x) (next y) => h
+
+\func later_map {A B : OFE} (f : OFEMor A B) : OFEMor (LaterOFE A) (LaterOFE B) \cowith
+  | ofe_mor_car => \lam l => next (f.ofe_mor_car (laterUnNext l))
+  | ofe_mor_ne => \lam n l1 l2 h => \new DistLater {
+      | dist_later_lt => \lam m hm =>
+          f.ofe_mor_ne m (laterUnNext l1) (laterUnNext l2) (h.dist_later_lt m hm)
+    }
+
+\lemma later_map_id {A : OFE} (l : (LaterOFE A).E) :
+  (LaterOFE A).equiv ((later_map ofe_mor_id).ofe_mor_car l) l =>
+  A.equiv_refl (laterUnNext l)
+
+\lemma later_map_compose {A B C : OFE} (f : OFEMor A B) (g : OFEMor B C)
+  (l : (LaterOFE A).E) :
+  (LaterOFE C).equiv
+    ((later_map (ofe_mor_comp g f)).ofe_mor_car l)
+    ((later_map g).ofe_mor_car ((later_map f).ofe_mor_car l)) =>
+  C.equiv_refl (g.ofe_mor_car (f.ofe_mor_car (laterUnNext l)))
+
+\lemma later_map_ext {A B : OFE} (f g : OFEMor A B) (l : (LaterOFE A).E)
+                     (h : (OFEMorOFE A B).equiv f g) :
+  (LaterOFE B).equiv ((later_map f).ofe_mor_car l) ((later_map g).ofe_mor_car l) =>
+  h (laterUnNext l)
+
+\func laterOF (F : OFunctor) : OFunctor \cowith
+  | oFunctor_car => \lam A B => LaterOFE (F.oFunctor_car A B)
+  | oFunctor_map => \lam fg => later_map (F.oFunctor_map fg)
+  | oFunctor_map_ne => \lam n fg fg' hfg l => \new DistLater {
+      | dist_later_lt => \lam m hm =>
+          F.oFunctor_map_ne m fg fg'
+            ((ProdOFE _ _).ofe_dist_le n m fg fg' hfg (LinearOrder.<_<= hm))
+            (laterUnNext l)
+    }
+  | oFunctor_map_id => \lam l =>
+      later_map_ext (F.oFunctor_map (ofe_mor_id, ofe_mor_id)) ofe_mor_id l
+        (\lam x => F.oFunctor_map_id x)
+  | oFunctor_map_compose => \lam f g f' g' l =>
+      (F.oFunctor_map_compose f g f' g' (laterUnNext l))
+
+\func laterOF_contractive (F : OFunctor) : OFunctorContractive (laterOF F) \cowith
+  | oFunctor_map_contractive => \lam n fg fg' hfg l => \new DistLater {
+      | dist_later_lt => \lam m hm =>
+          F.oFunctor_map_ne m fg fg' (hfg.dist_later_lt m hm) (laterUnNext l)
+    }
+
+\func laterOF_cofe (F : OFunctor) (h : OFunctorCOFE F) : OFunctorCOFE (laterOF F) \cowith
+  | oFunctor_cofe => \lam A B => LaterCOFE (h.oFunctor_cofe A B)
+  | oFunctor_cofe_OFE => \lam A B => pmap LaterOFE (h.oFunctor_cofe_OFE A B)
+
+
 \func DiscreteOFE (S : \Set) : LeibnizOFE \cowith
   | E => S
   | dist => \lam _ x y => x = y
@@ -395,7 +776,7 @@
 -- =================================================================================
 
 \func Contractive {A : OFE} (f : A.E -> A.E) : \Prop =>
-  \Pi (n : Nat) (x y : A.E) -> DistLater {A} n x y -> A.dist n (f x) (f y)
+  ContractiveMap {A} {A} f
 
 \lemma contractive_zero {A : OFE} (f : A.E -> A.E) (hf : Contractive f) (x y : A.E)
   : A.dist 0 (f x) (f y) => hf 0 x y (dist_later_zero x y)
@@ -407,6 +788,12 @@
   \lam n x y h =>
       dist_S n (f x) (f y)
           (hf (suc n) x y (dist_to_dist_later_suc n x y h))
+
+\lemma contractiveMap_ne {A B : OFE} (f : A.E -> B.E) (hf : ContractiveMap f) : NonExpansive f =>
+  \lam n x y h =>
+      B.ofe_dist_le (suc n) n (f x) (f y)
+          (hf (suc n) x y (dist_to_dist_later_suc n x y h))
+          (n<=sucn n)
 
 \class Inhabited (A : \Type)
   | default : A

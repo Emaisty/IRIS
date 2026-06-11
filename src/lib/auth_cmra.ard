@@ -61,30 +61,7 @@
 -- =================================================================================
 
 
-\func inclN_le {O : OFE} {opO : Op O.E} (x y : O.E) (n m : Nat)
-               (h : inclN {O} {opO} x n y) (le : m <= n) : inclN {O} {opO} x m y
-  => \case h \with {
-    | inP (z, dist_y_xz) => inP (z, O.ofe_dist_le n m y (opO.op x z) dist_y_xz le)
-  }
-
-\lemma inclN_trans {C : CMRA} (n : Nat) (x y w : C.E)
-                   (h1 : inclN {C} {\new Op C.E { | op => C.op }} x n y)
-                   (h2 : inclN {C} {\new Op C.E { | op => C.op }} y n w)
-  : inclN {C} {\new Op C.E { | op => C.op }} x n w
-  => \case h1, h2 \with {
-    | inP (z1, hz1), inP (z2, hz2) =>
-      inP (C.op z1 z2,
-           C.ofe_dist_trans n w (C.op y z2) (C.op x (C.op z1 z2))
-               hz2
-               (C.ofe_dist_trans n (C.op y z2) (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
-                   (C.cmra_op_ne_2 z2 n y (C.op x z1) hz1)
-                   (equiv_dist_n {C} (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
-                       (inv (C.cmra_assoc x z1 z2)) n)))
-  }
-
-\func dist_op_ne_l {M : CMRA} (n : Nat) (x1 x2 y : M.E)
-                   (h : M.dist n x1 x2) : M.dist n (M.op x1 y) (M.op x2 y)
-  => M.cmra_op_ne_2 y n x1 x2 h
+-- (inclN_le, inclN_trans, dist_op_ne_l are now provided by cmra.ard.)
 
 \lemma auth_op_snd {A : UCMRA} (x y : AuthElem A) : (AuthOp x y).2 = A.op x.2 y.2 \elim x, y
   | (just _, _),  (just _, _)  => idp
@@ -93,11 +70,13 @@
   | (nothing, _), (nothing, _) => idp
 
 \lemma auth_incl_snd {A : UCMRA} (x y : AuthElem A)
-                     (h : incl {AuthElem A} {\new BaseSet (AuthElem A)}
-                         {\new Op (AuthElem A) { | op => AuthOp }} x y)
-  : incl {A.E} {A} {\new Op A.E { | op => A.op }} x.2 y.2
+                     (h : incl {AuthOFE A} {\new Op (AuthElem A) { | op => AuthOp }} x y)
+  : incl {A} {\new Op A.E { | op => A.op }} x.2 y.2
   => \case h \with {
-    | inP (z, hyz) => inP (z.2, pmap __.2 hyz *> auth_op_snd x z)
+    | inP (z, hyz) =>
+      -- hyz : (AuthOFE A).equiv y (AuthOp x z), which is a pair-of-equivs;
+      -- second component gives A.equiv y.2 (AuthOp x z).2 = A.equiv y.2 (A.op x.2 z.2).
+      inP (z.2, transport (\lam w => A.equiv y.2 w) (auth_op_snd x z) hyz.2)
   }
 
 \lemma exclU_op_ne {A : UCMRA} (n : Nat) (e e1 e2 : Maybe (Excl A.E))
@@ -150,14 +129,14 @@
                               (hvx : AuthValidN {A} n x)
                               (hdist : (AuthOFE A).dist n x (AuthOp y1 y2))
   : \Sigma (z1 z2 : AuthElem A)
-           (x = AuthOp z1 z2)
+           ((AuthOFE A).equiv x (AuthOp z1 z2))
            ((AuthOFE A).dist n z1 y1)
            ((AuthOFE A).dist n z2 y2)
   =>
     \let
       | vfrag : validN {A} n x.2 => auth_extend_frag_valid {A} n x hvx
       | frag_split : \Sigma (c1 c2 : A.E)
-                            (x.2 = A.op c1 c2)
+                            (A.equiv x.2 (A.op c1 c2))
                             (A.dist n c1 y1.2)
                             (A.dist n c2 y2.2) =>
         A.cmra_extend n x.2 y1.2 y2.2 vfrag hdist.2
@@ -179,17 +158,17 @@
                             (hvx : AuthValidN {A} n x)
                             (hdist : (AuthOFE A).dist n x (AuthOp y1 y2))
                             (c1 c2 : A.E)
-                            (heq : x.2 = A.op c1 c2)
+                            (heq : A.equiv x.2 (A.op c1 c2))
                             (dc1 : A.dist n c1 y1.2)
                             (dc2 : A.dist n c2 y2.2)
       : \Sigma (z1 z2 : AuthElem A)
-               (x = AuthOp z1 z2)
+               ((AuthOFE A).equiv x (AuthOp z1 z2))
                ((AuthOFE A).dist n z1 y1)
                ((AuthOFE A).dist n z2 y2)
     \elim x, y1, y2
       | (nothing, _), (nothing, _), (nothing, _) =>
         ((nothing, c1), (nothing, c2),
-         path (\lam i => (nothing, heq @ i)),
+         ((ExclUOFE A).equiv_refl nothing, heq),
          ((ExclUOFE A).ofe_dist_refl n nothing, dc1),
          ((ExclUOFE A).ofe_dist_refl n nothing, dc2))
 
@@ -199,13 +178,13 @@
       | (just (excl _), _), (nothing, _), (nothing, _) => \case hdist.1 \with {}
       | (just (excl a), _), (just e1, _), (nothing, _) =>
         ((just (excl a), c1), (nothing, c2),
-         path (\lam i => (just (excl a), heq @ i)),
+         ((ExclUOFE A).equiv_refl (just (excl a)), heq),
          (hdist.1, dc1),
          ((ExclUOFE A).ofe_dist_refl n nothing, dc2))
 
       | (just (excl a), _), (nothing, _), (just e2, _) =>
         ((nothing, c1), (just (excl a), c2),
-         path (\lam i => (just (excl a), heq @ i)),
+         ((ExclUOFE A).equiv_refl (just (excl a)), heq),
          ((ExclUOFE A).ofe_dist_refl n nothing, dc1),
          (hdist.1, dc2))
 
@@ -218,12 +197,22 @@
   (hv : AuthValidN {A} n (AuthOp (just (excl a), A.unit) (nothing, b)))
   : \Sigma (inclN {A} {\new Op A.E { | op => A.op }} b n a) (validN {A} n a)
   =>
+    -- `AuthOp (just (excl a), A.unit) (nothing, b)` reduces to
+    -- `(just (excl a), A.op A.unit b)`. Then `AuthValidN` unfolds to
+    -- `(validN n a, inclN (A.op A.unit b) n a)`. We use the equiv
+    -- `A.op A.unit b ≡_n b` to recast the inclN.
     \let
-      | snd_eq : (AuthOp (just (excl a), A.unit) (nothing, b)).2 = b =>
-        A.ucmra_unit_left_id b
-      | hv' : AuthValidN {A} n (just (excl a), b) =>
-        transport (\lam s => AuthValidN {A} n (just (excl a), s)) snd_eq hv
-    \in (hv'.2, hv'.1)
+      | hv' : \Sigma (validN {A} n a) (inclN {A} {\new Op A.E { | op => A.op }} (A.op A.unit b) n a)
+        => hv
+      | unit_dist : A.dist n (A.op A.unit b) b => ucmra_unit_left_id_dist n b
+      | incl_b : inclN {A} {\new Op A.E { | op => A.op }} b n a =>
+        \case hv'.2 \with {
+          | inP (z, hz) => inP (z,
+              A.ofe_dist_trans n a (A.op (A.op A.unit b) z) (A.op b z)
+                  hz
+                  (A.cmra_op_ne_2 z n (A.op A.unit b) b unit_dist))
+        }
+    \in (incl_b, hv'.1)
 
 
 -- =================================================================================
@@ -274,46 +263,44 @@
   }
   | cmra_valid_validN => \lam x => (\lam hv n => hv n, \lam hvn n => hvn n)
   | cmra_validN_le => \lam n m x hvn hle => auth_validN_le_helper n m x hvn hle
+  -- `AuthOFE A = ProdOFE (ExclUOFE A) A`, so its equiv is componentwise.
   | cmra_assoc => \lam x y z =>
-      path (\lam i =>
-          ( (ExclUCMRA A).cmra_assoc x.1 y.1 z.1 @ i
-          , A.cmra_assoc x.2 y.2 z.2 @ i))
+      ( (ExclUCMRA A).cmra_assoc x.1 y.1 z.1
+      , A.cmra_assoc x.2 y.2 z.2)
   | cmra_comm => \lam x y =>
-      path (\lam i =>
-          ( (ExclUCMRA A).cmra_comm x.1 y.1 @ i
-          , A.cmra_comm x.2 y.2 @ i))
+      ( (ExclUCMRA A).cmra_comm x.1 y.1
+      , A.cmra_comm x.2 y.2)
   | cmra_pcore_l => \lam x cx hpx =>
       \let
         | cx_eq : cx = (nothing, ucmra_core x.2) =>
           inv (pmap (\case __ \with { | just c => c | nothing => (nothing, ucmra_core x.2) }) hpx)
-      \in transport (\lam c => AuthOp c x = x) (inv cx_eq)
-          (\case \elim x \return AuthOp (nothing, ucmra_core x.2) x = x \with {
-            | (just a, b) => path (\lam i => (just a, ucmra_core_left_id {A} b @ i))
-            | (nothing, b) => path (\lam i => (nothing, ucmra_core_left_id {A} b @ i))
+      \in transport (\lam c => (AuthOFE A).equiv (AuthOp c x) x) (inv cx_eq)
+          (\case \elim x \return (AuthOFE A).equiv (AuthOp (nothing, ucmra_core x.2) x) x \with {
+            | (just a, b) => ((ExclUOFE A).equiv_refl (just a), ucmra_core_left_id {A} b)
+            | (nothing, b) => ((ExclUOFE A).equiv_refl nothing, ucmra_core_left_id {A} b)
           })
   | cmra_pcore_idemp => \lam x cx hpx =>
       \let
         | cx_eq : cx = (nothing, ucmra_core x.2) =>
           inv (pmap (\case __ \with { | just c => c | nothing => (nothing, ucmra_core x.2) }) hpx)
-      \in transport (\lam c => AuthPCore c = just c) (inv cx_eq)
-          (path (\lam i => just (nothing, ucmra_core_idemp {A} x.2 @ i)))
+      \in transport (\lam c => (OptionOFE (AuthOFE A)).equiv (AuthPCore c) (just c)) (inv cx_eq)
+          ((ExclUOFE A).equiv_refl nothing, ucmra_core_idemp {A} x.2)
   | cmra_pcore_mono => \lam x y cx hincl hpx =>
       \let
         | cx_eq : cx = (nothing, ucmra_core x.2) =>
           inv (pmap (\case __ \with { | just c => c | nothing => (nothing, ucmra_core x.2) }) hpx)
-        | hincl_snd : incl {A.E} {A} {\new Op A.E { | op => A.op }} x.2 y.2 =>
+        | hincl_snd : incl {A} {\new Op A.E { | op => A.op }} x.2 y.2 =>
           auth_incl_snd x y hincl
-        | hincl_cores : incl {A.E} {A} {\new Op A.E { | op => A.op }} (ucmra_core x.2) (ucmra_core y.2) =>
+        | hincl_cores : incl {A} {\new Op A.E { | op => A.op }} (ucmra_core x.2) (ucmra_core y.2) =>
           ucmra_core_mono x.2 y.2 hincl_snd
-        | incl_pair : incl {AuthElem A} {\new BaseSet (AuthElem A)}
-            {\new Op (AuthElem A) { | op => AuthOp }}
+        | incl_pair : incl {AuthOFE A} {\new Op (AuthElem A) { | op => AuthOp }}
             (nothing, ucmra_core x.2) (nothing, ucmra_core y.2) =>
           \case hincl_cores \with {
             | inP (z, hz) => inP ((nothing, z),
-                                  path (\lam i => (nothing, hz @ i)))
+                                  ((ExclUOFE A).equiv_refl nothing, hz))
           }
       \in inP ((nothing, ucmra_core y.2), idp,
-           transport (\lam c => incl {AuthElem A} {\new BaseSet (AuthElem A)}
+           transport (\lam c => incl {AuthOFE A}
                {\new Op (AuthElem A) { | op => AuthOp }} c (nothing, ucmra_core y.2))
                (inv cx_eq) incl_pair)
   | cmra_validN_op_l => auth_cmra_validN_op_l_proof
@@ -332,15 +319,12 @@
   | ucmra_unit_valid =>
     \lam n => (A.cmra_valid_validN A.unit).1 A.ucmra_unit_valid n
   | ucmra_unit_left_id => \lam x => \case \elim x \with {
-    | (just a, b) => path (\lam i => (just a, A.ucmra_unit_left_id b @ i))
-    | (nothing, b) => path (\lam i => (nothing, A.ucmra_unit_left_id b @ i))
+    | (just a, b) => ((ExclUOFE A).equiv_refl (just a), A.ucmra_unit_left_id b)
+    | (nothing, b) => ((ExclUOFE A).equiv_refl nothing, A.ucmra_unit_left_id b)
   }
+  -- `pcore (nothing, A.unit) = just (nothing, ucmra_core A.unit)`; we need
+  -- option-equiv to `just (nothing, A.unit)`. Componentwise: nothing refl
+  -- plus `A.equiv (ucmra_core A.unit) A.unit` from `A.ucmra_pcore_unit`.
   | ucmra_pcore_unit =>
-    path (\lam i =>
-        just (nothing,
-              \case A.ucmra_pcore_unit @ i \as p
-              \return A.E
-              \with {
-                | just c  => c
-                | nothing => A.unit
-              }))
+    ((ExclUOFE A).equiv_refl nothing,
+     option_equiv_to_inner_equiv (pcore {A} A.unit) A.unit A.unit A.ucmra_pcore_unit)

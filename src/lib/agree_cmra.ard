@@ -1,0 +1,421 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.List
+\import Data.Or
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+
+
+-- =================================================================================
+-- AgreeElem: non-empty list of OFE elements
+-- =================================================================================
+--
+-- Mirrors Rocq's `Record agree (A : Type) := { agree_car : list A;
+-- agree_not_nil : … = false }`. Here non-emptiness is built into the
+-- representation: an `AgreeElem A` is a head element plus an optional tail.
+
+\record AgreeElem (A : OFE)
+  | agree_hd : A.E
+  | agree_tl : List A.E
+
+\func agree_list {A : OFE} (x : AgreeElem A) : List A.E => x.agree_hd :: x.agree_tl
+
+\func to_agree {A : OFE} (a : A.E) : AgreeElem A \cowith
+  | agree_hd => a
+  | agree_tl => nil
+
+
+-- =================================================================================
+-- List membership
+-- =================================================================================
+
+\func In {A : \Set} (a : A) (l : List A) : \Set \elim l
+  | nil       => Empty
+  | :: x xs   => Or (a = x) (In a xs)
+
+\func in_app {A : \Set} (a : A) (xs ys : List A)
+             (h : Or (In a xs) (In a ys)) : In a (xs ++ ys) \elim xs
+  | nil => \case h \with {
+      | inl e => \case e \with {}
+      | inr hy => hy
+    }
+  | :: x xs => \case h \with {
+      | inl hxxs => \case hxxs \with {
+          | inl eq => inl eq
+          | inr hxs => inr (in_app a xs ys (inl hxs))
+        }
+      | inr hy => inr (in_app a xs ys (inr hy))
+    }
+
+\func in_app_inv {A : \Set} (a : A) (xs ys : List A)
+                 (h : In a (xs ++ ys)) : Or (In a xs) (In a ys) \elim xs
+  | nil => inr h
+  | :: x xs => \case h \with {
+      | inl eq => inl (inl eq)
+      | inr hin => \case in_app_inv a xs ys hin \with {
+          | inl hxs => inl (inr hxs)
+          | inr hys => inr hys
+        }
+    }
+
+
+-- =================================================================================
+-- agree_op, agree_pcore, agree_valid, agree_validN
+-- =================================================================================
+
+-- Concatenate the underlying lists. The head of the result is the head of `x`.
+\func agree_op {A : OFE} (x y : AgreeElem A) : AgreeElem A \cowith
+  | agree_hd => x.agree_hd
+  | agree_tl => x.agree_tl ++ agree_list y
+
+\func agree_pcore {A : OFE} (x : AgreeElem A) : Maybe (AgreeElem A) => just x
+
+-- pairwise n-closeness of the list elements.
+\func agree_validN {A : OFE} (n : Nat) (x : AgreeElem A) : \Prop =>
+  \Pi (a b : A.E) -> In a (agree_list x) -> In b (agree_list x) -> A.dist n a b
+
+\func agree_valid {A : OFE} (x : AgreeElem A) : \Prop =>
+  \Pi (n : Nat) -> agree_validN n x
+
+
+-- Element of `op x y` iff in `x` or in `y`.
+
+\func in_agree_op_inv {A : OFE} (a : A.E) (x y : AgreeElem A)
+  (h : In a (agree_list (agree_op x y)))
+  : Or (In a (agree_list x)) (In a (agree_list y)) => \case h \with {
+  | inl eq => inl (inl eq)
+  | inr hin => \case in_app_inv a x.agree_tl (agree_list y) hin \with {
+      | inl h_tl => inl (inr h_tl)
+      | inr h_y => inr h_y
+    }
+}
+
+\func in_agree_op {A : OFE} (a : A.E) (x y : AgreeElem A)
+  (h : Or (In a (agree_list x)) (In a (agree_list y)))
+  : In a (agree_list (agree_op x y)) => \case h \with {
+  | inl hin_x => \case hin_x \with {
+      | inl eq => inl eq
+      | inr h_tl => inr (in_app a x.agree_tl (agree_list y) (inl h_tl))
+    }
+  | inr hin_y => inr (in_app a x.agree_tl (agree_list y) (inr hin_y))
+}
+
+
+-- =================================================================================
+-- OFE structure: bidirectional approximate membership
+-- =================================================================================
+
+-- Following Rocq: in both directions the dist is in the "x-element, y-element"
+-- order. The second component is *not* the symmetric reversal — it has the same
+-- dist orientation, only the quantification side flips.
+\func agree_dist {A : OFE} (n : Nat) (x y : AgreeElem A) : \Prop =>
+  \Sigma
+    (\Pi (a : A.E) -> In a (agree_list x) ->
+        TruncP (\Sigma (b : A.E) (In b (agree_list y)) (A.dist n a b)))
+    (\Pi (b : A.E) -> In b (agree_list y) ->
+        TruncP (\Sigma (a : A.E) (In a (agree_list x)) (A.dist n a b)))
+
+\func agree_equiv {A : OFE} (x y : AgreeElem A) : \Prop =>
+  \Pi (n : Nat) -> agree_dist n x y
+
+
+\lemma agree_dist_refl {A : OFE} (n : Nat) (x : AgreeElem A) : agree_dist n x x =>
+  (\lam a h => inP (a, h, A.ofe_dist_refl n a),
+   \lam a h => inP (a, h, A.ofe_dist_refl n a))
+
+\lemma agree_dist_sym {A : OFE} (n : Nat) (x y : AgreeElem A)
+                      (h : agree_dist n x y) : agree_dist n y x =>
+  (\lam a ha => \case h.2 a ha \with {
+      | inP (b, hb, dba) => inP (b, hb, A.ofe_dist_sym n b a dba)
+    },
+   \lam b hb => \case h.1 b hb \with {
+      | inP (a, ha, dba) => inP (a, ha, A.ofe_dist_sym n b a dba)
+    })
+
+\lemma agree_dist_trans {A : OFE} (n : Nat) (x y z : AgreeElem A)
+                        (hxy : agree_dist n x y) (hyz : agree_dist n y z)
+  : agree_dist n x z =>
+  (\lam a ha => \case hxy.1 a ha \with {
+      | inP (b, hb, dab) => \case hyz.1 b hb \with {
+          | inP (c, hc, dbc) => inP (c, hc, A.ofe_dist_trans n a b c dab dbc)
+        }
+    },
+   \lam c hc => \case hyz.2 c hc \with {
+      | inP (b, hb, dbc) => \case hxy.2 b hb \with {
+          | inP (a, ha, dab) => inP (a, ha, A.ofe_dist_trans n a b c dab dbc)
+        }
+    })
+
+\lemma agree_dist_le {A : OFE} (n m : Nat) (x y : AgreeElem A)
+                     (h : agree_dist n x y) (le : m <= n) : agree_dist m x y =>
+  (\lam a ha => \case h.1 a ha \with {
+      | inP (b, hb, dab) => inP (b, hb, A.ofe_dist_le n m a b dab le)
+    },
+   \lam b hb => \case h.2 b hb \with {
+      | inP (a, ha, dab) => inP (a, ha, A.ofe_dist_le n m a b dab le)
+    })
+
+
+\instance AgreeOFE (A : OFE) : OFE \cowith
+  | E => AgreeElem A
+  | dist => agree_dist
+  | equiv => agree_equiv
+  | equiv_refl x => \lam n => agree_dist_refl n x
+  | equiv_sym x y h => \lam n => agree_dist_sym n x y (h n)
+  | equiv_trans x y z hxy hyz => \lam n => agree_dist_trans n x y z (hxy n) (hyz n)
+  | ofe_equiv_dist => \lam x y => (\lam he n => he n, \lam h => \lam n => h n)
+  | ofe_dist_refl => agree_dist_refl
+  | ofe_dist_sym => agree_dist_sym
+  | ofe_dist_trans => agree_dist_trans
+  | ofe_dist_le => agree_dist_le
+
+
+-- =================================================================================
+-- Idempotence and the op-inv lemmas
+-- =================================================================================
+
+-- `op x x ≡ x` as bidirectional membership: a is in x++x iff a is in x.
+\lemma agree_idemp {A : OFE} (x : AgreeElem A) : agree_equiv (agree_op x x) x =>
+  \lam n =>
+    (\lam a h => \case in_agree_op_inv a x x h \with {
+        | inl hin => inP (a, hin, A.ofe_dist_refl n a)
+        | inr hin => inP (a, hin, A.ofe_dist_refl n a)
+      },
+     \lam a h => inP (a, in_agree_op a x x (inl h), A.ofe_dist_refl n a))
+
+-- `validN n (op x y)` (pairwise n-closeness) ⇒ `dist n x y`.
+\lemma agree_op_invN {A : OFE} (n : Nat) (x y : AgreeElem A)
+                     (hv : agree_validN n (agree_op x y)) : agree_dist n x y =>
+  \let
+    | h_in_op_x : \Pi (a : A.E) -> In a (agree_list x) -> In a (agree_list (agree_op x y)) =>
+      \lam a h => in_agree_op a x y (inl h)
+    | h_in_op_y : \Pi (b : A.E) -> In b (agree_list y) -> In b (agree_list (agree_op x y)) =>
+      \lam b h => in_agree_op b x y (inr h)
+    | h_yhd_in_op : In y.agree_hd (agree_list (agree_op x y)) =>
+      in_agree_op y.agree_hd x y (inr (inl idp))
+    | h_xhd_in_op : In x.agree_hd (agree_list (agree_op x y)) =>
+      in_agree_op x.agree_hd x y (inl (inl idp))
+  \in (\lam a ha =>
+          inP (y.agree_hd, inl idp,
+               hv a y.agree_hd (h_in_op_x a ha) h_yhd_in_op),
+       \lam b hb =>
+          inP (x.agree_hd, inl idp,
+               hv x.agree_hd b h_xhd_in_op (h_in_op_y b hb)))
+
+
+-- =================================================================================
+-- CMRA structure
+-- =================================================================================
+
+\instance AgreeCMRA (A : OFE) : CMRA \cowith
+  | OFE => AgreeOFE A
+  | PCore => \new PCore (AgreeElem A) { | pcore => agree_pcore }
+  | Op => \new Op (AgreeElem A) { | op => agree_op }
+  | Valid => \new Valid (AgreeElem A) { | valid => agree_valid }
+  | ValidN => \new ValidN (AgreeElem A) { | validN => agree_validN }
+
+  | cmra_op_ne => \lam x n y1 y2 hd =>
+      (\lam a h => \case in_agree_op_inv a x y1 h \with {
+          | inl hx =>
+            inP (a, in_agree_op a x y2 (inl hx), A.ofe_dist_refl n a)
+          | inr hy1 => \case hd.1 a hy1 \with {
+              | inP (b, hby2, dab) =>
+                inP (b, in_agree_op b x y2 (inr hby2), dab)
+            }
+        },
+       \lam a h => \case in_agree_op_inv a x y2 h \with {
+          | inl hx =>
+            inP (a, in_agree_op a x y1 (inl hx), A.ofe_dist_refl n a)
+          | inr hy2 => \case hd.2 a hy2 \with {
+              | inP (b, hby1, dab) =>
+                inP (b, in_agree_op b x y1 (inr hby1), dab)
+            }
+        })
+
+  | cmra_op_ne_2 => \lam y n x1 x2 hd =>
+      (\lam a h => \case in_agree_op_inv a x1 y h \with {
+          | inl hx1 => \case hd.1 a hx1 \with {
+              | inP (b, hbx2, dab) =>
+                inP (b, in_agree_op b x2 y (inl hbx2), dab)
+            }
+          | inr hy =>
+            inP (a, in_agree_op a x2 y (inr hy), A.ofe_dist_refl n a)
+        },
+       \lam a h => \case in_agree_op_inv a x2 y h \with {
+          | inl hx2 => \case hd.2 a hx2 \with {
+              | inP (b, hbx1, dab) =>
+                inP (b, in_agree_op b x1 y (inl hbx1), dab)
+            }
+          | inr hy =>
+            inP (a, in_agree_op a x1 y (inr hy), A.ofe_dist_refl n a)
+        })
+
+  -- pcore is identity: from hd : dist n x y and pcore x = just cx (=just x),
+  -- the witness cy is y itself and the dist witness is hd.
+  | cmra_pcore_ne => \lam n x y cx hd hpx =>
+      \let
+        | cx_eq : cx = x =>
+          pmap (\case __ \with { | just c => c | nothing => x }) (inv hpx)
+      \in (y, idp, transport (\lam c => agree_dist n c y) (inv cx_eq) hd)
+
+  | cmra_validN_ne => \lam n x y hd hvx a b ha hb =>
+      -- a, b ∈ y. Backward direction of hd gives a', b' ∈ x; chain through hvx.
+      \case hd.2 a ha, hd.2 b hb \with {
+        | inP (a', ha_x, da'a), inP (b', hb_x, db'b) =>
+          \let
+            | da'b' : A.dist n a' b' => hvx a' b' ha_x hb_x
+          \in A.ofe_dist_trans n a a' b
+                (A.ofe_dist_sym n a' a da'a)
+                (A.ofe_dist_trans n a' b' b da'b' db'b)
+      }
+
+  | cmra_valid_validN => \lam x => (\lam hv n => hv n, \lam hvn n => hvn n)
+
+  | cmra_validN_le => \lam n m x hv le a b ha hb =>
+      A.ofe_dist_le n m a b (hv a b ha hb) le
+
+  -- cmra_assoc / cmra_comm: equiv-based bidirectional membership.
+  | cmra_assoc => \lam x y z n =>
+      (\lam a h => \case in_agree_op_inv a x (agree_op y z) h \with {
+          | inl hx => inP (a,
+              in_agree_op a (agree_op x y) z (inl (in_agree_op a x y (inl hx))),
+              A.ofe_dist_refl n a)
+          | inr hyz => \case in_agree_op_inv a y z hyz \with {
+              | inl hy => inP (a,
+                  in_agree_op a (agree_op x y) z (inl (in_agree_op a x y (inr hy))),
+                  A.ofe_dist_refl n a)
+              | inr hz => inP (a,
+                  in_agree_op a (agree_op x y) z (inr hz),
+                  A.ofe_dist_refl n a)
+            }
+        },
+       \lam a h => \case in_agree_op_inv a (agree_op x y) z h \with {
+          | inl hxy => \case in_agree_op_inv a x y hxy \with {
+              | inl hx => inP (a,
+                  in_agree_op a x (agree_op y z) (inl hx),
+                  A.ofe_dist_refl n a)
+              | inr hy => inP (a,
+                  in_agree_op a x (agree_op y z) (inr (in_agree_op a y z (inl hy))),
+                  A.ofe_dist_refl n a)
+            }
+          | inr hz => inP (a,
+              in_agree_op a x (agree_op y z) (inr (in_agree_op a y z (inr hz))),
+              A.ofe_dist_refl n a)
+        })
+
+  | cmra_comm => \lam x y n =>
+      (\lam a h => \case in_agree_op_inv a x y h \with {
+          | inl hx => inP (a, in_agree_op a y x (inr hx), A.ofe_dist_refl n a)
+          | inr hy => inP (a, in_agree_op a y x (inl hy), A.ofe_dist_refl n a)
+        },
+       \lam a h => \case in_agree_op_inv a y x h \with {
+          | inl hy => inP (a, in_agree_op a x y (inr hy), A.ofe_dist_refl n a)
+          | inr hx => inP (a, in_agree_op a x y (inl hx), A.ofe_dist_refl n a)
+        })
+
+  -- cmra_pcore_l: op x x ≡ x (by idempotence). cx = x via hpx.
+  | cmra_pcore_l => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = x =>
+          pmap (\case __ \with { | just c => c | nothing => x }) (inv hpx)
+      \in transport (\lam c => agree_equiv (agree_op c x) x) (inv cx_eq) (agree_idemp x)
+
+  -- cmra_pcore_idemp: option-equiv. (pcore cx) = just cx by def, so refl.
+  | cmra_pcore_idemp => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = x =>
+          pmap (\case __ \with { | just c => c | nothing => x }) (inv hpx)
+      \in transport (\lam c => (OptionOFE (AgreeOFE A)).equiv (agree_pcore c) (just c))
+            (inv cx_eq) (\lam n => agree_dist_refl n x)
+
+  -- cmra_pcore_mono: pcore is identity, so cy = y; incl x y is given.
+  | cmra_pcore_mono => \lam x y cx hincl hpx =>
+      \let
+        | cx_eq : cx = x =>
+          pmap (\case __ \with { | just c => c | nothing => x }) (inv hpx)
+      \in inP (y, idp,
+            transport
+              (\lam c => incl {AgreeOFE A} {\new Op (AgreeElem A) { | op => agree_op }} c y)
+              (inv cx_eq) hincl)
+
+  | cmra_validN_op_l => \lam n x y hv a b ha hb =>
+      hv a b (in_agree_op a x y (inl ha)) (in_agree_op b x y (inl hb))
+
+  -- cmra_extend: choose z1 = z2 = x. Equiv to op x x by idempotence;
+  -- dist n x y1 and dist n x y2 follow from agree_op_invN.
+  | cmra_extend => \lam n x y1 y2 hv hd =>
+      \let
+        | M : OFE => AgreeOFE A
+        | hv_op : agree_validN n (agree_op y1 y2) =>
+          \lam a b ha hb =>
+            -- Use bidirectional dist to translate membership.
+            \case hd.2 a ha, hd.2 b hb \with {
+              | inP (a', ha_x, da'a), inP (b', hb_x, db'b) =>
+                A.ofe_dist_trans n a a' b
+                  (A.ofe_dist_sym n a' a da'a)
+                  (A.ofe_dist_trans n a' b' b (hv a' b' ha_x hb_x) db'b)
+            }
+        | hd_y1_y2 : agree_dist n y1 y2 => agree_op_invN n y1 y2 hv_op
+        | dist_x_y1 : agree_dist n x y1 =>
+          (\lam a ha => \case hd.1 a ha \with {
+              | inP (b, hb_op, dab) =>
+                \case in_agree_op_inv b y1 y2 hb_op \with {
+                  | inl hby1 => inP (b, hby1, dab)
+                  | inr hby2 => \case hd_y1_y2.2 b hby2 \with {
+                      | inP (b', hb'y1, db'b) =>
+                        inP (b', hb'y1, A.ofe_dist_trans n a b b' dab
+                          (A.ofe_dist_sym n b' b db'b))
+                    }
+                }
+            },
+           \lam b hb => hd.2 b (in_agree_op b y1 y2 (inl hb)))
+        | dist_x_y2 : agree_dist n x y2 =>
+          (\lam a ha => \case hd.1 a ha \with {
+              | inP (b, hb_op, dab) =>
+                \case in_agree_op_inv b y1 y2 hb_op \with {
+                  | inl hby1 => \case hd_y1_y2.1 b hby1 \with {
+                      | inP (b', hb'y2, dbb') =>
+                        inP (b', hb'y2, A.ofe_dist_trans n a b b' dab dbb')
+                    }
+                  | inr hby2 => inP (b, hby2, dab)
+                }
+            },
+           \lam b hb => hd.2 b (in_agree_op b y1 y2 (inr hb)))
+      \in (x, x,
+           -- equiv x (op x x) by sym of idempotence
+           M.equiv_sym (agree_op x x) x (agree_idemp x),
+           dist_x_y1, dist_x_y2)
+
+
+-- =================================================================================
+-- Downstream lemmas
+-- =================================================================================
+
+\lemma to_agree_ne {A : OFE} (n : Nat) (a b : A.E) (h : A.dist n a b)
+  : (AgreeOFE A).dist n (to_agree a) (to_agree b) =>
+  (\lam c hc => \case hc \with {
+      | inl eq => inP (b, inl idp,
+          transport (\lam q => A.dist n q b) (inv eq) h)
+      | inr e => \case e \with {}
+    },
+   \lam c hc => \case hc \with {
+      | inl eq => inP (a, inl idp,
+          transport (\lam q => A.dist n a q) (inv eq) h)
+      | inr e => \case e \with {}
+    })
+
+-- Key lemma for invariants: if `to_agree a · to_agree b` is `n`-valid, then `a ≡{n}≡ b`.
+\lemma to_agree_op_inv {A : OFE} (n : Nat) (a b : A.E)
+                       (hv : agree_validN n (agree_op (to_agree a) (to_agree b)))
+  : A.dist n a b =>
+  \let
+    | h_a_in : In a (agree_list (agree_op (to_agree a) (to_agree b))) =>
+      inl idp
+    | h_b_in : In b (agree_list (agree_op (to_agree a) (to_agree b))) =>
+      inr (inl idp)
+  \in hv a b h_a_in h_b_in

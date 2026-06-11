@@ -35,8 +35,10 @@
 \func vldN {A : \Set} {vnA : ValidN A} (n : Nat) (x : A) : \Prop => validN n x
 
 
-\func \infix 6 incl {A : \Set} {eA : BaseSet A} {opA : Op A} (x y : A) : \Prop =>
-  ∃ (z : A) (y = op x z)
+-- Following Iris-Coq: inclusion `x ≼ y` is stated up to OFE equivalence.
+-- The OFE parameter is required (replacing the previous `BaseSet`-only form).
+\func \infix 6 incl {O : OFE} {opO : Op O.E} (x y : O.E) : \Prop =>
+  ∃ (z : O.E) (O.equiv y (op x z))
 
 \func \infix 6 inclN {O : OFE} {opO : Op O.E} (x : O.E) (n : Nat) (y : O.E) : \Prop =>
   ∃ (z : O.E) (O.dist n y (op x z))
@@ -61,19 +63,30 @@
 
   | cmra_validN_le (n m : Nat) (x : E) : validN n x -> m <= n -> validN m x
 
-  | cmra_assoc (x y z : E) : op x (op y z) = op (op x y) z
-  | cmra_comm (x y : E) : op x y = op y x
+  -- `cmra_assoc`/`cmra_comm` are stated up to OFE *equivalence* rather than
+  -- propositional equality. This matches Iris-Coq's `RAMixin` and is necessary
+  -- to admit CMRAs like `Agree` whose operation is only commutative up to
+  -- equiv (lists `[a;b]` and `[b;a]` are not `=` but are `equiv`). CMRAs that
+  -- happen to satisfy the laws as `=` (Excl, Gmap, Auth, …) provide their
+  -- proofs via `equiv_of_path` (defined below).
+  | cmra_assoc (x y z : E) : equiv (op x (op y z)) (op (op x y) z)
+  | cmra_comm (x y : E) : equiv (op x y) (op y x)
 
-  | cmra_pcore_l (x cx : E) : pcore x = just cx -> op cx x = x
-  | cmra_pcore_idemp (x cx : E) : pcore x = just cx -> pcore cx = just cx
-  | cmra_pcore_mono (x y cx : E) : incl {E} {\this} {\new Op E { | op => op }} x y -> pcore x = just cx ->
-  TruncP (\Sigma (cy : E) (pcore y = just cy) (incl {E} {\this} {\new Op E { | op => op }} cx cy))
+  -- Following Iris-Coq: hypothesis uses propositional `=`, conclusion uses `equiv`.
+  | cmra_pcore_l (x cx : E) : pcore x = just cx -> equiv (op cx x) x
+  | cmra_pcore_idemp (x cx : E) : pcore x = just cx ->
+      (OptionOFE \this).equiv (pcore cx) (just cx)
+  | cmra_pcore_mono (x y cx : E) :
+      incl {\this} {\new Op E { | op => op }} x y -> pcore x = just cx ->
+      TruncP (\Sigma (cy : E) (pcore y = just cy)
+                     (incl {\this} {\new Op E { | op => op }} cx cy))
 
   | cmra_validN_op_l (n : Nat) (x y : E) : validN n (op x y) -> validN n x
 
+  -- Following Rocq: the splitting `x ≡ z1 · z2` is up to OFE equiv (was: path).
   | cmra_extend (n : Nat) (x y1 y2 : E) :
   validN n x -> dist n x (op y1 y2) ->
-  \Sigma (z1 z2 : E) (x = op z1 z2) (dist n z1 y1) (dist n z2 y2)
+  \Sigma (z1 z2 : E) (equiv x (op z1 z2)) (dist n z1 y1) (dist n z2 y2)
 }
 
 -- =================================================================================
@@ -87,8 +100,9 @@
   | Unit.A => E
 
   | ucmra_unit_valid : valid unit
-  | ucmra_unit_left_id : \Pi (x : E) -> op unit x = x
-  | ucmra_pcore_unit : pcore unit = just unit
+  | ucmra_unit_left_id : \Pi (x : E) -> equiv (op unit x) x
+  -- Following Rocq: `pcore ε ≡ Some ε` (option-equiv, was: propositional).
+  | ucmra_pcore_unit : (OptionOFE \this).equiv (pcore unit) (just unit)
 }
 
 \func CoreId {C : CMRA} (x : C.E) : \Prop => pcore {C} x = just x
@@ -103,6 +117,23 @@
   \Pi (x : C.E) -> TruncP(\Sigma (cx : C.E) (pcore {C} x = just cx))
 
 -- =================================================================================
+-- Frame-preserving updates (Φ-update)
+-- =================================================================================
+--
+-- `cmra_updateP x Φ` says: for every frame `yf` such that `x · yf` is valid at
+-- step `n`, there exists some `y` with `Φ y` and `y · yf` still valid at `n`.
+-- This is the IRIS frame-preserving update relation `x ~~>: Φ`, restricted to
+-- UCMRA so the no-frame case is subsumed by picking `yf := unit`.
+
+\func cmra_updateP {M : UCMRA} (x : M.E) (Phi : M.E -> \Prop) : \Prop =>
+  \Pi (n : Nat) (yf : M.E) -> M.validN n (M.op x yf) ->
+      TruncP (\Sigma (y : M.E) (Phi y) (M.validN n (M.op y yf)))
+
+\func cmra_updateP_id {M : UCMRA} (x : M.E) (Phi : M.E -> \Prop) (h : Phi x)
+  : cmra_updateP x Phi =>
+  \lam n yf hv => inP (x, h, hv)
+
+-- =================================================================================
 -- Basic CMRA lemmas
 -- =================================================================================
 
@@ -115,7 +146,57 @@
 
 \lemma cmra_validN_op_r {C : CMRA} (n : Nat) (x y : C.E) :
   validN {C} n (op {C} x y) -> validN {C} n y =>
-  \lam h => cmra_validN_op_l {C} n y x (transport (validN {C} n) (cmra_comm {C} x y) h)
+  \lam h => cmra_validN_op_l {C} n y x
+      (C.cmra_validN_ne n (C.op x y) (C.op y x) (cmra_comm_dist n x y) h)
+
+
+-- =================================================================================
+-- Bridging equiv/path/dist (used to interface with `cmra_assoc` / `cmra_comm`)
+-- =================================================================================
+--
+-- Most existing CMRA instances in the project provide their `assoc`/`comm`
+-- proofs as propositional equality, then wrap with `equiv_of_path` to match
+-- the equiv-flavoured class field. Conversely, clients that previously
+-- transported along a `=`-proof now go through one of the `*_dist` /
+-- `*_proper` lemmas below.
+
+\func equiv_of_path {O : OFE} {x y : O.E} (p : x = y) : O.equiv x y =>
+  transport (\lam z => O.equiv x z) p (O.equiv_refl x)
+
+\func equiv_dist {O : OFE} {x y : O.E} (h : O.equiv x y) (n : Nat) : O.dist n x y =>
+  (O.ofe_equiv_dist x y).1 h n
+
+\lemma cmra_assoc_dist {M : CMRA} (n : Nat) (x y z : M.E)
+  : M.dist n (M.op x (M.op y z)) (M.op (M.op x y) z) =>
+  equiv_dist {M} (M.cmra_assoc x y z) n
+
+\lemma cmra_comm_dist {M : CMRA} (n : Nat) (x y : M.E)
+  : M.dist n (M.op x y) (M.op y x) =>
+  equiv_dist {M} (M.cmra_comm x y) n
+
+\lemma cmra_validN_proper {M : CMRA} (n : Nat) (x y : M.E)
+                          (heq : M.equiv x y) (hv : M.validN n x) : M.validN n y =>
+  M.cmra_validN_ne n x y (equiv_dist {M} heq n) hv
+
+\lemma op_proper_l {M : CMRA} {x y1 y2 : M.E} (h : M.equiv y1 y2)
+  : M.equiv (M.op x y1) (M.op x y2) =>
+  (M.ofe_equiv_dist (M.op x y1) (M.op x y2)).2
+      (\lam n => M.cmra_op_ne x n y1 y2 (equiv_dist {M} h n))
+
+\lemma op_proper_r {M : CMRA} {x1 x2 y : M.E} (h : M.equiv x1 x2)
+  : M.equiv (M.op x1 y) (M.op x2 y) =>
+  (M.ofe_equiv_dist (M.op x1 y) (M.op x2 y)).2
+      (\lam n => M.cmra_op_ne_2 y n x1 x2 (equiv_dist {M} h n))
+
+\lemma cmra_pcore_l_dist {M : CMRA} (n : Nat) (x cx : M.E) (h : pcore {M} x = just cx)
+  : M.dist n (M.op cx x) x =>
+  equiv_dist {M} (M.cmra_pcore_l x cx h) n
+
+\lemma ucmra_unit_left_id_dist {U : UCMRA} (n : Nat) (x : U.E)
+  : U.dist n (U.op U.unit x) x =>
+  equiv_dist {U} (U.ucmra_unit_left_id x) n
+
+-- (ucmra_unit_right_id is defined below in the derived-laws section.)
 
 
 \lemma cmra_validN_includedN {C : CMRA} (n : Nat) (x y : C.E)
@@ -128,11 +209,19 @@
 }
 
 \lemma cmra_pcore_r {C : CMRA} (x cx : C.E) :
-  pcore {C} x = just cx -> op {C} x cx = x =>
-  \lam h => transport (\lam z => z = x) (cmra_comm {C} cx x) (cmra_pcore_l {C} x cx h)
+  pcore {C} x = just cx -> C.equiv (C.op x cx) x =>
+  \lam h => C.equiv_trans (C.op x cx) (C.op cx x) x
+      (C.cmra_comm x cx)
+      (cmra_pcore_l x cx h)
 
-\lemma ucmra_unit_right_id {U : UCMRA} (x : U.E) : op {U} x U.unit = x =>
-  transport (\lam z => z = x) (inv (U.cmra_comm x U.unit)) (U.ucmra_unit_left_id x)
+\lemma ucmra_unit_right_id {U : UCMRA} (x : U.E) : U.equiv (U.op x U.unit) x =>
+  U.equiv_trans (U.op x U.unit) (U.op U.unit x) x
+      (U.cmra_comm x U.unit)
+      (U.ucmra_unit_left_id x)
+
+\lemma ucmra_unit_right_id_dist {U : UCMRA} (n : Nat) (x : U.E)
+  : U.dist n (U.op x U.unit) x =>
+  equiv_dist {U} (ucmra_unit_right_id x) n
 
 \func cmra_includedN_l {C : CMRA} (n : Nat) (x y : C.E) : inclN {C} {\new Op C.E { | op => C.op }} x n (C.op x y) =>
   inP (y, C.ofe_dist_refl n (C.op x y))
@@ -156,10 +245,7 @@
 
 \func inclN_refl_ucmra {M : UCMRA} (n : Nat) (a : M.E)
   : inclN {M} {\new Op M.E { | op => M.op }} a n a =>
-  inP (M.unit,
-       transport (\lam w => M.dist n a w)
-           (inv (ucmra_unit_right_id a))
-           (M.ofe_dist_refl n a))
+  inP (M.unit, M.ofe_dist_sym n (M.op a M.unit) a (ucmra_unit_right_id_dist n a))
 
 \func inclN_of_dist_unit {M : UCMRA} (n : Nat) (x y : M.E)
                          (d : M.dist n y x)
@@ -167,21 +253,27 @@
   inP (M.unit,
        M.ofe_dist_trans n y x (M.op x M.unit)
            d
-           (transport (\lam w => M.dist n x w)
-               (inv (ucmra_unit_right_id x))
-               (M.ofe_dist_refl n x)))
+           (M.ofe_dist_sym n (M.op x M.unit) x (ucmra_unit_right_id_dist n x)))
 
 \func inclN_op_r {M : CMRA} (n : Nat) (x1 x2 a : M.E)
                  (h : inclN {M} {\new Op M.E { | op => M.op }} x1 n x2)
   : inclN {M} {\new Op M.E { | op => M.op }} (M.op x1 a) n (M.op x2 a)
   => \case h \with {
     | inP (z, dist_x2_x1z) =>
+      -- Need: M.dist n (M.op x2 a) (M.op (M.op x1 a) z).
+      -- Chain: x2·a =_n (x1·z)·a              (cmra_op_ne_2)
+      --              =_n x1·(z·a)             (cmra_assoc, sym)
+      --              =_n x1·(a·z)             (cmra_comm right arg)
+      --              =_n (x1·a)·z             (cmra_assoc)
       inP (z,
-           transport (\lam w => M.dist n (M.op x2 a) w)
-             (inv (M.cmra_assoc x1 z a)
-               *> pmap (M.op x1) (M.cmra_comm z a)
-                    *> M.cmra_assoc x1 a z)
-             (M.cmra_op_ne_2 a n x2 (M.op x1 z) dist_x2_x1z))
+           M.ofe_dist_trans n (M.op x2 a) (M.op (M.op x1 z) a) (M.op (M.op x1 a) z)
+               (M.cmra_op_ne_2 a n x2 (M.op x1 z) dist_x2_x1z)
+               (M.ofe_dist_trans n (M.op (M.op x1 z) a) (M.op x1 (M.op z a)) (M.op (M.op x1 a) z)
+                   (M.ofe_dist_sym n (M.op x1 (M.op z a)) (M.op (M.op x1 z) a)
+                       (cmra_assoc_dist n x1 z a))
+                   (M.ofe_dist_trans n (M.op x1 (M.op z a)) (M.op x1 (M.op a z)) (M.op (M.op x1 a) z)
+                       (M.cmra_op_ne x1 n (M.op z a) (M.op a z) (cmra_comm_dist n z a))
+                       (cmra_assoc_dist n x1 a z))))
   }
 
 \lemma inclN_trans {C : CMRA} (n : Nat) (x y w : C.E)
@@ -195,8 +287,8 @@
                hz2
                (C.ofe_dist_trans n (C.op y z2) (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
                    (C.cmra_op_ne_2 z2 n y (C.op x z1) hz1)
-                   (equiv_dist_n {C} (C.op (C.op x z1) z2) (C.op x (C.op z1 z2))
-                       (inv (C.cmra_assoc x z1 z2)) n)))
+                   (C.ofe_dist_sym n (C.op x (C.op z1 z2)) (C.op (C.op x z1) z2)
+                       (cmra_assoc_dist n x z1 z2))))
   }
 
 -- =================================================================================
@@ -245,8 +337,8 @@
   }
 
 \lemma ucmra_unit_least {U : UCMRA} (x : U.E)
-  : incl {U.E} {U} {\new Op U.E { | op => U.op }} U.unit x
-  => inP (x, inv (U.ucmra_unit_left_id x))
+  : incl {U} {\new Op U.E { | op => U.op }} U.unit x
+  => inP (x, U.equiv_sym (U.op U.unit x) x (U.ucmra_unit_left_id x))
 
 \lemma ucmra_core_ne {U : UCMRA} (n : Nat) (x y : U.E)
                      (h : U.dist n x y)
@@ -281,41 +373,41 @@
   }
 
 \lemma ucmra_core_left_id {U : UCMRA} (x : U.E)
-  : U.op (ucmra_core x) x = x
+  : U.equiv (U.op (ucmra_core x) x) x
   => \case pcore {U} x \as px, idp : pcore {U} x = px
-  \return U.op (\case px \with { | just c => c | nothing => U.unit }) x = x
+  \return U.equiv (U.op (\case px \with { | just c => c | nothing => U.unit }) x) x
   \with {
     | just c, hpx => U.cmra_pcore_l x c hpx
     | nothing, _  => U.ucmra_unit_left_id x
   }
 
+-- Helper: unfold a Maybe-equiv against `just y` into either an equiv on the
+-- contained value, or Empty when the LHS is `nothing`. The `def` parameter is
+-- the fallback used by the caller's case-form in the impossible nothing branch.
+\func option_equiv_to_inner_equiv {O : OFE} (o : Maybe O.E) (y : O.E) (def : O.E)
+                                   (h : (OptionOFE O).equiv o (just y))
+  : O.equiv (\case o \with { | just x => x | nothing => def }) y \elim o
+  | just x => h
+  | nothing => \case h \with {}
+
+-- `ucmra_core` is idempotent up to *equiv* (was: propositional equality).
 \lemma ucmra_core_idemp {U : UCMRA} (x : U.E)
-  : ucmra_core (ucmra_core x) = ucmra_core x
+  : U.equiv (ucmra_core (ucmra_core x)) (ucmra_core x)
   => \case pcore {U} x \as px, idp : pcore {U} x = px
-  \return ucmra_core {U} (\case px \with { | just c => c | nothing => U.unit })
-    = (\case px \with { | just c => c | nothing => U.unit })
+  \return U.equiv (ucmra_core {U} (\case px \with { | just c => c | nothing => U.unit }))
+                  (\case px \with { | just c => c | nothing => U.unit })
   \with {
     | just c, hpx =>
-      \let
-        | hpcc : pcore {U} c = just c => U.cmra_pcore_idemp x c hpx
-      \in path (\lam i =>
-          \case hpcc @ i \with {
-            | just c' => c'
-            | nothing => U.unit
-          })
+        option_equiv_to_inner_equiv (pcore {U} c) c U.unit (U.cmra_pcore_idemp x c hpx)
     | nothing, _ =>
-      path (\lam i =>
-          \case U.ucmra_pcore_unit @ i \with {
-            | just u => u
-            | nothing => U.unit
-          })
+      option_equiv_to_inner_equiv (pcore {U} U.unit) U.unit U.unit U.ucmra_pcore_unit
   }
 
 \lemma ucmra_core_mono {U : UCMRA} (x y : U.E)
-                       (h : incl {U.E} {U} {\new Op U.E { | op => U.op }} x y)
-  : incl {U.E} {U} {\new Op U.E { | op => U.op }} (ucmra_core x) (ucmra_core y)
+                       (h : incl {U} {\new Op U.E { | op => U.op }} x y)
+  : incl {U} {\new Op U.E { | op => U.op }} (ucmra_core x) (ucmra_core y)
   => \case pcore {U} x \as px, idp : pcore {U} x = px
-  \return incl {U.E} {U} {\new Op U.E { | op => U.op }}
+  \return incl {U} {\new Op U.E { | op => U.op }}
       (\case px \with { | just c => c | nothing => U.unit })
       (ucmra_core y)
   \with {
@@ -324,7 +416,7 @@
       \case U.cmra_pcore_mono x y cx h hpx \with {
         | inP (cy, hpy, hincl_cy) =>
           transport
-              (\lam py => incl {U.E} {U} {\new Op U.E { | op => U.op }}
+              (\lam py => incl {U} {\new Op U.E { | op => U.op }}
                   cx
                   (\case py \with { | just c => c | nothing => U.unit }))
               (inv hpy)
