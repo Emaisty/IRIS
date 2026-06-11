@@ -42,7 +42,8 @@
                 \let
                   | hv_a' : M.validN k a' =>
                     M.cmra_validN_op_l k a' b
-                        (transport (\lam w => M.validN k w) (M.cmra_comm b a') hv_b_a')
+                        (M.cmra_validN_ne k (M.op b a') (M.op a' b)
+                            (cmra_comm_dist k b a') hv_b_a')
                   | hP_a' : P.upred_holds k a' => hP k a' hv_a' hP'_a'
                   | hwand : (mkProperWand P (wp e Phi)).upred_holds m b =>
                     h_pers m m_le_n b unit_incl_b

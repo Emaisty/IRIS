@@ -82,25 +82,26 @@
   }
 
 \lemma option_op_assoc {A : CMRA} (o1 o2 o3 : Maybe A.E)
-  : option_op {A} o1 (option_op {A} o2 o3) = option_op {A} (option_op {A} o1 o2) o3
+  : (OptionOFE A).equiv (option_op {A} o1 (option_op {A} o2 o3))
+                        (option_op {A} (option_op {A} o1 o2) o3)
   => \case \elim o1, \elim o2, \elim o3 \with {
-    | nothing,  nothing,  nothing  => idp
-    | nothing,  nothing,  just _   => idp
-    | nothing,  just _,   nothing  => idp
-    | nothing,  just _,   just _   => idp
-    | just _,   nothing,  nothing  => idp
-    | just _,   nothing,  just _   => idp
-    | just _,   just _,   nothing  => idp
-    | just a1,  just a2,  just a3  => pmap just (A.cmra_assoc a1 a2 a3)
+    | nothing,  nothing,  nothing  => ()
+    | nothing,  nothing,  just a   => A.equiv_refl a
+    | nothing,  just a,   nothing  => A.equiv_refl a
+    | nothing,  just a1,  just a2  => A.equiv_refl (A.op a1 a2)
+    | just a,   nothing,  nothing  => A.equiv_refl a
+    | just a1,  nothing,  just a2  => A.equiv_refl (A.op a1 a2)
+    | just a1,  just a2,  nothing  => A.equiv_refl (A.op a1 a2)
+    | just a1,  just a2,  just a3  => A.cmra_assoc a1 a2 a3
   }
 
 \lemma option_op_comm {A : CMRA} (o1 o2 : Maybe A.E)
-  : option_op {A} o1 o2 = option_op {A} o2 o1
+  : (OptionOFE A).equiv (option_op {A} o1 o2) (option_op {A} o2 o1)
   => \case \elim o1, \elim o2 \with {
-    | nothing,  nothing  => idp
-    | nothing,  just _   => idp
-    | just _,   nothing  => idp
-    | just a1,  just a2  => pmap just (A.cmra_comm a1 a2)
+    | nothing,  nothing  => ()
+    | nothing,  just a   => A.equiv_refl a
+    | just a,   nothing  => A.equiv_refl a
+    | just a1,  just a2  => A.cmra_comm a1 a2
   }
 
 \lemma option_validN_op_l {A : CMRA} (n : Nat) (o1 o2 : Maybe A.E)
@@ -143,42 +144,46 @@
   }
 
 \lemma option_pcore_l {A : CMRA} (o : Maybe A.E)
-  : option_op {A} (option_pcore {A} o) o = o
+  : (OptionOFE A).equiv (option_op {A} (option_pcore {A} o) o) o
   => \case \elim o \with {
-    | nothing => idp
+    | nothing => ()
     | just a =>
       \case pcore {A} a \as pa, idp : pcore {A} a = pa
-      \return option_op {A} pa (just a) = just a
+      \return (OptionOFE A).equiv (option_op {A} pa (just a)) (just a)
       \with {
-        | nothing, _   => idp
-        | just c,  hp => pmap just (A.cmra_pcore_l a c hp)
+        | nothing, _   => A.equiv_refl a
+        | just c,  hp => A.cmra_pcore_l a c hp
       }
   }
 
 \lemma option_pcore_idemp {A : CMRA} (o : Maybe A.E)
-  : option_pcore {A} (option_pcore {A} o) = option_pcore {A} o
+  : (OptionOFE A).equiv (option_pcore {A} (option_pcore {A} o))
+                        (option_pcore {A} o)
   => \case \elim o \with {
-    | nothing => idp
+    | nothing => ()
     | just a =>
       \case pcore {A} a \as pa, idp : pcore {A} a = pa
-      \return option_pcore {A} pa = pa
+      \return (OptionOFE A).equiv (option_pcore {A} pa) pa
       \with {
-        | nothing, _  => idp
+        | nothing, _  => ()
         | just c, hp => A.cmra_pcore_idemp a c hp
       }
   }
 
 \lemma option_pcore_mono {A : CMRA} (o1 o2 : Maybe A.E)
-                         (h : incl {Maybe A.E}
-                             {\new BaseSet (Maybe A.E)}
+                         (h : incl {OptionOFE A}
                              {\new Op (Maybe A.E) { | op => option_op {A} }}
                              o1 o2)
   : ∃ (w : Maybe A.E)
-(option_pcore {A} o2 = option_op {A} (option_pcore {A} o1) w)
+      ((OptionOFE A).equiv (option_pcore {A} o2) (option_op {A} (option_pcore {A} o1) w))
   => \case \elim o1, \elim o2, h \with {
-    | nothing, nothing, _ => inP (nothing, idp)
-    | nothing, just a2, _ => inP (option_pcore {A} (just a2), option_pcore_nothing_l {A} (option_pcore {A} (just a2)))
+    | nothing, nothing, _ => inP (nothing, ())
+    | nothing, just a2, _ =>
+      inP (option_pcore {A} (just a2),
+           option_pcore_nothing_l {A} (option_pcore {A} (just a2)))
     | just a1, nothing, inP (z, hz) =>
+      -- `(OptionOFE A).equiv nothing (option_op (just a1) z)` is impossible
+      -- because `option_op (just a1) _` is never `nothing`.
       \case \elim z, hz \with {
         | nothing, e => \case e \with {}
         | just _,  e => \case e \with {}
@@ -186,7 +191,7 @@
     | just a1, just a2, inP (z, hz) =>
       \case pcore {A} a1 \as pc1, idp : pcore {A} a1 = pc1
       \return ∃ (w : Maybe A.E)
-        (option_pcore {A} (just a2) = option_op {A} pc1 w)
+        ((OptionOFE A).equiv (option_pcore {A} (just a2)) (option_op {A} pc1 w))
       \with {
         | nothing, _ =>
           inP (option_pcore {A} (just a2),
@@ -194,36 +199,53 @@
         | just c1, hp1 =>
           \case \elim z, hz \with {
             | nothing, e =>
+              -- `e : A.equiv a2 a1`. Use cmra_pcore_ne (with `a1 ≡_n a2` from sym) to
+              -- find `cy` such that `pcore a2 = just cy` and `c1 ≡_n cy` at every n.
               \let
-                | ha : a1 = a2 => pmap (\lam (o : Maybe A.E) => \case o \with {
-                  | just v => v | nothing => a1
-                }) (inv e)
-                | hp2 : pcore {A} a2 = just c1 =>
-                  transport (\lam a => pcore {A} a = just c1) ha hp1
-              \in inP (nothing, hp2)
+                | ha_dist_sym : \Pi (n : Nat) -> A.dist n a1 a2 =>
+                  \lam n => A.ofe_dist_sym n a2 a1 (equiv_dist {A} e n)
+                | ne0 => A.cmra_pcore_ne 0 a1 a2 c1 (ha_dist_sym 0) hp1
+                | hp_a2 : pcore {A} a2 = just ne0.1 => ne0.2
+                | dist_all : \Pi (n : Nat) -> A.dist n c1 ne0.1 =>
+                  \lam n => \case A.cmra_pcore_ne n a1 a2 c1 (ha_dist_sym n) hp1 \with {
+                    | (cy_n, hp_a2_n, d_n) =>
+                      -- pcore a2 is single-valued (it's a function), so cy_n = ne0.1.
+                      \let
+                        | cy_eq : cy_n = ne0.1 =>
+                          pmap (\case __ \with { | just c => c | nothing => ne0.1 })
+                               (inv hp_a2_n *> hp_a2)
+                      \in transport (\lam q => A.dist n c1 q) cy_eq d_n
+                  }
+                | equiv_c1 : A.equiv c1 ne0.1 => (A.ofe_equiv_dist c1 ne0.1).2 dist_all
+              \in inP (nothing,
+                  transport (\lam q => (OptionOFE A).equiv q (just c1))
+                            (inv hp_a2)
+                            (A.equiv_sym c1 ne0.1 equiv_c1))
             | just b, e =>
+              -- (OptionOFE A).equiv (just a2) (option_op (just a1) (just b))
+              -- = A.equiv a2 (A.op a1 b). So `a2 ≡ a1 · b`, i.e., `a1 ≼ a2`.
               \let
-                | ha : a2 = A.op a1 b => pmap (\lam (o : Maybe A.E) => \case o \with {
-                  | just v => v | nothing => a2
-                }) e
-                | hincl_A : incl {A.E} {\new BaseSet A.E} {\new Op A.E { | op => A.op }} a1 a2 =>
+                | ha : A.equiv a2 (A.op a1 b) => e
+                | hincl_A : incl {A} {\new Op A.E { | op => A.op }} a1 a2 =>
                   inP (b, ha)
               \in \case A.cmra_pcore_mono a1 a2 c1 hincl_A hp1 \with {
-                | inP mono => \case mono.3 \with {
-                  | inP (d, hd) =>
-                    inP (just d,
-                         mono.2 *> pmap just hd)
-                }
+                | inP (cy, hpy, inP (d, hd)) =>
+                  inP (just d,
+                       -- Goal: (OptionOFE A).equiv (pcore a2) (option_op (just c1) (just d))
+                       -- = (OptionOFE A).equiv (pcore a2) (just (A.op c1 d))
+                       transport (\lam q => (OptionOFE A).equiv q (just (A.op c1 d)))
+                                 (inv hpy)
+                                 hd)
               }
           }
       }
   }
   \where {
     \lemma option_pcore_nothing_l {A : CMRA} (o : Maybe A.E)
-      : o = option_op {A} nothing o
+      : (OptionOFE A).equiv o (option_op {A} nothing o)
       => \case \elim o \with {
-        | nothing => idp
-        | just _ => idp
+        | nothing => ()
+        | just a => A.equiv_refl a
       }
   }
 
@@ -231,27 +253,27 @@
                      (hv : option_validN {A} n o)
                      (hd : (OptionOFE A).dist n o (option_op {A} o1 o2))
   : \Sigma (z1 z2 : Maybe A.E)
-           (o = option_op {A} z1 z2)
+           ((OptionOFE A).equiv o (option_op {A} z1 z2))
            ((OptionOFE A).dist n z1 o1)
            ((OptionOFE A).dist n z2 o2)
   => \case \elim o, \elim o1, \elim o2, hv, hd \with {
     | nothing, nothing, nothing, _, _ =>
-      (nothing, nothing, idp, (), ())
+      (nothing, nothing, (), (), ())
     | nothing, nothing, just _,  _, e => \case e \with {}
     | nothing, just _,  nothing, _, e => \case e \with {}
     | nothing, just _,  just _,  _, e => \case e \with {}
     | just a, nothing, nothing, _, e => \case e \with {}
     | just a, nothing, just _, _, d =>
-      (nothing, just a, idp, (), d)
+      (nothing, just a, A.equiv_refl a, (), d)
     | just a, just _, nothing, _, d =>
-      (just a, nothing, idp, d, ())
+      (just a, nothing, A.equiv_refl a, d, ())
     | just a, just b1, just b2, hv, d =>
       \let
-        | split : \Sigma (c1 c2 : A.E) (a = A.op c1 c2)
+        | split : \Sigma (c1 c2 : A.E) (A.equiv a (A.op c1 c2))
                          (A.dist n c1 b1) (A.dist n c2 b2)
         => A.cmra_extend n a b1 b2 hv d
       \in (just split.1, just split.2,
-           pmap just split.3,
+           split.3,
            split.4, split.5)
   }
 
@@ -491,7 +513,7 @@
             (hvm k')
       }
 
-\lemma gmap_alloc_includedN {K : \Set} {cnt : Countable K} {A : UCMRA}
+\lemma gmap_alloc_includedN {K : \Set} {cnt : Countable K} {A : CMRA}
                             (n : Nat) (m frame : Gmap K cnt A.E) (k : K) (x : A.E)
                             (fresh : glookup m k = nothing)
                             (hincl : inclN {GmapUCMRA K cnt A}
@@ -552,7 +574,7 @@
           })
     }
   \where {
-    \func at_fresh {K : \Set} {cnt : Countable K} {A : UCMRA}
+    \func at_fresh {K : \Set} {cnt : Countable K} {A : CMRA}
                    (n : Nat) (m frame : Gmap K cnt A.E) (k : K) (x : A.E)
                    (fresh : glookup m k = nothing)
                    (z : Gmap K cnt A.E)
@@ -1174,59 +1196,81 @@
       | just p, _, e => \case e \with {}
     }
 
+-- If `option_op o1 o2 ≡ nothing`, then `o1 = nothing` and `o2 = nothing`.
+\lemma option_op_equiv_nothing_inv {A : CMRA} (o1 o2 : Maybe A.E)
+                                    (h : (OptionOFE A).equiv (option_op {A} o1 o2) nothing)
+  : \Sigma (o1 = nothing) (o2 = nothing) \elim o1, o2
+  | nothing, nothing => (idp, idp)
+  | nothing, just _  => \case h \with {}
+  | just _,  nothing => \case h \with {}
+  | just _,  just _  => \case h \with {}
+
 \lemma gmap_lookup_included {K : \Set} {cnt : Countable K} {A : CMRA}
                             (m1 m2 : Gmap K cnt A.E)
                             (h : \Pi (k : K) ->
-                              incl {Maybe A.E}
-                                {\new BaseSet (Maybe A.E)}
+                              incl {OptionOFE A}
                                 {\new Op (Maybe A.E) { | op => option_op {A} }}
                                 (glookup m1 k) (glookup m2 k))
-  : incl {Gmap K cnt A.E}
-      {GmapOFE K cnt A}
+  : incl {GmapOFE K cnt A}
       {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
       m1 m2
   => \case achoice (\lam k => \Sigma (w : Maybe A.E)
-        (glookup m2 k = option_op {A} (glookup m1 k) w)) h \with {
+        ((OptionOFE A).equiv (glookup m2 k) (option_op {A} (glookup m1 k) w))) h \with {
     | inP choose =>
       \let
         | wmap : Gmap K cnt A.E =>
           gmap_map_support m2 (\lam p => (choose p.1).1)
-        | heq : m2 = gmap_op m1 wmap =>
-          gmap_eq m2 (gmap_op m1 wmap) (\lam k =>
+        | heq : (GmapOFE K cnt A).equiv m2 (gmap_op m1 wmap) =>
+          \lam k =>
+            -- Aim: (OptionOFE A).equiv (glookup m2 k) (glookup (gmap_op m1 wmap) k).
+            -- Split on glookup m2 k. If `nothing`, the inv lemma forces glookup m1 k =
+            -- nothing and (choose k).1 = nothing, so both sides reduce to nothing.
+            -- If `just a`, `glookup wmap k = (choose k).1`, and the equiv is (choose k).2.
             \case glookup m2 k \as o2, idp : glookup m2 k = o2
-            \return glookup m2 k = glookup (gmap_op m1 wmap) k
+            \return (OptionOFE A).equiv (glookup m2 k) (glookup (gmap_op m1 wmap) k)
             \with {
               | nothing, hm2 =>
                 \let
-                  | none_inv : \Sigma (glookup m1 k = nothing) ((choose k).1 = nothing) =>
-                    option_op_eq_nothing_inv {A} (glookup m1 k) (choose k).1
-                      (inv (inv hm2 *> (choose k).2))
+                  | step1_at_nothing : (OptionOFE A).equiv nothing
+                      (option_op {A} (glookup m1 k) (choose k).1) =>
+                    transport (\lam q => (OptionOFE A).equiv q
+                                          (option_op {A} (glookup m1 k) (choose k).1))
+                              hm2 (choose k).2
+                  | none_split : \Sigma (glookup m1 k = nothing) ((choose k).1 = nothing) =>
+                    option_op_equiv_nothing_inv {A} (glookup m1 k) (choose k).1
+                        ((OptionOFE A).equiv_sym nothing
+                            (option_op {A} (glookup m1 k) (choose k).1)
+                            step1_at_nothing)
+                  | wmap_none : glookup wmap k = nothing =>
+                    glookup_map_support_absent m2 (\lam p => (choose p.1).1) k hm2
                   | gop_none : glookup (gmap_op m1 wmap) k = nothing =>
                     glookup_op m1 wmap k *>
-                    pmap2 (option_op {A}) none_inv.1
-                      (glookup_map_support_absent m2 (\lam p => (choose p.1).1) k hm2)
-                \in hm2 *> inv gop_none
+                    pmap2 (option_op {A}) none_split.1 wmap_none
+                \in transport2 (\lam u v => (OptionOFE A).equiv u v)
+                       (inv hm2) (inv gop_none) ((OptionOFE A).equiv_refl nothing)
               | just a, hm2 =>
-                (choose k).2 *>
-                inv (pmap2 (option_op {A}) idp
-                  (glookup_map_support_present m2 (\lam p => (choose p.1).1) k a hm2)) *>
-                inv (glookup_op m1 wmap k)
-            })
+                \let
+                  | wmap_pres : glookup wmap k = (choose k).1 =>
+                    glookup_map_support_present m2 (\lam p => (choose p.1).1) k a hm2
+                  | gop_eq : glookup (gmap_op m1 wmap) k
+                    = option_op {A} (glookup m1 k) (choose k).1 =>
+                    glookup_op m1 wmap k *> pmap (option_op {A} (glookup m1 k)) wmap_pres
+                \in transport (\lam q => (OptionOFE A).equiv (glookup m2 k) q)
+                              (inv gop_eq) (choose k).2
+            }
       \in inP (wmap, heq)
   }
 
 
 \func gmap_cmra_pcore_mono_proof {K : \Set} {cnt : Countable K} {A : CMRA}
                                   (x y cx : Gmap K cnt A.E)
-                                  (hxy : incl {Gmap K cnt A.E}
-                                      {GmapOFE K cnt A}
+                                  (hxy : incl {GmapOFE K cnt A}
                                       {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
                                       x y)
                                   (hpx : gmap_pcore x = just cx)
   : TruncP (\Sigma (cy : Gmap K cnt A.E)
       (gmap_pcore y = just cy)
-      (incl {Gmap K cnt A.E}
-        {GmapOFE K cnt A}
+      (incl {GmapOFE K cnt A}
         {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
         cx cy))
   =>
@@ -1243,39 +1287,40 @@
           | nothing => cx
           | just c  => c
         }) (inv hpx *> hpcm_unfold x)
-      | core_incl : incl {Gmap K cnt A.E}
-          {GmapOFE K cnt A}
+      | core_incl : incl {GmapOFE K cnt A}
           {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
           (gcore x) (gcore y) =>
         gmap_lookup_included (gcore x) (gcore y) (\lam k =>
-          transport2 (\lam u v => incl {Maybe A.E}
-              {\new BaseSet (Maybe A.E)}
-              {\new Op (Maybe A.E) { | op => option_op {A} }}
-              u v)
-            (inv (glookup_core x k))
-            (inv (glookup_core y k))
-            (option_pcore_mono {A} (glookup x k) (glookup y k)
-              (gmap_cmra_pcore_mono_proof.pointwise x y hxy k)))
+          \case option_pcore_mono {A} (glookup x k) (glookup y k)
+              (gmap_cmra_pcore_mono_proof.pointwise x y hxy k) \with {
+            | inP (w, hw) => inP (w,
+                -- transport along glookup_core to align lookup paths
+                transport2 (\lam u v => (OptionOFE A).equiv u (option_op {A} v w))
+                  (inv (glookup_core y k))
+                  (inv (glookup_core x k))
+                  hw)
+          })
     \in inP (gcore y, hpcm_unfold y,
-      transport (\lam c => incl {Gmap K cnt A.E}
-        {GmapOFE K cnt A}
+      transport (\lam c => incl {GmapOFE K cnt A}
         {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
         c (gcore y)) (inv cx_eq) core_incl)
   \where {
     \func pointwise {K : \Set} {cnt : Countable K} {A : CMRA}
                     (x y : Gmap K cnt A.E)
-                    (hxy : incl {Gmap K cnt A.E}
-                        {GmapOFE K cnt A}
+                    (hxy : incl {GmapOFE K cnt A}
                         {\new Op (Gmap K cnt A.E) { | op => gmap_op }}
                         x y)
                     (k : K)
-      : incl {Maybe A.E}
-          {\new BaseSet (Maybe A.E)}
+      : incl {OptionOFE A}
           {\new Op (Maybe A.E) { | op => option_op {A} }}
           (glookup x k) (glookup y k)
       => \case hxy \with {
         | inP (w, hw) => inP (glookup w k,
-            pmap (\lam m => glookup m k) hw *> glookup_op x w k)
+            -- hw : (GmapOFE K cnt A).equiv y (gmap_op x w) — pointwise.
+            -- Need: (OptionOFE A).equiv (glookup y k) (option_op (glookup x k) (glookup w k)).
+            transport (\lam q => (OptionOFE A).equiv (glookup y k) q)
+                      (glookup_op x w k)
+                      (hw k))
       }
   }
 
@@ -1284,13 +1329,13 @@
                               (hvx : GmapValidN {K} {cnt} {A} n x)
                               (hdist : (GmapOFE K cnt A).dist n x (gmap_op y1 y2))
   : \Sigma (z1 z2 : Gmap K cnt A.E)
-      (x = gmap_op z1 z2)
+      ((GmapOFE K cnt A).equiv x (gmap_op z1 z2))
       ((GmapOFE K cnt A).dist n z1 y1)
       ((GmapOFE K cnt A).dist n z2 y2)
   =>
     \let
       | split_at : \Pi (k : K) -> \Sigma (z1 z2 : Maybe A.E)
-          (glookup x k = option_op {A} z1 z2)
+          ((OptionOFE A).equiv (glookup x k) (option_op {A} z1 z2))
           ((OptionOFE A).dist n z1 (glookup y1 k))
           ((OptionOFE A).dist n z2 (glookup y2 k)) =>
         \lam k => option_extend {A} n (glookup x k) (glookup y1 k) (glookup y2 k) (hvx k)
@@ -1300,24 +1345,33 @@
         gmap_map_support x (\lam p => (split_at p.1).1)
       | z2 : Gmap K cnt A.E =>
         gmap_map_support x (\lam p => (split_at p.1).2)
-      | zop : x = gmap_op z1 z2 =>
-        gmap_eq x (gmap_op z1 z2) (\lam k =>
+      | zop : (GmapOFE K cnt A).equiv x (gmap_op z1 z2) =>
+        \lam k =>
           \case glookup x k \as ox, idp : glookup x k = ox
-          \return glookup x k = glookup (gmap_op z1 z2) k
+          \return (OptionOFE A).equiv (glookup x k) (glookup (gmap_op z1 z2) k)
           \with {
             | nothing, hxk =>
-              hxk *>
-              inv (glookup_op z1 z2 k *>
-                pmap2 (option_op {A})
-                  (glookup_map_support_absent x (\lam p => (split_at p.1).1) k hxk)
-                  (glookup_map_support_absent x (\lam p => (split_at p.1).2) k hxk))
+              \let
+                | gop_eq_nothing : glookup (gmap_op z1 z2) k = nothing =>
+                  glookup_op z1 z2 k *>
+                  pmap2 (option_op {A})
+                    (glookup_map_support_absent x (\lam p => (split_at p.1).1) k hxk)
+                    (glookup_map_support_absent x (\lam p => (split_at p.1).2) k hxk)
+              \in transport2 (\lam u v => (OptionOFE A).equiv u v)
+                    (inv hxk) (inv gop_eq_nothing)
+                    ((OptionOFE A).equiv_refl nothing)
             | just a, hxk =>
-              (split_at k).3 *>
-              inv (pmap2 (option_op {A})
-                (glookup_map_support_present x (\lam p => (split_at p.1).1) k a hxk)
-                (glookup_map_support_present x (\lam p => (split_at p.1).2) k a hxk)) *>
-              inv (glookup_op z1 z2 k)
-          })
+              \let
+                | rhs_eq : option_op {A} (split_at k).1 (split_at k).2
+                  = glookup (gmap_op z1 z2) k =>
+                  inv (glookup_op z1 z2 k *>
+                       pmap2 (option_op {A})
+                         (glookup_map_support_present x (\lam p => (split_at p.1).1) k a hxk)
+                         (glookup_map_support_present x (\lam p => (split_at p.1).2) k a hxk))
+              \in transport (\lam q => (OptionOFE A).equiv (glookup x k) q)
+                    rhs_eq
+                    (split_at k).3
+          }
       | dz1 : (GmapOFE K cnt A).dist n z1 y1 =>
         \lam k =>
           \case glookup x k \as ox, idp : glookup x k = ox
@@ -1516,19 +1570,21 @@
   | cmra_validN_le => \lam n m' x hvn hle k =>
       option_validN_le {A} n m' (glookup x k) (hvn k) hle
 
-  | cmra_assoc => \lam x y z =>
-      gmap_eq _ _ (\lam k =>
-          glookup_op x (gmap_op y z) k *>
-          pmap2 (option_op {A}) idp (glookup_op y z k) *>
-          option_op_assoc {A} (glookup x k) (glookup y k) (glookup z k) *>
-          inv (pmap2 (option_op {A}) (glookup_op x y k) idp) *>
-          inv (glookup_op (gmap_op x y) z k))
+  | cmra_assoc => \lam x y z k =>
+      \let
+        | lhs_eq : glookup (gmap_op x (gmap_op y z)) k
+          = option_op {A} (glookup x k) (option_op {A} (glookup y k) (glookup z k)) =>
+          glookup_op x (gmap_op y z) k *> pmap (option_op {A} (glookup x k)) (glookup_op y z k)
+        | rhs_eq : glookup (gmap_op (gmap_op x y) z) k
+          = option_op {A} (option_op {A} (glookup x k) (glookup y k)) (glookup z k) =>
+          glookup_op (gmap_op x y) z k *> pmap2 (option_op {A}) (glookup_op x y k) idp
+      \in transport2 (\lam u v => (OptionOFE A).equiv u v) (inv lhs_eq) (inv rhs_eq)
+            (option_op_assoc {A} (glookup x k) (glookup y k) (glookup z k))
 
-  | cmra_comm => \lam x y =>
-      gmap_eq _ _ (\lam k =>
-          glookup_op x y k *>
-          option_op_comm {A} (glookup x k) (glookup y k) *>
-          inv (glookup_op y x k))
+  | cmra_comm => \lam x y k =>
+      transport2 (\lam u v => (OptionOFE A).equiv u v)
+            (inv (glookup_op x y k)) (inv (glookup_op y x k))
+            (option_op_comm {A} (glookup x k) (glookup y k))
 
   | cmra_pcore_l => \lam x cx hpx =>
       \let
@@ -1547,10 +1603,13 @@
               transport (\lam c => glookup c k = option_pcore {A} (glookup x k))
                   (inv cx_eq)
                   (glookup_core x k)
-      \in gmap_eq _ _ (\lam k =>
-          glookup_op cx x k *>
-          pmap2 (option_op {A}) (core_lookup k) idp *>
-          option_pcore_l {A} (glookup x k))
+      \in \lam k =>
+          \let
+            | lhs_eq : glookup (gmap_op cx x) k
+              = option_op {A} (option_pcore {A} (glookup x k)) (glookup x k) =>
+              glookup_op cx x k *> pmap2 (option_op {A}) (core_lookup k) idp
+          \in transport (\lam u => (OptionOFE A).equiv u (glookup x k))
+                (inv lhs_eq) (option_pcore_l {A} (glookup x k))
   | cmra_pcore_idemp => \lam x cx hpx =>
       \let
         | gcore : Gmap K cnt A.E -> Gmap K cnt A.E =>
@@ -1568,15 +1627,21 @@
         | gcore_lookup : \Pi (m : Gmap K cnt A.E) (k : K) ->
             glookup (gcore m) k = option_pcore {A} (glookup m k) =>
           \lam m k => glookup_core m k
-        | core_idemp : gcore (gcore x) = gcore x =>
-          gmap_eq _ _ (\lam k =>
-              gcore_lookup (gcore x) k *>
-              pmap (option_pcore {A}) (gcore_lookup x k) *>
-              option_pcore_idemp {A} (glookup x k) *>
-              inv (gcore_lookup x k))
-        | step3 : gcore cx = cx =>
-          pmap gcore cx_eq *> core_idemp *> inv cx_eq
-      \in hpcm_unfold cx *> pmap just step3
+        -- Pointwise: gcore (gcore x) k ≡ gcore x k via option_pcore_idemp.
+        | core_idemp_equiv : (GmapOFE K cnt A).equiv (gcore (gcore x)) (gcore x) =>
+          \lam k =>
+            transport2 (\lam u v => (OptionOFE A).equiv u v)
+                  (inv (gcore_lookup (gcore x) k *> pmap (option_pcore {A}) (gcore_lookup x k)))
+                  (inv (gcore_lookup x k))
+                  (option_pcore_idemp {A} (glookup x k))
+        -- Goal: (OptionOFE GmapOFE).equiv (gmap_pcore cx) (just cx).
+        -- gmap_pcore cx = just (gcore cx). And gcore cx ≡ cx (via core_idemp + cx_eq).
+        | gcore_cx_equiv_cx : (GmapOFE K cnt A).equiv (gcore cx) cx =>
+          transport (\lam c => (GmapOFE K cnt A).equiv (gcore c) c)
+            (inv cx_eq)
+            core_idemp_equiv
+      \in transport (\lam q => (OptionOFE (GmapOFE K cnt A)).equiv (gmap_pcore cx) (just q))
+            (inv idp) gcore_cx_equiv_cx
   | cmra_pcore_mono => \lam x y cx hl hpx =>
       gmap_cmra_pcore_mono_proof x y cx hl hpx
 
@@ -1604,39 +1669,36 @@
     | just _  => idp
   }
 
-\func GmapUCMRA (K : \Set) (cnt : Countable K) (A : UCMRA) : UCMRA \cowith
+\func GmapUCMRA (K : \Set) (cnt : Countable K) (A : CMRA) : UCMRA \cowith
   | CMRA => GmapCMRA K cnt A
   | unit => gempty
   | ucmra_unit_valid => \lam k =>
       transport (option_valid {A}) (inv (glookup_empty k)) ()
-  | ucmra_unit_left_id => \lam m =>
-      gmap_eq _ _ (\lam k =>
+  | ucmra_unit_left_id => \lam m k =>
+      \let
+        | lhs_eq : glookup (gmap_op gempty m) k = option_op {A} nothing (glookup m k) =>
           glookup_op gempty m k *>
-          path (\lam i => option_op {A} (glookup_empty {K} {cnt} {A.E} k @ i) (glookup m k)) *>
-          option_op_nothing_l {A} (glookup m k))
-  | ucmra_unit_left_id => \lam m =>
-      gmap_eq _ _ (\lam k =>
-          glookup_op gempty m k *>
-          path (\lam i => option_op {A} (glookup_empty {K} {cnt} {A.E} k @ i) (glookup m k)) *>
-          option_op_nothing_l {A} (glookup m k))
+          pmap2 (option_op {A}) (glookup_empty {K} {cnt} {A.E} k) idp
+      \in transport (\lam u => (OptionOFE A).equiv u (glookup m k))
+            (inv (lhs_eq *> option_op_nothing_l {A} (glookup m k)))
+            ((OptionOFE A).equiv_refl (glookup m k))
   | ucmra_pcore_unit =>
-    \let
-      | gcore : Gmap K cnt A.E -> Gmap K cnt A.E =>
-        \lam m => \case gmap_pcore m \with {
-          | nothing => m
-          | just c  => c
-        }
-      | hpcm_unfold : \Pi (m : Gmap K cnt A.E) -> gmap_pcore m = just (gcore m) =>
-        \lam _ => idp
-      | gcore_lookup : \Pi (m : Gmap K cnt A.E) (k : K) ->
-          glookup (gcore m) k = option_pcore {A} (glookup m k) =>
-        \lam m k => glookup_core m k
-      | core_empty_eq : gcore (gempty {K} {cnt} {A.E}) = gempty {K} {cnt} {A.E} =>
-        gmap_eq _ _ (\lam k =>
-            gcore_lookup (gempty {K} {cnt} {A.E}) k *>
-            pmap (option_pcore {A}) (glookup_empty {K} {cnt} {A.E} k) *>
-            inv (glookup_empty {K} {cnt} {A.E} k))
-    \in hpcm_unfold (gempty {K} {cnt} {A.E}) *> pmap just core_empty_eq
+    -- Pointwise: glookup (gcore gempty) k ≡ glookup gempty k. Both reduce to nothing.
+    \lam k =>
+      \let
+        | gcore : Gmap K cnt A.E -> Gmap K cnt A.E =>
+          \lam m => \case gmap_pcore m \with {
+            | nothing => m
+            | just c  => c
+          }
+        | gcore_lookup_nothing : glookup (gcore gempty) k = nothing =>
+          glookup_core (gempty {K} {cnt} {A.E}) k *>
+          pmap (option_pcore {A}) (glookup_empty {K} {cnt} {A.E} k)
+        | empty_lookup_nothing : glookup (gempty {K} {cnt} {A.E}) k = nothing =>
+          glookup_empty {K} {cnt} {A.E} k
+      \in transport2 (\lam u v => (OptionOFE A).equiv u v)
+            (inv gcore_lookup_nothing) (inv empty_lookup_nothing)
+            ((OptionOFE A).equiv_refl nothing)
 
 
 -- =================================================================================

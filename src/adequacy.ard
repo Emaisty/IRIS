@@ -36,9 +36,7 @@
     \let M => HeapCMRA Loc cnt Value
     \in \lam n a hv hauth =>
         inP (a, M.unit,
-             transport (\lam w => M.dist n a w)
-                 (inv (ucmra_unit_right_id a))
-                 (M.ofe_dist_refl n a),
+             M.ofe_dist_sym n (M.op a M.unit) a (ucmra_unit_right_id_dist n a),
              hauth,
              hwp n M.unit ((M.cmra_valid_validN M.unit).1 M.ucmra_unit_valid n) ())
 
@@ -131,9 +129,10 @@
                                      )).upred_holds n a =>
                    \let
                      | dist_a_op_unit : M.dist n a (M.op (M.op a_wp a_auth) M.unit) =>
-                       transport (\lam w => M.dist n a w)
-                           (inv (ucmra_unit_right_id (M.op a_wp a_auth)))
+                       M.ofe_dist_trans n a (M.op a_wp a_auth) (M.op (M.op a_wp a_auth) M.unit)
                            dist_a
+                           (M.ofe_dist_sym n (M.op (M.op a_wp a_auth) M.unit) (M.op a_wp a_auth)
+                               (ucmra_unit_right_id_dist n (M.op a_wp a_auth)))
                    \in
                          (mkProperBUpd (mkProperAnd
                              (mkProperPure (Reducible e sigma))
@@ -174,9 +173,8 @@
                             hand''.2
                           \in hlater e2 sigma2 k <=-refl a'
                               (inP (M.unit,
-                                    transport (\lam w => M.dist k a' w)
-                                        (inv (ucmra_unit_right_id a'))
-                                        (M.ofe_dist_refl k a')))
+                                    M.ofe_dist_sym k (M.op a' M.unit) a'
+                                        (ucmra_unit_right_id_dist k a')))
                               ((HeapCMRA Loc cnt Value).cmra_validN_le (suc k) k a' hv'' (n<=sucn k))
                               hstep
                       })
@@ -225,7 +223,8 @@
                 M.cmra_validN_ne n a (M.op a_auth a_wp) dist_a hv
               | hv_wp : M.validN n a_wp =>
                 M.cmra_validN_op_l n a_wp a_auth
-                    (transport (\lam w => M.validN n w) (M.cmra_comm a_auth a_wp) hv_op)
+                    (M.cmra_validN_ne n (M.op a_auth a_wp) (M.op a_wp a_auth)
+                        (cmra_comm_dist {M} n a_auth a_wp) hv_op)
               | hwp_unfolded : (wp_pre wp e Phi).upred_holds n a_wp =>
                 (wp_unfold e Phi n a_wp hv_wp).1 hwp
             \in \case to_val e \as tv, idp : to_val e = tv \return
@@ -284,7 +283,8 @@
                             ).upred_holds n a_wp =>
                     hforall sigma
                   | hv_wp_auth : M.validN n (M.op a_wp a_auth) =>
-                    transport (\lam w => M.validN n w) (M.cmra_comm a_auth a_wp) hv_op
+                    M.cmra_validN_ne n (M.op a_auth a_wp) (M.op a_wp a_auth)
+                        (cmra_comm_dist {M} n a_auth a_wp) hv_op
                   | h_on_wp_auth : (mkProperBUpd (mkProperAnd
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e' =>
@@ -296,9 +296,7 @@
                   | dist_a_wp_auth : M.dist n a (M.op a_wp a_auth) =>
                     M.ofe_dist_trans n a (M.op a_auth a_wp) (M.op a_wp a_auth)
                         dist_a
-                        (transport (\lam w => M.dist n (M.op a_auth a_wp) w)
-                            (M.cmra_comm a_auth a_wp)
-                            (M.ofe_dist_refl n (M.op a_auth a_wp)))
+                        (cmra_comm_dist {M} n a_auth a_wp)
                   | h_on_a : (mkProperBUpd (mkProperAnd
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e' =>
@@ -308,9 +306,10 @@
                                       )).upred_holds n a =>
                     \let
                       | dist_a_op_unit : M.dist n a (M.op (M.op a_wp a_auth) M.unit) =>
-                        transport (\lam w => M.dist n a w)
-                            (inv (ucmra_unit_right_id (M.op a_wp a_auth)))
+                        M.ofe_dist_trans n a (M.op a_wp a_auth) (M.op (M.op a_wp a_auth) M.unit)
                             dist_a_wp_auth
+                            (M.ofe_dist_sym n (M.op (M.op a_wp a_auth) M.unit) (M.op a_wp a_auth)
+                                (ucmra_unit_right_id_dist n (M.op a_wp a_auth)))
                     \in
                           (mkProperBUpd (mkProperAnd
                               (mkProperPure (Reducible e sigma))
@@ -378,9 +377,11 @@
                            \case hsep_own_wp \with {
                              | inP (ao, aw, d, ho, hw) =>
                                inP (aw, ao,
-                                    transport (\lam w => (HeapCMRA Loc cnt Value).dist n' a' w)
-                                        ((HeapCMRA Loc cnt Value).cmra_comm ao aw)
-                                        d,
+                                    (HeapCMRA Loc cnt Value).ofe_dist_trans n' a'
+                                        ((HeapCMRA Loc cnt Value).op ao aw)
+                                        ((HeapCMRA Loc cnt Value).op aw ao)
+                                        d
+                                        (cmra_comm_dist {HeapCMRA Loc cnt Value} n' ao aw),
                                     hw, ho)
                            }
                          | h_one : (mkProperBUpd (mkProperLater
@@ -433,16 +434,10 @@
         | g   => heap_state_to_gmap sigma
         | hv_g : G.validN 0 g => heap_state_to_gmap_validN 0 sigma
         | hincl : inclN {G} {\new Op G.E { | op => G.op }} gempty 0 g =>
-          inP (g,
-               transport (\lam w => G.dist 0 g w)
-                   (inv (G.ucmra_unit_left_id g))
-                   (G.ofe_dist_refl 0 g))
+          inP (g, G.ofe_dist_sym 0 (G.op G.unit g) g (ucmra_unit_left_id_dist {G} 0 g))
       \in (hv_g, hincl)
     | hauth_a0 : (own_heap_auth sigma).upred_holds 0 a0 =>
-      inP (M.unit,
-           transport (\lam w => M.dist 0 a0 w)
-               (inv (ucmra_unit_right_id a0))
-               (M.ofe_dist_refl 0 a0))
+      inP (M.unit, M.ofe_dist_sym 0 (M.op a0 M.unit) a0 (ucmra_unit_right_id_dist 0 a0))
     | h_bupd_pure : (mkProperBUpd (mkProperPure P)).upred_holds 0 a0 =>
       h 0 0 a0 hv_a0 hauth_a0
   \in bupd_extract_pure P 0 a0 hv_a0 h_bupd_pure
@@ -489,15 +484,12 @@
             | g => heap_state_to_gmap sigma
             | hv_g : G.validN n g => heap_state_to_gmap_validN n sigma
             | hincl : inclN {G} {\new Op G.E { | op => G.op }} gempty n g =>
-              inP (g, transport (\lam w => G.dist n g w)
-                  (inv (G.ucmra_unit_left_id g))
-                  (G.ofe_dist_refl n g))
+              inP (g, G.ofe_dist_sym n (G.op G.unit g) g (ucmra_unit_left_id_dist {G} n g))
           \in (hv_g, hincl)
     | hauth_a0 : \Pi (n : Nat) -> (own_heap_auth sigma).upred_holds n a0 =>
       \lam n => inP (M.unit,
-                     transport (\lam w => M.dist n a0 w)
-                         (inv (ucmra_unit_right_id a0))
-                         (M.ofe_dist_refl n a0))
+                     M.ofe_dist_sym n (M.op a0 M.unit) a0
+                         (ucmra_unit_right_id_dist n a0))
     | h_ghost : properUPred_ent
         (own_heap_auth sigma)
         (mkProperSep (own_heap_auth sigma) (wp e Phi)) =>
@@ -532,7 +524,8 @@
                   M2.cmra_validN_ne n a (M2.op a1 a2) dist_a hv
                 | hv_a2 : M2.validN n a2 =>
                   M2.cmra_validN_op_l n a2 a1
-                      (transport (\lam w => M2.validN n w) (M2.cmra_comm a1 a2) hv_op)
+                      (M2.cmra_validN_ne n (M2.op a1 a2) (M2.op a2 a1)
+                          (cmra_comm_dist {M2} n a1 a2) hv_op)
               \in inP (a1, a2, dist_a, h1, wp_val_to_bupd n a2 hv_a2 h2)
           }
     | step_collapsed : properUPred_ent
@@ -571,9 +564,7 @@
                   (inP (a1,
                         M.ofe_dist_trans n' a' (M.op a1 a2) (M.op a2 a1)
                             dist_a
-                            (transport (\lam w => M.dist n' (M.op a1 a2) w)
-                                (M.cmra_comm a1 a2)
-                                (M.ofe_dist_refl n' (M.op a1 a2)))))
+                            (cmra_comm_dist {M} n' a1 a2)))
                   <=-refl
           }
     | h_collapsed_step : properUPred_ent
@@ -667,15 +658,12 @@
             | g => heap_state_to_gmap sigma
             | hv_g : G.validN n g => heap_state_to_gmap_validN n sigma
             | hincl : inclN {G} {\new Op G.E { | op => G.op }} gempty n g =>
-              inP (g, transport (\lam w => G.dist n g w)
-                  (inv (G.ucmra_unit_left_id g))
-                  (G.ofe_dist_refl n g))
+              inP (g, G.ofe_dist_sym n (G.op G.unit g) g (ucmra_unit_left_id_dist {G} n g))
           \in (hv_g, hincl)
     | hauth_a0 : \Pi (n : Nat) -> (own_heap_auth sigma).upred_holds n a0 =>
       \lam n => inP (M.unit,
-                     transport (\lam w => M.dist n a0 w)
-                         (inv (ucmra_unit_right_id a0))
-                         (M.ofe_dist_refl n a0))
+                     M.ofe_dist_sym n (M.op a0 M.unit) a0
+                         (ucmra_unit_right_id_dist n a0))
 
     | h_seed : properUPred_ent
         (own_heap_auth sigma)

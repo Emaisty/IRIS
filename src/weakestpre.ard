@@ -221,9 +221,10 @@
               inclN_op_l k frag z
             | hsep : (mkProperSep (own_heap_auth newState) (pointsTo l v)).upred_holds k a' =>
               inP (authNew, M.op frag z,
-                transport (\lam w => M.dist k a' w)
-                  (inv (M.cmra_assoc authNew frag z))
-                  (M.ofe_dist_refl k a'),
+                M.ofe_dist_trans k a' (M.op (M.op authNew frag) z) (M.op authNew (M.op frag z))
+                  (M.ofe_dist_refl k a')
+                  (M.ofe_dist_sym k (M.op authNew (M.op frag z)) (M.op (M.op authNew frag) z)
+                    (cmra_assoc_dist k authNew frag z)),
                 h_auth_new,
                 h_frag_z)
           \in inP (a', hv_new_z_yf, hsep)
@@ -253,9 +254,9 @@
         | hsep_k : (mkProperSep (own_heap_auth sigma) (pointsTo l old)).upred_holds k a =>
           (mkProperSep (own_heap_auth sigma) (pointsTo l old)).upred_mono n k a a hsep
             (inP (M.unit,
-              transport (\lam w => M.dist k a w)
-                (inv (ucmra_unit_right_id a))
-                (M.ofe_dist_refl k a)))
+              M.ofe_dist_trans k a a (M.op a M.unit)
+                (M.ofe_dist_refl k a)
+                (M.ofe_dist_sym k (M.op a M.unit) a (ucmra_unit_right_id_dist k a))))
             k_le_n
       \in \case hsep_k \with {
         | inP (a_auth, a_frag, dist_a, h_auth, h_frag) =>
@@ -266,20 +267,40 @@
                 | dist_auth_frag : M.dist k (M.op a_auth a_frag)
                     (M.op (M.op authOld zA) (M.op fragOld zF)) =>
                   cmra_op_ne_both {M} k a_auth (M.op authOld zA) a_frag (M.op fragOld zF) dzA dzF
-                | rearr_inner : M.op (M.op authOld zA) (M.op fragOld zF)
-                    = M.op (M.op authOld fragOld) z =>
-                  inv (M.cmra_assoc authOld zA (M.op fragOld zF))
-                  *> pmap (M.op authOld) (M.cmra_assoc zA fragOld zF)
-                  *> pmap (\lam t => M.op authOld (M.op t zF)) (M.cmra_comm zA fragOld)
-                  *> pmap (M.op authOld) (inv (M.cmra_assoc fragOld zA zF))
-                  *> M.cmra_assoc authOld fragOld z
+                | rearr_inner_dist : M.dist k (M.op (M.op authOld zA) (M.op fragOld zF))
+                    (M.op (M.op authOld fragOld) z) =>
+                  M.ofe_dist_trans k (M.op (M.op authOld zA) (M.op fragOld zF))
+                      (M.op authOld (M.op zA (M.op fragOld zF)))
+                      (M.op (M.op authOld fragOld) z)
+                    (M.ofe_dist_sym k (M.op authOld (M.op zA (M.op fragOld zF)))
+                        (M.op (M.op authOld zA) (M.op fragOld zF))
+                      (cmra_assoc_dist k authOld zA (M.op fragOld zF)))
+                    (M.ofe_dist_trans k (M.op authOld (M.op zA (M.op fragOld zF)))
+                        (M.op authOld (M.op (M.op zA fragOld) zF))
+                        (M.op (M.op authOld fragOld) z)
+                      (M.cmra_op_ne authOld k (M.op zA (M.op fragOld zF)) (M.op (M.op zA fragOld) zF)
+                        (cmra_assoc_dist k zA fragOld zF))
+                      (M.ofe_dist_trans k (M.op authOld (M.op (M.op zA fragOld) zF))
+                          (M.op authOld (M.op (M.op fragOld zA) zF))
+                          (M.op (M.op authOld fragOld) z)
+                        (M.cmra_op_ne authOld k (M.op (M.op zA fragOld) zF) (M.op (M.op fragOld zA) zF)
+                          (M.cmra_op_ne_2 zF k (M.op zA fragOld) (M.op fragOld zA)
+                            (cmra_comm_dist {M} k zA fragOld)))
+                        (M.ofe_dist_trans k (M.op authOld (M.op (M.op fragOld zA) zF))
+                            (M.op authOld (M.op fragOld z))
+                            (M.op (M.op authOld fragOld) z)
+                          (M.cmra_op_ne authOld k (M.op (M.op fragOld zA) zF) (M.op fragOld z)
+                            (M.ofe_dist_sym k (M.op fragOld z) (M.op (M.op fragOld zA) zF)
+                              (cmra_assoc_dist k fragOld zA zF)))
+                          (cmra_assoc_dist k authOld fragOld z))))
                 | dist_a_old : M.dist k a (M.op (M.op authOld fragOld) z) =>
                   M.ofe_dist_trans k a (M.op a_auth a_frag) (M.op (M.op authOld fragOld) z)
                     dist_a
-                    (transport
-                      (\lam w => M.dist k (M.op a_auth a_frag) w)
-                      rearr_inner
-                      dist_auth_frag)
+                    (M.ofe_dist_trans k (M.op a_auth a_frag)
+                        (M.op (M.op authOld zA) (M.op fragOld zF))
+                        (M.op (M.op authOld fragOld) z)
+                      dist_auth_frag
+                      rearr_inner_dist)
                 | dist_a_yf_old : M.dist k (M.op a yf)
                     (M.op (M.op (M.op authOld fragOld) z) yf) =>
                   M.cmra_op_ne_2 yf k a (M.op (M.op authOld fragOld) z) dist_a_old
@@ -307,9 +328,10 @@
                   inclN_op_l k fragNew z
                 | hsep_new : (mkProperSep (own_heap_auth newState) (pointsTo l v)).upred_holds k a' =>
                   inP (authNew, M.op fragNew z,
-                    transport (\lam w => M.dist k a' w)
-                      (inv (M.cmra_assoc authNew fragNew z))
-                      (M.ofe_dist_refl k a'),
+                    M.ofe_dist_trans k a' (M.op (M.op authNew fragNew) z) (M.op authNew (M.op fragNew z))
+                      (M.ofe_dist_refl k a')
+                      (M.ofe_dist_sym k (M.op authNew (M.op fragNew z)) (M.op (M.op authNew fragNew) z)
+                        (cmra_assoc_dist k authNew fragNew z)),
                     h_auth_new,
                     h_frag_new_z)
               \in inP (a', hv_new_z_yf, hsep_new)
@@ -529,9 +551,7 @@
               (inP (a1,
                     M.ofe_dist_trans n a (M.op a1 a2) (M.op a2 a1)
                         dist_a
-                        (transport (\lam w => M.dist n (M.op a1 a2) w)
-                            (M.cmra_comm a1 a2)
-                            (M.ofe_dist_refl n (M.op a1 a2)))))
+                        (cmra_comm_dist {M} n a1 a2)))
               <=-refl
       }
 
@@ -800,16 +820,18 @@
                           | h_auth_j : (own_heap_auth sigma).upred_holds j a_auth =>
                             (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
                               (inP (M.unit,
-                                transport (\lam w => M.dist j a_auth w)
-                                  (inv (ucmra_unit_right_id a_auth))
-                                  (M.ofe_dist_refl j a_auth)))
+                                M.ofe_dist_trans j a_auth a_auth (M.op a_auth M.unit)
+                                  (M.ofe_dist_refl j a_auth)
+                                  (M.ofe_dist_sym j (M.op a_auth M.unit) a_auth
+                                    (ucmra_unit_right_id_dist j a_auth))))
                               (NatSemiring.<=∘ j_le_k (n<=sucn k))
                           | hwp_e'_j : (wp e' Phi).upred_holds j a =>
                             (wp e' Phi).upred_mono n j a a hwp_e'
                               (inP (M.unit,
-                                transport (\lam w => M.dist j a w)
-                                  (inv (ucmra_unit_right_id a))
-                                  (M.ofe_dist_refl j a)))
+                                M.ofe_dist_trans j a a (M.op a M.unit)
+                                  (M.ofe_dist_refl j a)
+                                  (M.ofe_dist_sym j (M.op a M.unit) a
+                                    (ucmra_unit_right_id_dist j a))))
                               (NatSemiring.<=∘ j_le_k
                                 (NatSemiring.<=∘ (n<=sucn k) le_sk))
                           | hsep_at_op :
@@ -829,14 +851,9 @@
                                 M.ofe_dist_trans j (M.op a a_auth)
                                   (M.op a_auth a)
                                   (M.op (M.op a_auth a) M.unit)
-                                  (transport
-                                    (\lam w => M.dist j (M.op a a_auth) w)
-                                    (M.cmra_comm a a_auth)
-                                    (M.ofe_dist_refl j (M.op a a_auth)))
-                                  (transport
-                                    (\lam w => M.dist j (M.op a_auth a) w)
-                                    (inv (ucmra_unit_right_id (M.op a_auth a)))
-                                    (M.ofe_dist_refl j (M.op a_auth a)))))
+                                  (cmra_comm_dist {M} j a a_auth)
+                                  (M.ofe_dist_sym j (M.op (M.op a_auth a) M.unit) (M.op a_auth a)
+                                    (ucmra_unit_right_id_dist j (M.op a_auth a)))))
                               <=-refl
                           | hsep_at_b :
                               (mkProperSep (own_heap_auth sigma) (wp e' Phi))
@@ -920,9 +937,10 @@
                         heap_auth_frag_agree m sigma a_frag a_auth l v hv_op h_auth
                             ((pointsTo l v).upred_mono n m a_frag a_frag h_frag
                                 (inP (M.unit,
-                                      transport (\lam w => M.dist m a_frag w)
-                                          (inv (ucmra_unit_right_id a_frag))
-                                          (M.ofe_dist_refl m a_frag)))
+                                      M.ofe_dist_trans m a_frag a_frag (M.op a_frag M.unit)
+                                        (M.ofe_dist_refl m a_frag)
+                                        (M.ofe_dist_sym m (M.op a_frag M.unit) a_frag
+                                          (ucmra_unit_right_id_dist m a_frag))))
                                 m_le_n)
                       | red : Reducible e sigma =>
                         inP (Val v, sigma, BasePrim (LoadS l v lookup idp idp idp))
@@ -958,17 +976,19 @@
                                       | hfrag_j : (pointsTo l v).upred_holds j a_frag =>
                                             (pointsTo l v).upred_mono n j a_frag a_frag h_frag
                                             (inP (M.unit,
-                                                  transport (\lam w => M.dist j a_frag w)
-                                                      (inv (ucmra_unit_right_id a_frag))
-                                                      (M.ofe_dist_refl j a_frag)))
+                                                  M.ofe_dist_trans j a_frag a_frag (M.op a_frag M.unit)
+                                                    (M.ofe_dist_refl j a_frag)
+                                                    (M.ofe_dist_sym j (M.op a_frag M.unit) a_frag
+                                                      (ucmra_unit_right_id_dist j a_frag))))
                                             (NatSemiring.<=∘ j_le_k
                                                 (NatSemiring.<=∘ (n<=sucn k) le_sk))
                                       | hauth_j : (own_heap_auth sigma).upred_holds j a_auth =>
                                             (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
                                             (inP (M.unit,
-                                                  transport (\lam w => M.dist j a_auth w)
-                                                      (inv (ucmra_unit_right_id a_auth))
-                                                      (M.ofe_dist_refl j a_auth)))
+                                                  M.ofe_dist_trans j a_auth a_auth (M.op a_auth M.unit)
+                                                    (M.ofe_dist_refl j a_auth)
+                                                    (M.ofe_dist_sym j (M.op a_auth M.unit) a_auth
+                                                      (ucmra_unit_right_id_dist j a_auth))))
                                             (NatSemiring.<=∘ j_le_k (n<=sucn k))
                                       | hphi_v : (Phi v).upred_holds j a_frag =>
                                         ((idp : v = v), hfrag_j)
@@ -995,14 +1015,9 @@
                                                   M.ofe_dist_trans j (M.op a_frag a_auth)
                                                       (M.op a_auth a_frag)
                                                       (M.op (M.op a_auth a_frag) M.unit)
-                                                      (transport
-                                                          (\lam w => M.dist j (M.op a_frag a_auth) w)
-                                                          (M.cmra_comm a_frag a_auth)
-                                                          (M.ofe_dist_refl j (M.op a_frag a_auth)))
-                                                      (transport
-                                                          (\lam w => M.dist j (M.op a_auth a_frag) w)
-                                                          (inv (ucmra_unit_right_id (M.op a_auth a_frag)))
-                                                          (M.ofe_dist_refl j (M.op a_auth a_frag)))))
+                                                      (cmra_comm_dist {M} j a_frag a_auth)
+                                                      (M.ofe_dist_sym j (M.op (M.op a_auth a_frag) M.unit) (M.op a_auth a_frag)
+                                                        (ucmra_unit_right_id_dist j (M.op a_auth a_frag)))))
                                             <=-refl
                                       | hsep_at_b :
                                             (mkProperSep (own_heap_auth sigma) (wp (Val v) Phi))
@@ -1073,17 +1088,33 @@
                 \let
                   | both : M.dist n (M.op a_frag a_auth) (M.op (M.op F zF) (M.op A zA))
                   => cmra_op_ne_both {M} n a_frag (M.op F zF) a_auth (M.op A zA) dF dA
-                  | rearr : M.op (M.op A F) (M.op zF zA)
-                    = M.op (M.op F zF) (M.op A zA)
+                  | rearr_dist : M.dist n (M.op (M.op F zF) (M.op A zA))
+                                          (M.op (M.op A F) (M.op zF zA))
                   =>
-                    inv (M.cmra_assoc A F (M.op zF zA))
-                      *> pmap (M.op A) (M.cmra_assoc F zF zA)
-                           *> M.cmra_assoc A (M.op F zF) zA
-                                *> pmap (\lam u => M.op u zA) (M.cmra_comm A (M.op F zF))
-                                     *> inv (M.cmra_assoc (M.op F zF) A zA)
+                    M.ofe_dist_trans n (M.op (M.op F zF) (M.op A zA))
+                        (M.op (M.op (M.op F zF) A) zA) (M.op (M.op A F) (M.op zF zA))
+                      (cmra_assoc_dist n (M.op F zF) A zA)
+                      (M.ofe_dist_trans n (M.op (M.op (M.op F zF) A) zA)
+                          (M.op (M.op A (M.op F zF)) zA) (M.op (M.op A F) (M.op zF zA))
+                        (M.cmra_op_ne_2 zA n (M.op (M.op F zF) A) (M.op A (M.op F zF))
+                          (cmra_comm_dist {M} n (M.op F zF) A))
+                        (M.ofe_dist_trans n (M.op (M.op A (M.op F zF)) zA)
+                            (M.op A (M.op (M.op F zF) zA)) (M.op (M.op A F) (M.op zF zA))
+                          (M.ofe_dist_sym n (M.op A (M.op (M.op F zF) zA))
+                              (M.op (M.op A (M.op F zF)) zA)
+                            (cmra_assoc_dist n A (M.op F zF) zA))
+                          (M.ofe_dist_trans n (M.op A (M.op (M.op F zF) zA))
+                              (M.op A (M.op F (M.op zF zA))) (M.op (M.op A F) (M.op zF zA))
+                            (M.cmra_op_ne A n (M.op (M.op F zF) zA) (M.op F (M.op zF zA))
+                              (M.ofe_dist_sym n (M.op F (M.op zF zA)) (M.op (M.op F zF) zA)
+                                (cmra_assoc_dist n F zF zA)))
+                            (cmra_assoc_dist n A F (M.op zF zA)))))
                 \in inP (M.op zF zA,
-                         transport (\lam w => M.dist n (M.op a_frag a_auth) w)
-                             (inv rearr) both)
+                         M.ofe_dist_trans n (M.op a_frag a_auth)
+                             (M.op (M.op F zF) (M.op A zA))
+                             (M.op (M.op A F) (M.op zF zA))
+                             both
+                             rearr_dist)
             }
           | hv_AF : M.validN n (M.op A F) =>
             cmra_validN_includedN {M} n (M.op A F) (M.op a_frag a_auth) hv incl_AF
@@ -1328,9 +1359,10 @@
                   wp_load.heap_auth_frag_agree m sigma a_frag a_auth l old hv_op h_auth
                     ((pointsTo l old).upred_mono n m a_frag a_frag h_frag
                       (inP (M.unit,
-                        transport (\lam w => M.dist m a_frag w)
-                          (inv (ucmra_unit_right_id a_frag))
-                          (M.ofe_dist_refl m a_frag)))
+                        M.ofe_dist_trans m a_frag a_frag (M.op a_frag M.unit)
+                          (M.ofe_dist_refl m a_frag)
+                          (M.ofe_dist_sym m (M.op a_frag M.unit) a_frag
+                            (ucmra_unit_right_id_dist m a_frag))))
                       m_le_n)
                 | red : Reducible e sigma =>
                   inP (Val (LitV LitUnit),
@@ -1368,17 +1400,19 @@
                               | hfrag_j : (pointsTo l old).upred_holds j a_frag =>
                                 (pointsTo l old).upred_mono n j a_frag a_frag h_frag
                                   (inP (M.unit,
-                                    transport (\lam w => M.dist j a_frag w)
-                                      (inv (ucmra_unit_right_id a_frag))
-                                      (M.ofe_dist_refl j a_frag)))
+                                    M.ofe_dist_trans j a_frag a_frag (M.op a_frag M.unit)
+                                      (M.ofe_dist_refl j a_frag)
+                                      (M.ofe_dist_sym j (M.op a_frag M.unit) a_frag
+                                        (ucmra_unit_right_id_dist j a_frag))))
                                   (NatSemiring.<=∘ j_le_k
                                     (NatSemiring.<=∘ (n<=sucn k) le_sk))
                               | hauth_j : (own_heap_auth sigma).upred_holds j a_auth =>
                                 (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
                                   (inP (M.unit,
-                                    transport (\lam w => M.dist j a_auth w)
-                                      (inv (ucmra_unit_right_id a_auth))
-                                      (M.ofe_dist_refl j a_auth)))
+                                    M.ofe_dist_trans j a_auth a_auth (M.op a_auth M.unit)
+                                      (M.ofe_dist_refl j a_auth)
+                                      (M.ofe_dist_sym j (M.op a_auth M.unit) a_auth
+                                        (ucmra_unit_right_id_dist j a_auth))))
                                   (NatSemiring.<=∘ j_le_k (n<=sucn k))
                               | hsep_old_op :
                                   (mkProperSep (own_heap_auth sigma) (pointsTo l old))
@@ -1396,14 +1430,9 @@
                                     M.ofe_dist_trans j (M.op a_frag a_auth)
                                       (M.op a_auth a_frag)
                                       (M.op (M.op a_auth a_frag) M.unit)
-                                      (transport
-                                        (\lam w => M.dist j (M.op a_frag a_auth) w)
-                                        (M.cmra_comm a_frag a_auth)
-                                        (M.ofe_dist_refl j (M.op a_frag a_auth)))
-                                      (transport
-                                        (\lam w => M.dist j (M.op a_auth a_frag) w)
-                                        (inv (ucmra_unit_right_id (M.op a_auth a_frag)))
-                                        (M.ofe_dist_refl j (M.op a_auth a_frag)))))
+                                      (cmra_comm_dist {M} j a_frag a_auth)
+                                      (M.ofe_dist_sym j (M.op (M.op a_auth a_frag) M.unit) (M.op a_auth a_frag)
+                                        (ucmra_unit_right_id_dist j (M.op a_auth a_frag)))))
                                   <=-refl
                               | hsep_old_b :
                                   (mkProperSep (own_heap_auth sigma) (pointsTo l old))
@@ -1551,9 +1580,10 @@
                               | h_auth_j : (own_heap_auth sigma).upred_holds j a_auth =>
                                 (own_heap_auth sigma).upred_mono (suc k) j a_auth a_auth h_auth_sk
                                   (inP (M.unit,
-                                    transport (\lam w => M.dist j a_auth w)
-                                      (inv (ucmra_unit_right_id a_auth))
-                                      (M.ofe_dist_refl j a_auth)))
+                                    M.ofe_dist_trans j a_auth a_auth (M.op a_auth M.unit)
+                                      (M.ofe_dist_refl j a_auth)
+                                      (M.ofe_dist_sym j (M.op a_auth M.unit) a_auth
+                                        (ucmra_unit_right_id_dist j a_auth))))
                                   (NatSemiring.<=∘ j_le_k (n<=sucn k))
                               | hv_op_j : M.validN j (M.op a a_auth) =>
                                 M.cmra_validN_le (suc k) j (M.op a a_auth) hv_op_sk
@@ -1566,10 +1596,7 @@
                                 own_heap_alloc_bupd sigma l v fresh j a_auth hv_auth_j h_auth_j
                               | incl_auth_old : inclN {M} {\new Op M.E { | op => M.op }}
                                   a_auth j (M.op a a_auth) =>
-                                inP (a,
-                                  transport (\lam w => M.dist j w (M.op a_auth a))
-                                    (M.cmra_comm a_auth a)
-                                    (M.ofe_dist_refl j (M.op a_auth a)))
+                                inP (a, cmra_comm_dist {M} j a a_auth)
                               | hbupd_points_old :
                                   (mkProperBUpd (mkProperSep (own_heap_auth newState) (pointsTo l v)))
                                   .upred_holds j (M.op a a_auth) =>
