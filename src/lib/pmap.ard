@@ -6,6 +6,7 @@
 \import Set
 \import Data.Maybe
 \import Data.List
+\import Data.Or
 \import Arith.Nat
 \import Meta
 
@@ -723,16 +724,284 @@
         \in step e.1 e.2 (pinsert_list l pempty) nf ih
 
     -- These are the trie traversal invariants used by the list-based induction
-    -- principle.  They are stated here as local obligations since the concrete
-    -- proof is a separate prefix-disjointness argument over `entries_of_tree`.
-    \axiom entries_of_lookup {A : \Set} (m : Pmap A) (k : Pos)
-      : plookup {A} (pinsert_list {A} (entries_of {A} m) (pempty {A})) k = plookup m k
-
-    \axiom entries_of_nodup {A : \Set} (m : Pmap A)
-      : nodup_keys {A} (entries_of {A} m)
+    -- principle.  Both are proved by a structural induction over `entries_of_tree`
+    -- with an explicit injectivity hypothesis on the absolute-key construction
+    -- function `to_abs`; the surface axioms then specialise at `to_abs = id`.
 
     \func entries_of {A : \Set} (m : Pmap A) : List (\Sigma Pos A) =>
       entries_of_tree m.tree (\lam k => k)
+
+    -- Auxiliary: a function on positives is injective.
+    \func pos_inj (f : Pos -> Pos) : \Prop =>
+      \Pi (a b : Pos) -> f a = f b -> a = b
+
+    \lemma pos_inj_id : pos_inj (\lam k => k) =>
+      \lam a b h => h
+
+    \lemma pos_inj_xO (f : Pos -> Pos) (h : pos_inj f) : pos_inj (\lam q => f (xO q)) =>
+      \lam a b heq => pmap Pos_eq_dec.pred_xO (h (xO a) (xO b) heq)
+
+    \lemma pos_inj_xI (f : Pos -> Pos) (h : pos_inj f) : pos_inj (\lam q => f (xI q)) =>
+      \lam a b heq => pmap Pos_eq_dec.pred_xI (h (xI a) (xI b) heq)
+
+    -- Concatenation lemmas for the key-membership predicates.
+    \func InEntry_app_l {A : \Set} (k : Pos) (x : A) (l1 l2 : List (\Sigma Pos A))
+                        (h : plookup_pinsert_list_in.InEntry k x l1)
+      : plookup_pinsert_list_in.InEntry k x (l1 ++ l2) \elim l1, h
+      | :: e l, plookup_pinsert_list_in.here_entry e_eq =>
+        plookup_pinsert_list_in.here_entry e_eq
+      | :: e l, plookup_pinsert_list_in.there_entry h' =>
+        plookup_pinsert_list_in.there_entry (InEntry_app_l k x l l2 h')
+
+    \func InEntry_app_r {A : \Set} (k : Pos) (x : A) (l1 l2 : List (\Sigma Pos A))
+                        (h : plookup_pinsert_list_in.InEntry k x l2)
+      : plookup_pinsert_list_in.InEntry k x (l1 ++ l2) \elim l1
+      | nil => h
+      | :: e l => plookup_pinsert_list_in.there_entry (InEntry_app_r k x l l2 h)
+
+    \lemma not_in_keys_app {A : \Set} (k : Pos) (l1 l2 : List (\Sigma Pos A))
+                           (h1 : not_in_keys k l1) (h2 : not_in_keys k l2)
+      : not_in_keys k (l1 ++ l2) \elim l1
+      | nil => h2
+      | :: e l => (h1.1, not_in_keys_app k l l2 h1.2 h2)
+
+    -- Every key of l1 is absent from l2.
+    \func keys_disjoint {A : \Set} (l1 l2 : List (\Sigma Pos A)) : \Prop \elim l1
+      | nil => \Sigma
+      | :: e l => \Sigma (not_in_keys e.1 l2) (keys_disjoint l l2)
+
+    \lemma nodup_keys_app {A : \Set} (l1 l2 : List (\Sigma Pos A))
+                          (h1 : nodup_keys l1) (h2 : nodup_keys l2)
+                          (hcross : keys_disjoint l1 l2)
+      : nodup_keys (l1 ++ l2) \elim l1
+      | nil => h2
+      | :: e l =>
+        (not_in_keys_app e.1 l l2 h1.1 hcross.1,
+         nodup_keys_app l l2 h1.2 h2 hcross.2)
+
+    -- Forward direction: every `just`-lookup in `t` corresponds to an entry
+    -- in `entries_of_tree t to_abs`, with key transformed through `to_abs`.
+    \func entries_of_tree_lookup_just {A : \Set} (t : Pmap' A) (to_abs : Pos -> Pos)
+                                      (k' : Pos) (x : A) (h : plookup' t k' = just x)
+      : plookup_pinsert_list_in.InEntry (to_abs k') x (entries_of_tree t to_abs)
+    \elim t, k'
+      | PEmpty, _ => \case h \with {}
+      | PNode v l r, xH => \case \elim v, h \with {
+          | just x', heq =>
+            \let
+              | x_eq : x' = x =>
+                pmap (\lam (o : Maybe A) => \case o \with { | nothing => x' | just y => y }) heq
+            \in plookup_pinsert_list_in.here_entry (idp, x_eq)
+        }
+      | PNode v l r, xO q =>
+        \let
+          | ih : plookup_pinsert_list_in.InEntry (to_abs (xO q)) x
+              (entries_of_tree l (\lam p => to_abs (xO p))) =>
+            entries_of_tree_lookup_just l (\lam p => to_abs (xO p)) q x h
+          | in_lr : plookup_pinsert_list_in.InEntry (to_abs (xO q)) x
+              (entries_of_tree l (\lam p => to_abs (xO p))
+               ++ entries_of_tree r (\lam p => to_abs (xI p))) =>
+            InEntry_app_l (to_abs (xO q)) x
+              (entries_of_tree l (\lam p => to_abs (xO p)))
+              (entries_of_tree r (\lam p => to_abs (xI p))) ih
+        \in \case \elim v \with {
+          | nothing => in_lr
+          | just _ => plookup_pinsert_list_in.there_entry in_lr
+        }
+      | PNode v l r, xI q =>
+        \let
+          | ih : plookup_pinsert_list_in.InEntry (to_abs (xI q)) x
+              (entries_of_tree r (\lam p => to_abs (xI p))) =>
+            entries_of_tree_lookup_just r (\lam p => to_abs (xI p)) q x h
+          | in_lr : plookup_pinsert_list_in.InEntry (to_abs (xI q)) x
+              (entries_of_tree l (\lam p => to_abs (xO p))
+               ++ entries_of_tree r (\lam p => to_abs (xI p))) =>
+            InEntry_app_r (to_abs (xI q)) x
+              (entries_of_tree l (\lam p => to_abs (xO p)))
+              (entries_of_tree r (\lam p => to_abs (xI p))) ih
+        \in \case \elim v \with {
+          | nothing => in_lr
+          | just _ => plookup_pinsert_list_in.there_entry in_lr
+        }
+
+    -- Dual direction: if no `k'` with `to_abs k' = k` has a `just`-lookup in `t`,
+    -- then `k` is absent from the keys of `entries_of_tree t to_abs`.
+    \lemma entries_of_tree_not_in_keys {A : \Set} (t : Pmap' A) (to_abs : Pos -> Pos)
+                                       (inj : pos_inj to_abs) (k : Pos)
+                                       (h : \Pi (k' : Pos) -> to_abs k' = k -> plookup' t k' = nothing)
+      : not_in_keys k (entries_of_tree t to_abs) \elim t
+      | PEmpty => ()
+      | PNode v l r =>
+        \let
+          | not_in_left : not_in_keys k (entries_of_tree l (\lam p => to_abs (xO p))) =>
+            entries_of_tree_not_in_keys l (\lam p => to_abs (xO p)) (pos_inj_xO to_abs inj) k
+              (\lam k' heq => h (xO k') heq)
+          | not_in_right : not_in_keys k (entries_of_tree r (\lam p => to_abs (xI p))) =>
+            entries_of_tree_not_in_keys r (\lam p => to_abs (xI p)) (pos_inj_xI to_abs inj) k
+              (\lam k' heq => h (xI k') heq)
+          | not_in_lr : not_in_keys k
+              (entries_of_tree l (\lam p => to_abs (xO p))
+               ++ entries_of_tree r (\lam p => to_abs (xI p))) =>
+            not_in_keys_app k _ _ not_in_left not_in_right
+        \in \case \elim v, h xH \with {
+          | nothing, _ => not_in_lr
+          | just x, hxH =>
+            \let
+              | absurd_xH : Not (to_abs xH = k) =>
+                \lam eq =>
+                  \case (hxH eq : just x = nothing) \with {}
+            \in (absurd_xH, not_in_lr)
+        }
+
+    -- Inversion: an `InEntry` into a concatenated list is one of the two halves.
+    \func InEntry_app_inv {A : \Set} (k : Pos) (x : A) (l1 l2 : List (\Sigma Pos A))
+                          (h : plookup_pinsert_list_in.InEntry k x (l1 ++ l2))
+      : Or (plookup_pinsert_list_in.InEntry k x l1)
+           (plookup_pinsert_list_in.InEntry k x l2) \elim l1, h
+      | nil, h => inr h
+      | :: e l, plookup_pinsert_list_in.here_entry eq =>
+        inl (plookup_pinsert_list_in.here_entry eq)
+      | :: e l, plookup_pinsert_list_in.there_entry h' =>
+        \case InEntry_app_inv k x l l2 h' \with {
+          | inl hl => inl (plookup_pinsert_list_in.there_entry hl)
+          | inr hr => inr hr
+        }
+
+    -- Inverse of `entries_of_tree_lookup_just`: every entry in `entries_of_tree t to_abs`
+    -- corresponds to a `just`-lookup in `t` via some preimage under `to_abs`.
+    \func entries_of_tree_InEntry_inv {A : \Set} (t : Pmap' A) (to_abs : Pos -> Pos)
+                                      (k : Pos) (x : A)
+                                      (h : plookup_pinsert_list_in.InEntry k x (entries_of_tree t to_abs))
+      : \Sigma (q : Pos) (to_abs q = k) (plookup' t q = just x) \elim t
+      | PEmpty => \case h \with {}
+      | PNode v l r =>
+        \case InEntry_app_inv k x _ _ h \with {
+          | inl h_here =>
+            \case \elim v, h_here \with {
+              | just x', plookup_pinsert_list_in.here_entry eq =>
+                (xH, eq.1, pmap just eq.2)
+              | just x', plookup_pinsert_list_in.there_entry h_nil =>
+                \case h_nil \with {}
+            }
+          | inr h_lr =>
+            \case InEntry_app_inv k x _ _ h_lr \with {
+              | inl h_left =>
+                \let
+                  | rec : \Sigma (q' : Pos) (to_abs (xO q') = k) (plookup' l q' = just x) =>
+                    entries_of_tree_InEntry_inv l (\lam p => to_abs (xO p)) k x h_left
+                \in (xO rec.1, rec.2, rec.3)
+              | inr h_right =>
+                \let
+                  | rec : \Sigma (q' : Pos) (to_abs (xI q') = k) (plookup' r q' = just x) =>
+                    entries_of_tree_InEntry_inv r (\lam p => to_abs (xI p)) k x h_right
+                \in (xI rec.1, rec.2, rec.3)
+            }
+        }
+
+    -- Walk a list via InEntry to prove keys are disjoint.
+    \lemma keys_disjoint_via_InEntry {A : \Set}
+                                     (l1 l2 : List (\Sigma Pos A))
+                                     (h : \Pi (k : Pos) (x : A) -> plookup_pinsert_list_in.InEntry k x l1
+                                          -> not_in_keys k l2)
+      : keys_disjoint l1 l2 \elim l1
+      | nil => ()
+      | :: e l =>
+        (h e.1 e.2 (plookup_pinsert_list_in.here_entry (idp, idp)),
+         keys_disjoint_via_InEntry l l2
+           (\lam k x h' => h k x (plookup_pinsert_list_in.there_entry h')))
+
+    -- nodup for the tree-traversal.
+    \lemma nodup_keys_entries_of_tree {A : \Set} (t : Pmap' A) (to_abs : Pos -> Pos)
+                                      (inj : pos_inj to_abs)
+      : nodup_keys (entries_of_tree t to_abs) \elim t
+      | PEmpty => ()
+      | PNode v l r =>
+        \let
+          | nd_left : nodup_keys (entries_of_tree l (\lam p => to_abs (xO p))) =>
+            nodup_keys_entries_of_tree l (\lam p => to_abs (xO p)) (pos_inj_xO to_abs inj)
+          | nd_right : nodup_keys (entries_of_tree r (\lam p => to_abs (xI p))) =>
+            nodup_keys_entries_of_tree r (\lam p => to_abs (xI p)) (pos_inj_xI to_abs inj)
+          -- Cross-disjointness left vs right: any left-key is of form `to_abs (xO _)`,
+          -- which cannot equal any right-key of form `to_abs (xI _)`.
+          | cross_lr : keys_disjoint
+              (entries_of_tree l (\lam p => to_abs (xO p)))
+              (entries_of_tree r (\lam p => to_abs (xI p))) =>
+            nodup_keys_entries_of_tree.cross_LR l r to_abs inj
+          | nd_lr : nodup_keys
+              (entries_of_tree l (\lam p => to_abs (xO p))
+               ++ entries_of_tree r (\lam p => to_abs (xI p))) =>
+            nodup_keys_app _ _ nd_left nd_right cross_lr
+        \in \case \elim v \with {
+          | nothing => nd_lr
+          | just x =>
+            \let
+              -- xH cannot reach the left or right entries (those are xO/xI keys).
+              | nih_left : not_in_keys (to_abs xH)
+                  (entries_of_tree l (\lam p => to_abs (xO p))) =>
+                entries_of_tree_not_in_keys l (\lam p => to_abs (xO p))
+                  (pos_inj_xO to_abs inj) (to_abs xH)
+                  (\lam k' heq =>
+                    \case (inj (xO k') xH heq : xO k' = xH) \with {})
+              | nih_right : not_in_keys (to_abs xH)
+                  (entries_of_tree r (\lam p => to_abs (xI p))) =>
+                entries_of_tree_not_in_keys r (\lam p => to_abs (xI p))
+                  (pos_inj_xI to_abs inj) (to_abs xH)
+                  (\lam k' heq =>
+                    \case (inj (xI k') xH heq : xI k' = xH) \with {})
+              | nih_lr : not_in_keys (to_abs xH)
+                  (entries_of_tree l (\lam p => to_abs (xO p))
+                   ++ entries_of_tree r (\lam p => to_abs (xI p))) =>
+                not_in_keys_app (to_abs xH) _ _ nih_left nih_right
+            \in (nih_lr, nd_lr)
+        }
+      \where {
+        \lemma cross_LR {A : \Set} (l r : Pmap' A) (to_abs : Pos -> Pos)
+                        (inj : pos_inj to_abs)
+          : keys_disjoint
+              (entries_of_tree l (\lam p => to_abs (xO p)))
+              (entries_of_tree r (\lam p => to_abs (xI p))) =>
+          keys_disjoint_via_InEntry
+            (entries_of_tree l (\lam p => to_abs (xO p)))
+            (entries_of_tree r (\lam p => to_abs (xI p)))
+            (\lam k x h =>
+              \let
+                -- An entry's key in the left list factors as `to_abs (xO q')`.
+                | shape : \Sigma (q' : Pos) (to_abs (xO q') = k) (plookup' l q' = just x) =>
+                  entries_of_tree_InEntry_inv l (\lam p => to_abs (xO p)) k x h
+              \in entries_of_tree_not_in_keys r (\lam p => to_abs (xI p))
+                    (pos_inj_xI to_abs inj) k
+                    (\lam k' hkeq =>
+                      \case (inj (xI k') (xO shape.1)
+                              (hkeq *> inv shape.2)
+                              : xI k' = xO shape.1) \with {}))
+      }
+
+    -- Top-level: at `to_abs = id`, the nodup statement.
+    \lemma entries_of_nodup {A : \Set} (m : Pmap A)
+      : nodup_keys {A} (entries_of {A} m) =>
+      nodup_keys_entries_of_tree m.tree (\lam k => k) pos_inj_id
+
+    -- Top-level: at `to_abs = id`, the lookup equivalence.
+    \lemma entries_of_lookup {A : \Set} (m : Pmap A) (k : Pos)
+      : plookup {A} (pinsert_list {A} (entries_of {A} m) (pempty {A})) k = plookup m k =>
+      \case plookup m k \as o, idp : plookup m k = o
+        \return plookup (pinsert_list (entries_of m) pempty) k = plookup m k \with {
+        | just x, hjust =>
+            \let
+              | hin : plookup_pinsert_list_in.InEntry k x (entries_of m) =>
+                entries_of_tree_lookup_just m.tree (\lam q => q) k x hjust
+              | rebuilt : plookup (pinsert_list (entries_of m) pempty) k = just x =>
+                plookup_pinsert_list_in (entries_of m) pempty k x hin (entries_of_nodup m)
+            \in rebuilt *> inv hjust
+        | nothing, hnone =>
+            \let
+              | hni : not_in_keys k (entries_of m) =>
+                entries_of_tree_not_in_keys m.tree (\lam q => q) pos_inj_id k
+                  (\lam k' heq => transport (\lam q => plookup' m.tree q = nothing) (inv heq) hnone)
+              | rebuilt : plookup (pinsert_list (entries_of m) pempty) k = plookup pempty k =>
+                plookup_pinsert_list_not_in (entries_of m) pempty k hni
+            \in rebuilt *> plookup_empty k *> inv hnone
+        }
   }
 
 -- =================================================================================
