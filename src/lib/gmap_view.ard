@@ -1,0 +1,517 @@
+\import Arith.Nat
+\import Data.Bool
+\import Data.List (List, nil, ::)
+\import Data.Maybe
+\import Data.Or
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+\import Set
+\import cmra
+\import ofe
+\import lib.agree_cmra
+\import lib.auth_cmra
+\import lib.excl_cmra
+\import lib.gmap_cmra
+
+\func to_agree_validN {V : OFE} (n : Nat) (v : V.E) : agree_validN n (to_agree v) =>
+  \lam a b ha hb => \case ha, hb \with {
+    | inl heqa, inl heqb =>
+        transport2 (\lam x y => V.dist n x y) (inv heqa) (inv heqb) (V.ofe_dist_refl n v)
+    | inl _, inr e => \case e \with {}
+    | inr e, _ => \case e \with {}
+  }
+
+-- =================================================================================
+-- Plan A, §A8 (light): `gmap_view K V` CMRA.
+--
+-- Light version per `full_invariant_plan.md`: build the CMRA as
+-- `auth (gmap K (agree V))`, *without* `dfrac`.  This gives the lemmas the
+-- invariants pipeline actually needs:
+--   * `gmap_view_alloc`         — fresh-key insertion as a frame-preserving update
+--   * `gmap_view_both_validN`   — auth + frag agree on `m !! k`
+--   * `gmap_view_lookup`        — corollary of both-validN
+--   * `gmap_view_frag_core_id`  — fragments are core-id, hence persistent
+-- plus validity of the canonical authoritative element.
+--
+-- In-place update (`gmap_view_update` in Rocq) is *not* in the light version:
+-- it requires `DfracOwn 1` on the frag for exclusive ownership, which the
+-- light agree-only CMRA cannot express.  See the comment below for details.
+--
+-- API names are aligned with Iris's `algebra/lib/gmap_view.v` (minus dfrac
+-- arguments) so the future full-version upgrade is a drop-in: signatures
+-- below correspond 1-1 to Iris's specialisation at `DfracOwn 1`.
+-- =================================================================================
+
+-- =================================================================================
+-- The gmap-view CMRA.
+--
+-- An element is a pair `(Maybe (Excl gmap), gmap)` where the gmap stores
+-- `AgreeElem V` (i.e. `to_agree v`) per key.
+--
+-- Note: `GmapUCMRA K cnt A` works at `A : CMRA` (matches Rocq's `gmapUR K V`
+-- specification — `gmapUR` is a `ucmra` regardless of whether `V` is a `cmra`
+-- or `ucmra`, since the empty map is always the unit).
+-- =================================================================================
+
+\func gmap_viewR (K : \Set) (cnt : Countable K) (V : OFE) : CMRA =>
+  AuthCMRA (GmapUCMRA K cnt (AgreeCMRA V))
+
+\func gmap_viewUR (K : \Set) (cnt : Countable K) (V : OFE) : UCMRA =>
+  AuthUCMRA (GmapUCMRA K cnt (AgreeCMRA V))
+
+\func GmapViewMap (K : \Set) (cnt : Countable K) (V : OFE) : \Set =>
+  Gmap K cnt (AgreeElem V)
+
+-- =================================================================================
+-- Lifting `Gmap K cnt V.E` to the agree-flavoured fragment store.
+-- =================================================================================
+
+\func to_agree_lift {V : OFE} (p : \Sigma \Set V.E) : Maybe (AgreeElem V) =>
+  just (to_agree p.2)
+  \where {
+    \func at {K : \Set} {V : OFE} (p : \Sigma K V.E) : Maybe (AgreeElem V) =>
+      just (to_agree p.2)
+  }
+
+\func to_agree_map {K : \Set} {cnt : Countable K} {V : OFE}
+                   (m : Gmap K cnt V.E) : GmapViewMap K cnt V =>
+  gmap_map_support {K} {cnt} {V.E} {AgreeElem V} m to_agree_lift.at
+
+\func to_agree_map_lookup_just {K : \Set} {cnt : Countable K} {V : OFE}
+                               (m : Gmap K cnt V.E) (k : K) (a : AgreeElem V)
+                               (h : glookup (to_agree_map m) k = just a)
+  : \Sigma (v : V.E) (glookup m k = just v) (a = to_agree v) =>
+  \case glookup m k \as om, idp : glookup m k = om
+    \return \Sigma (v : V.E) (glookup m k = just v) (a = to_agree v) \with {
+      | just v, hm =>
+          \let
+            | mapped : glookup (to_agree_map m) k = just (to_agree v) =>
+              glookup_map_support_present {K} {cnt} {V.E} {AgreeElem V}
+                m to_agree_lift.at k v hm
+            | eq : just a = just (to_agree v) => inv h *> mapped
+          \in (v, hm, pmap (\case __ \with { | just q => q | nothing => to_agree v }) eq)
+      | nothing, hm =>
+          \let
+            | mapped : glookup (to_agree_map m) k = nothing =>
+              glookup_map_support_absent {K} {cnt} {V.E} {AgreeElem V}
+                m to_agree_lift.at k hm
+            | bad : true = false =>
+              pmap (\lam (o : Maybe (AgreeElem V)) => \case o \with { | just _ => true | nothing => false })
+                (inv h *> mapped)
+          \in \case bad \with {}
+    }
+
+-- =================================================================================
+-- Constructors: `gmap_view_auth` / `gmap_view_frag`.
+--
+-- `gmap_view_auth m` is the full authoritative element `●(to_agree_map m)`.
+-- `gmap_view_frag k v` is the singleton fragment `◯{[k := to_agree v]}`.
+-- =================================================================================
+
+\func gmap_view_auth {K : \Set} {cnt : Countable K} {V : OFE}
+                     (m : Gmap K cnt V.E) : (gmap_viewR K cnt V).E =>
+  (just (excl (to_agree_map m)), gempty)
+
+\func gmap_view_frag {K : \Set} {cnt : Countable K} {V : OFE}
+                     (k : K) (v : V.E) : (gmap_viewR K cnt V).E =>
+  (nothing, gsingleton k (to_agree v))
+
+-- =================================================================================
+-- Step 3: API lemmas.
+-- =================================================================================
+
+-- `gmap_view_auth_validN`: the canonical authoritative element is always step-valid.
+\lemma gmap_view_auth_validN {K : \Set} {cnt : Countable K} {V : OFE}
+                             (n : Nat) (m : Gmap K cnt V.E) :
+  validN {gmap_viewR K cnt V} n (gmap_view_auth m) =>
+  \let
+    | vm : validN {GmapUCMRA K cnt (AgreeCMRA V)} n (to_agree_map m) =>
+        gmap_view_auth_validN.helper n m
+    | incl_unit : inclN {GmapUCMRA K cnt (AgreeCMRA V)}
+        {\new Op (Gmap K cnt (AgreeElem V)) { | op => (GmapCMRA K cnt (AgreeCMRA V)).op }}
+        (GmapUCMRA K cnt (AgreeCMRA V)).unit n (to_agree_map m) =>
+        inP (to_agree_map m,
+          (GmapCMRA K cnt (AgreeCMRA V)).ofe_dist_sym n
+            ((GmapUCMRA K cnt (AgreeCMRA V)).op
+              (GmapUCMRA K cnt (AgreeCMRA V)).unit (to_agree_map m))
+            (to_agree_map m)
+            (ucmra_unit_left_id_dist {GmapUCMRA K cnt (AgreeCMRA V)} n (to_agree_map m)))
+  \in (vm, incl_unit)
+  \where {
+    \lemma helper {K : \Set} {cnt : Countable K} {V : OFE}
+                  (n : Nat) (m : Gmap K cnt V.E) :
+      validN {GmapCMRA K cnt (AgreeCMRA V)} n (to_agree_map m) =>
+      \lam k => \case glookup (to_agree_map m) k \as o, idp : glookup (to_agree_map m) k = o
+        \return option_validN {AgreeCMRA V} n o \with {
+          | nothing, _ => ()
+          | just a, h =>
+              \let
+                | (v, hv, ha) : \Sigma (v : V.E) (glookup m k = just v) (a = to_agree v) =>
+                  to_agree_map_lookup_just m k a h
+              \in transport (\lam x => option_validN {AgreeCMRA V} n (just x))
+                    (inv ha) (to_agree_validN n v)
+        }
+  }
+
+-- `gmap_view_frag_validN`: a singleton fragment is always step-valid.
+\lemma gmap_view_frag_validN {K : \Set} {cnt : Countable K} {V : OFE}
+                             (n : Nat) (k : K) (v : V.E) :
+  validN {gmap_viewR K cnt V} n (gmap_view_frag k v) =>
+  \lam k' => \case EqDecision.decideEq {cnt} k' k \with {
+    | yes p =>
+        transport
+          (\lam kk => option_validN {AgreeCMRA V} n
+            (glookup (gsingleton k (to_agree v)) kk))
+          (inv p)
+          (transport (option_validN {AgreeCMRA V} n)
+            (inv (glookup_insert_eq k (to_agree v) gempty))
+            (to_agree_validN n v))
+    | no np =>
+        transport (option_validN {AgreeCMRA V} n)
+          (inv (glookup_insert_ne k k' (to_agree v) gempty (\lam q => np (inv q))
+                *> glookup_empty k'))
+          ()
+  }
+
+-- =================================================================================
+-- `gmap_view_alloc`: allocation as a frame-preserving update.
+--
+--   glookup m k = nothing
+--   ⟹  gmap_view_auth m ~~> gmap_view_auth (ginsert k v m) ⋅ gmap_view_frag k v
+--
+-- The state-after element is determined by the `=` constraint in `Phi`; the
+-- consumer therefore receives it without an existential witness.
+-- =================================================================================
+
+-- Compatibility of `to_agree_map` with `ginsert`.
+\func to_agree_map_ginsert {K : \Set} {cnt : Countable K} {V : OFE}
+                           (m : Gmap K cnt V.E) (k : K) (v : V.E) :
+  to_agree_map (ginsert k v m) = ginsert k (to_agree v) (to_agree_map m) =>
+  gmap_eq (to_agree_map (ginsert k v m)) (ginsert k (to_agree v) (to_agree_map m))
+    (\lam k' =>
+      \case EqDecision.decideEq {cnt} k' k \with {
+        | yes p =>
+            \let
+              | lhs_eq : glookup (ginsert k v m) k' = just v =>
+                  transport (\lam kk => glookup (ginsert k v m) kk = just v)
+                    (inv p) (glookup_insert_eq k v m)
+              | lhs_mapped : glookup (to_agree_map (ginsert k v m)) k'
+                  = just (to_agree v) =>
+                  glookup_map_support_present {K} {cnt} {V.E} {AgreeElem V}
+                    (ginsert k v m) to_agree_lift.at k' v lhs_eq
+              | rhs_eq : glookup (ginsert k (to_agree v) (to_agree_map m)) k'
+                  = just (to_agree v) =>
+                  transport (\lam kk => glookup (ginsert k (to_agree v) (to_agree_map m)) kk
+                              = just (to_agree v))
+                    (inv p) (glookup_insert_eq k (to_agree v) (to_agree_map m))
+            \in lhs_mapped *> inv rhs_eq
+        | no np =>
+            \let
+              | ne : Not (k = k') => \lam q => np (inv q)
+              | lhs_ne : glookup (ginsert k v m) k' = glookup m k' =>
+                  glookup_insert_ne k k' v m ne
+              | rhs_ne : glookup (ginsert k (to_agree v) (to_agree_map m)) k'
+                  = glookup (to_agree_map m) k' =>
+                  glookup_insert_ne k k' (to_agree v) (to_agree_map m) ne
+            \in \case glookup m k' \as om, idp : glookup m k' = om \with {
+              | just w, hm =>
+                  \let
+                    | lhs : glookup (to_agree_map (ginsert k v m)) k' = just (to_agree w) =>
+                        glookup_map_support_present {K} {cnt} {V.E} {AgreeElem V}
+                          (ginsert k v m) to_agree_lift.at k' w (lhs_ne *> hm)
+                    | rhs : glookup (to_agree_map m) k' = just (to_agree w) =>
+                        glookup_map_support_present {K} {cnt} {V.E} {AgreeElem V}
+                          m to_agree_lift.at k' w hm
+                  \in lhs *> inv (rhs_ne *> rhs)
+              | nothing, hm =>
+                  \let
+                    | lhs : glookup (to_agree_map (ginsert k v m)) k' = nothing =>
+                        glookup_map_support_absent {K} {cnt} {V.E} {AgreeElem V}
+                          (ginsert k v m) to_agree_lift.at k' (lhs_ne *> hm)
+                    | rhs : glookup (to_agree_map m) k' = nothing =>
+                        glookup_map_support_absent {K} {cnt} {V.E} {AgreeElem V}
+                          m to_agree_lift.at k' hm
+                  \in lhs *> inv (rhs_ne *> rhs)
+            }
+      })
+
+\func gmap_view_alloc {K : \Set} {cnt : Countable K} {V : OFE}
+                     (m : Gmap K cnt V.E) (k : K) (v : V.E)
+                     (fresh : glookup m k = nothing) :
+  cmra_updateP {gmap_viewUR K cnt V} (gmap_view_auth m)
+    (\lam y => y = (gmap_viewR K cnt V).op
+                     (gmap_view_auth (ginsert k v m))
+                     (gmap_view_frag k v)) =>
+  \lam n yf hv =>
+    inP
+      ( (gmap_viewR K cnt V).op (gmap_view_auth (ginsert k v m)) (gmap_view_frag k v)
+      , idp
+      , gmap_view_alloc.preserve m k v fresh n yf hv)
+  \where {
+    \func preserve {K : \Set} {cnt : Countable K} {V : OFE}
+                   (m : Gmap K cnt V.E) (k : K) (v : V.E)
+                   (fresh : glookup m k = nothing)
+                   (n : Nat) (yf : (gmap_viewUR K cnt V).E)
+                   (hv : validN {gmap_viewUR K cnt V} n
+                           ((gmap_viewUR K cnt V).op (gmap_view_auth m) yf))
+      : validN {gmap_viewUR K cnt V} n
+                ((gmap_viewUR K cnt V).op
+                  ((gmap_viewR K cnt V).op
+                    (gmap_view_auth (ginsert k v m))
+                    (gmap_view_frag k v))
+                  yf) =>
+      \case \elim yf, hv \with {
+        | (nothing, yf2), hv =>
+            \let
+              | A : UCMRA => GmapUCMRA K cnt (AgreeCMRA V)
+              -- hv : (validN n (to_agree_map m), inclN (A.op gempty yf2) n (to_agree_map m))
+              | vm : validN {A} n (to_agree_map m) => hv.1
+              | incl_orig : inclN {A} {\new Op A.E { | op => A.op }}
+                  (A.op gempty yf2) n (to_agree_map m) => hv.2
+              -- Strip the leading gempty using unit_left_id.
+              | unit_dist : A.dist n (A.op gempty yf2) yf2 =>
+                  ucmra_unit_left_id_dist {A} n yf2
+              | incl_yf2 : inclN {A} {\new Op A.E { | op => A.op }}
+                  yf2 n (to_agree_map m) =>
+                  \case incl_orig \with {
+                    | inP (z, hz) => inP (z,
+                        A.ofe_dist_trans n
+                          (to_agree_map m)
+                          (A.op (A.op gempty yf2) z)
+                          (A.op yf2 z)
+                          hz
+                          (A.cmra_op_ne_2 z n (A.op gempty yf2) yf2 unit_dist))
+                  }
+              -- Translate `fresh` to the agree-map side.
+              | fresh_mapped : glookup (to_agree_map m) k = nothing =>
+                  glookup_map_support_absent {K} {cnt} {V.E} {AgreeElem V}
+                    m to_agree_lift.at k fresh
+              -- New validN via gmap_insert_validN + helper equality.
+              | helper_eq : to_agree_map (ginsert k v m)
+                  = ginsert k (to_agree v) (to_agree_map m) =>
+                  to_agree_map_ginsert m k v
+              | vm_inserted : validN {A} n (to_agree_map (ginsert k v m)) =>
+                  transport (\lam x => validN {A} n x) (inv helper_eq)
+                    (gmap_insert_validN {K} {cnt} {AgreeCMRA V} n (to_agree_map m) k
+                      (to_agree v) (to_agree_validN n v) vm)
+              -- New inclN via gmap_alloc_includedN + helper equality.
+              | incl_inserted_pre : inclN {A} {\new Op A.E { | op => A.op }}
+                  (A.op (gsingleton k (to_agree v)) yf2)
+                  n (ginsert k (to_agree v) (to_agree_map m)) =>
+                  gmap_alloc_includedN {K} {cnt} {AgreeCMRA V} n
+                    (to_agree_map m) yf2 k (to_agree v) fresh_mapped incl_yf2
+              | incl_inserted : inclN {A} {\new Op A.E { | op => A.op }}
+                  (A.op (gsingleton k (to_agree v)) yf2)
+                  n (to_agree_map (ginsert k v m)) =>
+                  transport (\lam x => inclN {A} {\new Op A.E { | op => A.op }}
+                              (A.op (gsingleton k (to_agree v)) yf2) n x)
+                    (inv helper_eq) incl_inserted_pre
+              -- Massage the LHS: `A.op (A.op gempty gsing) yf2 ≡_n A.op gsing yf2`.
+              | gempty_left : A.dist n
+                  (A.op gempty (gsingleton k (to_agree v)))
+                  (gsingleton k (to_agree v)) =>
+                  ucmra_unit_left_id_dist {A} n (gsingleton k (to_agree v))
+              | combo_dist : A.dist n
+                  (A.op (A.op gempty (gsingleton k (to_agree v))) yf2)
+                  (A.op (gsingleton k (to_agree v)) yf2) =>
+                  A.cmra_op_ne_2 yf2 n
+                    (A.op gempty (gsingleton k (to_agree v)))
+                    (gsingleton k (to_agree v)) gempty_left
+              | incl_final : inclN {A} {\new Op A.E { | op => A.op }}
+                  (A.op (A.op gempty (gsingleton k (to_agree v))) yf2)
+                  n (to_agree_map (ginsert k v m)) =>
+                  \case incl_inserted \with {
+                    | inP (z, hz) => inP (z,
+                        A.ofe_dist_trans n
+                          (to_agree_map (ginsert k v m))
+                          (A.op (A.op (gsingleton k (to_agree v)) yf2) z)
+                          (A.op (A.op (A.op gempty (gsingleton k (to_agree v))) yf2) z)
+                          hz
+                          (A.cmra_op_ne_2 z n
+                            (A.op (gsingleton k (to_agree v)) yf2)
+                            (A.op (A.op gempty (gsingleton k (to_agree v))) yf2)
+                            (A.ofe_dist_sym n
+                              (A.op (A.op gempty (gsingleton k (to_agree v))) yf2)
+                              (A.op (gsingleton k (to_agree v)) yf2)
+                              combo_dist)))
+                  }
+            \in (vm_inserted, incl_final)
+        | (just (excl _), _), hv => \case hv \with {}
+        | (just exclInvalid, _), hv => \case hv \with {}
+      }
+  }
+
+-- =================================================================================
+-- `gmap_view_both_validN`: agreement between the auth and a fragment.
+--
+--   ✓{n} (auth m · frag k v)  →  ∃ v', m !! k = just v' ∧ v ≡{n}≡ v'.
+--
+-- Decomposes through `auth_both_validN` (gives `gsingleton k (to_agree v) ≼_n to_agree_map m`)
+-- and `gmap_lookup_included` + `to_agree_op_inv`.
+-- =================================================================================
+
+-- Pointwise lookup is monotone w.r.t. gmap-inclusion (inverse of `gmap_lookup_included`).
+\lemma gmap_inclN_lookup {K : \Set} {cnt : Countable K} {A : CMRA}
+                         (n : Nat) (m1 m2 : Gmap K cnt A.E)
+                         (h : inclN {GmapUCMRA K cnt A}
+                               {\new Op (Gmap K cnt A.E) { | op => (GmapCMRA K cnt A).op }}
+                               m1 n m2)
+                         (k : K)
+  : inclN {OptionOFE A} {\new Op (Maybe A.E) { | op => option_op {A} }}
+          (glookup m1 k) n (glookup m2 k) =>
+  \case h \with {
+    | inP (z, hz) =>
+      inP (glookup z k,
+        transport (\lam u => (OptionOFE A).dist n (glookup m2 k) u)
+          (glookup_op m1 z k)
+          (hz k))
+  }
+
+-- Forward direction of `agree_dist (to_agree v') x` at the head of `x`:
+-- pick the right-side element `b = head x` and read off `V.dist n head a`.
+\lemma agree_dist_extract_head {V : OFE} (n : Nat) (v' : V.E) (x : AgreeElem V)
+                               (h : agree_dist n (to_agree v') x)
+  : V.dist n v' x.agree_hd =>
+  \case h.2 x.agree_hd (inl idp) \with {
+    | inP (a, ha, dab) =>
+        \case ha \with {
+          | inl heqa => transport (\lam y => V.dist n y x.agree_hd) heqa dab
+          | inr e => \case e \with {}
+        }
+  }
+
+\func gmap_view_both_validN {K : \Set} {cnt : Countable K} {V : OFE}
+                            (n : Nat) (m : Gmap K cnt V.E) (k : K) (v : V.E)
+                            (hv : validN {gmap_viewR K cnt V} n
+                                    ((gmap_viewR K cnt V).op
+                                      (gmap_view_auth m)
+                                      (gmap_view_frag k v)))
+  : \Sigma (v' : V.E) (glookup m k = just v') (V.dist n v v') =>
+  \let
+    | A : UCMRA => GmapUCMRA K cnt (AgreeCMRA V)
+    | hv_pair : \Sigma
+        (inclN {A} {\new Op A.E { | op => A.op }}
+          (gsingleton k (to_agree v)) n (to_agree_map m))
+        (validN {A} n (to_agree_map m)) =>
+        auth_both_validN {A} n (to_agree_map m) (gsingleton k (to_agree v)) hv
+    | incl_at_k : inclN {OptionOFE (AgreeCMRA V)}
+                        {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                        (glookup (gsingleton k (to_agree v)) k) n
+                        (glookup (to_agree_map m) k) =>
+        gmap_inclN_lookup {K} {cnt} {AgreeCMRA V} n
+          (gsingleton k (to_agree v)) (to_agree_map m) hv_pair.1 k
+    | sing_lookup : glookup (gsingleton k (to_agree v)) k = just (to_agree v) =>
+        glookup_insert_eq k (to_agree v) gempty
+  \in \case glookup m k \as om, idp : glookup m k = om
+        \return \Sigma (v' : V.E) (glookup m k = just v') (V.dist n v v')
+      \with {
+        | nothing, hm =>
+            \let
+              | map_absent : glookup (to_agree_map m) k = nothing =>
+                  glookup_map_support_absent {K} {cnt} {V.E} {AgreeElem V}
+                    m to_agree_lift.at k hm
+              | incl_simpl : inclN {OptionOFE (AgreeCMRA V)}
+                                    {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                    (just (to_agree v)) n nothing =>
+                  transport2 (\lam x y => inclN {OptionOFE (AgreeCMRA V)}
+                                                {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                                x n y)
+                    sing_lookup map_absent incl_at_k
+            \in absurd (gmap_view_both_validN.derive_empty incl_simpl)
+        | just v', hm =>
+            \let
+              | map_present : glookup (to_agree_map m) k = just (to_agree v') =>
+                  glookup_map_support_present {K} {cnt} {V.E} {AgreeElem V}
+                    m to_agree_lift.at k v' hm
+              | incl_simpl : inclN {OptionOFE (AgreeCMRA V)}
+                                    {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                    (just (to_agree v)) n (just (to_agree v')) =>
+                  transport2 (\lam x y => inclN {OptionOFE (AgreeCMRA V)}
+                                                {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                                x n y)
+                    sing_lookup map_present incl_at_k
+              | dist_v_v' : V.dist n v v' => gmap_view_both_validN.extract incl_simpl
+            \in (v', hm, dist_v_v')
+      }
+  \where {
+    -- Helper: `just X ≼_n nothing` is empty since any decomposition routes through `just`.
+    \lemma derive_empty {V : OFE} {n : Nat} {v : V.E}
+                        (incl : inclN {OptionOFE (AgreeCMRA V)}
+                                       {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                       (just (to_agree v)) n nothing)
+      : Empty =>
+      \case incl \with {
+        | inP (wopt, hd) => \case \elim wopt, hd \with {
+          | nothing, hd' => hd'
+          | just w, hd' => hd'
+        }
+      }
+
+    -- From `just (to_agree v) ≼_n just (to_agree v')`, get `V.dist n v v'`.
+    \func extract {V : OFE} {n : Nat} {v v' : V.E}
+                  (incl : inclN {OptionOFE (AgreeCMRA V)}
+                                {\new Op (Maybe (AgreeElem V)) { | op => option_op {AgreeCMRA V} }}
+                                (just (to_agree v)) n (just (to_agree v')))
+      : V.dist n v v' =>
+      \case incl \with {
+        | inP (wopt, hd) => \case wopt \as wo, idp : wopt = wo \with {
+          | nothing, hw =>
+              \let
+                | hd_nothing : (OptionOFE (AgreeCMRA V)).dist n
+                    (just (to_agree v')) (just (to_agree v)) =>
+                    transport (\lam u => (OptionOFE (AgreeCMRA V)).dist n
+                                          (just (to_agree v'))
+                                          (option_op {AgreeCMRA V} (just (to_agree v)) u))
+                      hw hd
+                | agree_d : agree_dist n (to_agree v') (to_agree v) => hd_nothing
+              \in V.ofe_dist_sym n v' v (agree_dist_extract_head n v' (to_agree v) agree_d)
+          | just w, hw =>
+              \let
+                | hd_just : (OptionOFE (AgreeCMRA V)).dist n
+                    (just (to_agree v')) (just (agree_op (to_agree v) w)) =>
+                    transport (\lam u => (OptionOFE (AgreeCMRA V)).dist n
+                                          (just (to_agree v'))
+                                          (option_op {AgreeCMRA V} (just (to_agree v)) u))
+                      hw hd
+                | agree_d : agree_dist n (to_agree v') (agree_op (to_agree v) w) => hd_just
+                -- agree_op (to_agree v) w has head = v. Extract V.dist n v' v.
+              \in V.ofe_dist_sym n v' v (agree_dist_extract_head n v' (agree_op (to_agree v) w) agree_d)
+        }
+      }
+  }
+
+\func gmap_view_lookup {K : \Set} {cnt : Countable K} {V : OFE}
+                       (n : Nat) (m : Gmap K cnt V.E) (k : K) (v : V.E)
+                       (hv : validN {gmap_viewR K cnt V} n
+                               ((gmap_viewR K cnt V).op
+                                 (gmap_view_auth m)
+                                 (gmap_view_frag k v)))
+  : \Sigma (v' : V.E) (glookup m k = just v') (V.dist n v v') =>
+  gmap_view_both_validN n m k v hv
+
+-- =================================================================================
+-- NOTE: no `gmap_view_update` in the light version.
+--
+-- Rocq's `gmap_view_update` (`algebra/lib/gmap_view.v:446`) requires
+-- `DfracOwn 1` on the frag — exclusive ownership of the key — to legitimise
+-- replacing `v` with `v'`.  Without `dfrac`, the frag `gmap_view_frag k v`
+-- is core-id (persistent) because `agree` is core-id, so multiple observers
+-- of the same key can co-exist; the auth cannot be modified freely while any
+-- such frag is around.  The full-version upgrade reintroduces `gmap_view_update`
+-- in the natural form once `dfrac` is in the value-side CMRA.
+--
+-- The invariants pipeline (`wsat`) does not consume `gmap_view_update`: its
+-- operations on the invariant store are `alloc` (handled), `open`, and
+-- `close`, none of which mutate the stored proposition.
+-- =================================================================================
+
+-- =================================================================================
+-- Note on persistence: in the light version `gmap_view_frag k v` is
+-- *persistent* because `agree` is core-id and the auth-frag side of `AuthCMRA`
+-- inherits this.  The corresponding `Persistent` instance at the `iProp`
+-- level will be derived in §A5 once `own` is available; here at the CMRA
+-- level the underlying fact is `pcore (gmap_view_frag k v) ≡ just (gmap_view_frag k v)`,
+-- which follows pointwise from `agree_pcore` returning `just x` for every `x`.
+-- =================================================================================
