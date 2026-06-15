@@ -1,0 +1,218 @@
+\import Arith.Nat
+\import Paths
+\import Set
+\import cmra
+\import ofe
+\import lib.pmap (Pos)
+
+-- =================================================================================
+-- Plan A, §A3: gFunctor / gFunctors / gid / gname / subG.
+--
+-- Faithful port of Iris/Rocq `base_logic/lib/iprop.v` (header section) plus
+-- the underlying `rFunctor` declaration from `algebra/cmra.v` that Rocq's
+-- gFunctor wraps.
+--
+-- The CMRA-valued `RFunctor` is the analogue of Rocq's `Record rFunctor` and
+-- sits parallel to the COFE-valued `OFunctor` already in `ofe.ard`.  We omit
+-- the `URFunctor` (UCMRA-valued) variant for now; it is unneeded until A4 lifts
+-- `iResF Σ` to a `urFunctor`.
+-- =================================================================================
+
+\open Nat (+)
+
+-- =================================================================================
+-- RFunctor: a CMRA-valued functor C^op × C → CMRA.
+--
+-- Mirrors `Record rFunctor` in `algebra/cmra.v`.  CMRA \extends OFE, so the
+-- `OFEMor` between two CMRA carriers makes sense without further coercion.
+-- We deliberately drop Rocq's `rFunctor_mor : CmraMorphism (rFunctor_map fg)`
+-- field; downstream we only need the OFE-morphism structure, and constraint
+-- can be re-added if/when a lemma requires it.
+-- =================================================================================
+
+\record RFunctor
+  | rFunctor_car (A B : COFE) : CMRA
+  | rFunctor_map {A1 A2 B1 B2 : COFE} :
+      \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
+      OFEMor (rFunctor_car A1 B1) (rFunctor_car A2 B2)
+  | rFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+      NonExpansive
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (rFunctor_car A1 B1) (rFunctor_car A2 B2)}
+        rFunctor_map
+  | rFunctor_map_id {A B : COFE} (x : (rFunctor_car A B).E) :
+      (rFunctor_car A B).equiv
+        ((rFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
+        x
+  | rFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+      (f : OFEMor A2 A1) (g : OFEMor A3 A2)
+      (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
+      (x : (rFunctor_car A1 B1).E) :
+      (rFunctor_car A3 B3).equiv
+        ((rFunctor_map (g, g')).ofe_mor_car
+          ((rFunctor_map (f, f')).ofe_mor_car x))
+        ((rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
+
+\record RFunctorContractive (F : RFunctor)
+  | rFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+      ContractiveMap
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (F.rFunctor_car A1 B1) (F.rFunctor_car A2 B2)}
+        (F.rFunctor_map {A1} {A2} {B1} {B2})
+
+-- Rocq's `rFunctor_apply F A : cmra := rFunctor_car F A A`.
+\func rFunctor_apply (F : RFunctor) (A : COFE) : CMRA =>
+  F.rFunctor_car A A
+
+-- =================================================================================
+-- gFunctor: a bundled rFunctor + contractivity witness.
+--
+-- Rocq:
+--   Structure gFunctor := GFunctor {
+--     gFunctor_F :> rFunctor;
+--     gFunctor_map_contractive : rFunctorContractive gFunctor_F;
+--   }.
+-- =================================================================================
+
+\record gFunctor
+  | gFunctor_F : RFunctor
+  | gFunctor_map_contractive : RFunctorContractive gFunctor_F
+
+-- =================================================================================
+-- gFunctors: indexable list of gFunctors.
+--
+-- Rocq:
+--   Record gFunctors := GFunctors {
+--     gFunctors_len    : nat;
+--     gFunctors_lookup : fin gFunctors_len -> gFunctor;
+--   }.
+--
+-- The dependent-record form (rather than `List gFunctor`) follows Rocq's
+-- universe-management workaround; it carries over to Arend at the same cost.
+-- =================================================================================
+
+\record gFunctors
+  | gFunctors_len : Nat
+  | gFunctors_lookup : Fin gFunctors_len -> gFunctor
+
+\func gid (S : gFunctors) : \Set => Fin S.gFunctors_len
+
+\func gname : \Set => Pos
+
+\func gnameO : OFE => DiscreteOFE gname
+
+-- =================================================================================
+-- Fin (n + m) helpers.
+--
+-- arend-lib provides `fin-inc`/`fin-raise`/`split-index`, but the split
+-- combinator uses an opaque equivalence that does not compute by `idp` on
+-- the two injections.  We re-introduce the Rocq-style `fin_L`, `fin_R`, and
+-- `fin_add_inv` with definitional reduction rules so that `subG_app_l/r` can
+-- be proved by direct rewriting.
+-- =================================================================================
+
+\func fin_L {n m : Nat} (i : Fin n) : Fin (n + m) \elim n, i
+  | suc n, 0 => 0
+  | suc n, suc i => suc (fin_L i)
+
+\func fin_R {n m : Nat} (i : Fin m) : Fin (n + m) \elim n
+  | 0 => i
+  | suc n => suc (fin_R i)
+
+\func fin_add_inv {A : \Type} (n m : Nat)
+                  (Pl : Fin n -> A) (Pr : Fin m -> A)
+                  (i : Fin (n + m)) : A \elim n, i
+  | 0, i => Pr i
+  | suc n, 0 => Pl 0
+  | suc n, suc i => fin_add_inv n m (\lam j => Pl (suc j)) Pr i
+
+\func fin_add_inv_L {A : \Type} (n m : Nat)
+                    (Pl : Fin n -> A) (Pr : Fin m -> A) (i : Fin n) :
+  fin_add_inv n m Pl Pr (fin_L i) = Pl i \elim n, i
+  | suc n, 0 => idp
+  | suc n, suc i => fin_add_inv_L n m (\lam j => Pl (suc j)) Pr i
+
+\func fin_add_inv_R {A : \Type} (n m : Nat)
+                    (Pl : Fin n -> A) (Pr : Fin m -> A) (i : Fin m) :
+  fin_add_inv n m Pl Pr (fin_R i) = Pr i \elim n
+  | 0 => idp
+  | suc n => fin_add_inv_R n m (\lam j => Pl (suc j)) Pr i
+
+-- =================================================================================
+-- gFunctors combinators: nil, singleton, app.
+--
+-- Rocq lives them in `Module gFunctors`; Arend has no module nesting, so they
+-- carry the `gFunctors_` prefix.
+-- =================================================================================
+
+\func gFunctors_nil : gFunctors \cowith
+  | gFunctors_len => 0
+  | gFunctors_lookup => \case __
+
+\func gFunctors_singleton (F : gFunctor) : gFunctors \cowith
+  | gFunctors_len => 1
+  | gFunctors_lookup => \lam _ => F
+
+\func gFunctors_app (S1 S2 : gFunctors) : gFunctors \cowith
+  | gFunctors_len => S1.gFunctors_len + S2.gFunctors_len
+  | gFunctors_lookup =>
+      fin_add_inv S1.gFunctors_len S2.gFunctors_len
+        S1.gFunctors_lookup S2.gFunctors_lookup
+
+-- =================================================================================
+-- subG: Σ1 is contained in Σ2.
+--
+-- Rocq:
+--   Class subG (Σ1 Σ2 : gFunctors) := in_subG i :
+--     { j | gFunctors_lookup Σ1 i = gFunctors_lookup Σ2 j }.
+--
+-- We use propositional equality on `gFunctor` records, which suffices for the
+-- downstream `inG` derivation (Rocq does the same — its equation is a Leibniz
+-- equality on the bundled rFunctor record).
+-- =================================================================================
+
+\record subG (S1 S2 : gFunctors)
+  | in_subG (i : Fin S1.gFunctors_len) :
+      \Sigma (j : Fin S2.gFunctors_len)
+             (S1.gFunctors_lookup i = S2.gFunctors_lookup j)
+
+\func subG_refl (S : gFunctors) : subG S S \cowith
+  | in_subG => \lam i => (i, idp)
+
+\func subG_app_l {S S1 S2 : gFunctors} (h : subG S S1)
+  : subG S (gFunctors_app S1 S2) \cowith
+  | in_subG => \lam i =>
+      \let (j, eq) => h.in_subG i
+      \in (fin_L {S1.gFunctors_len} {S2.gFunctors_len} j,
+           eq *> inv (fin_add_inv_L S1.gFunctors_len S2.gFunctors_len
+                       S1.gFunctors_lookup S2.gFunctors_lookup j))
+
+\func subG_app_r {S S1 S2 : gFunctors} (h : subG S S2)
+  : subG S (gFunctors_app S1 S2) \cowith
+  | in_subG => \lam i =>
+      \let (j, eq) => h.in_subG i
+      \in (fin_R {S1.gFunctors_len} {S2.gFunctors_len} j,
+           eq *> inv (fin_add_inv_R S1.gFunctors_len S2.gFunctors_len
+                       S1.gFunctors_lookup S2.gFunctors_lookup j))
+
+\func subG_inv_l {S1 S2 S : gFunctors} (h : subG (gFunctors_app S1 S2) S)
+  : subG S1 S \cowith
+  | in_subG => \lam i =>
+      \let
+        | (j, eq) => h.in_subG (fin_L {S1.gFunctors_len} {S2.gFunctors_len} i)
+      \in (j,
+           inv (fin_add_inv_L S1.gFunctors_len S2.gFunctors_len
+                 S1.gFunctors_lookup S2.gFunctors_lookup i) *> eq)
+
+\func subG_inv_r {S1 S2 S : gFunctors} (h : subG (gFunctors_app S1 S2) S)
+  : subG S2 S \cowith
+  | in_subG => \lam i =>
+      \let
+        | (j, eq) => h.in_subG (fin_R {S1.gFunctors_len} {S2.gFunctors_len} i)
+      \in (j,
+           inv (fin_add_inv_R S1.gFunctors_len S2.gFunctors_len
+                 S1.gFunctors_lookup S2.gFunctors_lookup i) *> eq)
+
+\func subG_inv {S1 S2 S : gFunctors} (h : subG (gFunctors_app S1 S2) S)
+  : \Sigma (subG S1 S) (subG S2 S) =>
+  (subG_inv_l h, subG_inv_r h)
