@@ -1,0 +1,6 @@
+BiAffine	
+BiLaterContractive	
+BiLöb	
+BiPersistentlyForall	
+BiPositive	
+BiPureForall	

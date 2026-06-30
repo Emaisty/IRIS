@@ -1,0 +1,8 @@
+Monoid	
+MonoidHomomorphism	
+MonoidOps	
+WeakMonoidHomomorphism	
+monoid_ops	
+monoid_proper	
+monoid_right_id	
+weak_monoid_homomorphism_proper	

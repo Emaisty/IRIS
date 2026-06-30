@@ -1,0 +1,10 @@
+goal_kind	
+goal_kind_modal	
+spec_goal	
+spec_pat	
+spec_pat.close	
+spec_pat.close_ident	
+spec_pat.parse	
+spec_pat.parse_go	
+spec_pat.stack_item	
+spec_pat_modal	

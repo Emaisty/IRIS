@@ -1,0 +1,15 @@
+adequate	
+adequate_alt	
+adequate_tp_safe	
+steps_sum	
+wp_adequacy	adequacy:wp_adequacy
+wp_adequacy_gen	
+wp_invariance	
+wp_invariance_gen	
+wp_not_stuck	adequacy:wp_not_stuck
+wp_step	adequacy:wp_step
+wp_strong_adequacy	
+wp_strong_adequacy_gen	
+wptp_postconditions	
+wptp_preservation	
+wptp_step	

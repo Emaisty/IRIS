@@ -1,0 +1,5 @@
+Twp	
+Wp	
+stuckness	
+stuckness_le	
+stuckness_le_po	
