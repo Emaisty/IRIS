@@ -1,0 +1,16 @@
+bi_wandM	
+Absorbing	
+Affine	
+Persistent	
+Timeless	
+bi_absorbingly	
+bi_absorbingly_if	
+bi_affinely	
+bi_affinely_if	
+bi_except_0	
+bi_iff	
+bi_intuitionistically	
+bi_intuitionistically_if	
+bi_laterN	
+bi_persistently_if	
+bi_wand_iff	

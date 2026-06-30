@@ -1,0 +1,10 @@
+from_modal_Next	
+from_pure_internal_eq	
+into_internal_eq_absorbingly	
+into_internal_eq_affinely	
+into_internal_eq_internal_eq	
+into_internal_eq_intuitionistically	
+into_internal_eq_persistently	
+into_internal_eq_plainly	
+into_laterN_Next	
+into_pure_eq	
