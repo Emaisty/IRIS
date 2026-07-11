@@ -19,6 +19,7 @@
       <tr>
         <td>Total<br><span class="num" id="total-count">...</span></td>
         <td>Ported<br><span class="num ported" id="ported-count">...</span></td>
+        <td>Ignored<br><span class="num ignored" id="ignored-count">...</span></td>
         <td>Missing<br><span class="num missing" id="missing-count">...</span></td>
         <td>Folders<br><span class="num" id="folder-count">6</span></td>
         <td>Files<br><span class="num" id="file-count">...</span></td>
@@ -37,6 +38,7 @@
         <b>Status:</b>
         <button class="filter-btn active" onclick="setFilter('all')">all</button>
         <button class="filter-btn" onclick="setFilter('ported')">ported</button>
+        <button class="filter-btn" onclick="setFilter('ignored')">ignored</button>
         <button class="filter-btn" onclick="setFilter('missing')">missing</button>
       </div>
     </div>
@@ -44,7 +46,8 @@
     <p class="data-note">
       Data lives in <code>docs/rocq-data/</code>. Each row is
       <code>Rocq name</code> followed by <code>Arend mapping</code>.
-      Empty Arend mappings are shown as missing.
+      Empty Arend mappings are shown as missing unless the file or folder is
+      intentionally ignored.
     </p>
 
     <div id="content" aria-live="polite">Loading Rocq status data...</div>

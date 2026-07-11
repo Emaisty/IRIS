@@ -772,170 +772,196 @@ window.ROCQ_MANIFEST = [
         "path": "rocq-data/proofmode/base.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/base.v",
         "total": 25,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances.v",
         "path": "rocq-data/proofmode/class_instances.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances.v",
         "total": 208,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_cmra.v",
         "path": "rocq-data/proofmode/class_instances_cmra.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_cmra.v",
         "total": 6,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_embedding.v",
         "path": "rocq-data/proofmode/class_instances_embedding.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_embedding.v",
         "total": 41,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_frame.v",
         "path": "rocq-data/proofmode/class_instances_frame.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_frame.v",
         "total": 40,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_internal_eq.v",
         "path": "rocq-data/proofmode/class_instances_internal_eq.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_internal_eq.v",
         "total": 10,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_later.v",
         "path": "rocq-data/proofmode/class_instances_later.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_later.v",
         "total": 86,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_make.v",
         "path": "rocq-data/proofmode/class_instances_make.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_make.v",
         "total": 49,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_plainly.v",
         "path": "rocq-data/proofmode/class_instances_plainly.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_plainly.v",
         "total": 20,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "class_instances_updates.v",
         "path": "rocq-data/proofmode/class_instances_updates.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/class_instances_updates.v",
         "total": 37,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "classes.v",
         "path": "rocq-data/proofmode/classes.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/classes.v",
         "total": 85,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "classes_make.v",
         "path": "rocq-data/proofmode/classes_make.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/classes_make.v",
         "total": 25,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "coq_tactics.v",
         "path": "rocq-data/proofmode/coq_tactics.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/coq_tactics.v",
         "total": 99,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "environments.v",
         "path": "rocq-data/proofmode/environments.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/environments.v",
         "total": 132,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "ident_name.v",
         "path": "rocq-data/proofmode/ident_name.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/ident_name.v",
         "total": 2,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "intro_patterns.v",
         "path": "rocq-data/proofmode/intro_patterns.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/intro_patterns.v",
         "total": 10,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "ltac_tactics.v",
         "path": "rocq-data/proofmode/ltac_tactics.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/ltac_tactics.v",
         "total": 3,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "modalities.v",
         "path": "rocq-data/proofmode/modalities.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/modalities.v",
         "total": 25,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "modality_instances.v",
         "path": "rocq-data/proofmode/modality_instances.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/modality_instances.v",
         "total": 12,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "monpred.v",
         "path": "rocq-data/proofmode/monpred.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/monpred.v",
         "total": 111,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "sel_patterns.v",
         "path": "rocq-data/proofmode/sel_patterns.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/sel_patterns.v",
         "total": 4,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "spec_patterns.v",
         "path": "rocq-data/proofmode/spec_patterns.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/spec_patterns.v",
         "total": 10,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "string_ident.v",
         "path": "rocq-data/proofmode/string_ident.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/string_ident.v",
         "total": 1,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       },
       {
         "name": "tokens.v",
         "path": "rocq-data/proofmode/tokens.v.txt",
         "source": "https://gitlab.mpi-sws.org/iris/iris/-/blob/b9b6cf04478a3088aef800497cdd275d2bce0967/iris/proofmode/tokens.v",
         "total": 5,
-        "ported": 0
+        "ported": 0,
+        "ignored": true
       }
-    ]
+    ],
+    "ignored": true,
+    "ignoreReason": "Proofmode is intentionally out of scope for the Arend port."
   },
   {
     "name": "si_logic/",
