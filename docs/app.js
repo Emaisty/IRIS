@@ -14,13 +14,13 @@ function escapeHtml(text) {
     .replaceAll("'", "&#39;");
 }
 
-function parseRows(text) {
+function parseRows(text, ignored = false) {
   return text
     .split(/\r?\n/)
     .filter((line) => line.trim().length > 0)
     .map((line) => {
       const [rocq = "", arend = ""] = line.split("\t");
-      const status = arend.trim() ? "ported" : "missing";
+      const status = ignored ? "ignored" : arend.trim() ? "ported" : "missing";
       return {
         rocq: rocq.trim(),
         arend: arend.trim(),
@@ -34,12 +34,13 @@ async function loadFile(file) {
   if (!response.ok) {
     throw new Error(`Could not load ${file.path}`);
   }
-  const rows = parseRows(await response.text());
+  const rows = parseRows(await response.text(), file.ignored);
   return {
     ...file,
     rows,
     total: rows.length,
     ported: rows.filter((row) => row.status === "ported").length,
+    ignoredCount: rows.filter((row) => row.status === "ignored").length,
   };
 }
 
@@ -52,20 +53,29 @@ async function loadData() {
         files,
         total: files.reduce((sum, file) => sum + file.total, 0),
         ported: files.reduce((sum, file) => sum + file.ported, 0),
+        ignoredCount: files.reduce((sum, file) => sum + file.ignoredCount, 0),
       };
     }),
   );
   return folders;
 }
 
-function sectionStats(ported, total) {
-  return `${ported}/${total} (${percent(ported, total)}%)`;
+function sectionStats(item) {
+  if (item.ignored) {
+    return `ignored ${item.total}/${item.total}`;
+  }
+  const relevant = item.total - item.ignoredCount;
+  return `${item.ported}/${relevant} (${percent(item.ported, relevant)}%)`;
 }
 
-function miniBar(ported, total) {
+function miniBar(item) {
+  const relevant = item.total - item.ignoredCount;
+  const portedWidth = item.ignored ? 0 : percent(item.ported, relevant);
+  const ignoredWidth = percent(item.ignoredCount, item.total);
   return `
     <span class="mini-bar">
-      <span class="mini-bar-fill ported" style="width:${percent(ported, total)}%"></span>
+      <span class="mini-bar-fill ported" style="width:${portedWidth}%"></span>
+      <span class="mini-bar-fill ignored" style="width:${ignoredWidth}%"></span>
     </span>
   `;
 }
@@ -91,8 +101,8 @@ function renderFile(file) {
         <span class="arrow">&#9654;</span>
         <code class="file-name">${escapeHtml(file.name)}</code>
         <a class="file-link" href="${escapeHtml(file.source)}" target="_blank" onclick="event.stopPropagation()">[src]</a>
-        <span class="section-stats">${sectionStats(file.ported, file.total)}</span>
-        ${miniBar(file.ported, file.total)}
+        <span class="section-stats">${sectionStats(file)}</span>
+        ${miniBar(file)}
       </div>
       <table class="file-table">
         <colgroup>
@@ -115,12 +125,13 @@ function renderFile(file) {
 
 function renderFolder(folder) {
   return `
-    <div class="folder-section">
+    <div class="folder-section${folder.ignored ? " ignored-section" : ""}">
       <div class="section-header" onclick="toggle(this)">
         <span class="arrow">&#9654;</span>
         <code class="folder-name">${escapeHtml(folder.name)}</code>
-        <span class="section-stats">${sectionStats(folder.ported, folder.total)}</span>
-        ${miniBar(folder.ported, folder.total)}
+        ${folder.ignoreReason ? `<span class="ignore-reason">${escapeHtml(folder.ignoreReason)}</span>` : ""}
+        <span class="section-stats">${sectionStats(folder)}</span>
+        ${miniBar(folder)}
       </div>
       <div class="folder-children">
         ${folder.files.map(renderFile).join("")}
@@ -132,12 +143,15 @@ function renderFolder(folder) {
 function render(folders) {
   const total = folders.reduce((sum, folder) => sum + folder.total, 0);
   const ported = folders.reduce((sum, folder) => sum + folder.ported, 0);
+  const ignored = folders.reduce((sum, folder) => sum + folder.ignoredCount, 0);
   const files = folders.reduce((sum, folder) => sum + folder.files.length, 0);
-  const missing = total - ported;
-  const progress = percent(ported, total);
+  const relevant = total - ignored;
+  const missing = relevant - ported;
+  const progress = percent(ported, relevant);
 
   document.getElementById("total-count").textContent = total;
   document.getElementById("ported-count").textContent = ported;
+  document.getElementById("ignored-count").textContent = ignored;
   document.getElementById("missing-count").textContent = missing;
   document.getElementById("folder-count").textContent = folders.length;
   document.getElementById("file-count").textContent = files;

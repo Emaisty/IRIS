@@ -72,6 +72,10 @@ code {
   color: #2a6e2a;
 }
 
+.summary .num.ignored {
+  color: #2a5a8a;
+}
+
 .summary .num.missing {
   color: #b33;
 }
@@ -242,6 +246,10 @@ code {
   background: #4a4;
 }
 
+.mini-bar-fill.ignored {
+  background: #4a8bd1;
+}
+
 .file-table {
   display: none;
   width: 100%;
@@ -315,12 +323,30 @@ code {
   content: "ported";
 }
 
+.badge-ignored {
+  color: #2a5a8a;
+}
+
+.badge-ignored::before {
+  content: "ignored";
+}
+
 .badge-missing {
   color: #b33;
 }
 
 .badge-missing::before {
   content: "missing";
+}
+
+.ignored-section > .section-header {
+  color: #2a5a8a;
+}
+
+.ignore-reason {
+  color: #666;
+  font-size: 0.82em;
+  font-weight: normal;
 }
 
 .hidden {
