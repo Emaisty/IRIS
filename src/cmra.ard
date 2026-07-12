@@ -423,3 +423,261 @@
               hincl_cy
       }
   }
+
+-- On a UCMRA the partial core is in fact total: `pcore x = just (ucmra_core x)`.
+-- Rocq derives the same via `cmra_pcore_mono` from `ε ≼ x` (`ucmra_cmra_total`).
+-- The statement is a path in the \Set `Maybe U.E`, hence a \Prop, so the
+-- truncated existential of `cmra_pcore_mono` can be eliminated into it.
+\lemma ucmra_pcore_total {U : UCMRA} (x : U.E) : pcore {U} x = just (ucmra_core x)
+  => \case pcore {U} U.unit \as pe, idp : pcore {U} U.unit = pe,
+           U.ucmra_pcore_unit : (OptionOFE U).equiv pe (just U.unit)
+  \with {
+    | nothing, _, e => \case e \with {}
+    | just ce, hpe, _ =>
+      \case U.cmra_pcore_mono U.unit x ce (ucmra_unit_least x) hpe \with {
+        | inP (cy, hpy, _) =>
+          \let ceq : ucmra_core x = cy =>
+            transport (\lam o => (\case o \with { | just c => c | nothing => U.unit }) = cy)
+                (inv hpy) idp
+          \in hpy *> pmap just (inv ceq)
+      }
+  }
+
+-- `core x · core x ≡ core x` (Rocq's `cmra_core_dup`, specialised to UCMRA).
+\lemma ucmra_core_dup {U : UCMRA} (x : U.E)
+  : U.equiv (U.op (ucmra_core x) (ucmra_core x)) (ucmra_core x)
+  => U.equiv_trans (U.op (ucmra_core x) (ucmra_core x))
+      (U.op (ucmra_core (ucmra_core x)) (ucmra_core x))
+      (ucmra_core x)
+      (op_proper_r {U} (U.equiv_sym (ucmra_core (ucmra_core x)) (ucmra_core x)
+          (ucmra_core_idemp x)))
+      (ucmra_core_left_id (ucmra_core x))
+
+
+-- =================================================================================
+-- CMRA morphisms
+-- =================================================================================
+--
+-- Port of Rocq's `CmraMorphism` class (`algebra/cmra.v`).  Non-expansiveness is
+-- carried by bundling the underlying function as an `OFEMor`; the remaining
+-- fields mirror `cmra_morphism_validN` / `cmra_morphism_pcore` /
+-- `cmra_morphism_op` one-for-one.
+
+\func maybe_fmap {A B : \Set} (f : A -> B) (o : Maybe A) : Maybe B \elim o
+  | nothing => nothing
+  | just a  => just (f a)
+
+\func maybe_fmap_comp {A B C : \Set} (f : A -> B) (g : B -> C) (o : Maybe A)
+  : maybe_fmap (\lam a => g (f a)) o = maybe_fmap g (maybe_fmap f o) \elim o
+  | nothing => idp
+  | just a  => idp
+
+\lemma ne_proper_equiv {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f)
+                       (x y : A.E) (h : A.equiv x y) : B.equiv (f x) (f y)
+  => (B.ofe_equiv_dist (f x) (f y)).2 (\lam n => hf n x y (equiv_dist {A} h n))
+
+\lemma maybe_fmap_ne {A B : OFE} (f : OFEMor A B) (n : Nat) (o1 o2 : Maybe A.E)
+                     (h : (OptionOFE A).dist n o1 o2)
+  : (OptionOFE B).dist n (maybe_fmap f.ofe_mor_car o1) (maybe_fmap f.ofe_mor_car o2)
+  => \case \elim o1, \elim o2, h \with {
+    | nothing, nothing, _ => ()
+    | just a1, just a2, h => f.ofe_mor_ne n a1 a2 h
+    | nothing, just _, e => \case e \with {}
+    | just _, nothing, e => \case e \with {}
+  }
+
+\lemma maybe_fmap_proper {A B : OFE} (f : OFEMor A B) (o1 o2 : Maybe A.E)
+                         (h : (OptionOFE A).equiv o1 o2)
+  : (OptionOFE B).equiv (maybe_fmap f.ofe_mor_car o1) (maybe_fmap f.ofe_mor_car o2)
+  => \case \elim o1, \elim o2, h \with {
+    | nothing, nothing, _ => ()
+    | just a1, just a2, h => ne_proper_equiv f.ofe_mor_car f.ofe_mor_ne a1 a2 h
+    | nothing, just _, e => \case e \with {}
+    | just _, nothing, e => \case e \with {}
+  }
+
+\record CmraMorphism {A B : CMRA} (f : OFEMor A B)
+  | cmra_morphism_validN (n : Nat) (x : A.E) :
+      A.validN n x -> B.validN n (f.ofe_mor_car x)
+  | cmra_morphism_pcore (x : A.E) :
+      (OptionOFE B).equiv (maybe_fmap f.ofe_mor_car (pcore {A} x))
+                          (pcore {B} (f.ofe_mor_car x))
+  | cmra_morphism_op (x y : A.E) :
+      B.equiv (f.ofe_mor_car (A.op x y))
+              (B.op (f.ofe_mor_car x) (f.ofe_mor_car y))
+
+-- Rocq's `cmra_morphism_monoN`: morphisms preserve step-indexed inclusion.
+\lemma cmra_morphism_monoN {A B : CMRA} {f : OFEMor A B} (hf : CmraMorphism f)
+                           (n : Nat) (x y : A.E)
+                           (h : inclN {A} {\new Op A.E { | op => A.op }} x n y)
+  : inclN {B} {\new Op B.E { | op => B.op }} (f.ofe_mor_car x) n (f.ofe_mor_car y)
+  => \case h \with {
+    | inP (z, hy) => inP (f.ofe_mor_car z,
+        B.ofe_dist_trans n (f.ofe_mor_car y) (f.ofe_mor_car (A.op x z))
+            (B.op (f.ofe_mor_car x) (f.ofe_mor_car z))
+            (f.ofe_mor_ne n y (A.op x z) hy)
+            (equiv_dist {B} (hf.cmra_morphism_op x z) n))
+  }
+
+-- Morphisms between UCMRAs commute with the total core.
+\lemma cmra_morphism_core {A B : UCMRA} {f : OFEMor A B} (hf : CmraMorphism f)
+                          (x : A.E)
+  : B.equiv (f.ofe_mor_car (ucmra_core {A} x)) (ucmra_core {B} (f.ofe_mor_car x))
+  => transport2 (\lam u v => (OptionOFE B).equiv (maybe_fmap f.ofe_mor_car u) v)
+      (ucmra_pcore_total {A} x)
+      (ucmra_pcore_total {B} (f.ofe_mor_car x))
+      (hf.cmra_morphism_pcore x)
+
+\func cmra_morphism_id {A : CMRA} : CmraMorphism (ofe_mor_id {A}) \cowith
+  | cmra_morphism_validN => \lam n x h => h
+  | cmra_morphism_pcore => \lam x =>
+      \case pcore {A} x \as px
+      \return (OptionOFE A).equiv (maybe_fmap (\lam y => y) px) px
+      \with {
+        | nothing => ()
+        | just c  => A.equiv_refl c
+      }
+  | cmra_morphism_op => \lam x y => A.equiv_refl (A.op x y)
+
+\func cmra_morphism_comp {A B C : CMRA} {f : OFEMor A B} {g : OFEMor B C}
+                         (hf : CmraMorphism f) (hg : CmraMorphism g)
+  : CmraMorphism (ofe_mor_comp g f) \cowith
+  | cmra_morphism_validN => \lam n x h =>
+      hg.cmra_morphism_validN n (f.ofe_mor_car x) (hf.cmra_morphism_validN n x h)
+  | cmra_morphism_pcore => \lam x =>
+      (OptionOFE C).equiv_trans
+          (maybe_fmap (\lam a => g.ofe_mor_car (f.ofe_mor_car a)) (pcore {A} x))
+          (maybe_fmap g.ofe_mor_car (pcore {B} (f.ofe_mor_car x)))
+          (pcore {C} (g.ofe_mor_car (f.ofe_mor_car x)))
+          ((OptionOFE C).equiv_trans
+              (maybe_fmap (\lam a => g.ofe_mor_car (f.ofe_mor_car a)) (pcore {A} x))
+              (maybe_fmap g.ofe_mor_car (maybe_fmap f.ofe_mor_car (pcore {A} x)))
+              (maybe_fmap g.ofe_mor_car (pcore {B} (f.ofe_mor_car x)))
+              (equiv_of_path {OptionOFE C}
+                  (maybe_fmap_comp f.ofe_mor_car g.ofe_mor_car (pcore {A} x)))
+              (maybe_fmap_proper g (maybe_fmap f.ofe_mor_car (pcore {A} x))
+                  (pcore {B} (f.ofe_mor_car x))
+                  (hf.cmra_morphism_pcore x)))
+          (hg.cmra_morphism_pcore (f.ofe_mor_car x))
+  | cmra_morphism_op => \lam x y =>
+      C.equiv_trans (g.ofe_mor_car (f.ofe_mor_car (A.op x y)))
+          (g.ofe_mor_car (B.op (f.ofe_mor_car x) (f.ofe_mor_car y)))
+          (C.op (g.ofe_mor_car (f.ofe_mor_car x)) (g.ofe_mor_car (f.ofe_mor_car y)))
+          (ne_proper_equiv g.ofe_mor_car g.ofe_mor_ne
+              (f.ofe_mor_car (A.op x y))
+              (B.op (f.ofe_mor_car x) (f.ofe_mor_car y))
+              (hf.cmra_morphism_op x y))
+          (hg.cmra_morphism_op (f.ofe_mor_car x) (f.ofe_mor_car y))
+
+
+-- =================================================================================
+-- Frame-preserving updates with optional frames (plain CMRAs)
+-- =================================================================================
+--
+-- `cmra_updateP` above is stated over UCMRA with a mandatory frame (the
+-- no-frame case is recovered via `unit`).  User-level CMRAs in `inG` (agree,
+-- excl, …) need not be unital, so `own` needs Rocq's original form with a
+-- `Maybe` frame (`x ~~>: Φ` over an arbitrary CMRA).
+
+\func cmra_opM {A : CMRA} (x : A.E) (mz : Maybe A.E) : A.E \elim mz
+  | just z  => A.op x z
+  | nothing => x
+
+\func cmra_updatePM {A : CMRA} (x : A.E) (Phi : A.E -> \Prop) : \Prop =>
+  \Pi (n : Nat) (mz : Maybe A.E) -> A.validN n (cmra_opM x mz) ->
+      TruncP (\Sigma (y : A.E) (Phi y) (A.validN n (cmra_opM y mz)))
+
+\func cmra_updatePM_id {A : CMRA} (x : A.E) (Phi : A.E -> \Prop) (h : Phi x)
+  : cmra_updatePM x Phi =>
+  \lam n mz hv => inP (x, h, hv)
+
+-- A Maybe-frame update on a UCMRA yields the mandatory-frame version.
+\lemma cmra_updatePM_updateP {M : UCMRA} (x : M.E) (Phi : M.E -> \Prop)
+                             (h : cmra_updatePM {M} x Phi)
+  : cmra_updateP {M} x Phi =>
+  \lam n yf hv => \case h n (just yf) hv \with {
+    | inP (y, hp, hvy) => inP (y, hp, hvy)
+  }
+
+-- Rocq's `iso_cmra_updateP` (algebra/updates.v): transport an update along an
+-- isomorphism-like pair `g : A → B`, `f : B → A` with `g ∘ f ≡ id`.
+\lemma iso_cmra_updatePM {A B : CMRA} (f : B.E -> A.E) (g : A.E -> B.E)
+    (gf : \Pi (x : B.E) -> B.equiv (g (f x)) x)
+    (g_op : \Pi (y1 y2 : A.E) -> B.equiv (g (A.op y1 y2)) (B.op (g y1) (g y2)))
+    (g_validN : \Pi (n : Nat) (y : A.E) -> B.validN n (g y) <-> A.validN n y)
+    (y : A.E) (P : A.E -> \Prop)
+    (h : cmra_updatePM {A} y P)
+  : cmra_updatePM {B} (g y)
+      (\lam x => TruncP (\Sigma (y' : A.E) (x = g y') (P y')))
+  => \lam n mz hv =>
+      \case \elim mz, hv \with {
+        | nothing, hv =>
+          \case h n nothing ((g_validN n y).1 hv) \with {
+            | inP (y', hp, hvy') =>
+              inP (g y', inP (y', idp, hp), (g_validN n y').2 hvy')
+          }
+        | just z, hv =>
+          \let
+            | hz : B.dist n (B.op (g y) z) (g (A.op y (f z))) =>
+              B.ofe_dist_trans n (B.op (g y) z) (B.op (g y) (g (f z))) (g (A.op y (f z)))
+                  (B.cmra_op_ne (g y) n z (g (f z))
+                      (B.ofe_dist_sym n (g (f z)) z (equiv_dist {B} (gf z) n)))
+                  (B.ofe_dist_sym n (g (A.op y (f z))) (B.op (g y) (g (f z)))
+                      (equiv_dist {B} (g_op y (f z)) n))
+            | hvA : A.validN n (A.op y (f z)) =>
+              (g_validN n (A.op y (f z))).1
+                  (B.cmra_validN_ne n (B.op (g y) z) (g (A.op y (f z))) hz hv)
+          \in \case h n (just (f z)) hvA \with {
+            | inP (y', hp, hvy') =>
+              \let hz' : B.dist n (g (A.op y' (f z))) (B.op (g y') z) =>
+                B.ofe_dist_trans n (g (A.op y' (f z))) (B.op (g y') (g (f z))) (B.op (g y') z)
+                    (equiv_dist {B} (g_op y' (f z)) n)
+                    (B.cmra_op_ne (g y') n (g (f z)) z (equiv_dist {B} (gf z) n))
+              \in inP (g y', inP (y', idp, hp),
+                  B.cmra_validN_ne n (g (A.op y' (f z))) (B.op (g y') z) hz'
+                      ((g_validN n (A.op y' (f z))).2 hvy'))
+          }
+      }
+
+
+-- =================================================================================
+-- cmra_transport: moving elements along a path between CMRAs
+-- =================================================================================
+--
+-- Rocq's `cmra_transport` (`algebra/cmra.v`).  All laws follow by path
+-- elimination.
+
+\func cmra_transport {A B : CMRA} (H : A = B) (a : A.E) : B.E =>
+  transport (\lam (C : CMRA) => C.E) H a
+
+\lemma cmra_transport_ne {A B : CMRA} (H : A = B) (n : Nat) (x y : A.E)
+                         (h : A.dist n x y)
+  : B.dist n (cmra_transport H x) (cmra_transport H y) \elim H
+  | idp => h
+
+\lemma cmra_transport_proper {A B : CMRA} (H : A = B) (x y : A.E)
+                             (h : A.equiv x y)
+  : B.equiv (cmra_transport H x) (cmra_transport H y) \elim H
+  | idp => h
+
+\lemma cmra_transport_op {A B : CMRA} (H : A = B) (x y : A.E)
+  : B.equiv (cmra_transport H (A.op x y))
+            (B.op (cmra_transport H x) (cmra_transport H y)) \elim H
+  | idp => A.equiv_refl (A.op x y)
+
+\lemma cmra_transport_validN {A B : CMRA} (H : A = B) (n : Nat) (x : A.E)
+  : B.validN n (cmra_transport H x) <-> A.validN n x \elim H
+  | idp => (\lam h => h, \lam h => h)
+
+\lemma cmra_transport_valid {A B : CMRA} (H : A = B) (x : A.E)
+  : B.valid (cmra_transport H x) <-> A.valid x \elim H
+  | idp => (\lam h => h, \lam h => h)
+
+\lemma cmra_transport_updatePM {A B : CMRA} (H : A = B) (x : A.E)
+                               (P : A.E -> \Prop)
+                               (h : cmra_updatePM {A} x P)
+  : cmra_updatePM {B} (cmra_transport H x)
+      (\lam b => TruncP (\Sigma (a : A.E) (b = cmra_transport H a) (P a))) \elim H
+  | idp => \lam n mz hv => \case h n mz hv \with {
+      | inP (y, hp, hvy) => inP (y, inP (y, idp, hp), hvy)
+    }

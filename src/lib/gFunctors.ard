@@ -13,9 +13,9 @@
 -- gFunctor wraps.
 --
 -- The CMRA-valued `RFunctor` is the analogue of Rocq's `Record rFunctor` and
--- sits parallel to the COFE-valued `OFunctor` already in `ofe.ard`.  We omit
--- the `URFunctor` (UCMRA-valued) variant for now; it is unneeded until A4 lifts
--- `iResF Σ` to a `urFunctor`.
+-- sits parallel to the COFE-valued `OFunctor` already in `ofe.ard`.  The
+-- UCMRA-valued `URFunctor` variant (Rocq's `urFunctor`) lives below; it is the
+-- codomain of the A4 lifting `iResF Σ`.
 -- =================================================================================
 
 \open Nat (+)
@@ -25,9 +25,9 @@
 --
 -- Mirrors `Record rFunctor` in `algebra/cmra.v`.  CMRA \extends OFE, so the
 -- `OFEMor` between two CMRA carriers makes sense without further coercion.
--- We deliberately drop Rocq's `rFunctor_mor : CmraMorphism (rFunctor_map fg)`
--- field; downstream we only need the OFE-morphism structure, and constraint
--- can be re-added if/when a lemma requires it.
+-- `rFunctor_mor` is Rocq's `CmraMorphism (rFunctor_map fg)` field; the gmap
+-- lifting `gmapURF` needs it to show that the mapped gmap morphism is again a
+-- CMRA morphism.
 -- =================================================================================
 
 \record RFunctor
@@ -52,6 +52,9 @@
         ((rFunctor_map (g, g')).ofe_mor_car
           ((rFunctor_map (f, f')).ofe_mor_car x))
         ((rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
+  | rFunctor_mor {A1 A2 B1 B2 : COFE}
+      (fg : \Sigma (OFEMor A2 A1) (OFEMor B1 B2)) :
+      CmraMorphism {rFunctor_car A1 B1} {rFunctor_car A2 B2} (rFunctor_map fg)
 
 \record RFunctorContractive (F : RFunctor)
   | rFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
@@ -63,6 +66,51 @@
 -- Rocq's `rFunctor_apply F A : cmra := rFunctor_car F A A`.
 \func rFunctor_apply (F : RFunctor) (A : COFE) : CMRA =>
   F.rFunctor_car A A
+
+-- =================================================================================
+-- URFunctor: a UCMRA-valued functor C^op × C → UCMRA.
+--
+-- Mirrors `Record urFunctor` in `algebra/cmra.v`.  Identical to `RFunctor`
+-- except that the carrier is unital; `discrete_funURF` and `gmapURF` land
+-- here, and `iResF Σ` (A4) is such a functor.
+-- =================================================================================
+
+\record URFunctor
+  | urFunctor_car (A B : COFE) : UCMRA
+  | urFunctor_map {A1 A2 B1 B2 : COFE} :
+      \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
+      OFEMor (urFunctor_car A1 B1) (urFunctor_car A2 B2)
+  | urFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+      NonExpansive
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (urFunctor_car A1 B1) (urFunctor_car A2 B2)}
+        urFunctor_map
+  | urFunctor_map_id {A B : COFE} (x : (urFunctor_car A B).E) :
+      (urFunctor_car A B).equiv
+        ((urFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
+        x
+  | urFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+      (f : OFEMor A2 A1) (g : OFEMor A3 A2)
+      (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
+      (x : (urFunctor_car A1 B1).E) :
+      (urFunctor_car A3 B3).equiv
+        ((urFunctor_map (g, g')).ofe_mor_car
+          ((urFunctor_map (f, f')).ofe_mor_car x))
+        ((urFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
+  | urFunctor_mor {A1 A2 B1 B2 : COFE}
+      (fg : \Sigma (OFEMor A2 A1) (OFEMor B1 B2)) :
+      CmraMorphism {urFunctor_car A1 B1} {urFunctor_car A2 B2} (urFunctor_map fg)
+
+\record URFunctorContractive (F : URFunctor)
+  | urFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+      ContractiveMap
+        {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
+        {OFEMorOFE (F.urFunctor_car A1 B1) (F.urFunctor_car A2 B2)}
+        (F.urFunctor_map {A1} {A2} {B1} {B2})
+
+-- Rocq's `urFunctor_apply F A : ucmra := urFunctor_car F A A`.
+\func urFunctor_apply (F : URFunctor) (A : COFE) : UCMRA =>
+  F.urFunctor_car A A
 
 -- =================================================================================
 -- gFunctor: a bundled rFunctor + contractivity witness.
@@ -216,3 +264,21 @@
 \func subG_inv {S1 S2 S : gFunctors} (h : subG (gFunctors_app S1 S2) S)
   : \Sigma (subG S1 S) (subG S2 S) =>
   (subG_inv_l h, subG_inv_r h)
+
+
+-- =================================================================================
+-- Decidable equality on `gid Σ = Fin n` (needed by `discrete_fun_singleton`).
+-- =================================================================================
+
+\func fin_eq_dec {n : Nat} (i j : Fin n) : Dec (i = j) \elim n, i, j
+  | suc n, 0, 0 => yes idp
+  | suc n, 0, suc j => no (\lam e => \case e \with {})
+  | suc n, suc i, 0 => no (\lam e => \case e \with {})
+  | suc n, suc i, suc j => \case fin_eq_dec i j \with {
+    | yes e => yes (pmap {Fin n} {Fin (suc n)} (\lam k => suc k) e)
+    | no ne => no (\lam e => ne (pmap (fin_pred i) e))
+  }
+  \where
+    \func fin_pred {n : Nat} (def : Fin n) (k : Fin (suc n)) : Fin n \elim k
+      | 0 => def
+      | suc k => k
