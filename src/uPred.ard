@@ -8,6 +8,7 @@
 \import ofe
 \import cmra
 \import interface
+\import lib.gFunctors
 \import Order.PartialOrder
 \import Order.LinearOrder
 
@@ -543,3 +544,145 @@
               \in inP (M.op b z, hv_bz_yf, inP (b, (hPhi, own_b_at_bz)))
           }
       }
+
+
+-- =================================================================================
+-- uPred functor: `uPred_map`, `uPredOF`.
+--
+-- Port of the "functor" section of Rocq's `base_logic/upred.v`.  `uPred_map`
+-- precomposes a predicate with a CMRA morphism; monotonicity of the result
+-- needs `cmra_morphism_monoN`, and non-expansiveness needs validN preservation
+-- — hence the `CmraMorphism` argument.  `uPredOF` is the (contravariant) OFE
+-- bifunctor `A B ↦ uPredO (F B A)` that A4 applies the cofe_solver to.
+-- =================================================================================
+
+\func uPred_map {M1 M2 : UCMRA} (f : OFEMor M2 M1) (hf : CmraMorphism f)
+                (P : ProperUPred M1) : ProperUPred M2 \cowith
+  | upred_holds => \lam n x => P.upred_holds n (f.ofe_mor_car x)
+  | upred_mono => \lam n1 n2 x1 x2 h hincl hle =>
+      P.upred_mono n1 n2 (f.ofe_mor_car x1) (f.ofe_mor_car x2) h
+          (cmra_morphism_monoN hf n2 x1 x2 hincl) hle
+
+\lemma uPred_map_ne {M1 M2 : UCMRA} (f : OFEMor M2 M1) (hf : CmraMorphism f)
+                    (n : Nat) (P Q : ProperUPred M1)
+                    (h : upredDist n P Q)
+  : upredDist n (uPred_map f hf P) (uPred_map f hf Q)
+  => \lam m a hm hv => h m (f.ofe_mor_car a) hm (hf.cmra_morphism_validN m a hv)
+
+-- Rocq's `uPredO_map_ne`: `uPred_map` is non-expansive in the morphism itself.
+\lemma uPred_map_dist {M1 M2 : UCMRA} (f g : OFEMor M2 M1)
+                      (hf : CmraMorphism f) (hg : CmraMorphism g)
+                      (n : Nat) (hfg : (OFEMorOFE M2 M1).dist n f g)
+                      (P : ProperUPred M1)
+  : upredDist n (uPred_map f hf P) (uPred_map g hg P)
+  => \lam m a hm hv =>
+      \let dfg : M1.dist m (f.ofe_mor_car a) (g.ofe_mor_car a) =>
+          M1.ofe_dist_le n m (f.ofe_mor_car a) (g.ofe_mor_car a) (hfg a) hm
+      \in
+      ( \lam h => P.upred_mono m m (f.ofe_mor_car a) (g.ofe_mor_car a) h
+            (inclN_of_dist_unit m (f.ofe_mor_car a) (g.ofe_mor_car a)
+                (M1.ofe_dist_sym m (f.ofe_mor_car a) (g.ofe_mor_car a) dfg))
+            <=-refl
+      , \lam h => P.upred_mono m m (g.ofe_mor_car a) (f.ofe_mor_car a) h
+            (inclN_of_dist_unit m (g.ofe_mor_car a) (f.ofe_mor_car a) dfg)
+            <=-refl
+      )
+
+\lemma uPred_map_id {M : UCMRA} (P : ProperUPred M)
+  : upredEquiv (uPred_map ofe_mor_id cmra_morphism_id P) P
+  => \lam n a hv => (\lam h => h, \lam h => h)
+
+\lemma uPred_map_compose {M1 M2 M3 : UCMRA} (f : OFEMor M1 M2) (g : OFEMor M2 M3)
+                         (hf : CmraMorphism f) (hg : CmraMorphism g)
+                         (P : ProperUPred M3)
+  : upredEquiv (uPred_map (ofe_mor_comp g f) (cmra_morphism_comp hf hg) P)
+               (uPred_map f hf (uPred_map g hg P))
+  => \lam n a hv => (\lam h => h, \lam h => h)
+
+\lemma uPred_map_ext {M1 M2 : UCMRA} (f g : OFEMor M2 M1)
+                     (hf : CmraMorphism f) (hg : CmraMorphism g)
+                     (hfg : \Pi (x : M2.E) -> M1.equiv (f.ofe_mor_car x) (g.ofe_mor_car x))
+                     (P : ProperUPred M1)
+  : upredEquiv (uPred_map f hf P) (uPred_map g hg P)
+  => \lam n a hv =>
+      ( \lam h => P.upred_mono n n (f.ofe_mor_car a) (g.ofe_mor_car a) h
+            (inclN_of_dist_unit n (f.ofe_mor_car a) (g.ofe_mor_car a)
+                (M1.ofe_dist_sym n (f.ofe_mor_car a) (g.ofe_mor_car a)
+                    (equiv_dist {M1} (hfg a) n)))
+            <=-refl
+      , \lam h => P.upred_mono n n (g.ofe_mor_car a) (f.ofe_mor_car a) h
+            (inclN_of_dist_unit n (g.ofe_mor_car a) (f.ofe_mor_car a)
+                (equiv_dist {M1} (hfg a) n))
+            <=-refl
+      )
+
+-- =================================================================================
+-- uPredOF: `A B ↦ uPredO (F B A)` (note the contravariant flip, as in Rocq).
+-- =================================================================================
+
+\func uPredOF (F : URFunctor) : OFunctor \cowith
+  | oFunctor_car => \lam A B => UPredOFE (F.urFunctor_car B A)
+  | oFunctor_map => \lam {A1} {A2} {B1} {B2} fg => \new OFEMor _ _ {
+      | ofe_mor_car =>
+          uPred_map (F.urFunctor_map (fg.2, fg.1)) (F.urFunctor_mor (fg.2, fg.1))
+      | ofe_mor_ne => \lam n P Q h =>
+          uPred_map_ne (F.urFunctor_map (fg.2, fg.1)) (F.urFunctor_mor (fg.2, fg.1))
+              n P Q h
+    }
+  | oFunctor_map_ne => \lam {A1} {A2} {B1} {B2} n fg fg' hfg P =>
+      uPred_map_dist
+          (F.urFunctor_map (fg.2, fg.1)) (F.urFunctor_map (fg'.2, fg'.1))
+          (F.urFunctor_mor (fg.2, fg.1)) (F.urFunctor_mor (fg'.2, fg'.1))
+          n
+          (F.urFunctor_map_ne n (fg.2, fg.1) (fg'.2, fg'.1) (hfg.2, hfg.1))
+          P
+  | oFunctor_map_id => \lam {A} {B} P =>
+      (UPredOFE (F.urFunctor_car B A)).equiv_trans
+          (uPred_map (F.urFunctor_map (ofe_mor_id, ofe_mor_id))
+              (F.urFunctor_mor (ofe_mor_id, ofe_mor_id)) P)
+          (uPred_map ofe_mor_id cmra_morphism_id P)
+          P
+          (uPred_map_ext (F.urFunctor_map (ofe_mor_id, ofe_mor_id)) ofe_mor_id
+              (F.urFunctor_mor (ofe_mor_id, ofe_mor_id)) cmra_morphism_id
+              (\lam x => F.urFunctor_map_id x)
+              P)
+          (uPred_map_id P)
+  | oFunctor_map_compose => \lam {A1} {A2} {A3} {B1} {B2} {B3} f g f' g' P =>
+      \let
+        | phi1 => F.urFunctor_map (f', f)
+        | phi2 => F.urFunctor_map (g', g)
+        | phi3 => F.urFunctor_map (ofe_mor_comp g' f', ofe_mor_comp f g)
+        | hphi1 => F.urFunctor_mor (f', f)
+        | hphi2 => F.urFunctor_mor (g', g)
+        | hphi3 => F.urFunctor_mor (ofe_mor_comp g' f', ofe_mor_comp f g)
+      \in (UPredOFE (F.urFunctor_car B3 A3)).equiv_trans
+          (uPred_map phi2 hphi2 (uPred_map phi1 hphi1 P))
+          (uPred_map (ofe_mor_comp phi1 phi2) (cmra_morphism_comp hphi2 hphi1) P)
+          (uPred_map phi3 hphi3 P)
+          ((UPredOFE (F.urFunctor_car B3 A3)).equiv_sym
+              (uPred_map (ofe_mor_comp phi1 phi2) (cmra_morphism_comp hphi2 hphi1) P)
+              (uPred_map phi2 hphi2 (uPred_map phi1 hphi1 P))
+              (uPred_map_compose phi2 phi1 hphi2 hphi1 P))
+          (uPred_map_ext (ofe_mor_comp phi1 phi2) phi3
+              (cmra_morphism_comp hphi2 hphi1) hphi3
+              (\lam y => F.urFunctor_map_compose g' f' g f y)
+              P)
+
+\func uPredOF_contractive (F : URFunctor) (hF : URFunctorContractive F)
+  : OFunctorContractive (uPredOF F) \cowith
+  | oFunctor_map_contractive => \lam {A1} {A2} {B1} {B2} n fg fg' hfg P =>
+      uPred_map_dist
+          (F.urFunctor_map (fg.2, fg.1)) (F.urFunctor_map (fg'.2, fg'.1))
+          (F.urFunctor_mor (fg.2, fg.1)) (F.urFunctor_mor (fg'.2, fg'.1))
+          n
+          (hF.urFunctor_map_contractive n (fg.2, fg.1) (fg'.2, fg'.1)
+              (\new DistLater {
+                | dist_later_lt => \lam m hm =>
+                    \let d => hfg.dist_later_lt m hm \in (d.2, d.1)
+              }))
+          P
+
+-- COFE structure on the functor's carrier (used by the cofe_solver in A4).
+\func uPredOF_cofe (F : URFunctor) : OFunctorCOFE (uPredOF F) \cowith
+  | oFunctor_cofe => \lam A B => UPredCOFE (F.urFunctor_car B A)
+  | oFunctor_cofe_OFE => \lam A B => idp

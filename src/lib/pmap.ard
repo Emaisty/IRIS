@@ -7,6 +7,8 @@
 \import Data.Maybe
 \import Data.List
 \import Arith.Nat
+\import Order.LinearOrder
+\import Order.PartialOrder
 \import Meta
 
 -- =================================================================================
@@ -1168,3 +1170,69 @@
         | no  np =>
           plookup_insert_ne k k' x m np
       })
+
+
+-- =================================================================================
+-- Fresh keys.
+--
+-- Any key whose bit-length exceeds the tree depth is absent, so
+-- `pos_pad (pmap_depth' t)` is a fresh key for `t`.  This is the fresh-name
+-- generator behind `own_alloc` (gname = Pos).
+-- =================================================================================
+
+\func pos_len (p : Pos) : Nat \elim p
+  | xH => 1
+  | xO p => suc (pos_len p)
+  | xI p => suc (pos_len p)
+
+\func pos_pad (n : Nat) : Pos \elim n
+  | 0 => xH
+  | suc n => xO (pos_pad n)
+
+\lemma pos_pad_len (n : Nat) : pos_len (pos_pad n) = suc n \elim n
+  | 0 => idp
+  | suc n => pmap suc (pos_pad_len n)
+
+\func depth_max (n m : Nat) : Nat \elim n, m
+  | 0, m => m
+  | suc n, 0 => suc n
+  | suc n, suc m => suc (depth_max n m)
+
+\lemma depth_max_le_l (n m : Nat) : n <= depth_max n m \elim n, m
+  | 0, m => zero<=_
+  | suc n, 0 => <=-refl
+  | suc n, suc m => suc<=suc (depth_max_le_l n m)
+
+\lemma depth_max_le_r (n m : Nat) : m <= depth_max n m \elim n, m
+  | 0, m => <=-refl
+  | suc n, 0 => zero<=_
+  | suc n, suc m => suc<=suc (depth_max_le_r n m)
+
+\func pmap_depth' {A : \Set} (t : Pmap' A) : Nat \elim t
+  | PEmpty => 0
+  | PNode _ l r => suc (depth_max (pmap_depth' l) (pmap_depth' r))
+
+\lemma plookup'_beyond_depth {A : \Set} (t : Pmap' A) (k : Pos)
+                             (h : suc (pmap_depth' t) <= pos_len k)
+  : plookup' t k = nothing \elim t, k
+  | PEmpty, _ => idp
+  | PNode v l r, xH =>
+    absurd (LinearOrder.notLess (suc<=suc zero<=_) (suc_<=_< h))
+  | PNode v l r, xO q =>
+    plookup'_beyond_depth l q
+        (NatSemiring.<=∘
+            (suc<=suc {pmap_depth' l} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_l (pmap_depth' l) (pmap_depth' r)))
+            (suc<=suc.conv {suc (depth_max (pmap_depth' l) (pmap_depth' r))} {pos_len q} h))
+  | PNode v l r, xI q =>
+    plookup'_beyond_depth r q
+        (NatSemiring.<=∘
+            (suc<=suc {pmap_depth' r} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_r (pmap_depth' l) (pmap_depth' r)))
+            (suc<=suc.conv {suc (depth_max (pmap_depth' l) (pmap_depth' r))} {pos_len q} h))
+
+\func pmap_fresh_key {A : \Set} (m : Pmap A) : \Sigma (k : Pos) (plookup m k = nothing) =>
+  ( pos_pad (pmap_depth' m.tree)
+  , plookup'_beyond_depth m.tree (pos_pad (pmap_depth' m.tree))
+      (transport (\lam z => suc (pmap_depth' m.tree) <= z)
+          (inv (pos_pad_len (pmap_depth' m.tree)))
+          <=-refl)
+  )

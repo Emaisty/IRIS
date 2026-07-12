@@ -120,7 +120,6 @@
           (Store (Val (LitV (LitLoc l)))
             (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
   =>
-    -- BLOCKED by lang.subst.decideEq for concrete String comparisons.
     subst_by_string_decisions "l" (LitV (LitLoc l))
       (If (IsZero (Val (natV 0)))
           (Load (Var "l"))
