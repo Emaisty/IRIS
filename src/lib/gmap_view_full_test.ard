@@ -1,0 +1,86 @@
+\import Logic
+\import Set
+\import Arith.Nat
+\import Data.Maybe
+\import cmra
+\import lib.pmap
+\import lib.frac
+\import lib.dfrac_cmra
+\import lib.gmap_cmra
+\import lib.gmap_view_full
+\import lib.gmap_view_functor
+\import lib.gFunctors
+
+-- Compile-time API regression checks for the operational full gmap view.
+
+\lemma full_view_auth_split_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (dp dq : Dfrac) (m : Gmap K cnt V.E) =>
+  gmap_view_auth_dfrac_op {K} {cnt} {V} dp dq m
+
+\lemma full_view_frag_split_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (k : K) (dq1 dq2 : Dfrac) (v1 v2 : V.E) =>
+  gmap_view_frag_op {K} {cnt} {V} k dq1 dq2 v1 v2
+
+\lemma full_view_alloc_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (m : Gmap K cnt V.E) (k : K) (dq : Dfrac) (v : V.E)
+    (fresh : glookup m k = nothing) (hdq : dfrac_valid dq) (hv : V.valid v) =>
+  gmap_view_alloc {K} {cnt} {V} m k dq v fresh hdq hv
+
+\lemma full_view_delete_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (m : Gmap K cnt V.E) (k : K) (v : V.E) =>
+  gmap_view_delete {K} {cnt} {V} m k v
+
+\lemma full_view_replace_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (m : Gmap K cnt V.E) (k : K) (v v' : V.E) (hv' : V.valid v') =>
+  gmap_view_replace {K} {cnt} {V} m k v v' hv'
+
+\lemma full_view_auth_persist_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (dq : Dfrac) (m : Gmap K cnt V.E) =>
+  gmap_view_auth_persist {K} {cnt} {V} dq m
+
+\lemma full_view_auth_unpersist_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (m : Gmap K cnt V.E) =>
+  gmap_view_auth_unpersist {K} {cnt} {V} m
+
+\lemma full_view_frag_persist_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (k : K) (dq : Dfrac) (v : V.E) =>
+  gmap_view_frag_persist {K} {cnt} {V} k dq v
+
+\lemma full_view_frag_unpersist_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (k : K) (v : V.E) =>
+  gmap_view_frag_unpersist {K} {cnt} {V} k v
+
+\lemma full_view_frag_core_id_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (k : K) (dq : Dfrac) (v : V.E)
+    (hdq : CoreId {DfracCMRA} dq) (hv : CoreId {V} v) =>
+  gmap_view_frag_core_id {K} {cnt} {V} k dq v hdq hv
+
+\lemma full_view_both_dfrac_valid_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (n : Nat) (dp : Dfrac) (m : Gmap K cnt V.E)
+    (k : K) (dq : Dfrac) (v : V.E)
+    (h : validN {gmap_viewR K cnt V} n
+      ((gmap_viewR K cnt V).op
+        (gmap_view_auth dp m) (gmap_view_frag k dq v))) =>
+  gmap_view_both_dfrac_validN n dp m k dq v h
+
+\lemma full_view_both_valid_test {K : \Set} {cnt : Countable K} {V : CMRA}
+    (n : Nat) (dp : Dfrac) (m : Gmap K cnt V.E) (k : K) (v : V.E)
+    (h : validN {gmap_viewR K cnt V} n
+      ((gmap_viewR K cnt V).op
+        (gmap_view_auth dp m)
+        (gmap_view_frag k (DfracOwn qp_one) v))) =>
+  gmap_view_both_validN n dp m k v h
+
+\lemma full_view_urf_test (K : \Set) (cnt : Countable K) (F : RFunctor) =>
+  gmap_viewURF K cnt F
+
+\lemma full_view_rf_test (K : \Set) (cnt : Countable K) (F : RFunctor) =>
+  gmap_viewRF K cnt F
+
+\lemma full_view_urf_contractive_test (K : \Set) (cnt : Countable K)
+    (F : RFunctor) (hF : RFunctorContractive F) =>
+  gmap_viewURF_contractive K cnt F hF
+
+\lemma full_view_rf_contractive_test (K : \Set) (cnt : Countable K)
+    (F : RFunctor) (hF : RFunctorContractive F) =>
+  gmap_viewRF_contractive K cnt F hF

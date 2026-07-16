@@ -730,3 +730,50 @@
   | ucmra_unit_valid => ()
   | ucmra_unit_left_id => gset_disj_CMRA.pcore_l
   | ucmra_pcore_unit => gset_disj_equiv_refl (GSet gset_empty)
+
+-- =================================================================================
+-- Allocation of a fresh singleton (Rocq: `gset_disj_alloc_empty_updateP_strong'`,
+-- specialised to `K = positive` and stated in the Maybe-frame form).
+-- =================================================================================
+
+-- A singleton over a fresh element is disjoint from the set it is fresh for.
+\lemma gset_singleton_fresh_disjoint (i : Pos) (X : Gset) (hfresh : plookup X i = nothing)
+  : gset_overlap (gset_singleton i) X = false
+  => gset_overlap_disjoint (gset_singleton i) X (\lam p hp hX =>
+      \case Pos_eq_dec p i \with {
+        | yes e => \case (inv (transport (\lam q => plookup X q = just ()) e hX)) *> hfresh \with {}
+        | no ne => \case (inv hp) *> plookup_singleton_ne i p () (\lam q => ne (inv q)) \with {}
+      })
+
+-- `GSet ∅ ~~>: λ Y, ∃ i, Y = GSet {i} ∧ φ i`, given a fresh-name oracle for φ.
+-- The oracle receives the frame's carrier set, exactly as in Rocq where the
+-- hypothesis quantifies over all finite sets.
+\lemma gset_disj_alloc_empty_updatePM
+    (phi : Pos -> \Prop)
+    (hfresh : \Pi (X : Gset) -> TruncP (\Sigma (i : Pos) (plookup X i = nothing) (phi i)))
+  : cmra_updatePM {gset_disj_CMRA} (GSet gset_empty)
+      (\lam y => TruncP (\Sigma (i : Pos) (y = GSet (gset_singleton i)) (phi i)))
+  => \lam n mz hv => \case \elim mz, hv \with {
+    | nothing, _ => \case hfresh gset_empty \with {
+      | inP (i, _, hphi) => inP (GSet (gset_singleton i), inP (i, idp, hphi), ())
+    }
+    | just (GSet X), _ => \case hfresh X \with {
+      | inP (i, hni, hphi) =>
+        inP (GSet (gset_singleton i), inP (i, idp, hphi),
+            transport (\lam y => gset_disj_valid y)
+                (inv (op_GSet_eq_GSet (gset_singleton i) X
+                    (gset_singleton_fresh_disjoint i X hni)))
+                ())
+    }
+    | just GSetInvalid, hv' =>
+        absurd (transport (\lam y => gset_disj_valid y)
+            (gset_disj_op_invalid_r (GSet gset_empty)) hv')
+  }
+
+-- Append to lib/gset_cmra.ard (near gset_union_fn).
+\lemma gset_union_fn_nothing_inv (ox oy : Maybe (\Sigma)) (h : gset_union_fn ox oy = nothing)
+  : \Sigma (ox = nothing) (oy = nothing) \elim ox, oy
+  | nothing, nothing => (idp, idp)
+  | nothing, just () => \case h \with {}
+  | just (), nothing => \case h \with {}
+  | just (), just () => \case h \with {}

@@ -832,10 +832,8 @@
       => \lam h n a hv hforall =>
           inP (Q,
             inP (M.unit, a,
-              transport
-                (\lam w => M.dist n a w)
-                (inv (M.ucmra_unit_left_id a))
-                (M.ofe_dist_refl n a),
+              M.ofe_dist_sym n (M.op M.unit a) a
+                (ucmra_unit_left_id_dist {M} n a),
               (),
               hforall))
     \in

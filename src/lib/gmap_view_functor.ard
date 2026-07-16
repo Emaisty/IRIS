@@ -1,0 +1,623 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.List
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import ofe
+\import cmra
+\import lib.agree_cmra
+\import lib.prod_cmra
+\import lib.option_cmra
+\import lib.pmap
+\import lib.dfrac_cmra
+\import lib.gmap_cmra
+\import lib.view_cmra
+\import lib.gFunctors
+\import lib.gmap_functor
+\import lib.gmap_view_full
+
+-- Mapping infrastructure for the full gmap-view functors.
+
+\func agree_map_list {A B : \Set} (f : A -> B) (xs : List A) : List B \elim xs
+  | nil => nil
+  | :: x xs => f x :: agree_map_list f xs
+
+\lemma agree_map_list_append {A B : \Set} (f : A -> B) (xs ys : List A)
+  : agree_map_list f (xs ++ ys) = agree_map_list f xs ++ agree_map_list f ys
+  \elim xs
+  | nil => idp
+  | :: x xs => pmap (\lam zs => f x :: zs) (agree_map_list_append f xs ys)
+
+\func agree_map {A B : OFE} (f : A.E -> B.E) (x : AgreeElem A) : AgreeElem B \cowith
+  | agree_hd => f x.agree_hd
+  | agree_tl => agree_map_list f x.agree_tl
+
+\func agree_map_in {A B : OFE} (f : A.E -> B.E) (x : AgreeElem A)
+    (a : A.E) (h : In a (agree_list x))
+  : In (f a) (agree_list (agree_map f x)) => \case h \with {
+    | inl e => inl (pmap f e)
+    | inr ht => inr (agree_map_in.tail f x.agree_tl a ht)
+  }
+  \where {
+    \func tail {A B : \Set} (f : A -> B) (xs : List A) (a : A)
+        (h : In a xs) : In (f a) (agree_map_list f xs) \elim xs
+      | nil => \case h \with {}
+      | :: y ys => \case h \with {
+          | inl e => inl (pmap f e)
+          | inr ht => inr (tail f ys a ht)
+        }
+  }
+
+\func agree_map_in_inv {A B : OFE} (f : A.E -> B.E) (x : AgreeElem A)
+    (b : B.E) (h : In b (agree_list (agree_map f x)))
+  : TruncP (\Sigma (a : A.E) (In a (agree_list x)) (b = f a)) =>
+  \case h \with {
+    | inl e => inP (x.agree_hd, inl idp, e)
+    | inr ht => \scase agree_map_in_inv.tail f x.agree_tl b ht \with {
+        | inP (a, ha, e) => inP (a, inr ha, e)
+      }
+  }
+  \where {
+    \sfunc tail {A B : \Set} (f : A -> B) (xs : List A) (b : B)
+        (h : In b (agree_map_list f xs))
+      : TruncP (\Sigma (a : A) (In a xs) (b = f a)) \elim xs
+      | nil => \case h \with {}
+      | :: y ys => \case h \with {
+          | inl e => inP (y, inl idp, e)
+          | inr ht => \scase tail f ys b ht \with {
+              | inP (a, ha, e) => inP (a, inr ha, e)
+            }
+        }
+  }
+
+\lemma agree_map_ne {A B : OFE} (f : OFEMor A B) (n : Nat)
+    (x y : AgreeElem A) (h : (AgreeOFE A).dist n x y)
+  : (AgreeOFE B).dist n (agree_map f.ofe_mor_car x) (agree_map f.ofe_mor_car y) =>
+  (\lam b hb => \scase agree_map_in_inv f.ofe_mor_car x b hb \with {
+      | inP (a, ha, eb) => \scase h.1 a ha \with {
+          | inP (a', ha', d) => inP (f.ofe_mor_car a',
+              agree_map_in f.ofe_mor_car y a' ha',
+              transport (\lam z => B.dist n z (f.ofe_mor_car a')) (inv eb)
+                (f.ofe_mor_ne n a a' d))
+        }
+    },
+   \lam b hb => \scase agree_map_in_inv f.ofe_mor_car y b hb \with {
+      | inP (a', ha', eb) => \scase h.2 a' ha' \with {
+          | inP (a, ha, d) => inP (f.ofe_mor_car a,
+              agree_map_in f.ofe_mor_car x a ha,
+              transport (\lam z => B.dist n (f.ofe_mor_car a) z) (inv eb)
+                (f.ofe_mor_ne n a a' d))
+        }
+    })
+
+\func agreeO_map {A B : OFE} (f : OFEMor A B) : OFEMor (AgreeOFE A) (AgreeOFE B) \cowith
+  | ofe_mor_car => agree_map f.ofe_mor_car
+  | ofe_mor_ne => agree_map_ne f
+
+\lemma agree_map_op {A B : OFE} (f : A.E -> B.E) (x y : AgreeElem A)
+  : agree_map f (agree_op x y) = agree_op (agree_map f x) (agree_map f y) =>
+  path (\lam i => \new AgreeElem B {
+    | agree_hd => f x.agree_hd
+    | agree_tl => agree_map_list_append f x.agree_tl (agree_list y) @ i
+  })
+
+\func agree_map_validN {A B : OFE} (f : OFEMor A B) (n : Nat)
+    (x : AgreeElem A) (h : agree_validN n x)
+  : agree_validN n (agree_map f.ofe_mor_car x) =>
+  \lam b1 b2 hb1 hb2 =>
+    \scase agree_map_in_inv f.ofe_mor_car x b1 hb1 \with {
+      | inP (a1, ha1, e1) =>
+        \scase agree_map_in_inv f.ofe_mor_car x b2 hb2 \with {
+          | inP (a2, ha2, e2) =>
+            transport2 (\lam u w => B.dist n u w) (inv e1) (inv e2)
+              (f.ofe_mor_ne n a1 a2 (h a1 a2 ha1 ha2))
+        }
+    }
+
+\func agree_map_cmra_morphism {A B : OFE} (f : OFEMor A B)
+  : CmraMorphism {AgreeCMRA A} {AgreeCMRA B} (agreeO_map f) \cowith
+  | cmra_morphism_validN => agree_map_validN f
+  | cmra_morphism_pcore => \lam x => (AgreeOFE B).equiv_refl (agree_map f.ofe_mor_car x)
+  | cmra_morphism_op => \lam x y => equiv_of_path {AgreeOFE B} (agree_map_op f.ofe_mor_car x y)
+
+\func prodO_map {A1 A2 B1 B2 : OFE} (f : OFEMor A1 A2) (g : OFEMor B1 B2)
+  : OFEMor (ProdOFE A1 B1) (ProdOFE A2 B2) \cowith
+  | ofe_mor_car => \lam x => (f.ofe_mor_car x.1, g.ofe_mor_car x.2)
+  | ofe_mor_ne => \lam n x y h =>
+      (f.ofe_mor_ne n x.1 y.1 h.1, g.ofe_mor_ne n x.2 y.2 h.2)
+
+\func prodO_map_cmra_morphism {A1 A2 B1 B2 : CMRA}
+    (f : OFEMor A1 A2) (g : OFEMor B1 B2)
+    (hf : CmraMorphism f) (hg : CmraMorphism g)
+  : CmraMorphism {ProdCMRA A1 B1} {ProdCMRA A2 B2} (prodO_map f g) \cowith
+  | cmra_morphism_validN => \lam n x h =>
+      (hf.cmra_morphism_validN n x.1 h.1, hg.cmra_morphism_validN n x.2 h.2)
+  | cmra_morphism_pcore => \lam x =>
+      prodO_map_cmra_morphism.pcore_proof f g hf hg x.1 x.2
+        (pcore {A1} x.1) idp (pcore {A2} (f.ofe_mor_car x.1)) idp
+        (pcore {B1} x.2) idp (pcore {B2} (g.ofe_mor_car x.2)) idp
+  | cmra_morphism_op => \lam x y =>
+      (hf.cmra_morphism_op x.1 y.1, hg.cmra_morphism_op x.2 y.2)
+  \where {
+    \func pcore_proof {A1 A2 B1 B2 : CMRA}
+        (f : OFEMor A1 A2) (g : OFEMor B1 B2)
+        (hf : CmraMorphism f) (hg : CmraMorphism g)
+        (a : A1.E) (b : B1.E)
+        (ca : Maybe A1.E) (hca : pcore {A1} a = ca)
+        (ca' : Maybe A2.E) (hca' : pcore {A2} (f.ofe_mor_car a) = ca')
+        (cb : Maybe B1.E) (hcb : pcore {B1} b = cb)
+        (cb' : Maybe B2.E) (hcb' : pcore {B2} (g.ofe_mor_car b) = cb')
+      : (OptionOFE (ProdOFE A2 B2)).equiv
+          (maybe_fmap (\lam x => (f.ofe_mor_car x.1, g.ofe_mor_car x.2))
+            (\case ca, cb \with {
+              | just ax, just bx => just (ax, bx)
+              | _, _ => nothing
+            }))
+          (\case ca', cb' \with {
+            | just ax, just bx => just (ax, bx)
+            | _, _ => nothing
+          }) \elim ca, ca', cb, cb'
+      | nothing, nothing, _, _ => ()
+      | nothing, just _, _, _ => \case transport2
+          (\lam u v => (OptionOFE A2).equiv u v)
+          (pmap (maybe_fmap f.ofe_mor_car) hca) hca'
+          (hf.cmra_morphism_pcore a) \with {}
+      | just _, nothing, _, _ => \case transport2
+          (\lam u v => (OptionOFE A2).equiv u v)
+          (pmap (maybe_fmap f.ofe_mor_car) hca) hca'
+          (hf.cmra_morphism_pcore a) \with {}
+      | just ax, just ax', nothing, nothing => ()
+      | just ax, just ax', nothing, just _ => \case transport2
+          (\lam u v => (OptionOFE B2).equiv u v)
+          (pmap (maybe_fmap g.ofe_mor_car) hcb) hcb'
+          (hg.cmra_morphism_pcore b) \with {}
+      | just ax, just ax', just _, nothing => \case transport2
+          (\lam u v => (OptionOFE B2).equiv u v)
+          (pmap (maybe_fmap g.ofe_mor_car) hcb) hcb'
+          (hg.cmra_morphism_pcore b) \with {}
+      | just ax, just ax', just bx, just bx' =>
+          (transport2 (\lam u v => (OptionOFE A2).equiv u v)
+              (pmap (maybe_fmap f.ofe_mor_car) hca) hca'
+              (hf.cmra_morphism_pcore a),
+           transport2 (\lam u v => (OptionOFE B2).equiv u v)
+              (pmap (maybe_fmap g.ofe_mor_car) hcb) hcb'
+              (hg.cmra_morphism_pcore b))
+  }
+
+\func optionO_map {A B : OFE} (f : OFEMor A B) : OFEMor (OptionOFE A) (OptionOFE B) \cowith
+  | ofe_mor_car => maybe_fmap f.ofe_mor_car
+  | ofe_mor_ne => \lam n x y h => maybe_fmap_ne f n x y h
+
+\func optionO_map_cmra_morphism {A B : CMRA} (f : OFEMor A B)
+    (hf : CmraMorphism f)
+  : CmraMorphism {OptionCMRA A} {OptionCMRA B} (optionO_map f) \cowith
+  | cmra_morphism_validN => maybe_fmap_validN f hf
+  | cmra_morphism_pcore => maybe_fmap_pcore f hf
+  | cmra_morphism_op => maybe_fmap_op f hf
+
+\func gmap_view_valueO_map {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B)
+  : OFEMor (ProdOFE DfracCMRA A) (ProdOFE DfracCMRA B) =>
+  prodO_map {DfracCMRA} {DfracCMRA} {A} {B}
+    (ofe_mor_id {DfracCMRA}) f
+
+\func gmap_view_value_map_morphism {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (hf : CmraMorphism f)
+  : CmraMorphism {ProdCMRA DfracCMRA A} {ProdCMRA DfracCMRA B}
+      (gmap_view_valueO_map {K} {cnt} f) =>
+  prodO_map_cmra_morphism {DfracCMRA} {DfracCMRA} {A} {B}
+    (ofe_mor_id {DfracCMRA}) f (cmra_morphism_id {DfracCMRA}) hf
+
+\func gmap_view_authO_map {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B)
+  : OFEMor
+      (ProdOFE DfracCMRA (AgreeCMRA (GmapOFE K cnt A)))
+      (ProdOFE DfracCMRA (AgreeCMRA (GmapOFE K cnt B))) =>
+  prodO_map {DfracCMRA} {DfracCMRA}
+    {AgreeCMRA (GmapOFE K cnt A)} {AgreeCMRA (GmapOFE K cnt B)}
+    (ofe_mor_id {DfracCMRA})
+    (agreeO_map (gmapO_map {K} {cnt} f))
+
+\func gmap_view_auth_map_morphism {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (hf : CmraMorphism f)
+  : CmraMorphism
+      {ProdCMRA DfracCMRA (AgreeCMRA (GmapOFE K cnt A))}
+      {ProdCMRA DfracCMRA (AgreeCMRA (GmapOFE K cnt B))}
+      (gmap_view_authO_map {K} {cnt} f) =>
+  prodO_map_cmra_morphism
+    {DfracCMRA} {DfracCMRA}
+    {AgreeCMRA (GmapOFE K cnt A)} {AgreeCMRA (GmapOFE K cnt B)}
+    (ofe_mor_id {DfracCMRA}) (agreeO_map (gmapO_map {K} {cnt} f))
+    (cmra_morphism_id {DfracCMRA})
+    (agree_map_cmra_morphism (gmapO_map {K} {cnt} f))
+
+\func gmap_viewO_map {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) : OFEMor (gmap_viewR K cnt A) (gmap_viewR K cnt B) =>
+  prodO_map
+    (optionO_map (gmap_view_authO_map {K} {cnt} f))
+    (gmapO_map {K} {cnt} (gmap_view_valueO_map {K} {cnt} f))
+
+\func gmap_view_matches_map {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (n : Nat)
+    (fm : Gmap K cnt (\Sigma Dfrac A.E)) (m : Gmap K cnt A.E)
+    (h : gmap_view_matches n fm m)
+  : gmap_view_matches {K} {cnt} {B} n
+      (gmap_fmap {K} {cnt} (\lam x => (x.1, f.ofe_mor_car x.2)) fm)
+      (gmap_fmap {K} {cnt} f.ofe_mor_car m) =>
+  \lam k dv' hdv' =>
+    (\case glookup fm k \as o, idp : glookup fm k = o
+      \return glookup
+          (gmap_fmap (\lam (x : \Sigma Dfrac A.E) =>
+            (x.1, f.ofe_mor_car x.2)) fm) k = just dv'
+        -> TruncP (\Sigma (mv : B.E)
+          (glookup (gmap_fmap f.ofe_mor_car m) k = just mv)
+          (B.dist n dv'.2 mv))
+    \with {
+      | nothing, hnone => \lam bad => \case inv bad *>
+          glookup_fmap (\lam (x : \Sigma Dfrac A.E) =>
+            (x.1, f.ofe_mor_car x.2)) fm k
+          *> pmap (maybe_fmap (\lam (x : \Sigma Dfrac A.E) =>
+            (x.1, f.ofe_mor_car x.2))) hnone \with {}
+      | just dv, hdv => \lam mapped =>
+        \let
+          | pairEq : (dv.1, f.ofe_mor_car dv.2) = dv' =>
+              pmap (\case __ \with {
+                | just x => x
+                | nothing => (dv.1, f.ofe_mor_car dv.2)
+              }) (inv (glookup_fmap
+                    (\lam (x : \Sigma Dfrac A.E) =>
+                      (x.1, f.ofe_mor_car x.2)) fm k
+                  *> pmap (maybe_fmap (\lam (x : \Sigma Dfrac A.E) =>
+                    (x.1, f.ofe_mor_car x.2))) hdv)
+                *> mapped)
+        \in \scase h k dv hdv \with {
+          | inP (mv, hm, d) => inP (f.ofe_mor_car mv,
+              glookup_fmap f.ofe_mor_car m k
+                *> pmap (maybe_fmap f.ofe_mor_car) hm,
+              transport (\lam z => B.dist n z (f.ofe_mor_car mv))
+                (pmap (\lam x => x.2) pairEq)
+                (f.ofe_mor_ne n dv.2 mv d))
+        }
+    }) hdv'
+
+\func gmap_view_rel_map {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (hf : CmraMorphism f)
+    (n : Nat) (m : Gmap K cnt A.E) (frag : Gmap K cnt (\Sigma Dfrac A.E))
+    (h : gmap_view_rel_holds n m frag)
+  : gmap_view_rel_holds n
+      (gmap_fmap {K} {cnt} f.ofe_mor_car m)
+      (gmap_fmap {K} {cnt} (\lam x => (x.1, f.ofe_mor_car x.2)) frag) =>
+  \scase h \with {
+    | inP (fm, matches, hfm, hi) =>
+      \let
+        | vf => gmap_view_valueO_map {K} {cnt} f
+        | hvf => gmap_view_value_map_morphism {K} {cnt} f hf
+        | gmor => gmap_fmap_cmra_morphism {K} {cnt} vf hvf
+      \in inP (
+        gmap_fmap (\lam x => (x.1, f.ofe_mor_car x.2)) fm,
+        gmap_view_matches_map f n fm m matches,
+        gmor.cmra_morphism_validN n fm hfm,
+        cmra_morphism_monoN gmor n frag fm hi)
+  }
+
+\func gmap_view_map_validN_pair {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (hf : CmraMorphism f) (n : Nat)
+    (auth : ViewAuth (GmapOFE K cnt A))
+    (frag : Gmap K cnt (\Sigma Dfrac A.E))
+    (h : validN {gmap_viewR K cnt A} n (auth, frag))
+  : validN {gmap_viewR K cnt B} n
+      ((gmap_viewO_map {K} {cnt} f).ofe_mor_car (auth, frag)) \elim auth
+  | nothing => \scase h \with {
+      | inP (m, hr) => inP (gmap_fmap f.ofe_mor_car m,
+          gmap_view_rel_map f hf n m frag hr)
+    }
+  | just da => (h.1, \scase h.2 \with {
+      | inP (m, dag, hr) => inP (gmap_fmap f.ofe_mor_car m,
+          agree_map_ne (gmapO_map f) n da.2 (to_agree m) dag,
+          gmap_view_rel_map f hf n m frag hr)
+    })
+
+\lemma gmap_view_map_validN {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (f : OFEMor A B) (hf : CmraMorphism f) (n : Nat)
+    (x : (gmap_viewR K cnt A).E)
+    (h : validN {gmap_viewR K cnt A} n x)
+  : validN {gmap_viewR K cnt B} n
+      ((gmap_viewO_map {K} {cnt} f).ofe_mor_car x) =>
+  gmap_view_map_validN_pair f hf n x.1 x.2 h
+
+\func gmap_viewO_map_cmra_morphism {K : \Set} {cnt : Countable K}
+    {A B : CMRA} (f : OFEMor A B) (hf : CmraMorphism f)
+  : CmraMorphism {gmap_viewR K cnt A} {gmap_viewR K cnt B}
+      (gmap_viewO_map {K} {cnt} f) \cowith
+  | cmra_morphism_validN => gmap_view_map_validN f hf
+  | cmra_morphism_pcore =>
+      (prodO_map_cmra_morphism
+        (optionO_map (gmap_view_authO_map {K} {cnt} f))
+        (gmapO_map (gmap_view_valueO_map {K} {cnt} f))
+        (optionO_map_cmra_morphism (gmap_view_authO_map {K} {cnt} f)
+          (gmap_view_auth_map_morphism {K} {cnt} f hf))
+        (gmap_fmap_cmra_morphism
+          (gmap_view_valueO_map {K} {cnt} f)
+          (gmap_view_value_map_morphism {K} {cnt} f hf))).cmra_morphism_pcore
+  | cmra_morphism_op =>
+      (prodO_map_cmra_morphism
+        (optionO_map (gmap_view_authO_map {K} {cnt} f))
+        (gmapO_map (gmap_view_valueO_map {K} {cnt} f))
+        (optionO_map_cmra_morphism (gmap_view_authO_map {K} {cnt} f)
+          (gmap_view_auth_map_morphism {K} {cnt} f hf))
+        (gmap_fmap_cmra_morphism
+          (gmap_view_valueO_map {K} {cnt} f)
+          (gmap_view_value_map_morphism {K} {cnt} f hf))).cmra_morphism_op
+
+\lemma prodO_map_ne_map {A1 A2 B1 B2 : OFE} (n : Nat)
+    (f f' : OFEMor A1 A2) (g g' : OFEMor B1 B2)
+    (hf : (OFEMorOFE A1 A2).dist n f f')
+    (hg : (OFEMorOFE B1 B2).dist n g g')
+  : (OFEMorOFE (ProdOFE A1 B1) (ProdOFE A2 B2)).dist n
+      (prodO_map f g) (prodO_map f' g') =>
+  \lam x => (hf x.1, hg x.2)
+
+\func optionO_map_ne_map_at {A B : OFE} (n : Nat) (f g : OFEMor A B)
+    (h : (OFEMorOFE A B).dist n f g) (o : Maybe A.E)
+  : (OptionOFE B).dist n
+      ((optionO_map f).ofe_mor_car o) ((optionO_map g).ofe_mor_car o) \elim o
+  | nothing => ()
+  | just a => h a
+
+\lemma optionO_map_ne_map {A B : OFE} (n : Nat) (f g : OFEMor A B)
+    (h : (OFEMorOFE A B).dist n f g)
+  : (OFEMorOFE (OptionOFE A) (OptionOFE B)).dist n
+      (optionO_map f) (optionO_map g) =>
+  optionO_map_ne_map_at n f g h
+
+\lemma agreeO_map_ne_map {A B : OFE} (n : Nat) (f g : OFEMor A B)
+    (h : (OFEMorOFE A B).dist n f g)
+  : (OFEMorOFE (AgreeOFE A) (AgreeOFE B)).dist n
+      (agreeO_map f) (agreeO_map g) =>
+  \lam x =>
+    (\lam b hb => \scase agree_map_in_inv f.ofe_mor_car x b hb \with {
+        | inP (a, ha, eb) => inP (g.ofe_mor_car a,
+            agree_map_in g.ofe_mor_car x a ha,
+            transport (\lam z => B.dist n z (g.ofe_mor_car a)) (inv eb) (h a))
+      },
+     \lam b hb => \scase agree_map_in_inv g.ofe_mor_car x b hb \with {
+        | inP (a, ha, eb) => inP (f.ofe_mor_car a,
+            agree_map_in f.ofe_mor_car x a ha,
+            transport (\lam z => B.dist n (f.ofe_mor_car a) z) (inv eb) (h a))
+      })
+
+\lemma gmap_viewO_map_ne {K : \Set} {cnt : Countable K} {A B : CMRA}
+    (n : Nat) (f g : OFEMor A B) (h : (OFEMorOFE A B).dist n f g)
+  : (OFEMorOFE (gmap_viewR K cnt A) (gmap_viewR K cnt B)).dist n
+      (gmap_viewO_map {K} {cnt} f) (gmap_viewO_map {K} {cnt} g) =>
+  \let
+    | valueDist : (OFEMorOFE
+          (ProdOFE DfracCMRA A) (ProdOFE DfracCMRA B)).dist n
+          (gmap_view_valueO_map {K} {cnt} f)
+          (gmap_view_valueO_map {K} {cnt} g) =>
+        prodO_map_ne_map n
+          (ofe_mor_id {DfracCMRA}) (ofe_mor_id {DfracCMRA}) f g
+          ((OFEMorOFE DfracCMRA DfracCMRA).ofe_dist_refl n ofe_mor_id) h
+    | gmapValueDist => gmapO_map_ne {K} {cnt} n
+        (gmap_view_valueO_map {K} {cnt} f)
+        (gmap_view_valueO_map {K} {cnt} g) valueDist
+    | gmapAuthDist => gmapO_map_ne {K} {cnt} n f g h
+    | agreeAuthDist => agreeO_map_ne_map n
+        (gmapO_map {K} {cnt} f) (gmapO_map {K} {cnt} g) gmapAuthDist
+    | authDist : (OFEMorOFE
+          (ProdOFE DfracCMRA (AgreeCMRA (GmapOFE K cnt A)))
+          (ProdOFE DfracCMRA (AgreeCMRA (GmapOFE K cnt B)))).dist n
+          (gmap_view_authO_map {K} {cnt} f)
+          (gmap_view_authO_map {K} {cnt} g) =>
+        prodO_map_ne_map n
+          (ofe_mor_id {DfracCMRA}) (ofe_mor_id {DfracCMRA})
+          (agreeO_map (gmapO_map {K} {cnt} f))
+          (agreeO_map (gmapO_map {K} {cnt} g))
+          ((OFEMorOFE DfracCMRA DfracCMRA).ofe_dist_refl n ofe_mor_id)
+          agreeAuthDist
+    | optionAuthDist => optionO_map_ne_map n
+        (gmap_view_authO_map {K} {cnt} f)
+        (gmap_view_authO_map {K} {cnt} g) authDist
+  \in prodO_map_ne_map n
+      (optionO_map (gmap_view_authO_map {K} {cnt} f))
+      (optionO_map (gmap_view_authO_map {K} {cnt} g))
+      (gmapO_map {K} {cnt} (gmap_view_valueO_map {K} {cnt} f))
+      (gmapO_map {K} {cnt} (gmap_view_valueO_map {K} {cnt} g))
+      optionAuthDist gmapValueDist
+
+\lemma gmap_fmap_equiv_id {K : \Set} {cnt : Countable K} {A : OFE}
+    (f : OFEMor A A) (h : \Pi (a : A.E) -> A.equiv (f.ofe_mor_car a) a)
+    (m : Gmap K cnt A.E)
+  : (GmapOFE K cnt A).equiv (gmap_fmap f.ofe_mor_car m) m =>
+  \lam k => transport
+    (\lam u => (OptionOFE A).equiv u (glookup m k))
+    (inv (glookup_fmap f.ofe_mor_car m k))
+    (maybe_fmap_equiv_id f.ofe_mor_car h (glookup m k))
+
+\lemma agree_map_equiv_id {A : OFE} (f : OFEMor A A)
+    (h : \Pi (a : A.E) -> A.equiv (f.ofe_mor_car a) a)
+    (x : AgreeElem A)
+  : (AgreeOFE A).equiv (agree_map f.ofe_mor_car x) x =>
+  \lam n =>
+    (\lam b hb => \scase agree_map_in_inv f.ofe_mor_car x b hb \with {
+        | inP (a, ha, eb) => inP (a, ha,
+            transport (\lam z => A.dist n z a) (inv eb)
+              (equiv_dist {A} (h a) n))
+      },
+     \lam b hb => inP (f.ofe_mor_car b,
+        agree_map_in f.ofe_mor_car x b hb,
+        equiv_dist {A} (h b) n))
+
+\func gmap_view_map_equiv_id_pair {K : \Set} {cnt : Countable K} {A : CMRA}
+    (f : OFEMor A A) (h : \Pi (a : A.E) -> A.equiv (f.ofe_mor_car a) a)
+    (auth : ViewAuth (GmapOFE K cnt A))
+    (frag : Gmap K cnt (\Sigma Dfrac A.E))
+  : (gmap_viewR K cnt A).equiv
+      ((gmap_viewO_map {K} {cnt} f).ofe_mor_car (auth, frag))
+      (auth, frag) \elim auth
+  | nothing => ((), gmap_fmap_equiv_id
+      (gmap_view_valueO_map {K} {cnt} f)
+      (\lam x => (DfracCMRA.equiv_refl x.1, h x.2)) frag)
+  | just da =>
+      ((DfracCMRA.equiv_refl da.1,
+        agree_map_equiv_id (gmapO_map {K} {cnt} f)
+          (\lam m => gmap_fmap_equiv_id f h m) da.2),
+       gmap_fmap_equiv_id
+        (gmap_view_valueO_map {K} {cnt} f)
+        (\lam x => (DfracCMRA.equiv_refl x.1, h x.2)) frag)
+
+\lemma gmap_view_map_equiv_id {K : \Set} {cnt : Countable K} {A : CMRA}
+    (f : OFEMor A A) (h : \Pi (a : A.E) -> A.equiv (f.ofe_mor_car a) a)
+    (x : (gmap_viewR K cnt A).E)
+  : (gmap_viewR K cnt A).equiv
+      ((gmap_viewO_map {K} {cnt} f).ofe_mor_car x) x =>
+  gmap_view_map_equiv_id_pair f h x.1 x.2
+
+\lemma agree_map_list_comp {A B C : \Set} (f : A -> B) (g : B -> C)
+    (xs : List A)
+  : agree_map_list g (agree_map_list f xs) =
+      agree_map_list (\lam a => g (f a)) xs \elim xs
+  | nil => idp
+  | :: x xs => pmap (\lam ys => g (f x) :: ys) (agree_map_list_comp f g xs)
+
+\lemma agree_map_comp {A B C : OFE} (f : A.E -> B.E) (g : B.E -> C.E)
+    (x : AgreeElem A)
+  : agree_map g (agree_map f x) = agree_map (\lam a => g (f a)) x =>
+  path (\lam i => \new AgreeElem C {
+    | agree_hd => g (f x.agree_hd)
+    | agree_tl => agree_map_list_comp f g x.agree_tl @ i
+  })
+
+\lemma agree_map_equiv_maps {A B : OFE} (f g : OFEMor A B)
+    (h : \Pi (a : A.E) -> B.equiv (f.ofe_mor_car a) (g.ofe_mor_car a))
+    (x : AgreeElem A)
+  : (AgreeOFE B).equiv (agree_map f.ofe_mor_car x) (agree_map g.ofe_mor_car x) =>
+  ((AgreeOFE B).ofe_equiv_dist _ _).2 (\lam n =>
+    agreeO_map_ne_map n f g (\lam a => equiv_dist {B} (h a) n) x)
+
+\lemma gmap_fmap_comp_equiv {K : \Set} {cnt : Countable K}
+    {A B C : OFE} (f : OFEMor A B) (g : OFEMor B C) (u : OFEMor A C)
+    (h : \Pi (a : A.E) -> C.equiv
+      (g.ofe_mor_car (f.ofe_mor_car a)) (u.ofe_mor_car a))
+    (m : Gmap K cnt A.E)
+  : (GmapOFE K cnt C).equiv
+      (gmap_fmap g.ofe_mor_car (gmap_fmap f.ofe_mor_car m))
+      (gmap_fmap u.ofe_mor_car m) =>
+  \lam k =>
+    transport2 (\lam x y => (OptionOFE C).equiv x y)
+      (inv (glookup_fmap g.ofe_mor_car (gmap_fmap f.ofe_mor_car m) k
+        *> pmap (maybe_fmap g.ofe_mor_car) (glookup_fmap f.ofe_mor_car m k)
+        *> inv (maybe_fmap_comp f.ofe_mor_car g.ofe_mor_car (glookup m k))))
+      (inv (glookup_fmap u.ofe_mor_car m k))
+      (maybe_fmap_equiv_2
+        (\lam a => g.ofe_mor_car (f.ofe_mor_car a)) u.ofe_mor_car h
+        (glookup m k))
+
+\func gmap_view_map_compose_pair {K : \Set} {cnt : Countable K}
+    {A B C : CMRA} (f : OFEMor A B) (g : OFEMor B C) (u : OFEMor A C)
+    (h : \Pi (a : A.E) -> C.equiv
+      (g.ofe_mor_car (f.ofe_mor_car a)) (u.ofe_mor_car a))
+    (auth : ViewAuth (GmapOFE K cnt A))
+    (frag : Gmap K cnt (\Sigma Dfrac A.E))
+  : (gmap_viewR K cnt C).equiv
+      ((gmap_viewO_map {K} {cnt} g).ofe_mor_car
+        ((gmap_viewO_map {K} {cnt} f).ofe_mor_car (auth, frag)))
+      ((gmap_viewO_map {K} {cnt} u).ofe_mor_car (auth, frag)) \elim auth
+  | nothing => ((), gmap_fmap_comp_equiv
+      (gmap_view_valueO_map {K} {cnt} f)
+      (gmap_view_valueO_map {K} {cnt} g)
+      (gmap_view_valueO_map {K} {cnt} u)
+      (\lam x => (DfracCMRA.equiv_refl x.1, h x.2)) frag)
+  | just da =>
+      ((DfracCMRA.equiv_refl da.1,
+        (AgreeOFE (GmapOFE K cnt C)).equiv_trans
+          (agree_map
+            (gmapO_map {K} {cnt} g).ofe_mor_car
+            (agree_map (gmapO_map {K} {cnt} f).ofe_mor_car da.2))
+          (agree_map
+            (ofe_mor_comp (gmapO_map {K} {cnt} g)
+              (gmapO_map {K} {cnt} f)).ofe_mor_car da.2)
+          (agree_map (gmapO_map {K} {cnt} u).ofe_mor_car da.2)
+          (equiv_of_path {AgreeOFE (GmapOFE K cnt C)}
+            (agree_map_comp
+              (gmapO_map {K} {cnt} f).ofe_mor_car
+              (gmapO_map {K} {cnt} g).ofe_mor_car da.2))
+          (agree_map_equiv_maps
+            (ofe_mor_comp (gmapO_map {K} {cnt} g)
+              (gmapO_map {K} {cnt} f))
+            (gmapO_map {K} {cnt} u)
+            (\lam m => gmap_fmap_comp_equiv f g u h m) da.2)),
+       gmap_fmap_comp_equiv
+        (gmap_view_valueO_map {K} {cnt} f)
+        (gmap_view_valueO_map {K} {cnt} g)
+        (gmap_view_valueO_map {K} {cnt} u)
+        (\lam x => (DfracCMRA.equiv_refl x.1, h x.2)) frag)
+
+\lemma gmap_view_map_compose {K : \Set} {cnt : Countable K}
+    {A B C : CMRA} (f : OFEMor A B) (g : OFEMor B C) (u : OFEMor A C)
+    (h : \Pi (a : A.E) -> C.equiv
+      (g.ofe_mor_car (f.ofe_mor_car a)) (u.ofe_mor_car a))
+    (x : (gmap_viewR K cnt A).E)
+  : (gmap_viewR K cnt C).equiv
+      ((gmap_viewO_map {K} {cnt} g).ofe_mor_car
+        ((gmap_viewO_map {K} {cnt} f).ofe_mor_car x))
+      ((gmap_viewO_map {K} {cnt} u).ofe_mor_car x) =>
+  gmap_view_map_compose_pair f g u h x.1 x.2
+
+\func gmap_viewURF (K : \Set) (cnt : Countable K) (F : RFunctor)
+  : URFunctor \cowith
+  | urFunctor_car => \lam A B => gmap_viewUR K cnt (F.rFunctor_car A B)
+  | urFunctor_map => \lam fg => gmap_viewO_map (F.rFunctor_map fg)
+  | urFunctor_map_ne => \lam n fg fg' h =>
+      gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+        (F.rFunctor_map_ne n fg fg' h)
+  | urFunctor_map_id => \lam {A} {B} x =>
+      gmap_view_map_equiv_id
+        (F.rFunctor_map (ofe_mor_id, ofe_mor_id))
+        (F.rFunctor_map_id {A} {B}) x
+  | urFunctor_map_compose =>
+      \lam {A1} {A2} {A3} {B1} {B2} {B3} f g f' g' x =>
+        gmap_view_map_compose
+          (F.rFunctor_map (f, f'))
+          (F.rFunctor_map (g, g'))
+          (F.rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f'))
+          (F.rFunctor_map_compose f g f' g') x
+  | urFunctor_mor => \lam fg =>
+      gmap_viewO_map_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
+
+\func gmap_viewURF_contractive (K : \Set) (cnt : Countable K) (F : RFunctor)
+    (hF : RFunctorContractive F)
+  : URFunctorContractive (gmap_viewURF K cnt F) \cowith
+  | urFunctor_map_contractive => \lam n fg fg' h =>
+      gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+        (hF.rFunctor_map_contractive n fg fg' h)
+
+\func gmap_viewRF (K : \Set) (cnt : Countable K) (F : RFunctor)
+  : RFunctor \cowith
+  | rFunctor_car => \lam A B => gmap_viewR K cnt (F.rFunctor_car A B)
+  | rFunctor_map => \lam fg => gmap_viewO_map (F.rFunctor_map fg)
+  | rFunctor_map_ne => \lam n fg fg' h =>
+      gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+        (F.rFunctor_map_ne n fg fg' h)
+  | rFunctor_map_id => \lam {A} {B} x =>
+      gmap_view_map_equiv_id
+        (F.rFunctor_map (ofe_mor_id, ofe_mor_id))
+        (F.rFunctor_map_id {A} {B}) x
+  | rFunctor_map_compose =>
+      \lam {A1} {A2} {A3} {B1} {B2} {B3} f g f' g' x =>
+        gmap_view_map_compose
+          (F.rFunctor_map (f, f'))
+          (F.rFunctor_map (g, g'))
+          (F.rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f'))
+          (F.rFunctor_map_compose f g f' g') x
+  | rFunctor_mor => \lam fg =>
+      gmap_viewO_map_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
+
+\func gmap_viewRF_contractive (K : \Set) (cnt : Countable K) (F : RFunctor)
+    (hF : RFunctorContractive F)
+  : RFunctorContractive (gmap_viewRF K cnt F) \cowith
+  | rFunctor_map_contractive => \lam n fg fg' h =>
+      gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+        (hF.rFunctor_map_contractive n fg fg' h)

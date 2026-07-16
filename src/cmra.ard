@@ -681,3 +681,10 @@
   | idp => \lam n mz hv => \case h n mz hv \with {
       | inP (y, hp, hvy) => inP (y, inP (y, idp, hp), hvy)
     }
+
+-- The transported unit of a UCMRA is a left identity in the target CMRA.
+-- Used by `own_unit` to show the component image absorbs the injected ε.
+\lemma cmra_transport_unit_left_id {A : UCMRA} {B : CMRA} (H : A = {CMRA} B)
+    (n : Nat) (w : B.E)
+  : B.dist n (B.op (cmra_transport H A.unit) w) w \elim H
+  | idp => equiv_dist {A} (A.ucmra_unit_left_id w) n

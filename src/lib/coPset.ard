@@ -152,6 +152,11 @@
   | xO p, coPNode b L R => coPmem_complement p L
   | xI p, coPNode b L R => coPmem_complement p R
 
+\lemma coPmem_difference (p : Pos) (X Y : coPset)
+  : coPmem p (coPset_difference X Y) = (coPmem p X and not (coPmem p Y)) =>
+  coPmem_intersection p X (coPset_complement Y)
+  *> pmap (\lam b => coPmem p X and b) (coPmem_complement p Y)
+
 
 -- =================================================================================
 -- Set predicates
@@ -175,6 +180,21 @@
 \lemma coPset_equiv_trans (X Y Z : coPset)
                           (h1 : coPset_equiv X Y) (h2 : coPset_equiv Y Z)
   : coPset_equiv X Z => \lam p => h1 p *> h2 p
+
+\lemma bool_subset_union_difference (a b : Bool) (h : b = true -> a = true)
+  : a = (b or (a and not b)) \elim a, b
+  | false, false => idp
+  | false, true => \case h idp \with {}
+  | true, false => idp
+  | true, true => idp
+
+-- If Y is a subset of X, then X is Y plus the disjoint remainder X \\ Y.
+\lemma coPset_subset_union_difference (X Y : coPset) (h : coPSubset Y X)
+  : coPset_equiv X (coPset_union Y (coPset_difference X Y)) =>
+  \lam p =>
+    bool_subset_union_difference (coPmem p X) (coPmem p Y) (h p)
+    *> inv (coPmem_union p Y (coPset_difference X Y)
+        *> pmap (\lam b => coPmem p Y or b) (coPmem_difference p X Y))
 
 
 -- =================================================================================

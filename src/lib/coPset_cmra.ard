@@ -312,6 +312,22 @@
     | false, _ => idp
   }
 
+\lemma coPset_subset_difference_disjoint (X Y : coPset)
+  : coPset_overlap Y (coPset_difference X Y) = false =>
+  \let disj : \Pi (p : Pos) -> coPmem p Y = true ->
+        coPmem p (coPset_difference X Y) = true -> Empty =>
+    \lam p hY hdiff =>
+      \let
+        | hd : (coPmem p X and not (coPmem p Y)) = true =>
+            inv (coPmem_difference p X Y) *> hdiff
+        | hn : not (coPmem p Y) = true => (bool_and_true_inv _ _ hd).2
+      \in (\case coPmem p Y \as b, idp : coPmem p Y = b
+           \return b = true -> not b = true -> Empty \with {
+           | false, _ => \lam bad _ => \case bad \with {}
+           | true, _ => \lam _ bad => \case bad \with {}
+         }) hY hn
+  \in coPset_overlap_disjoint Y (coPset_difference X Y) disj
+
 -- If two coPsets are equiv (same elements), they have the same overlap with any third set.
 \lemma coPset_overlap_proper_r (X Y1 Y2 : coPset) (h : coPset_equiv Y1 Y2)
   : coPset_overlap X Y1 = coPset_overlap X Y2 =>

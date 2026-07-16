@@ -1,0 +1,282 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Rat
+\import Algebra.Group
+\import Algebra.StrictlyOrdered
+\import Order.LinearOrder
+\import ofe
+\import cmra
+\import lib.frac
+
+\data Dfrac
+  | DfracOwn Qp
+  | DfracDiscarded
+  | DfracBoth Qp
+
+\func dfrac_op (x y : Dfrac) : Dfrac \elim x, y
+  | DfracOwn p, DfracOwn q => DfracOwn (qp_add p q)
+  | DfracOwn p, DfracDiscarded => DfracBoth p
+  | DfracOwn p, DfracBoth q => DfracBoth (qp_add p q)
+  | DfracDiscarded, DfracOwn q => DfracBoth q
+  | DfracDiscarded, DfracDiscarded => DfracDiscarded
+  | DfracDiscarded, DfracBoth q => DfracBoth q
+  | DfracBoth p, DfracOwn q => DfracBoth (qp_add p q)
+  | DfracBoth p, DfracDiscarded => DfracBoth p
+  | DfracBoth p, DfracBoth q => DfracBoth (qp_add p q)
+
+\func dfrac_pcore (x : Dfrac) : Maybe Dfrac \elim x
+  | DfracOwn _ => nothing
+  | DfracDiscarded => just DfracDiscarded
+  | DfracBoth _ => just DfracDiscarded
+
+\func dfrac_valid (x : Dfrac) : \Prop \elim x
+  | DfracOwn q => q.qp_val RatField.<= RatField.ide
+  | DfracDiscarded => \Sigma
+  | DfracBoth q => q.qp_val RatField.< RatField.ide
+
+\func dfrac_validN (n : Nat) (x : Dfrac) : \Prop => dfrac_valid x
+
+\lemma dfrac_op_assoc (x y z : Dfrac) :
+  dfrac_op x (dfrac_op y z) = dfrac_op (dfrac_op x y) z
+  \elim x, y, z
+  | DfracOwn p, DfracOwn q, DfracOwn r => pmap DfracOwn (qp_add_assoc p q r)
+  | DfracOwn p, DfracOwn q, DfracDiscarded => idp
+  | DfracOwn p, DfracOwn q, DfracBoth r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracOwn p, DfracDiscarded, DfracOwn r => idp
+  | DfracOwn p, DfracDiscarded, DfracDiscarded => idp
+  | DfracOwn p, DfracDiscarded, DfracBoth r => idp
+  | DfracOwn p, DfracBoth q, DfracOwn r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracOwn p, DfracBoth q, DfracDiscarded => idp
+  | DfracOwn p, DfracBoth q, DfracBoth r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracDiscarded, DfracOwn q, DfracOwn r => idp
+  | DfracDiscarded, DfracOwn q, DfracDiscarded => idp
+  | DfracDiscarded, DfracOwn q, DfracBoth r => idp
+  | DfracDiscarded, DfracDiscarded, DfracOwn r => idp
+  | DfracDiscarded, DfracDiscarded, DfracDiscarded => idp
+  | DfracDiscarded, DfracDiscarded, DfracBoth r => idp
+  | DfracDiscarded, DfracBoth q, DfracOwn r => idp
+  | DfracDiscarded, DfracBoth q, DfracDiscarded => idp
+  | DfracDiscarded, DfracBoth q, DfracBoth r => idp
+  | DfracBoth p, DfracOwn q, DfracOwn r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracBoth p, DfracOwn q, DfracDiscarded => idp
+  | DfracBoth p, DfracOwn q, DfracBoth r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracBoth p, DfracDiscarded, DfracOwn r => idp
+  | DfracBoth p, DfracDiscarded, DfracDiscarded => idp
+  | DfracBoth p, DfracDiscarded, DfracBoth r => idp
+  | DfracBoth p, DfracBoth q, DfracOwn r => pmap DfracBoth (qp_add_assoc p q r)
+  | DfracBoth p, DfracBoth q, DfracDiscarded => idp
+  | DfracBoth p, DfracBoth q, DfracBoth r => pmap DfracBoth (qp_add_assoc p q r)
+
+\lemma dfrac_op_comm (x y : Dfrac) : dfrac_op x y = dfrac_op y x
+  \elim x, y
+  | DfracOwn p, DfracOwn q => pmap DfracOwn (qp_add_comm p q)
+  | DfracOwn _, DfracDiscarded => idp
+  | DfracOwn p, DfracBoth q => pmap DfracBoth (qp_add_comm p q)
+  | DfracDiscarded, DfracOwn q => idp
+  | DfracDiscarded, DfracDiscarded => idp
+  | DfracDiscarded, DfracBoth q => idp
+  | DfracBoth p, DfracOwn q => pmap DfracBoth (qp_add_comm p q)
+  | DfracBoth _, DfracDiscarded => idp
+  | DfracBoth p, DfracBoth q => pmap DfracBoth (qp_add_comm p q)
+
+\lemma qp_le_add (p q : Qp) :
+  p.qp_val RatField.<= (p.qp_val RatField.+ q.qp_val) =>
+  transport (\lam z => z RatField.<= (p.qp_val RatField.+ q.qp_val))
+    RatField.zro-right
+    (RatField.<=_+ RatField.<=-refl (LinearOrder.<_<= q.qp_positive))
+
+\lemma qp_lt_add (p q : Qp) :
+  p.qp_val RatField.< (p.qp_val RatField.+ q.qp_val) =>
+  transport (\lam z => z RatField.< (p.qp_val RatField.+ q.qp_val))
+    RatField.zro-right
+    (RatField.<_+-right p.qp_val q.qp_positive)
+
+\lemma dfrac_valid_op_l (x y : Dfrac) (h : dfrac_valid (dfrac_op x y))
+  : dfrac_valid x \elim x, y
+  | DfracOwn p, DfracOwn q =>
+      RatField.<=-transitive (qp_le_add p q) h
+  | DfracOwn p, DfracDiscarded => LinearOrder.<_<= h
+  | DfracOwn p, DfracBoth q =>
+      LinearOrder.<_<= (RatField.<-transitive (qp_lt_add p q) h)
+  | DfracDiscarded, _ => ()
+  | DfracBoth p, DfracOwn q => RatField.<-transitive (qp_lt_add p q) h
+  | DfracBoth p, DfracDiscarded => h
+  | DfracBoth p, DfracBoth q => RatField.<-transitive (qp_lt_add p q) h
+
+\lemma dfrac_pcore_l_proof (x cx : Dfrac) (h : dfrac_pcore x = just cx)
+  : dfrac_op cx x = x \elim x
+  | DfracOwn _ => \case h \with {}
+  | DfracDiscarded =>
+      transport (\lam c => dfrac_op c DfracDiscarded = DfracDiscarded)
+        (pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) h) idp
+  | DfracBoth q =>
+      transport (\lam c => dfrac_op c (DfracBoth q) = DfracBoth q)
+        (pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) h) idp
+
+\lemma dfrac_pcore_idemp_proof (x cx : Dfrac) (h : dfrac_pcore x = just cx)
+  : (OptionOFE (DiscreteOFE Dfrac)).equiv (dfrac_pcore cx) (just cx) \elim x
+  | DfracOwn _ => \case h \with {}
+  | DfracDiscarded => transport (\lam c =>
+      (OptionOFE (DiscreteOFE Dfrac)).equiv (dfrac_pcore c) (just c))
+      (pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) h) idp
+  | DfracBoth _ => transport (\lam c =>
+      (OptionOFE (DiscreteOFE Dfrac)).equiv (dfrac_pcore c) (just c))
+      (pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) h) idp
+
+\func dfrac_core_eq_discarded (x cx : Dfrac) (h : dfrac_pcore x = just cx)
+  : cx = DfracDiscarded \elim x
+  | DfracOwn _ => \case h \with {}
+  | DfracDiscarded =>
+      pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) (inv h)
+  | DfracBoth _ =>
+      pmap (\case __ \with { | just c => c | nothing => DfracDiscarded }) (inv h)
+
+\func dfrac_pcore_op_discarded (x z : Dfrac)
+    (h : dfrac_pcore x = just DfracDiscarded)
+  : dfrac_pcore (dfrac_op x z) = just DfracDiscarded \elim x, z
+  | DfracOwn _, _ => \case h \with {}
+  | DfracDiscarded, DfracOwn _ => idp
+  | DfracDiscarded, DfracDiscarded => idp
+  | DfracDiscarded, DfracBoth _ => idp
+  | DfracBoth _, DfracOwn _ => idp
+  | DfracBoth _, DfracDiscarded => idp
+  | DfracBoth _, DfracBoth _ => idp
+
+\lemma dfrac_pcore_mono_proof (x y cx : Dfrac)
+    (hxy : incl {DiscreteOFE Dfrac} {\new Op Dfrac { | op => dfrac_op }} x y)
+    (hcore : dfrac_pcore x = just cx)
+  : TruncP (\Sigma (cy : Dfrac) (dfrac_pcore y = just cy)
+      (incl {DiscreteOFE Dfrac} {\new Op Dfrac { | op => dfrac_op }} cx cy)) =>
+  \case hxy \with {
+    | inP (z, ey) =>
+      \let
+        | ecx : cx = DfracDiscarded => dfrac_core_eq_discarded x cx hcore
+        | hxdisc : dfrac_pcore x = just DfracDiscarded => hcore *> pmap just ecx
+        | py : dfrac_pcore y = just DfracDiscarded =>
+            pmap dfrac_pcore ey *> dfrac_pcore_op_discarded x z hxdisc
+        | self : incl {DiscreteOFE Dfrac} {\new Op Dfrac { | op => dfrac_op }}
+                    DfracDiscarded DfracDiscarded =>
+            inP (DfracDiscarded, idp)
+      \in inP (DfracDiscarded, py,
+           transport (\lam c => incl {DiscreteOFE Dfrac}
+             {\new Op Dfrac { | op => dfrac_op }} c DfracDiscarded)
+             (inv ecx) self)
+  }
+
+\func DfracCMRA : CMRA \cowith
+  | OFE => DiscreteOFE Dfrac
+  | op => dfrac_op
+  | pcore => dfrac_pcore
+  | valid => dfrac_valid
+  | validN => dfrac_validN
+  | cmra_op_ne => \lam x n y1 y2 h => pmap (dfrac_op x) h
+  | cmra_op_ne_2 => \lam y n x1 x2 h => pmap (\lam x => dfrac_op x y) h
+  | cmra_pcore_ne => \lam n x y cx hxy hcore =>
+      transport (\lam yy => \Sigma (cy : Dfrac) (dfrac_pcore yy = just cy) (cx = cy))
+        hxy (cx, hcore, idp)
+  | cmra_validN_ne => \lam n x y hxy hv => transport dfrac_valid hxy hv
+  | cmra_valid_validN => \lam x => (\lam h _ => h, \lam h => h 0)
+  | cmra_validN_le => \lam _ _ _ h _ => h
+  | cmra_assoc => dfrac_op_assoc
+  | cmra_comm => dfrac_op_comm
+  | cmra_pcore_l => dfrac_pcore_l_proof
+  | cmra_pcore_idemp => dfrac_pcore_idemp_proof
+  | cmra_pcore_mono => dfrac_pcore_mono_proof
+  | cmra_validN_op_l => \lam _ => dfrac_valid_op_l
+  | cmra_extend => \lam n x y1 y2 hv hd =>
+      (y1, y2, hd, idp, idp)
+
+\lemma dfrac_discarded_core_id : CoreId {DfracCMRA} DfracDiscarded => idp
+
+\lemma qp_lt_add_right (p q : Qp) :
+  p.qp_val RatField.< (q.qp_val RatField.+ p.qp_val) =>
+  transport (\lam z => p.qp_val RatField.< z)
+    (pmap (\lam x => x.qp_val) (qp_add_comm p q)) (qp_lt_add p q)
+
+\func dfrac_full_exclusive_at (y : Dfrac)
+    (h : dfrac_valid (dfrac_op (DfracOwn qp_one) y)) : Empty \elim y
+    | DfracOwn q => RatField.<-irreflexive
+        (RatField.<-transitive-left (qp_lt_add qp_one q) h)
+    | DfracDiscarded => RatField.<-irreflexive h
+    | DfracBoth q => RatField.<-irreflexive
+        (RatField.<-transitive (qp_lt_add qp_one q) h)
+
+\lemma dfrac_full_exclusive : Exclusive {DfracCMRA} (DfracOwn qp_one) =>
+  dfrac_full_exclusive_at
+
+\lemma dfrac_frame_own_lt_one (x : Dfrac) (q : Qp)
+    (h : dfrac_valid (dfrac_op x (DfracOwn q)))
+  : q.qp_val RatField.< RatField.ide \elim x
+  | DfracOwn p => RatField.<-transitive-left (qp_lt_add_right q p) h
+  | DfracDiscarded => h
+  | DfracBoth p => RatField.<-transitive (qp_lt_add_right q p) h
+
+\lemma dfrac_frame_both_lt_one (x : Dfrac) (q : Qp)
+    (h : dfrac_valid (dfrac_op x (DfracBoth q)))
+  : q.qp_val RatField.< RatField.ide \elim x
+  | DfracOwn p => RatField.<-transitive (qp_lt_add_right q p) h
+  | DfracDiscarded => h
+  | DfracBoth p => RatField.<-transitive (qp_lt_add_right q p) h
+
+\func dfrac_discard_update_at (dq : Dfrac) (mz : Maybe Dfrac)
+    (h : dfrac_valid (cmra_opM {DfracCMRA} dq mz))
+  : TruncP (\Sigma (y : Dfrac) (y = DfracDiscarded)
+      (dfrac_valid (cmra_opM {DfracCMRA} y mz))) \elim mz
+    | nothing => inP (DfracDiscarded, idp, ())
+    | just (DfracOwn q) => inP (DfracDiscarded, idp,
+        dfrac_frame_own_lt_one dq q h)
+    | just DfracDiscarded => inP (DfracDiscarded, idp, ())
+    | just (DfracBoth q) => inP (DfracDiscarded, idp,
+        dfrac_frame_both_lt_one dq q h)
+
+\lemma dfrac_discard_updatePM (dq : Dfrac) :
+  cmra_updatePM {DfracCMRA} dq (\lam x => x = DfracDiscarded) =>
+  \lam n mz => dfrac_discard_update_at dq mz
+
+\lemma rat_diff_zro (x : Rat) :
+  x - RatField.zro = x =>
+  pmap (RatField.+ x) RatField.negative_zro *> RatField.zro-right
+
+\func qp_gap (q : Qp) (h : q.qp_val RatField.< RatField.ide) : Qp \cowith
+  | qp_val => RatField.mid q.qp_val RatField.ide - q.qp_val
+  | qp_positive => RatField.to>0 (RatField.mid>left h)
+
+\lemma qp_gap_add_lt_one (q : Qp)
+    (h : q.qp_val RatField.< RatField.ide) :
+  (qp_add (qp_gap q h) q).qp_val RatField.< RatField.ide =>
+  transport (\lam z => z RatField.< RatField.ide)
+    (inv
+       (pmap (RatField.+ (RatField.mid q.qp_val RatField.ide - q.qp_val))
+         (inv (rat_diff_zro q.qp_val))
+       *> RatField.diff_+ {RatField.zro} {q.qp_val}
+            {RatField.mid q.qp_val RatField.ide}
+       *> rat_diff_zro (RatField.mid q.qp_val RatField.ide)))
+    (RatField.mid<right h)
+
+\func qp_half : Qp \cowith
+  | qp_val => RatField.mid RatField.zro RatField.ide
+  | qp_positive => RatField.mid>left RatField.zro<ide
+
+\lemma qp_half_lt_one : qp_half.qp_val RatField.< RatField.ide =>
+  RatField.mid<right RatField.zro<ide
+
+\func dfrac_undiscard_update_at (mz : Maybe Dfrac)
+    (h : dfrac_valid (cmra_opM {DfracCMRA} DfracDiscarded mz))
+  : TruncP (\Sigma (y : Dfrac)
+      (TruncP (\Sigma (q : Qp) (y = DfracOwn q)))
+      (dfrac_valid (cmra_opM {DfracCMRA} y mz))) \elim mz
+  | nothing => inP (DfracOwn qp_one, inP (qp_one, idp), RatField.<=-refl)
+  | just (DfracOwn q) => inP (DfracOwn (qp_gap q h),
+      inP (qp_gap q h, idp),
+      LinearOrder.<_<= (qp_gap_add_lt_one q h))
+  | just DfracDiscarded => inP (DfracOwn qp_half,
+      inP (qp_half, idp), qp_half_lt_one)
+  | just (DfracBoth q) => inP (DfracOwn (qp_gap q h),
+      inP (qp_gap q h, idp), qp_gap_add_lt_one q h)
+
+\lemma dfrac_undiscard_updatePM :
+  cmra_updatePM {DfracCMRA} DfracDiscarded
+    (\lam y => TruncP (\Sigma (q : Qp) (y = DfracOwn q))) =>
+  \lam n mz => dfrac_undiscard_update_at mz

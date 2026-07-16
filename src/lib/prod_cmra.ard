@@ -1,0 +1,224 @@
+\import Logic
+\import Paths
+\import Data.Maybe
+\import ofe
+\import cmra
+
+-- Componentwise products of CMRAs.  This is the small algebraic layer used by
+-- discardable-fraction fragments and by the generic view construction.
+
+\func prod_op {A B : CMRA} (x y : \Sigma A.E B.E) : \Sigma A.E B.E =>
+  (A.op x.1 y.1, B.op x.2 y.2)
+
+\func prod_pcore {A B : CMRA} (x : \Sigma A.E B.E) : Maybe (\Sigma A.E B.E) =>
+  \case pcore {A} x.1, pcore {B} x.2 \with {
+    | just a, just b => just (a, b)
+    | _, _ => nothing
+  }
+
+\func prod_valid {A B : CMRA} (x : \Sigma A.E B.E) : \Prop =>
+  \Sigma (valid {A} x.1) (valid {B} x.2)
+
+\func prod_validN {A B : CMRA} (n : Nat) (x : \Sigma A.E B.E) : \Prop =>
+  \Sigma (validN {A} n x.1) (validN {B} n x.2)
+
+\func prod_pcore_just {A B : CMRA} (x cx : \Sigma A.E B.E)
+    (h : prod_pcore x = just cx)
+  : \Sigma (ax : A.E) (bx : B.E)
+      (pcore {A} x.1 = just ax) (pcore {B} x.2 = just bx)
+      (cx = (ax, bx)) =>
+  \case pcore {A} x.1 \as ca, idp : pcore {A} x.1 = ca
+    \return \Sigma (ax : A.E) (bx : B.E)
+      (pcore {A} x.1 = just ax) (pcore {B} x.2 = just bx)
+      (cx = (ax, bx))
+  \with {
+    | just ax, hca =>
+      \case pcore {B} x.2 \as cb, idp : pcore {B} x.2 = cb
+        \return \Sigma (ax' : A.E) (bx : B.E)
+          (pcore {A} x.1 = just ax') (pcore {B} x.2 = just bx)
+          (cx = (ax', bx))
+      \with {
+        | just bx, hcb =>
+            \let
+              | eqj : just (ax, bx) = just cx =>
+                  inv (pmap2 (\lam oa ob => \case oa, ob \with {
+                    | just a, just b => just (a, b)
+                    | _, _ => nothing
+                  }) hca hcb) *> h
+              | eqp : (ax, bx) = cx =>
+                  pmap (\lam o => \case o \with {
+                    | nothing => (ax, bx)
+                    | just z => z
+                  }) eqj
+            \in (ax, bx, hca, hcb, inv eqp)
+        | nothing, hcb => \case inv h *> pmap2 (\lam oa ob => \case oa, ob \with {
+                | just a, just b => just (a, b)
+                | _, _ => nothing
+              }) hca hcb \with {}
+      }
+    | nothing, hca =>
+        \case pcore {B} x.2 \as cb, idp : pcore {B} x.2 = cb
+          \return \Sigma (ax : A.E) (bx : B.E)
+            (pcore {A} x.1 = just ax) (pcore {B} x.2 = just bx)
+            (cx = (ax, bx))
+        \with {
+          | just bx, hcb => \case inv h *> pmap2 (\lam oa ob => \case oa, ob \with {
+                  | just a, just b => just (a, b)
+                  | _, _ => nothing
+                }) hca hcb \with {}
+          | nothing, hcb => \case inv h *> pmap2 (\lam oa ob => \case oa, ob \with {
+                  | just a, just b => just (a, b)
+                  | _, _ => nothing
+                }) hca hcb \with {}
+        }
+  }
+
+\func prod_pcore_option_equiv {A B : CMRA} (x : \Sigma A.E B.E)
+    (ha : (OptionOFE A).equiv (pcore {A} x.1) (just x.1))
+    (hb : (OptionOFE B).equiv (pcore {B} x.2) (just x.2))
+  : (OptionOFE (ProdOFE A B)).equiv (prod_pcore x) (just x) =>
+  \case pcore {A} x.1 \as ca, idp : pcore {A} x.1 = ca
+    \return (OptionOFE (ProdOFE A B)).equiv (prod_pcore x) (just x)
+  \with {
+    | just ax, hca =>
+      \case pcore {B} x.2 \as cb, idp : pcore {B} x.2 = cb
+        \return (OptionOFE (ProdOFE A B)).equiv (prod_pcore x) (just x)
+      \with {
+        | just bx, hcb =>
+            \let
+              | pcpath : prod_pcore x = just (ax, bx) =>
+                  pmap2 (\lam oa ob => \case oa, ob \with {
+                    | just a, just b => just (a, b)
+                    | _, _ => nothing
+                  }) hca hcb
+              | inner : (ProdOFE A B).equiv (ax, bx) x =>
+                  (option_equiv_to_inner_equiv (just ax) x.1 ax
+                     (transport (\lam o => (OptionOFE A).equiv o (just x.1)) hca ha),
+                   option_equiv_to_inner_equiv (just bx) x.2 bx
+                     (transport (\lam o => (OptionOFE B).equiv o (just x.2)) hcb hb))
+            \in transport (\lam o => (OptionOFE (ProdOFE A B)).equiv o (just x))
+                 (inv pcpath) inner
+        | nothing, hcb =>
+            \case transport (\lam o => (OptionOFE B).equiv o (just x.2)) hcb hb \with {}
+      }
+    | nothing, hca =>
+        \case transport (\lam o => (OptionOFE A).equiv o (just x.1)) hca ha \with {}
+  }
+
+\func prod_incl {A B : CMRA} {x y : \Sigma A.E B.E}
+    (ha : incl {A} {\new Op A.E { | op => A.op }} x.1 y.1)
+    (hb : incl {B} {\new Op B.E { | op => B.op }} x.2 y.2)
+  : incl {ProdOFE A B} {\new Op (\Sigma A.E B.E) { | op => prod_op }} x y =>
+  \case ha, hb \with {
+    | inP (za, ea), inP (zb, eb) => inP ((za, zb), (ea, eb))
+  }
+
+\func ProdCMRA (A B : CMRA) : CMRA \cowith
+  | OFE => ProdOFE A B
+  | op => prod_op
+  | pcore => prod_pcore
+  | valid => prod_valid
+  | validN => prod_validN
+  | cmra_op_ne => \lam x n y1 y2 h =>
+      (A.cmra_op_ne x.1 n y1.1 y2.1 h.1,
+       B.cmra_op_ne x.2 n y1.2 y2.2 h.2)
+  | cmra_op_ne_2 => \lam y n x1 x2 h =>
+      (A.cmra_op_ne_2 y.1 n x1.1 x2.1 h.1,
+       B.cmra_op_ne_2 y.2 n x1.2 x2.2 h.2)
+  | cmra_pcore_ne => \lam n x y cx hxy hcore =>
+      \let
+        | invc => prod_pcore_just x cx hcore
+        | ay => A.cmra_pcore_ne n x.1 y.1 invc.1 hxy.1 invc.3
+        | by => B.cmra_pcore_ne n x.2 y.2 invc.2 hxy.2 invc.4
+      \in ((ay.1, by.1),
+           pmap2 (\lam oa ob => \case oa, ob \with {
+             | just a, just b => just (a, b)
+             | _, _ => nothing
+           }) ay.2 by.2,
+           transport (\lam z => (ProdOFE A B).dist n z (ay.1, by.1))
+             (inv invc.5) (ay.3, by.3))
+  | cmra_validN_ne => \lam n x y h hv =>
+      (A.cmra_validN_ne n x.1 y.1 h.1 hv.1,
+       B.cmra_validN_ne n x.2 y.2 h.2 hv.2)
+  | cmra_valid_validN => \lam x =>
+      (\lam h n => ((A.cmra_valid_validN x.1).1 h.1 n,
+                    (B.cmra_valid_validN x.2).1 h.2 n),
+       \lam h => ((A.cmra_valid_validN x.1).2 (\lam n => (h n).1),
+                  (B.cmra_valid_validN x.2).2 (\lam n => (h n).2)))
+  | cmra_validN_le => \lam n m x h le =>
+      (A.cmra_validN_le n m x.1 h.1 le,
+       B.cmra_validN_le n m x.2 h.2 le)
+  | cmra_assoc => \lam x y z =>
+      (A.cmra_assoc x.1 y.1 z.1, B.cmra_assoc x.2 y.2 z.2)
+  | cmra_comm => \lam x y =>
+      (A.cmra_comm x.1 y.1, B.cmra_comm x.2 y.2)
+  | cmra_pcore_l => \lam x cx hcore =>
+      \let invc => prod_pcore_just x cx hcore
+      \in transport (\lam z => (ProdOFE A B).equiv (prod_op z x) x)
+           (inv invc.5)
+           (A.cmra_pcore_l x.1 invc.1 invc.3,
+            B.cmra_pcore_l x.2 invc.2 invc.4)
+  | cmra_pcore_idemp => \lam x cx hcore =>
+      \let invc => prod_pcore_just x cx hcore
+      \in transport (\lam z => (OptionOFE (ProdOFE A B)).equiv
+                (prod_pcore z) (just z)) (inv invc.5)
+           (prod_pcore_option_equiv (invc.1, invc.2)
+             (A.cmra_pcore_idemp x.1 invc.1 invc.3)
+             (B.cmra_pcore_idemp x.2 invc.2 invc.4))
+  | cmra_pcore_mono => \lam x y cx hxy hcore =>
+      \let
+        | invc => prod_pcore_just x cx hcore
+        | hxa : incl {A} {\new Op A.E { | op => A.op }} x.1 y.1 =>
+            \case hxy \with { | inP (z, e) => inP (z.1, e.1) }
+        | hxb : incl {B} {\new Op B.E { | op => B.op }} x.2 y.2 =>
+            \case hxy \with { | inP (z, e) => inP (z.2, e.2) }
+      \in \case A.cmra_pcore_mono x.1 y.1 invc.1 hxa invc.3 \with {
+        | inP (ay, pay, hay) =>
+          \case B.cmra_pcore_mono x.2 y.2 invc.2 hxb invc.4 \with {
+            | inP (by, pby, hby) =>
+              inP ((ay, by),
+                   pmap2 (\lam oa ob => \case oa, ob \with {
+                     | just a, just b => just (a, b)
+                     | _, _ => nothing
+                   }) pay pby,
+                   transport (\lam z => incl {ProdOFE A B}
+                     {\new Op (\Sigma A.E B.E) { | op => prod_op }} z (ay, by))
+                     (inv invc.5)
+                     (prod_incl {A} {B} {(invc.1, invc.2)} {(ay, by)} hay hby))
+          }
+      }
+  | cmra_validN_op_l => \lam n x y h =>
+      (A.cmra_validN_op_l n x.1 y.1 h.1,
+       B.cmra_validN_op_l n x.2 y.2 h.2)
+  | cmra_extend => \lam n x y1 y2 hv hdist =>
+      \let
+        | ea => A.cmra_extend n x.1 y1.1 y2.1 hv.1 hdist.1
+        | eb => B.cmra_extend n x.2 y1.2 y2.2 hv.2 hdist.2
+      \in ((ea.1, eb.1), (ea.2, eb.2),
+           (ea.3, eb.3), (ea.4, eb.4), (ea.5, eb.5))
+
+\func ProdUCMRA (A B : UCMRA) : UCMRA \cowith
+  | CMRA => ProdCMRA A B
+  | unit => (A.unit, B.unit)
+  | ucmra_unit_valid => (A.ucmra_unit_valid, B.ucmra_unit_valid)
+  | ucmra_unit_left_id => \lam x =>
+      (A.ucmra_unit_left_id x.1, B.ucmra_unit_left_id x.2)
+  | ucmra_pcore_unit =>
+      prod_pcore_option_equiv (A.unit, B.unit)
+        A.ucmra_pcore_unit B.ucmra_pcore_unit
+
+\lemma prod_core_id {A B : CMRA} (x : \Sigma A.E B.E)
+    (ha : CoreId {A} x.1) (hb : CoreId {B} x.2)
+  : CoreId {ProdCMRA A B} x =>
+  pmap2 (\lam oa ob => \case oa, ob \with {
+    | just a, just b => just (a, b)
+    | _, _ => nothing
+  }) ha hb
+
+\lemma prod_opM_components {A B : CMRA} (x : \Sigma A.E B.E)
+    (mf : Maybe (\Sigma A.E B.E))
+  : cmra_opM {ProdCMRA A B} x mf =
+      (cmra_opM {A} x.1 (maybe_fmap (\lam p => p.1) mf),
+       cmra_opM {B} x.2 (maybe_fmap (\lam p => p.2) mf)) \elim mf
+  | nothing => idp
+  | just f => idp
