@@ -3,6 +3,7 @@
 \import Paths
 \import Set
 \import Data.Maybe
+\import Data.Bool
 \import Order.PartialOrder
 \import Arith.Nat
 \import interface
@@ -12,6 +13,8 @@
 \import lang
 \import lib.gmap_cmra
 \import lib.heap
+\import lib.coPset
+\import lib.coPset_cmra
 
 
 
@@ -33,6 +36,38 @@
   | bi_bupd_mixin_bupd_mono (P Q : E) : (P |- Q) -> (bupd P) |- (bupd Q)
   | bi_bupd_mixin_bupd_trans (P : E) : (bupd (bupd P)) |- (bupd P)
   | bi_bupd_mixin_bupd_frame_r (P R : E) : ((bupd P) * R) |- (bupd (P * R))
+}
+
+
+-- =================================================================================
+-- Fancy updates for BI
+-- =================================================================================
+
+\class FUpd \extends BIBase
+  | fupd : coPset -> coPset -> E -> E
+
+-- The generic BI interface has no OFE structure, so non-expansiveness is a
+-- concrete uPred theorem rather than a field of this order-theoretic mixin.
+\class BiFUpd \extends FUpd, BIMixin {
+  | bi_fupd_mixin_fupd_mask_subseteq (E1 E2 : coPset)
+      : coPSubset E2 E1 -> emp |- fupd E1 E2 (fupd E2 E1 emp)
+  | bi_fupd_mixin_except_0_fupd (E1 E2 : coPset) (P : E)
+      : bi_or (bi_later (bi_pure Empty)) (fupd E1 E2 P) |- fupd E1 E2 P
+  | bi_fupd_mixin_fupd_mono (E1 E2 : coPset) (P Q : E)
+      : (P |- Q) -> fupd E1 E2 P |- fupd E1 E2 Q
+  | bi_fupd_mixin_fupd_trans (E1 E2 E3 : coPset) (P : E)
+      : fupd E1 E2 (fupd E2 E3 P) |- fupd E1 E3 P
+  | bi_fupd_mixin_fupd_mask_frame_r (E1 E2 Ef : coPset) (P : E)
+      : coPset_overlap E1 Ef = false ->
+        fupd E1 E2 (bi_impl (bi_pure (coPset_overlap E2 Ef = false)) P)
+          |- fupd (coPset_union E1 Ef) (coPset_union E2 Ef) P
+  | bi_fupd_mixin_fupd_frame_r (E1 E2 : coPset) (P R : E)
+      : (fupd E1 E2 P * R) |- fupd E1 E2 (P * R)
+}
+
+\class BiBUpdFUpd \extends BiBUpd, BiFUpd {
+  | bi_bupd_fupd (Em : coPset) (P : E)
+      : bupd P |- fupd Em Em P
 }
 
 

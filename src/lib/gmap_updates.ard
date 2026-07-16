@@ -183,3 +183,56 @@
                       (hv k'))
             }
           )
+
+-- =================================================================================
+-- Allocation at a FIXED key of a left-unit-like element (Rocq:
+-- `alloc_unit_singleton_updateP`): ∅ ~~> {[k := u]}, sound because `u`
+-- composes neutrally with whatever the frame already stores at `k`.
+-- Consumed by `own_unit` (A5/A7).
+-- =================================================================================
+
+\lemma gmap_alloc_unit_singleton_updateP {K : \Set} {cnt : Countable K} {A : CMRA}
+    (k : K) (u : A.E)
+    (hu : \Pi (n : Nat) -> A.validN n u)
+    (hid : \Pi (n : Nat) (w : A.E) -> A.dist n (A.op u w) w)
+  : cmra_updateP {GmapUCMRA K cnt A} gempty
+      (\lam m => m = gsingleton {K} {cnt} k u)
+  => \lam n mf hv => inP
+      ( gsingleton k u
+      , idp
+      , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+          | yes p => transport
+              (\lam kk => option_validN {A} n
+                  (glookup (gmap_op {K} {cnt} {A} (gsingleton k u) mf) kk))
+              p
+              (transport (option_validN {A} n)
+                  (inv (glookup_op (gsingleton k u) mf k *>
+                        pmap (option_op {A} __ (glookup mf k)) (glookup_singleton_eq k u)))
+                  (\case glookup mf k \as o, idp : glookup mf k = o
+                     \return option_validN {A} n (option_op {A} (just u) o) \with {
+                     | nothing, _ => hu n
+                     | just w, hw =>
+                       \let hvw : A.validN n w =>
+                           transport (option_validN {A} n)
+                               (glookup_op gempty mf k *>
+                                pmap (option_op {A} __ (glookup mf k))
+                                    (glookup_empty {K} {cnt} {A.E} k) *>
+                                option_op_nothing_l {A} (glookup mf k) *> hw)
+                               (hv k)
+                       \in A.cmra_validN_ne n w (A.op u w)
+                             (A.ofe_dist_sym n (A.op u w) w (hid n w))
+                             hvw
+                   }))
+          | no np => transport (option_validN {A} n)
+              (inv (glookup_op (gsingleton k u) mf k' *>
+                    pmap (option_op {A} __ (glookup mf k'))
+                        (glookup_singleton_ne k k' u np) *>
+                    option_op_nothing_l {A} (glookup mf k')))
+              (transport (option_validN {A} n)
+                  (glookup_op gempty mf k' *>
+                   pmap (option_op {A} __ (glookup mf k'))
+                       (glookup_empty {K} {cnt} {A.E} k') *>
+                   option_op_nothing_l {A} (glookup mf k'))
+                  (hv k'))
+        }
+      )

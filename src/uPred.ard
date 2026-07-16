@@ -80,6 +80,14 @@
   | upred_mono  => \lam n1 n2 _ _ hv _ n2_le_n1 =>
       M.cmra_validN_le n1 n2 a hv n2_le_n1
 
+-- `mkProperInternalEq a b` is uPred's internal equality (Rocq
+-- `uPred_internal_eq`): holds at `(n, _)` iff `a ≡{n}≡ b` in the OFE `A`.
+-- Resource-independent; downward closure is `ofe_dist_le`.
+
+\func mkProperInternalEq {M : UCMRA} {A : OFE} (a b : A.E) : ProperUPred M \cowith
+  | upred_holds => \lam n _ => A.dist n a b
+  | upred_mono  => \lam n1 n2 _ _ h _ n2_le_n1 => A.ofe_dist_le n1 n2 a b h n2_le_n1
+
 
 \func mkProperAnd {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Sigma (P.upred_holds n a) (Q.upred_holds n a)
@@ -165,6 +173,10 @@
           (inclN_le x1 x2 (suc n2') n2' incl' (n<=sucn n2'))
           (suc<=suc.conv le)
   }
+
+-- Iris's except-zero modality: `◇ P := ▷ False ∨ P`.
+\func mkProperExceptZero {M : UCMRA} (P : ProperUPred M) : ProperUPred M =>
+  mkProperOr (mkProperLater (mkProperPure Empty)) P
 
 \func mkProperPersistently {M : UCMRA} (P : ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) ->
@@ -315,6 +327,25 @@
       ( \lam hF t => (h t m a hm hv).1 (hF t)
       , \lam hG t => (h t m a hm hv).2 (hG t)
       )
+
+\lemma upredDist_or_r {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
+                      (h : upredDist n P Q)
+  : upredDist n (mkProperOr R P) (mkProperOr R Q) =>
+  \lam m a hm hv =>
+      ( \lam hRP => \case hRP \with {
+          | byLeft hr => byLeft hr
+          | byRight hp => byRight ((h m a hm hv).1 hp)
+        }
+      , \lam hRQ => \case hRQ \with {
+          | byLeft hr => byLeft hr
+          | byRight hq => byRight ((h m a hm hv).2 hq)
+        }
+      )
+
+\lemma upredDist_except_zero {M : UCMRA} (n : Nat) (P Q : ProperUPred M)
+                             (h : upredDist n P Q)
+  : upredDist n (mkProperExceptZero P) (mkProperExceptZero Q) =>
+  upredDist_or_r n (mkProperLater (mkProperPure Empty)) P Q h
 
 \lemma upredDist_impl_r {M : UCMRA} (n : Nat) (P Q Q' : ProperUPred M)
                         (h : upredDist n Q Q')

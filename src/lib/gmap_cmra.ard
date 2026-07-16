@@ -1821,6 +1821,27 @@
         \in e1 *> pmap just p_eq *> inv e2
   }
 
+\func gmap_core_elem {K : \Set} {cnt : Countable K} {A : CMRA}
+    (m : Gmap K cnt A.E) : Gmap K cnt A.E =>
+  \case gmap_pcore m \with {
+    | nothing => m
+    | just cm => cm
+  }
+
+\func option_pcore_core_id {A : CMRA} (o : Maybe A.E)
+    (h : \Pi (x : A.E) -> o = just x -> CoreId {A} x)
+  : option_pcore {A} o = o \elim o
+  | nothing => idp
+  | just x => h x idp
+
+\lemma gmap_core_id {K : \Set} {cnt : Countable K} {A : CMRA}
+    (m : Gmap K cnt A.E)
+    (h : \Pi (k : K) (x : A.E) -> glookup m k = just x -> CoreId {A} x)
+  : CoreId {GmapCMRA K cnt A} m =>
+  pmap just (gmap_eq (gmap_core_elem m) m (\lam k =>
+    glookup_core m k *>
+      option_pcore_core_id (glookup m k) (\lam x hx => h k x hx)))
+
 \lemma glookup_singleton_eq {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A)
   : glookup (gsingleton k x) k = just x
   =>

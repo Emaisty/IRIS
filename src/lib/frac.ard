@@ -1,0 +1,38 @@
+\import Logic
+\import Paths
+\import Set
+\import Arith.Rat
+\import Algebra.StrictlyOrdered
+\import ofe
+
+-- Strictly-positive rational fractions.  Keeping positivity in the carrier
+-- makes addition closed and mirrors Iris's Qp type.
+
+\record Qp
+  | qp_val : Rat
+  | qp_positive : 0 RatField.< qp_val
+
+\func qp_ext (p q : Qp) (h : p.qp_val = q.qp_val) : p = q =>
+  path (\lam i => \new Qp {
+    | qp_val => h @ i
+    | qp_positive => prop-dpi (\lam i => 0 RatField.< h @ i)
+        p.qp_positive q.qp_positive @ i
+  })
+
+\func qp_add (p q : Qp) : Qp \cowith
+  | qp_val => p.qp_val RatField.+ q.qp_val
+  | qp_positive =>
+      transport (\lam z => z RatField.< (p.qp_val RatField.+ q.qp_val))
+        RatField.zro-left (RatField.<_+ p.qp_positive q.qp_positive)
+
+\func qp_one : Qp \cowith
+  | qp_val => RatField.ide
+  | qp_positive => RatField.zro<ide
+
+\lemma qp_add_assoc (p q r : Qp) : qp_add p (qp_add q r) = qp_add (qp_add p q) r =>
+  qp_ext _ _ (inv RatField.+-assoc)
+
+\lemma qp_add_comm (p q : Qp) : qp_add p q = qp_add q p =>
+  qp_ext _ _ RatField.+-comm
+
+\instance QpOFE : OFE => DiscreteOFE Qp
