@@ -1830,17 +1830,42 @@
 
 \func option_pcore_core_id {A : CMRA} (o : Maybe A.E)
     (h : \Pi (x : A.E) -> o = just x -> CoreId {A} x)
-  : option_pcore {A} o = o \elim o
-  | nothing => idp
+  : (OptionOFE A).equiv (option_pcore {A} o) o \elim o
+  | nothing => ()
   | just x => h x idp
 
 \lemma gmap_core_id {K : \Set} {cnt : Countable K} {A : CMRA}
     (m : Gmap K cnt A.E)
     (h : \Pi (k : K) (x : A.E) -> glookup m k = just x -> CoreId {A} x)
   : CoreId {GmapCMRA K cnt A} m =>
-  pmap just (gmap_eq (gmap_core_elem m) m (\lam k =>
-    glookup_core m k *>
-      option_pcore_core_id (glookup m k) (\lam x hx => h k x hx)))
+  \lam k => transport
+    (\lam o => (OptionOFE A).equiv o (glookup m k))
+    (inv (glookup_core m k))
+    (option_pcore_core_id (glookup m k) (\lam x hx => h k x hx))
+
+\lemma glookup_singleton_ne {K : \Set} {cnt : Countable K} {A : \Set}
+    (k k' : K) (x : A) (hne : Not (k = k'))
+  : glookup (gsingleton {K} {cnt} k x) k' = nothing =>
+  glookup_insert_ne k k' x gempty hne *> glookup_empty k'
+
+\lemma gmap_singleton_core_id {K : \Set} {cnt : Countable K} {A : CMRA}
+    (k : K) (x : A.E) (hx : CoreId {A} x)
+  : CoreId {GmapCMRA K cnt A} (gsingleton k x) =>
+  gmap_core_id (gsingleton k x) (\lam j y hy =>
+    \case EqDecision.decideEq {cnt} j k \with {
+      | yes e =>
+        \let
+          | atj : glookup (gsingleton k x) j = just x =>
+              transport (\lam z => glookup (gsingleton k x) z = just x)
+                (inv e) (glookup_singleton_eq k x)
+          | ey : y = x => pmap (\case __ \with {
+              | nothing => y
+              | just z => z
+            }) (inv hy *> atj)
+        \in transport (CoreId {A}) (inv ey) hx
+      | no ne => \case inv hy *>
+          glookup_singleton_ne k j x (\lam q => ne (inv q)) \with {}
+    })
 
 \lemma glookup_singleton_eq {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A)
   : glookup (gsingleton k x) k = just x

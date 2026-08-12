@@ -356,20 +356,20 @@
 -- =================================================================================
 
 \record OFunctor
-  | oFunctor_car (A B : COFE) : OFE
-  | oFunctor_map {A1 A2 B1 B2 : COFE} :
+  | oFunctor_car (A B : COFE.{0}) : OFE.{0}
+  | oFunctor_map {A1 A2 B1 B2 : COFE.{0}} :
       \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
       OFEMor (oFunctor_car A1 B1) (oFunctor_car A2 B2)
-  | oFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+  | oFunctor_map_ne {A1 A2 B1 B2 : COFE.{0}} :
       NonExpansive
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (oFunctor_car A1 B1) (oFunctor_car A2 B2)}
         oFunctor_map
-  | oFunctor_map_id {A B : COFE} (x : (oFunctor_car A B).E) :
+  | oFunctor_map_id {A B : COFE.{0}} (x : (oFunctor_car A B).E) :
       (oFunctor_car A B).equiv
         ((oFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
         x
-  | oFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+  | oFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE.{0}}
       (f : OFEMor A2 A1) (g : OFEMor A3 A2)
       (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
       (x : (oFunctor_car A1 B1).E) :
@@ -379,16 +379,16 @@
         ((oFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
 
 \record OFunctorContractive (F : OFunctor)
-  | oFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+  | oFunctor_map_contractive {A1 A2 B1 B2 : COFE.{0}} :
       ContractiveMap
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (F.oFunctor_car A1 B1) (F.oFunctor_car A2 B2)}
         (F.oFunctor_map {A1} {A2} {B1} {B2})
 
-\func oFunctor_apply (F : OFunctor) (A : COFE) : OFE =>
+\func oFunctor_apply (F : OFunctor) (A : COFE.{0}) : OFE.{0} =>
   F.oFunctor_car A A
 
-\func constOF (B : OFE) : OFunctor \cowith
+\func constOF (B : OFE.{0}) : OFunctor \cowith
   | oFunctor_car => \lam _ _ => B
   | oFunctor_map => \lam _ => ofe_mor_id
   | oFunctor_map_ne => \lam n fg fg' hfg x => B.ofe_dist_refl n x
@@ -422,7 +422,7 @@
       (F1.oFunctor_map_compose f g f' g' x.1,
        F2.oFunctor_map_compose f g f' g' x.2)
 
-\func constOF_contractive (B : OFE) : OFunctorContractive (constOF B) \cowith
+\func constOF_contractive (B : OFE.{0}) : OFunctorContractive (constOF B) \cowith
   | oFunctor_map_contractive => \lam n fg fg' hfg x => B.ofe_dist_refl n x
 
 \func prodOF_contractive (F1 F2 : OFunctor)
@@ -434,10 +434,10 @@
        h2.oFunctor_map_contractive n fg fg' hfg x.2)
 
 \record OFunctorCOFE (F : OFunctor)
-  | oFunctor_cofe (A B : COFE) : COFE
-  | oFunctor_cofe_OFE (A B : COFE) : oFunctor_cofe A B = F.oFunctor_car A B
+  | oFunctor_cofe (A B : COFE.{0}) : COFE.{0}
+  | oFunctor_cofe_OFE (A B : COFE.{0}) : oFunctor_cofe A B = {OFE.{0}} F.oFunctor_car A B
 
-\func constOF_cofe (B : COFE) : OFunctorCOFE (constOF B) \cowith
+\func constOF_cofe (B : COFE.{0}) : OFunctorCOFE (constOF B) \cowith
   | oFunctor_cofe => \lam _ _ => B
   | oFunctor_cofe_OFE => \lam _ _ => idp
 
@@ -451,7 +451,8 @@
   : OFunctorCOFE (prodOF F1 F2) \cowith
   | oFunctor_cofe => \lam A B => ProdCOFE (h1.oFunctor_cofe A B) (h2.oFunctor_cofe A B)
   | oFunctor_cofe_OFE => \lam A B =>
-      pmap2 ProdOFE (h1.oFunctor_cofe_OFE A B) (h2.oFunctor_cofe_OFE A B)
+      pmap2 {OFE.{0}} {OFE.{0}} {OFE.{0}} (\lam X Y => ProdOFE X Y)
+        (h1.oFunctor_cofe_OFE A B) (h2.oFunctor_cofe_OFE A B)
 
 \instance SumOFE (A B : OFE) : OFE \cowith
   | E => Or A.E B.E
@@ -718,7 +719,8 @@
 
 \func laterOF_cofe (F : OFunctor) (h : OFunctorCOFE F) : OFunctorCOFE (laterOF F) \cowith
   | oFunctor_cofe => \lam A B => LaterCOFE (h.oFunctor_cofe A B)
-  | oFunctor_cofe_OFE => \lam A B => pmap LaterOFE (h.oFunctor_cofe_OFE A B)
+  | oFunctor_cofe_OFE => \lam A B =>
+      pmap {OFE.{0}} {OFE.{0}} (\lam X => LaterOFE X) (h.oFunctor_cofe_OFE A B)
 
 
 \func DiscreteOFE (S : \Set) : LeibnizOFE \cowith

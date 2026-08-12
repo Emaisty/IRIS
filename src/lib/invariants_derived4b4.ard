@@ -1,0 +1,272 @@
+\import Logic
+\import Paths \hiding (inv)
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+\import lib.timeless
+\import lib.invariants
+\import lib.invariants_derived1
+\import lib.invariants_derived3a
+
+
+\func dup_wand {S : gFunctors} (P : iProp S) : iProp S =>
+  mkProperWand P (mkProperSep P P)
+
+-- dupW ∗ (inv_inner N P ∗ inv_inner N Q) ⊢ inv_inner N (P ∗ Q)
+\sfunc inv_combine_dup_inner {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P Q : iProp S)
+  : properUPred_ent
+      (mkProperSep (dup_wand P)
+        (mkProperSep (inv_inner W N P) (inv_inner W N Q)))
+      (inv_inner W N (mkProperSep P Q)) =>
+  forall_intro_ent
+    (mkProperSep (dup_wand P)
+      (mkProperSep (inv_inner W N P) (inv_inner W N Q)))
+    (\lam E => mkProperImpl (mkProperPure (coPSubset (nclose N) E))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater (mkProperSep P Q))
+          (mkProperWand (mkProperLater (mkProperSep P Q))
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp)))))
+    (\lam E => impl_pure_intro_ent (coPSubset (nclose N) E)
+      (mkProperSep (dup_wand P)
+        (mkProperSep (inv_inner W N P) (inv_inner W N Q)))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater (mkProperSep P Q))
+          (mkProperWand (mkProperLater (mkProperSep P Q))
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp))))
+      (\lam hNE =>
+        \let
+          | UN => nclose N
+          | DN => coPset_difference E UN
+          | F0 => mkProperFUpd W DN E mkProperEmp
+          | CPN => mkProperWand (mkProperLater P) F0
+          | CQN => mkProperWand (mkProperLater Q) F0
+          | bodyP => mkProperSep (mkProperLater P) CPN
+          | bodyQ => mkProperSep (mkProperLater Q) CQN
+          | LP => mkProperLater P
+          | LQ => mkProperLater Q
+          | LPQ => mkProperLater (mkProperSep P Q)
+          | CTs => mkProperWand LPQ (sealedFUpd W DN E mkProperEmp)
+          | Ts => mkProperSep LPQ CTs
+          | iP => inv_inner W N P
+          | iQ => inv_inner W N Q
+          | dW => dup_wand P
+          | opener => \lam (R : iProp S) (N' : Namespace)
+              (E' : coPset) => mkProperImpl
+                (mkProperPure (coPSubset (nclose N') E'))
+                (mkProperFUpd W E' (coPset_difference E' (nclose N'))
+                  (mkProperSep (mkProperLater R)
+                    (mkProperWand (mkProperLater R)
+                      (mkProperFUpd W
+                        (coPset_difference E' (nclose N')) E'
+                        mkProperEmp))))
+          | openP : properUPred_ent iP (mkProperFUpd W E DN bodyP) =>
+              properUPred_ent_trans iP
+                (opener P N E)
+                (mkProperFUpd W E DN bodyP)
+                (forall_elim_ent (opener P N) E)
+                (impl_pure_elim_ent (coPSubset UN E)
+                  (mkProperFUpd W E DN bodyP) hNE)
+          | openQ : properUPred_ent iQ (mkProperFUpd W E DN bodyQ) =>
+              properUPred_ent_trans iQ
+                (opener Q N E)
+                (mkProperFUpd W E DN bodyQ)
+                (forall_elim_ent (opener Q N) E)
+                (impl_pure_elim_ent (coPSubset UN E)
+                  (mkProperFUpd W E DN bodyQ) hNE)
+          -- step A: duplicate ▷P and close the P-opening immediately
+          | stepA : properUPred_ent
+              (mkProperSep bodyP (mkProperSep dW iQ))
+              (mkProperFUpd W DN E (mkProperSep LP iQ)) =>
+              \lam n x hv h =>
+                \let
+                  | q1 => sep_assoc_l_ent LP CPN (mkProperSep dW iQ)
+                      n x hv h
+                  | q2 => sep_mono_r_ent LP
+                      (mkProperSep CPN (mkProperSep dW iQ))
+                      (mkProperSep dW (mkProperSep CPN iQ))
+                      (sep_swap_ent CPN dW iQ) n x hv q1
+                  | q3 => sep_swap_ent LP dW (mkProperSep CPN iQ)
+                      n x hv q2
+                  | q4 => sep_assoc_r_ent dW LP (mkProperSep CPN iQ)
+                      n x hv q3
+                  | q5 => sep_mono_l_ent (mkProperSep dW LP)
+                      (mkProperSep LP LP)
+                      (mkProperSep CPN iQ)
+                      (properUPred_ent_trans (mkProperSep dW LP)
+                        (mkProperSep (mkProperLater dW) LP)
+                        (mkProperSep LP LP)
+                        (sep_mono_l_ent dW (mkProperLater dW) LP
+                          (proper_later_intro dW))
+                        (properUPred_ent_trans
+                          (mkProperSep (mkProperLater dW) LP)
+                          (mkProperLater (mkProperSep P P))
+                          (mkProperSep LP LP)
+                          (later_wand_apply_ent P (mkProperSep P P))
+                          (proper_later_sep_1 P P)))
+                      n x hv q4
+                  | q6 => sep_assoc_l_ent LP LP (mkProperSep CPN iQ)
+                      n x hv q5
+                  | q7 => sep_mono_r_ent LP
+                      (mkProperSep LP (mkProperSep CPN iQ))
+                      (mkProperSep (mkProperSep LP CPN) iQ)
+                      (sep_assoc_r_ent LP CPN iQ) n x hv q6
+                  | q8 => sep_mono_r_ent LP
+                      (mkProperSep (mkProperSep LP CPN) iQ)
+                      (mkProperSep F0 iQ)
+                      (sep_mono_l_ent (mkProperSep LP CPN) F0 iQ
+                        (properUPred_ent_trans (mkProperSep LP CPN)
+                          (mkProperSep CPN LP) F0
+                          (sep_comm_ent LP CPN)
+                          (wand_elim_ent LP F0)))
+                      n x hv q7
+                  | q9 => sep_swap_ent LP F0 iQ n x hv q8
+                  | q10 => fupd_frame_r W DN E mkProperEmp
+                      (mkProperSep LP iQ) n x hv q9
+                \in fupd_mono W DN E
+                  (mkProperSep mkProperEmp (mkProperSep LP iQ))
+                  (mkProperSep LP iQ)
+                  (sep_elim_r_ent mkProperEmp (mkProperSep LP iQ))
+                  n x hv q10
+          -- step B: reopen for Q and build the combined body (sealed close)
+          | conv : properUPred_ent (mkProperSep LP bodyQ) Ts =>
+              \lam n x hv h =>
+                \let
+                  | s1' => sep_mono_r_ent LP bodyQ
+                      (mkProperSep CQN LQ)
+                      (sep_comm_ent LQ CQN) n x hv h
+                  | s2' => sep_swap_ent LP CQN LQ n x hv s1'
+                  | s3' => sep_mono_r_ent CQN (mkProperSep LP LQ) LPQ
+                      (proper_later_sep_2 P Q) n x hv s2'
+                  | s4' => sep_comm_ent CQN LPQ n x hv s3'
+                \in sep_mono_r_ent LPQ CQN CTs
+                  (wand_intro_ent CQN LPQ (sealedFUpd W DN E mkProperEmp)
+                    (transport
+                      (\lam (Z : iProp S) => properUPred_ent
+                        (mkProperSep CQN LPQ) Z)
+                      (Paths.inv (sealedFUpd_peval W DN E mkProperEmp))
+                      (\lam n' x' hv' h' =>
+                        \let
+                          | w1 => sep_mono_r_ent CQN LPQ
+                              (mkProperSep LP LQ)
+                              (proper_later_sep_1 P Q) n' x' hv' h'
+                          | w2 => sep_swap_ent CQN LP LQ n' x' hv' w1
+                          | w3 => sep_mono_r_ent LP
+                              (mkProperSep CQN LQ) F0
+                              (wand_elim_ent LQ F0) n' x' hv' w2
+                        \in sep_elim_r_ent LP F0 n' x' hv' w3)))
+                  n x hv s4'
+          | stepB : properUPred_ent (mkProperSep LP iQ)
+              (mkProperFUpd W E DN Ts) =>
+              \lam n x hv h =>
+                \let
+                  | r1 => sep_mono_r_ent LP iQ
+                      (mkProperFUpd W E DN bodyQ) openQ n x hv h
+                  | r2 => fupd_frame_l W E DN LP bodyQ n x hv r1
+                \in fupd_mono W E DN (mkProperSep LP bodyQ) Ts conv
+                  n x hv r2
+        \in \lam n x hv h =>
+          \let
+            | d1 => sep_mono_r_ent dW
+                (mkProperSep iP iQ)
+                (mkProperSep (mkProperFUpd W E DN bodyP) iQ)
+                (sep_mono_l_ent iP (mkProperFUpd W E DN bodyP) iQ openP)
+                n x hv h
+            | d2 => sep_swap_ent dW (mkProperFUpd W E DN bodyP) iQ
+                n x hv d1
+            | d3 => fupd_frame_r W E DN bodyP (mkProperSep dW iQ)
+                n x hv d2
+            | d4 => fupd_mono W E DN
+                (mkProperSep bodyP (mkProperSep dW iQ))
+                (mkProperFUpd W DN E (mkProperSep LP iQ))
+                stepA n x hv d3
+            | d5 => fupd_trans W E DN E (mkProperSep LP iQ) n x hv d4
+            | d6 => fupd_mono W E E
+                (mkProperSep LP iQ)
+                (mkProperFUpd W E DN Ts)
+                stepB n x hv d5
+            | d7 => fupd_trans W E E DN Ts n x hv d6
+          \in transport
+            (\lam (Z : iProp S) =>
+              (mkProperFUpd W E DN
+                (mkProperSep LPQ (mkProperWand LPQ Z))).upred_holds n x)
+            (sealedFUpd_peval W DN E mkProperEmp)
+            d7))
+
+\lemma inv_combine_dup_l {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P Q : iProp S)
+  : properUPred_ent
+      (mkProperSep (mkProperPersistently (dup_wand P))
+        (mkProperSep (inv W N P) (inv W N Q)))
+      (inv W N (mkProperSep P Q)) =>
+  \let
+    | PD => mkProperPersistently (dup_wand P)
+    | u1 : properUPred_ent
+        (mkProperSep PD (mkProperSep (inv W N P) (inv W N Q)))
+        (mkProperSep PD
+          (mkProperSep (inv_body W N P) (inv_body W N Q))) =>
+        sep_mono_r_ent PD
+          (mkProperSep (inv W N P) (inv W N Q))
+          (mkProperSep (inv_body W N P) (inv_body W N Q))
+          (properUPred_ent_trans
+            (mkProperSep (inv W N P) (inv W N Q))
+            (mkProperSep (inv_body W N P) (inv W N Q))
+            (mkProperSep (inv_body W N P) (inv_body W N Q))
+            (sep_mono_l_ent (inv W N P) (inv_body W N P) (inv W N Q)
+              (inv_unfold_ent W N P))
+            (sep_mono_r_ent (inv_body W N P) (inv W N Q)
+              (inv_body W N Q)
+              (inv_unfold_ent W N Q)))
+    | u2 : properUPred_ent
+        (mkProperSep PD
+          (mkProperSep (inv_body W N P) (inv_body W N Q)))
+        (mkProperSep PD
+          (mkProperPersistently
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q)))) =>
+        sep_mono_r_ent PD
+          (mkProperSep (inv_body W N P) (inv_body W N Q))
+          (mkProperPersistently
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q)))
+          (persistently_sep_2_ent (inv_inner W N P) (inv_inner W N Q))
+    | u3 : properUPred_ent
+        (mkProperSep PD
+          (mkProperPersistently
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q))))
+        (mkProperPersistently
+          (mkProperSep (dup_wand P)
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q)))) =>
+        persistently_sep_2_ent (dup_wand P)
+          (mkProperSep (inv_inner W N P) (inv_inner W N Q))
+    | u4 : properUPred_ent
+        (mkProperPersistently
+          (mkProperSep (dup_wand P)
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q))))
+        (inv_body W N (mkProperSep P Q)) =>
+        (BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+          (mkProperSep (dup_wand P)
+            (mkProperSep (inv_inner W N P) (inv_inner W N Q)))
+          (inv_inner W N (mkProperSep P Q))
+          (inv_combine_dup_inner W N P Q)
+  \in \lam n x hv h =>
+    inv_fold_ent W N (mkProperSep P Q) n x hv
+      (u4 n x hv (u3 n x hv (u2 n x hv (u1 n x hv h))))

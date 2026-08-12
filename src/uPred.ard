@@ -106,18 +106,38 @@
       inclN {M} {\new Op M.E { | op => M.op }} a m b ->
       M.validN m b -> P.upred_holds m b -> Q.upred_holds m b
   | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b incl_x2_b hv hp =>
-      h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b
+      h m ((NatSemiring.<=∘) m_le_n2 n2_le_n1) b
           (inclN_trans m x1 x2 b
               (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 m incl m_le_n2)
               incl_x2_b)
           hv hp
 
-\func mkProperForall {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
+\func mkProperForall {M : UCMRA} (T : \Set0) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => \Pi (t : T) -> (Phi t).upred_holds n a
   | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 t =>
       (Phi t).upred_mono n1 n2 x1 x2 (h t) incl n2_le_n1
 
-\func mkProperExist {M : UCMRA} (T : \Type) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
+\func mkProperExist {M : UCMRA} (T : \Set0) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
+  | upred_holds => \lam n a => TruncP (\Sigma (t : T) ((Phi t).upred_holds n a))
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h \with {
+    | inP (t, h_t) => inP (t, (Phi t).upred_mono n1 n2 x1 x2 h_t incl n2_le_n1)
+  }
+
+-- A concrete UPred existential for the single higher-universe witness needed
+-- by `wsat_alloc`.  Rocq can declare `wsatGS` in `Set`: its `inG` equality is
+-- proof-irrelevant and lives in `Prop`.  In Arend, the corresponding path
+-- between `CMRA.{0}` structures lives in `Set1`, so `wsatGS S : Set1` and the
+-- ordinary BI existential above (deliberately restricted to `Set0`) cannot
+-- quantify over it.
+--
+-- Keep this operation outside `BIBase`: making the generic BI quantifier range
+-- over higher or unbounded universes would spread the exception through every
+-- BI instance and conflicts with Arend 1.12's finite-class restriction.  The
+-- result is still an ordinary `ProperUPred`, since the Set1 witness is hidden
+-- immediately by `TruncP`.  Future proofs that eliminate the `wsat_alloc`
+-- witness must use the `exist1_*` rules below instead of generic BI existential
+-- rules; all other Iris quantifiers should continue to use `mkProperExist`.
+\func mkProperExist1 {M : UCMRA} (T : \Set1) (Phi : T -> ProperUPred M) : ProperUPred M \cowith
   | upred_holds => \lam n a => TruncP (\Sigma (t : T) ((Phi t).upred_holds n a))
   | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 => \case h \with {
     | inP (t, h_t) => inP (t, (Phi t).upred_mono n1 n2 x1 x2 h_t incl n2_le_n1)
@@ -155,7 +175,7 @@
         | hv_x1a2 : M.validN m (M.op x1 a2) =>
           cmra_validN_includedN {M} m (M.op x1 a2) (M.op x2 a2) hv (inclN_op_r m x1 x2 a2 inclN_x1x2)
       \in Q.upred_mono m m (M.op x1 a2) (M.op x2 a2)
-          (h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) a2 hv_x1a2 hp)
+          (h m ((NatSemiring.<=∘) m_le_n2 n2_le_n1) a2 hv_x1a2 hp)
           (inclN_op_r m x1 x2 a2 inclN_x1x2)
           <=-refl
 
@@ -179,10 +199,10 @@
   mkProperOr (mkProperLater (mkProperPure Empty)) P
 
 \func mkProperPersistently {M : UCMRA} (P : ProperUPred M) : ProperUPred M \cowith
-  | upred_holds => \lam n a => \Pi (m : Nat) -> m <= n -> \Pi (b : M.E) ->
-      inclN {M} {\new Op M.E { | op => M.op }} M.unit m b -> P.upred_holds m b
-  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 m m_le_n2 b unit_incl_b =>
-      h m (NatSemiring.<=∘ m_le_n2 n2_le_n1) b unit_incl_b
+  | upred_holds => \lam n a => P.upred_holds n (ucmra_core a)
+  | upred_mono => \lam n1 n2 x1 x2 h incl n2_le_n1 =>
+      P.upred_mono n1 n2 (ucmra_core x1) (ucmra_core x2) h
+        (ucmra_core_monoN n2 x1 x2 incl) n2_le_n1
 
 
 \instance BIuPred (M : UCMRA) : BIBase \cowith
@@ -208,10 +228,53 @@
 -- =================================================================================
 
 
-\lemma proper_forall_mono {M : UCMRA} {T : \Type} (Phi Psi : T -> ProperUPred M)
+\lemma proper_forall_mono {M : UCMRA} {T : \Set0} (Phi Psi : T -> ProperUPred M)
                           (h : \Pi (t : T) -> properUPred_ent (Phi t) (Psi t))
   : properUPred_ent (mkProperForall T Phi) (mkProperForall T Psi)
   => \lam n a hv hPhi t => h t n a hv (hPhi t)
+
+-- Specialized laws for `mkProperExist1`.  They mirror the ordinary BI
+-- existential rules, but remain concrete UPred lemmas so the generic BI
+-- interface and its universe stay unchanged.
+\lemma exist1_mono_ent {M : UCMRA} {T : \Set1}
+    (Phi Psi : T -> ProperUPred M)
+    (h : \Pi (t : T) -> properUPred_ent (Phi t) (Psi t))
+  : properUPred_ent (mkProperExist1 T Phi) (mkProperExist1 T Psi) =>
+  \lam n a hv hPhi => \case hPhi \with {
+    | inP (t, ht) => inP (t, h t n a hv ht)
+  }
+
+\lemma exist1_intro_ent {M : UCMRA} {T : \Set1}
+    (Phi : T -> ProperUPred M) (t : T)
+  : properUPred_ent (Phi t) (mkProperExist1 T Phi) =>
+  \lam n a hv ht => inP (t, ht)
+
+\lemma exist1_elim_ent {M : UCMRA} {T : \Set1}
+    (Phi : T -> ProperUPred M) (Q : ProperUPred M)
+    (h : \Pi (t : T) -> properUPred_ent (Phi t) Q)
+  : properUPred_ent (mkProperExist1 T Phi) Q =>
+  \lam n a hv hPhi => \case hPhi \with {
+    | inP (t, ht) => h t n a hv ht
+  }
+
+\lemma sep_exist1_l_ent {M : UCMRA} {T : \Set1}
+    (Phi : T -> ProperUPred M) (R : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep (mkProperExist1 T Phi) R)
+      (mkProperExist1 T (\lam t => mkProperSep (Phi t) R)) =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a1, a2, dx, hPhi, hR) => \case hPhi \with {
+      | inP (t, ht) => inP (t, inP (a1, a2, dx, ht, hR))
+    }
+  }
+
+\lemma sep_exist1_l_elim {M : UCMRA} {T : \Set1}
+    (Phi : T -> ProperUPred M) (R Q : ProperUPred M)
+    (h : \Pi (t : T) -> properUPred_ent (mkProperSep (Phi t) R) Q)
+  : properUPred_ent (mkProperSep (mkProperExist1 T Phi) R) Q =>
+  \lam n x hv hs => \case sep_exist1_l_ent Phi R n x hv hs \with {
+    | inP (t, hbody) => h t n x hv hbody
+  }
 
 \lemma proper_and_mono_r {M : UCMRA} (P Q Q' : ProperUPred M)
                          (h : properUPred_ent Q Q') : properUPred_ent (mkProperAnd P Q) (mkProperAnd P Q')
@@ -228,6 +291,94 @@
                           (h : properUPred_ent Q Q') : properUPred_ent (mkProperImpl P Q) (mkProperImpl P Q')
   => \lam n a hv himpl m m_le_n b incl_a_b hv_b hp =>
       h m b hv_b (himpl m m_le_n b incl_a_b hv_b hp)
+
+-- =================================================================================
+-- Later modality laws (the concrete `BILaterMixin` fields; Rocq upred.v
+-- `later_intro` … `later_false_em`).  Each proof cases on the step index:
+-- at 0 the later is trivial, at `suc n'` the goal reduces one step down.
+-- =================================================================================
+
+\lemma proper_later_intro {M : UCMRA} (P : ProperUPred M)
+  : properUPred_ent P (mkProperLater P)
+  => \lam n a hv hP => \case \elim n, hv, hP \with {
+    | 0, _, _ => ()
+    | suc n', _, hP' => P.upred_mono (suc n') n' a a hP' (inclN_refl_ucmra n' a) (n<=sucn n')
+  }
+
+\lemma proper_later_forall_2 {M : UCMRA} {T : \Set0} (Phi : T -> ProperUPred M)
+  : properUPred_ent (mkProperForall T (\lam t => mkProperLater (Phi t)))
+                    (mkProperLater (mkProperForall T Phi))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => ()
+    | suc n', h' => \lam t => h' t
+  }
+
+\lemma proper_later_exist_false {M : UCMRA} {T : \Set0} (Phi : T -> ProperUPred M)
+  : properUPred_ent (mkProperLater (mkProperExist T Phi))
+                    (mkProperOr (mkProperLater (mkProperPure Empty))
+                                (mkProperExist T (\lam t => mkProperLater (Phi t))))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => byLeft ()
+    | suc n', inP (t, ht) => byRight (inP (t, ht))
+  }
+
+-- Rocq `later_sep_1`: the splitting of `a` one step down is lifted back to
+-- `suc n'` with `cmra_extend`; at step 0 the trivial splitting `a · unit` works.
+\lemma proper_later_sep_1 {M : UCMRA} (P Q : ProperUPred M)
+  : properUPred_ent (mkProperLater (mkProperSep P Q))
+                    (mkProperSep (mkProperLater P) (mkProperLater Q))
+  => \lam n a hv h => \case \elim n, hv, h \with {
+    | 0, _, _ => inP (a, M.unit,
+                      M.ofe_dist_sym 0 (M.op a M.unit) a (ucmra_unit_right_id_dist 0 a),
+                      (), ())
+    | suc n', hv', inP (a1, a2, d, hp, hq) =>
+      \let | hv_n' : M.validN n' a => M.cmra_validN_le (suc n') n' a hv' (n<=sucn n')
+           | ext => M.cmra_extend n' a a1 a2 hv_n' d
+      \in inP (ext.1, ext.2,
+               equiv_dist {M} ext.3 (suc n'),
+               P.upred_mono n' n' a1 ext.1 hp (inclN_of_dist_unit n' a1 ext.1 ext.4) <=-refl,
+               Q.upred_mono n' n' a2 ext.2 hq (inclN_of_dist_unit n' a2 ext.2 ext.5) <=-refl)
+  }
+
+\lemma proper_later_sep_2 {M : UCMRA} (P Q : ProperUPred M)
+  : properUPred_ent (mkProperSep (mkProperLater P) (mkProperLater Q))
+                    (mkProperLater (mkProperSep P Q))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => ()
+    | suc n', inP (a1, a2, d, hp, hq) =>
+      inP (a1, a2, M.ofe_dist_le (suc n') n' a (M.op a1 a2) d (n<=sucn n'), hp, hq)
+  }
+
+-- Later commutes with persistently definitionally: both sides reduce to
+-- `P.upred_holds n' (core a)` at `suc n'` and to the unit type at 0.
+\lemma proper_later_persistently_1 {M : UCMRA} (P : ProperUPred M)
+  : properUPred_ent (mkProperLater (mkProperPersistently P))
+                    (mkProperPersistently (mkProperLater P))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => ()
+    | suc n', h' => h'
+  }
+
+\lemma proper_later_persistently_2 {M : UCMRA} (P : ProperUPred M)
+  : properUPred_ent (mkProperPersistently (mkProperLater P))
+                    (mkProperLater (mkProperPersistently P))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => ()
+    | suc n', h' => h'
+  }
+
+\lemma proper_later_false_em {M : UCMRA} (P : ProperUPred M)
+  : properUPred_ent (mkProperLater P)
+                    (mkProperOr (mkProperLater (mkProperPure Empty))
+                                (mkProperImpl (mkProperLater (mkProperPure Empty)) P))
+  => \lam n a _ h => \case \elim n, h \with {
+    | 0, _ => byLeft ()
+    | suc n', hP => byRight (\lam m m_le_n b incl_a_b hv_b hfalse =>
+      \case \elim m, m_le_n, incl_a_b, hv_b, hfalse \with {
+        | 0, _, incl', _, _ => P.upred_mono n' 0 a b hP incl' zero<=_
+        | suc m', _, _, _, e => absurd e
+      })
+  }
 
 -- =================================================================================
 -- OFE and COFE for ProperUPred
@@ -266,7 +417,7 @@
            | qr => hQR m a hle hv
       \in (\lam hp => qr.1 (pq.1 hp), \lam hr => pq.2 (qr.2 hr))
   | ofe_dist_le => \lam n k P Q h hle m a hm hv =>
-      h m a (NatSemiring.<=∘ hm hle) hv
+      h m a ((NatSemiring.<=∘) hm hle) hv
 
 
 \func upred_compl {M : UCMRA} (c : Nat -> ProperUPred M) (hc : Chain {UPredOFE M} c)
@@ -275,7 +426,7 @@
       \Pi (n' : Nat) -> n' <= n -> M.validN n' a -> (c n').upred_holds n' a
   | upred_mono => \lam n1 n2 x1 x2 h hincl le n' n'_le_n2 hv' =>
           (c n').upred_mono n' n' x1 x2
-          (h n' (NatSemiring.<=∘ n'_le_n2 le)
+          (h n' ((NatSemiring.<=∘) n'_le_n2 le)
               (cmra_validN_includedN {M} n' x1 x2 hv'
                   (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 n' hincl n'_le_n2)))
           (inclN_le {M} {\new Op M.E { | op => M.op }} x1 x2 n2 n' hincl n'_le_n2)
@@ -288,7 +439,7 @@
   | cofe_conv_compl => \lam c hc n m a hle hv =>
       ( \lam h => (hc.chain_cauchy m n hle m a <=-refl hv).2 (h m <=-refl hv)
       , \lam h => \lam n' n'_le_m hv' =>
-          (hc.chain_cauchy n' n (NatSemiring.<=∘ n'_le_m hle) n' a <=-refl hv').1
+          (hc.chain_cauchy n' n ((NatSemiring.<=∘) n'_le_m hle) n' a <=-refl hv').1
               ((c n).upred_mono m n' a a h
                   (inP (M.unit,
                       M.ofe_dist_trans n' a a (M.op a M.unit)
@@ -306,7 +457,7 @@
 
 \lemma upredDist_le {M : UCMRA} (n k : Nat) (P Q : ProperUPred M)
                     (h : upredDist n P Q) (hle : k <= n) : upredDist k P Q =>
-  \lam m a hm hv => h m a (NatSemiring.<=∘ hm hle) hv
+  \lam m a hm hv => h m a ((NatSemiring.<=∘) hm hle) hv
 
 \lemma upredDist_later {M : UCMRA} (n : Nat) (P Q : ProperUPred M)
                        (h : \Pi (k : Nat) -> k NatOrder.< n -> upredDist k P Q)
@@ -319,7 +470,12 @@
       \in (r.1, r.2)
   }
 
-\lemma upredDist_forall {M : UCMRA} (T : \Type) (n : Nat)
+\lemma upredDist_persistently {M : UCMRA} (n : Nat) (P Q : ProperUPred M)
+                               (h : upredDist n P Q)
+  : upredDist n (mkProperPersistently P) (mkProperPersistently Q) =>
+  \lam m a hm hv => h m (ucmra_core a) hm (ucmra_core_validN m a hv)
+
+\lemma upredDist_forall {M : UCMRA} (T : \Set0) (n : Nat)
                         (F G : T -> ProperUPred M)
                         (h : \Pi (t : T) -> upredDist n (F t) (G t))
   : upredDist n (mkProperForall T F) (mkProperForall T G) =>
@@ -352,10 +508,10 @@
   : upredDist n (mkProperImpl P Q) (mkProperImpl P Q') =>
   \lam m a hm hv =>
       ( \lam himpl k k_le_m b incl_a_b hv_b hp =>
-          (h k b (NatSemiring.<=∘ k_le_m hm) hv_b).1
+          (h k b ((NatSemiring.<=∘) k_le_m hm) hv_b).1
             (himpl k k_le_m b incl_a_b hv_b hp)
       , \lam himpl k k_le_m b incl_a_b hv_b hp =>
-          (h k b (NatSemiring.<=∘ k_le_m hm) hv_b).2
+          (h k b ((NatSemiring.<=∘) k_le_m hm) hv_b).2
             (himpl k k_le_m b incl_a_b hv_b hp)
       )
 
@@ -396,12 +552,13 @@
   : upredDist n (mkProperWand R P) (mkProperWand R Q) =>
   \lam m a hm hv =>
       ( \lam hwand k k_le_m a2 hv_op hr =>
-          (h k (M.op a a2) (NatSemiring.<=∘ k_le_m hm) hv_op).1
+          (h k (M.op a a2) ((NatSemiring.<=∘) k_le_m hm) hv_op).1
             (hwand k k_le_m a2 hv_op hr)
       , \lam hwand k k_le_m a2 hv_op hr =>
-          (h k (M.op a a2) (NatSemiring.<=∘ k_le_m hm) hv_op).2
+          (h k (M.op a a2) ((NatSemiring.<=∘) k_le_m hm) hv_op).2
             (hwand k k_le_m a2 hv_op hr)
       )
+
 
 
 -- =================================================================================
@@ -417,7 +574,7 @@
       \case incl \with {
         | inP (x3, dist_x2_x1x3) =>
           \let
-            | k_le_n1 : k <= n1 => NatSemiring.<=∘ k_le_n2 n2_le_n1
+            | k_le_n1 : k <= n1 => (NatSemiring.<=∘) k_le_n2 n2_le_n1
             | dist_x2_x1x3_k : M.dist k x2 (M.op x1 x3) =>
               M.ofe_dist_le n2 k x2 (M.op x1 x3) dist_x2_x1x3 k_le_n2
             | dist_op_yf : M.dist k (M.op x2 yf) (M.op (M.op x1 x3) yf) =>
@@ -531,6 +688,16 @@
   : properUPred_ent (mkProperOwn a) (mkProperCMRAValid a) =>
   \lam n x hv h_own => cmra_validN_includedN {M} n a x hv h_own
 
+\lemma ownM_core_persistent {M : UCMRA} (a : M.E) (ha : CoreId {M} a)
+  : properUPred_ent (mkProperOwn a) (mkProperPersistently (mkProperOwn a)) =>
+  \lam n x _ hown => \case ucmra_core_monoN n a x hown \with {
+    | inP (z, d) => inP (z,
+        M.ofe_dist_trans n (ucmra_core x) (M.op (ucmra_core a) z)
+          (M.op a z) d
+          (M.cmra_op_ne_2 z n (ucmra_core a) a
+            (equiv_dist {M} (ucmra_core_of_core_id a ha) n)))
+  }
+
 
 -- =================================================================================
 -- Frame-preserving update for ownership
@@ -543,7 +710,7 @@
 -- This is the engine that drives invariant allocation in IRIS: every
 -- `inv_alloc` / `inv_acc` ultimately bottoms out in a call to this lemma.
 
-\lemma bupd_ownM_updateP {M : UCMRA} (a : M.E) (Phi : M.E -> \Prop)
+\lemma bupd_ownM_updateP {M : UCMRA.{0}} (a : M.E) (Phi : M.E -> \Prop)
                          (h : cmra_updateP {M} a Phi)
   : properUPred_ent
       (mkProperOwn a)

@@ -1,0 +1,102 @@
+\import Paths
+\import ofe
+\import cmra
+\import iprop
+\import own
+\import wsat
+\import lib.gFunctors
+\import lib.agree_cmra
+\import lib.gmap_view_full
+\import lib.gmap_view_functor
+\import lib.coPset_cmra
+\import lib.gset_cmra
+
+-- =================================================================================
+-- Plan A, §A7 packaging: `wsatSigma` and `subG_wsatSigma` (Rocq
+-- `base_logic/lib/wsat.v`, module `wsatGS`).  This is the pre-global bootstrap
+-- deferred from `wsat.ard`: a concrete `gFunctors` providing world-satisfaction
+-- ghost state, and the derivation `subG wsatSigma Σ → wsatGpreS Σ`.
+--
+-- Rocq:
+--   Definition wsatΣ : gFunctors :=
+--     #[GFunctor (gmap_viewRF positive (agreeRF $ laterOF idOF));
+--       GFunctor coPset_disjR;
+--       GFunctor (gset_disjR positive)].
+--   Global Instance subG_wsatΣ {Σ} : subG wsatΣ Σ → wsatGpreS Σ.
+--
+-- (`wsatΣ` is spelled `wsatSigma`: Arend identifiers may not contain `Σ`.)
+--
+-- CONVERSION NOTE.  `subG_inG` lands on the functor form
+-- `rFunctor_apply (gmap_viewRF …) (iPropCOFE Σ)` while `wsatGpreS_inv` needs the
+-- kit form `wsat_invR Σ`.  Converting between the two large view-CMRA records is
+-- tractable for the patched conversion checker only when both sides carry the
+-- *same* `iProp` leaf; with mismatched leaves (`iPropO` vs `iPropCOFE`, equal
+-- but syntactically different) the comparison diverges.  For this reason the
+-- body of the `wsat_invKit` seal in `wsat.ard` is built over `iPropCOFE Σ`, so
+-- `\peval wsat_invKit S` lines up with the functor application leaf and
+-- `wsat_invR_eq` below stays in the same-leaf class.  This conversion is still
+-- slow (minutes, like the other big `wsat`-payload lemmas), but finite.
+-- =================================================================================
+
+-- The invariant-map value functor `agreeRF (laterOF idOF)`, packaged as a
+-- `gFunctor`; its contractivity comes from `laterOF`.
+\func wsatSigma_inv_gFunctor : gFunctor =>
+  mkGFunctor (gmap_viewRF gname gnameCountable (agreeRF (laterOF idOF)))
+    (gmap_viewRF_contractive gname gnameCountable (agreeRF (laterOF idOF))
+      (agreeRF_contractive (laterOF idOF) (laterOF_contractive idOF)))
+
+\func wsatSigma_enabled_gFunctor : gFunctor =>
+  mkGFunctor (constRF coPset_disj_CMRA) (constRF_contractive coPset_disj_CMRA)
+
+\func wsatSigma_disabled_gFunctor : gFunctor =>
+  mkGFunctor (constRF gset_disj_CMRA) (constRF_contractive gset_disj_CMRA)
+
+\func wsatSigma : gFunctors =>
+  gFunctors_app (gFunctors_singleton wsatSigma_inv_gFunctor)
+    (gFunctors_app (gFunctors_singleton wsatSigma_enabled_gFunctor)
+      (gFunctors_singleton wsatSigma_disabled_gFunctor))
+
+-- The invariant CMRA `wsat_invR S` is the invariant functor applied at
+-- `iProp S`.  These are `\func`s, not `\lemma`s: paths between CMRA records
+-- live in `\Set1`, not `\Prop`.  First unfold the `wsat_invKit` seal with
+-- `\peval`, then cross the two small definitional boundaries explicitly.
+\func wsat_invR_unseal (S : gFunctors)
+  : wsat_invR S = {CMRA.{0}}
+      (gmap_viewUR gname gnameCountable
+        (AgreeCMRA (LaterOFE (iPropCOFE S))) : CMRA.{0}) =>
+  pmap
+    (\lam (K : GmapViewAgreeKit gname gnameCountable (LaterOFE (iPropO S))) =>
+        (K.gva_R : CMRA.{0}))
+    (\peval wsat_invKit S)
+
+\func wsat_invR_eq (S : gFunctors)
+  : wsat_invR S = {CMRA.{0}}
+    rFunctor_apply (gmap_viewRF gname gnameCountable (agreeRF (laterOF idOF)))
+      (iPropCOFE S) =>
+  wsat_invR_unseal S
+  *> gmap_viewUR_as_CMRA
+       {gname} {gnameCountable}
+       {AgreeCMRA (LaterOFE (iPropCOFE S))}
+  *> gmap_viewRF_apply_eq gname gnameCountable
+       (agreeRF (laterOF idOF)) (iPropCOFE S)
+
+-- =================================================================================
+-- subG_wsatSigma: from `subG wsatSigma Σ`, derive `wsatGpreS Σ`.  Splits the
+-- three singletons out of `wsatSigma` with `subG_inv_{l,r}`, derives each `inG`
+-- via `subG_inG`, and transports the invariant component along `wsat_invR_eq`
+-- (the constant components land on their CMRAs definitionally, via
+-- `rFunctor_apply_constRF`).
+-- =================================================================================
+\func subG_wsatSigma {S : gFunctors} (h : subG wsatSigma S) : wsatGpreS S \cowith
+  | wsatGpreS_inv =>
+      transport (\lam (Z : CMRA.{0}) => inG S Z)
+        (Paths.inv (wsat_invR_eq S))
+        (subG_inG (subG_inv_l h))
+  | wsatGpreS_enabled =>
+      transport (\lam (Z : CMRA.{0}) => inG S Z)
+        (rFunctor_apply_constRF coPset_disj_CMRA (iPropCOFE S))
+        (subG_inG (subG_inv_l (subG_inv_r h)))
+  | wsatGpreS_disabled =>
+      transport (\lam (Z : CMRA.{0}) => inG S Z)
+        (rFunctor_apply_constRF gset_disj_CMRA (iPropCOFE S))
+        (subG_inG (subG_inv_r (subG_inv_r h)))

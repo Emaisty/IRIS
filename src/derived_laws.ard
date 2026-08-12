@@ -18,11 +18,11 @@
   => B.<=-transitive h (B.bi_mixin_or_intro_r Q R)
 
 
-\lemma exist_intro' {B : BIMixin} {A : \Type} {P : B.E} {Phi : A -> B.E} (a : A) (h : P |- (Phi a))
+\lemma exist_intro' {B : BIMixin} {A : \Set0} {P : B.E} {Phi : A -> B.E} (a : A) (h : P |- (Phi a))
   : P |- (exists A Phi)
   => B.<=-transitive h (B.bi_mixin_exist_intro Phi a)
 
-\lemma forall_elim' {B : BIMixin} {A : \Type} {P : B.E} {Phi : A -> B.E} (h : P |- (forall A Phi)) (a : A)
+\lemma forall_elim' {B : BIMixin} {A : \Set0} {P : B.E} {Phi : A -> B.E} (h : P |- (forall A Phi)) (a : A)
   : P |- (Phi a)
   => B.<=-transitive h (B.bi_mixin_forall_elim Phi a)
 
@@ -71,11 +71,11 @@
 \lemma or_mono_r {B : BIMixin} {P P' Q' : B.E} (h : P' |- Q') : (P || P') |- (P || Q')
   => or_mono (B.<=-refl {P}) h
 
-\lemma forall_mono {B : BIMixin} {A : \Type} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
+\lemma forall_mono {B : BIMixin} {A : \Set0} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
   : (forall A Phi) |- (forall A Psi)
   => B.bi_mixin_forall_intro (forall A Phi) Psi (\lam a => B.<=-transitive (B.bi_mixin_forall_elim Phi a) (h a))
 
-\lemma exist_mono {B : BIMixin} {A : \Type} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
+\lemma exist_mono {B : BIMixin} {A : \Set0} {Phi Psi : A -> B.E} (h : \Pi (a : A) -> (Phi a) |- (Psi a))
   : (exists A Phi) |- (exists A Psi)
   => B.bi_mixin_exist_elim Phi (exists A Psi) (\lam a => B.<=-transitive (h a) (B.bi_mixin_exist_intro Psi a))
 
@@ -208,4 +208,3 @@
 --
 -- \lemma sep_False_r {B : BIMixin} {P : B.E} : B.equiv (P * False) False
 --   => (B.<=-transitive sep_comm.1 sep_False_l.1, B.<=-transitive sep_False_l.2 sep_comm.1)
-

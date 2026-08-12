@@ -229,7 +229,7 @@
 \lemma view_frag_core_id {A : OFE} {B : UCMRA} (rel : ViewRel A B)
     (b : B.E) (hb : CoreId {B} b)
   : CoreId {ViewCMRA rel} (view_frag b) =>
-  prod_core_id (nothing, b) idp hb
+  prod_core_id (nothing, b) () hb
 
 \lemma view_agree_dist_extract {A : OFE} (n : Nat) (a : A.E) (x : AgreeElem A)
     (h : (AgreeOFE A).dist n (to_agree a) x) : A.dist n a x.agree_hd =>

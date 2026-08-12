@@ -1,0 +1,456 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import cmra
+\import uPred
+\import updates
+\import iprop
+\import own
+\import wsat
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+
+-- =================================================================================
+-- Plan A, §A9: concrete fancy updates.
+--
+-- This follows Iris 3.6's `uPred_fupd_def` (the version targeted by the porting
+-- plan), without the later-credit layer added in newer Iris releases.
+-- =================================================================================
+
+\func mkProperFUpd {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S) : iProp S =>
+  mkProperWand
+    (mkProperSep (wsat W) (ownE W E1))
+    (mkProperBUpd
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))))
+
+\instance UPredFUpd (S : gFunctors) (W : wsatGS S) : FUpd
+  | BIBase => BIuPred (iResUR S)
+  | fupd => mkProperFUpd W
+
+\sfunc fupd_ne {S : gFunctors} (W : wsatGS S) (n : Nat)
+    (E1 E2 : coPset) (P Q : iProp S) (h : upredDist n P Q)
+  : upredDist n (mkProperFUpd W E1 E2 P) (mkProperFUpd W E1 E2 Q) =>
+  upredDist_wand_r n
+    (mkProperSep (wsat W) (ownE W E1))
+    (mkProperBUpd
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))))
+    (mkProperBUpd
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) Q))))
+    (bupd_ne n
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) Q)))
+      (upredDist_except_zero n
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) Q))
+        (upredDist_sep_r n (wsat W)
+          (mkProperSep (ownE W E2) P)
+          (mkProperSep (ownE W E2) Q)
+          (upredDist_sep_r n (ownE W E2) P Q h))))
+
+\lemma except_zero_mono {M : UCMRA} (P Q : ProperUPred M)
+    (h : properUPred_ent P Q)
+  : properUPred_ent (mkProperExceptZero P) (mkProperExceptZero Q) =>
+  \lam n x hv he => \case he \with {
+    | byLeft hz => byLeft hz
+    | byRight hp => byRight (h n x hv hp)
+  }
+
+\sfunc fupd_mono {S : gFunctors} (W : wsatGS S) (E1 E2 : coPset)
+    (P Q : iProp S) (h : properUPred_ent P Q)
+  : properUPred_ent (mkProperFUpd W E1 E2 P) (mkProperFUpd W E1 E2 Q) =>
+  \lam n x hv hf m m_le_n frame hv_op hworld =>
+    bupd_mono
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+      (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) Q)))
+      (except_zero_mono
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) Q))
+        (sep_mono_r_ent (wsat W)
+          (mkProperSep (ownE W E2) P)
+          (mkProperSep (ownE W E2) Q)
+          (sep_mono_r_ent (ownE W E2) P Q h)))
+      m ((iResUR S).op x frame) hv_op
+      (hf m m_le_n frame hv_op hworld)
+
+-- A bounded semantic entailment.  This is the step-indexed form of a Löb
+-- hypothesis: unlike ordinary entailment it is available only at indices at
+-- most N.  WP bind needs precisely this form when its recursive call is mapped
+-- underneath a later and the two nested fancy updates.
+\func properUPred_ent_at {M : UCMRA} (N : Nat)
+    (P Q : ProperUPred M) : \Prop =>
+  \Pi (n : Nat) -> n <= N -> \Pi (x : M.E) -> M.validN n x ->
+    P.upred_holds n x -> Q.upred_holds n x
+
+\lemma bupd_mono_at {M : UCMRA} (N : Nat) (P Q : ProperUPred M)
+    (h : properUPred_ent_at N P Q)
+  : properUPred_ent_at N (mkProperBUpd P) (mkProperBUpd Q) =>
+  \lam n n_le_N x hx hp k k_le_n frame hx_frame =>
+    \case hp k k_le_n frame hx_frame \with {
+      | inP (y, hy_frame, hpy) =>
+        \let
+          | k_le_N : k <= N => (NatSemiring.<=∘) k_le_n n_le_N
+          | hy : M.validN k y => M.cmra_validN_op_l k y frame hy_frame
+        \in inP (y, hy_frame, h k k_le_N y hy hpy)
+    }
+
+\lemma except_zero_mono_at {M : UCMRA} (N : Nat)
+    (P Q : ProperUPred M) (h : properUPred_ent_at N P Q)
+  : properUPred_ent_at N (mkProperExceptZero P) (mkProperExceptZero Q) =>
+  \lam n n_le_N x hx he => \case he \with {
+    | byLeft hz => byLeft hz
+    | byRight hp => byRight (h n n_le_N x hx hp)
+  }
+
+\lemma sep_mono_r_at {M : UCMRA} (N : Nat)
+    (R P Q : ProperUPred M) (h : properUPred_ent_at N P Q)
+  : properUPred_ent_at N (mkProperSep R P) (mkProperSep R Q) =>
+  \lam n n_le_N x hx hs => \case hs \with {
+    | inP (a, b, dx, hR, hP) =>
+      \let
+        | hab : M.validN n (M.op a b) =>
+            M.cmra_validN_ne n x (M.op a b) dx hx
+        | hb : M.validN n b => cmra_validN_op_r {M} n a b hab
+      \in inP (a, b, dx, hR, h n n_le_N b hb hP)
+  }
+
+\lemma fupd_mono_at {S : gFunctors} (W : wsatGS S) (N : Nat)
+    (E1 E2 : coPset) (P Q : iProp S)
+    (h : properUPred_ent_at N P Q)
+  : properUPred_ent_at N
+      (mkProperFUpd W E1 E2 P) (mkProperFUpd W E1 E2 Q) =>
+  \let
+    | BodyP => mkProperSep (wsat W) (mkProperSep (ownE W E2) P)
+    | BodyQ => mkProperSep (wsat W) (mkProperSep (ownE W E2) Q)
+    | body_mono : properUPred_ent_at N BodyP BodyQ =>
+        sep_mono_r_at N (wsat W)
+          (mkProperSep (ownE W E2) P)
+          (mkProperSep (ownE W E2) Q)
+          (sep_mono_r_at N (ownE W E2) P Q h)
+    | result_mono : properUPred_ent_at N
+        (mkProperBUpd (mkProperExceptZero BodyP))
+        (mkProperBUpd (mkProperExceptZero BodyQ)) =>
+        bupd_mono_at N (mkProperExceptZero BodyP)
+          (mkProperExceptZero BodyQ)
+          (except_zero_mono_at N BodyP BodyQ body_mono)
+  \in \lam n n_le_N x hx hf m m_le_n frame hx_frame hworld =>
+    result_mono m ((NatSemiring.<=∘) m_le_n n_le_N)
+      ((iResUR S).op x frame) hx_frame
+      (hf m m_le_n frame hx_frame hworld)
+
+\sfunc bupd_fupd {S : gFunctors} (W : wsatGS S) (E : coPset) (P : iProp S)
+  : properUPred_ent (mkProperBUpd P) (mkProperFUpd W E E P) =>
+  \let
+    | A => mkProperSep (wsat W) (ownE W E)
+    | T => mkProperSep (wsat W) (mkProperSep (ownE W E) P)
+    | reshape : properUPred_ent (mkProperSep P A) (mkProperExceptZero T) =>
+        properUPred_ent_trans (mkProperSep P A) (mkProperSep A P)
+          (mkProperExceptZero T)
+          (sep_comm_ent P A)
+          (properUPred_ent_trans (mkProperSep A P) T (mkProperExceptZero T)
+            (sep_assoc_l_ent (wsat W) (ownE W E) P)
+            (or_intro_r_ent (mkProperLater (mkProperPure Empty)) T))
+  \in \lam n x hv hb m m_le_n frame hv_op hA =>
+    \let
+      | hb_m : (mkProperBUpd P).upred_holds m x =>
+          (mkProperBUpd P).upred_mono n m x x hb
+            (inclN_refl_ucmra {iResUR S} m x) m_le_n
+      | hsep : (mkProperSep (mkProperBUpd P) A).upred_holds m
+          ((iResUR S).op x frame) =>
+          inP (x, frame, (iResUR S).ofe_dist_refl m ((iResUR S).op x frame), hb_m, hA)
+      | hframed : (mkProperBUpd (mkProperSep P A)).upred_holds m
+          ((iResUR S).op x frame) =>
+          bupd_frame_r P A m ((iResUR S).op x frame) hv_op hsep
+    \in bupd_mono (mkProperSep P A) (mkProperExceptZero T) reshape
+          m ((iResUR S).op x frame) hv_op hframed
+
+\sfunc except_0_fupd {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperExceptZero (mkProperFUpd W E1 E2 P))
+      (mkProperFUpd W E1 E2 P) =>
+  \lam n x hv he => \case \elim n, hv, he \with {
+    | 0, hv0, byLeft _ =>
+      \lam m m_le_0 frame hv_op _ =>
+        \case \elim m, m_le_0, hv_op \with {
+          | 0, _, hv0_op =>
+            bupd_intro
+              (mkProperExceptZero
+                (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+              0 ((iResUR S).op x frame) hv0_op (byLeft ())
+          | suc m', le, _ => absurd (le NatOrder.zero<suc)
+        }
+    | 0, _, byRight hf => hf
+    | suc n', _, byLeft bad => absurd bad
+    | suc n', _, byRight hf => hf
+  }
+
+\lemma except_zero_frame_r {M : UCMRA} (P R : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep (mkProperExceptZero P) R)
+      (mkProperExceptZero (mkProperSep P R)) =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a, b, dab, he, hR) => \case he \with {
+      | byLeft hz =>
+        byLeft ((mkProperLater (mkProperPure Empty)).upred_mono
+          n n a x hz (inP (b, dab)) <=-refl)
+      | byRight hp => byRight (inP (a, b, dab, hp, hR))
+    }
+  }
+
+-- If x is a · b, then adding frame r can be regrouped as (a · r) · b.
+\lemma op_sep_frame_dist {M : UCMRA} (n : Nat) (x a b r : M.E)
+    (d : M.dist n x (M.op a b))
+  : M.dist n (M.op x r) (M.op (M.op a r) b) =>
+  M.ofe_dist_trans n (M.op x r) (M.op (M.op a b) r) (M.op (M.op a r) b)
+    (M.cmra_op_ne_2 r n x (M.op a b) d)
+    (M.ofe_dist_trans n (M.op (M.op a b) r) (M.op a (M.op b r))
+      (M.op (M.op a r) b)
+      (M.ofe_dist_sym n (M.op a (M.op b r)) (M.op (M.op a b) r)
+        (cmra_assoc_dist {M} n a b r))
+      (M.ofe_dist_trans n (M.op a (M.op b r)) (M.op a (M.op r b))
+        (M.op (M.op a r) b)
+        (M.cmra_op_ne a n (M.op b r) (M.op r b) (cmra_comm_dist {M} n b r))
+        (cmra_assoc_dist {M} n a r b)))
+
+\sfunc fupd_frame_r {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P R : iProp S)
+  : properUPred_ent
+      (mkProperSep (mkProperFUpd W E1 E2 P) R)
+      (mkProperFUpd W E1 E2 (mkProperSep P R)) =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a, b, dx, hf, hR) =>
+      \lam m m_le_n frame hv_xf hworld =>
+        \let
+          | M => iResUR S
+          | dx_m : M.dist m x (M.op a b) => M.ofe_dist_le n m x (M.op a b) dx m_le_n
+          | dregroup : M.dist m (M.op x frame) (M.op (M.op a frame) b) =>
+              op_sep_frame_dist {M} m x a b frame dx_m
+          | hv_regroup : M.validN m (M.op (M.op a frame) b) =>
+              M.cmra_validN_ne m (M.op x frame) (M.op (M.op a frame) b)
+                dregroup hv_xf
+          | hv_af : M.validN m (M.op a frame) =>
+              M.cmra_validN_op_l m (M.op a frame) b hv_regroup
+          | hb : (mkProperBUpd
+              (mkProperExceptZero
+                (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))).upred_holds
+              m (M.op a frame) =>
+              hf m m_le_n frame hv_af hworld
+          | hR_m : R.upred_holds m b =>
+              R.upred_mono n m b b hR (inclN_refl_ucmra {M} m b) m_le_n
+          | hsep_b : (mkProperSep
+              (mkProperBUpd
+                (mkProperExceptZero
+                  (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))))
+              R).upred_holds m (M.op x frame) =>
+              inP (M.op a frame, b, dregroup, hb, hR_m)
+          | hframed : (mkProperBUpd (mkProperSep
+              (mkProperExceptZero
+                (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+              R)).upred_holds m (M.op x frame) =>
+              bupd_frame_r
+                (mkProperExceptZero
+                  (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+                R m (M.op x frame) hv_xf hsep_b
+          | targetP => mkProperSep (wsat W) (mkProperSep (ownE W E2) P)
+          | targetR => mkProperSep (wsat W)
+              (mkProperSep (ownE W E2) (mkProperSep P R))
+          | reshape : properUPred_ent
+              (mkProperSep (mkProperExceptZero targetP) R)
+              (mkProperExceptZero targetR) =>
+              properUPred_ent_trans
+                (mkProperSep (mkProperExceptZero targetP) R)
+                (mkProperExceptZero (mkProperSep targetP R))
+                (mkProperExceptZero targetR)
+                (except_zero_frame_r targetP R)
+                (except_zero_mono (mkProperSep targetP R) targetR
+                  (properUPred_ent_trans
+                    (mkProperSep targetP R)
+                    (mkProperSep (wsat W)
+                      (mkProperSep (mkProperSep (ownE W E2) P) R))
+                    targetR
+                    (sep_assoc_l_ent (wsat W) (mkProperSep (ownE W E2) P) R)
+                    (sep_mono_r_ent (wsat W)
+                      (mkProperSep (mkProperSep (ownE W E2) P) R)
+                      (mkProperSep (ownE W E2) (mkProperSep P R))
+                      (sep_assoc_l_ent (ownE W E2) P R))))
+        \in bupd_mono
+            (mkProperSep (mkProperExceptZero targetP) R)
+            (mkProperExceptZero targetR) reshape
+            m (M.op x frame) hv_xf hframed
+  }
+
+\lemma except_zero_bupd_bind {M : UCMRA} (P Q : ProperUPred M)
+    (h : properUPred_ent P (mkProperBUpd (mkProperExceptZero Q)))
+  : properUPred_ent
+      (mkProperExceptZero P)
+      (mkProperBUpd (mkProperExceptZero Q)) =>
+  \lam n x hv he => \case he \with {
+    | byLeft hz =>
+      bupd_intro (mkProperExceptZero Q) n x hv (byLeft hz)
+    | byRight hp => h n x hv hp
+  }
+
+\sfunc fupd_trans {S : gFunctors} (W : wsatGS S)
+    (E1 E2 E3 : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E3 P))
+      (mkProperFUpd W E1 E3 P) =>
+  \let
+    | A2 => mkProperSep (wsat W) (ownE W E2)
+    | inner => mkProperFUpd W E2 E3 P
+    | outerBody => mkProperSep (wsat W) (mkProperSep (ownE W E2) inner)
+    | target => mkProperSep (wsat W) (mkProperSep (ownE W E3) P)
+    | consume : properUPred_ent outerBody
+          (mkProperBUpd (mkProperExceptZero target)) =>
+        properUPred_ent_trans outerBody (mkProperSep A2 inner)
+          (mkProperBUpd (mkProperExceptZero target))
+          (sep_assoc_r_ent (wsat W) (ownE W E2) inner)
+          ((BIuPredMixin (iResUR S)).bi_mixin_wand_elim A2
+            (mkProperBUpd (mkProperExceptZero target)))
+    | step : properUPred_ent (mkProperExceptZero outerBody)
+          (mkProperBUpd (mkProperExceptZero target)) =>
+        except_zero_bupd_bind outerBody target consume
+  \in \lam n x hv hf m m_le_n frame hv_op hworld =>
+    \let
+      | hb : (mkProperBUpd (mkProperExceptZero outerBody)).upred_holds m
+          ((iResUR S).op x frame) =>
+          hf m m_le_n frame hv_op hworld
+      | hbb : (mkProperBUpd (mkProperBUpd (mkProperExceptZero target))).upred_holds m
+          ((iResUR S).op x frame) =>
+          bupd_mono (mkProperExceptZero outerBody)
+            (mkProperBUpd (mkProperExceptZero target)) step
+            m ((iResUR S).op x frame) hv_op hb
+    \in bupd_trans (mkProperExceptZero target)
+          m ((iResUR S).op x frame) hv_op hbb
+
+\lemma op_frame_sep_dist {M : UCMRA} (n : Nat) (r x a b : M.E)
+    (d : M.dist n x (M.op a b))
+  : M.dist n (M.op r x) (M.op (M.op r a) b) =>
+  M.ofe_dist_trans n (M.op r x) (M.op r (M.op a b)) (M.op (M.op r a) b)
+    (M.cmra_op_ne r n x (M.op a b) d)
+    (cmra_assoc_dist {M} n r a b)
+
+\lemma ownE_impl_frame_combine {S : gFunctors} (W : wsatGS S)
+    (E Ef : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperSep
+        (mkProperSep (ownE W E)
+          (mkProperImpl (mkProperPure (coPset_overlap E Ef = false)) P))
+        (ownE W Ef))
+      (mkProperSep (ownE W (coPset_union E Ef)) P) =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a, b, dx, heimpl, hEf) => \case heimpl \with {
+      | inP (e, i, da, hE, hImpl) =>
+        \let
+          | M => iResUR S
+          | d1 : M.dist n (M.op a b) (M.op (M.op e i) b) =>
+              M.cmra_op_ne_2 b n a (M.op e i) da
+          | d2 : M.dist n (M.op (M.op e i) b) (M.op (M.op e b) i) =>
+              op_sep_frame_dist {M} n (M.op e i) e i b (M.ofe_dist_refl n (M.op e i))
+          | dtarget : M.dist n x (M.op (M.op e b) i) =>
+              M.ofe_dist_trans n x (M.op a b) (M.op (M.op e b) i)
+                dx (M.ofe_dist_trans n (M.op a b) (M.op (M.op e i) b)
+                  (M.op (M.op e b) i) d1 d2)
+          | hv_target : M.validN n (M.op (M.op e b) i) =>
+              M.cmra_validN_ne n x (M.op (M.op e b) i) dtarget hv
+          | hv_eb : M.validN n (M.op e b) =>
+              M.cmra_validN_op_l n (M.op e b) i hv_target
+          | hv_i : M.validN n i => cmra_validN_op_r {M} n (M.op e b) i hv_target
+          | hEEf : (mkProperSep (ownE W E) (ownE W Ef)).upred_holds n (M.op e b) =>
+              inP (e, b, M.ofe_dist_refl n (M.op e b), hE, hEf)
+          | hand : (mkProperAnd
+              (mkProperPure (coPset_overlap E Ef = false))
+              (ownE W (coPset_union E Ef))).upred_holds n (M.op e b) =>
+              (ownE_op' W E Ef n (M.op e b) hv_eb).2 hEEf
+          | hP : P.upred_holds n i =>
+              hImpl n <=-refl i (inclN_refl_ucmra {M} n i) hv_i hand.1
+        \in inP (M.op e b, i, dtarget, hand.2, hP)
+    }
+  }
+
+\sfunc fupd_mask_frame_r {S : gFunctors} (W : wsatGS S)
+    (E1 E2 Ef : coPset) (P : iProp S)
+    (hdisj : coPset_overlap E1 Ef = false)
+  : properUPred_ent
+      (mkProperFUpd W E1 E2
+        (mkProperImpl (mkProperPure (coPset_overlap E2 Ef = false)) P))
+      (mkProperFUpd W (coPset_union E1 Ef) (coPset_union E2 Ef) P) =>
+  \let
+    | implP => mkProperImpl (mkProperPure (coPset_overlap E2 Ef = false)) P
+    | A1 => mkProperSep (wsat W) (ownE W E1)
+    | post => mkProperSep (wsat W) (mkProperSep (ownE W E2) implP)
+    | target => mkProperSep (wsat W)
+        (mkProperSep (ownE W (coPset_union E2 Ef)) P)
+    | splitWorld : properUPred_ent
+        (mkProperSep (wsat W) (ownE W (coPset_union E1 Ef)))
+        (mkProperSep A1 (ownE W Ef)) =>
+        properUPred_ent_trans
+          (mkProperSep (wsat W) (ownE W (coPset_union E1 Ef)))
+          (mkProperSep (wsat W)
+            (mkProperSep (ownE W E1) (ownE W Ef)))
+          (mkProperSep A1 (ownE W Ef))
+          (sep_mono_r_ent (wsat W) (ownE W (coPset_union E1 Ef))
+            (mkProperSep (ownE W E1) (ownE W Ef))
+            (\lam n x hv h => (ownE_op W E1 Ef hdisj n x hv).1 h))
+          (sep_assoc_r_ent (wsat W) (ownE W E1) (ownE W Ef))
+    | reshape : properUPred_ent
+        (mkProperSep (mkProperExceptZero post) (ownE W Ef))
+        (mkProperExceptZero target) =>
+        properUPred_ent_trans
+          (mkProperSep (mkProperExceptZero post) (ownE W Ef))
+          (mkProperExceptZero (mkProperSep post (ownE W Ef)))
+          (mkProperExceptZero target)
+          (except_zero_frame_r post (ownE W Ef))
+          (except_zero_mono (mkProperSep post (ownE W Ef)) target
+            (properUPred_ent_trans
+              (mkProperSep post (ownE W Ef))
+              (mkProperSep (wsat W)
+                (mkProperSep (mkProperSep (ownE W E2) implP) (ownE W Ef)))
+              target
+              (sep_assoc_l_ent (wsat W) (mkProperSep (ownE W E2) implP)
+                (ownE W Ef))
+              (sep_mono_r_ent (wsat W)
+                (mkProperSep (mkProperSep (ownE W E2) implP) (ownE W Ef))
+                (mkProperSep (ownE W (coPset_union E2 Ef)) P)
+                (ownE_impl_frame_combine W E2 Ef P))))
+  \in \lam n x hv hf m m_le_n frame hv_xf hworld_union =>
+    \case splitWorld m frame
+        (cmra_validN_op_r {iResUR S} m x frame hv_xf) hworld_union \with {
+      | inP (a, b, dframe, hA1, hEf) =>
+        \let
+          | M => iResUR S
+          | dtotal : M.dist m (M.op x frame) (M.op (M.op x a) b) =>
+              op_frame_sep_dist {M} m x frame a b dframe
+          | hv_total : M.validN m (M.op (M.op x a) b) =>
+              M.cmra_validN_ne m (M.op x frame) (M.op (M.op x a) b)
+                dtotal hv_xf
+          | hv_xa : M.validN m (M.op x a) =>
+              M.cmra_validN_op_l m (M.op x a) b hv_total
+          | hb : (mkProperBUpd (mkProperExceptZero post)).upred_holds m (M.op x a) =>
+              hf m m_le_n a hv_xa hA1
+          | hsep_b : (mkProperSep (mkProperBUpd (mkProperExceptZero post))
+              (ownE W Ef)).upred_holds m (M.op x frame) =>
+              inP (M.op x a, b, dtotal, hb, hEf)
+          | hframed : (mkProperBUpd
+              (mkProperSep (mkProperExceptZero post) (ownE W Ef))).upred_holds
+              m (M.op x frame) =>
+              bupd_frame_r (mkProperExceptZero post) (ownE W Ef)
+                m (M.op x frame) hv_xf hsep_b
+        \in bupd_mono
+            (mkProperSep (mkProperExceptZero post) (ownE W Ef))
+            (mkProperExceptZero target) reshape
+            m (M.op x frame) hv_xf hframed
+    }

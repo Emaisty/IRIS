@@ -210,10 +210,7 @@
 \lemma prod_core_id {A B : CMRA} (x : \Sigma A.E B.E)
     (ha : CoreId {A} x.1) (hb : CoreId {B} x.2)
   : CoreId {ProdCMRA A B} x =>
-  pmap2 (\lam oa ob => \case oa, ob \with {
-    | just a, just b => just (a, b)
-    | _, _ => nothing
-  }) ha hb
+  prod_pcore_option_equiv x ha hb
 
 \lemma prod_opM_components {A B : CMRA} (x : \Sigma A.E B.E)
     (mf : Maybe (\Sigma A.E B.E))

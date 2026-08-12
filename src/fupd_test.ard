@@ -1,0 +1,54 @@
+\import cmra
+\import uPred
+\import updates
+\import iprop
+\import wsat
+\import fupd
+\import fupd_mask
+\import lib.coPset
+\import lib.gFunctors
+
+-- Public API smoke tests for A9. These deliberately restate the main laws so
+-- downstream modules fail early if an instance field or mask argument changes.
+
+\lemma test_fupd_intro {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (P : iProp S)
+  : properUPred_ent P (mkProperFUpd W E E P) =>
+  fupd_intro W E P
+
+\lemma test_bupd_fupd {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (P : iProp S)
+  : properUPred_ent (mkProperBUpd P) (mkProperFUpd W E E P) =>
+  bupd_fupd W E P
+
+\lemma test_fupd_trans {S : gFunctors} (W : wsatGS S)
+    (E1 E2 E3 : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E3 P))
+      (mkProperFUpd W E1 E3 P) =>
+  fupd_trans W E1 E2 E3 P
+
+\lemma test_fupd_mask_subseteq {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (h : coPSubset E2 E1)
+  : properUPred_ent mkProperEmp
+      (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E1 mkProperEmp)) =>
+  fupd_mask_subseteq W E1 E2 h
+
+\lemma test_fupd_frame_r {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P R : iProp S)
+  : properUPred_ent
+      (mkProperSep (mkProperFUpd W E1 E2 P) R)
+      (mkProperFUpd W E1 E2 (mkProperSep P R)) =>
+  fupd_frame_r W E1 E2 P R
+
+\lemma test_fupd_mask_mono {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S) (h : coPSubset E1 E2)
+  : properUPred_ent (mkProperFUpd W E1 E1 P) (mkProperFUpd W E2 E2 P) =>
+  fupd_mask_mono W E1 E2 P h
+
+\func test_bi_fupd_instance (S : gFunctors) (W : wsatGS S) : BiFUpd =>
+  UPredBiFUpd S W
+
+\func test_bi_bupd_fupd_instance (S : gFunctors) (W : wsatGS S)
+  : BiBUpdFUpd =>
+  UPredBiBUpdFUpd S W

@@ -1,0 +1,187 @@
+\import Logic
+\import Paths \hiding (inv)
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+\import lib.timeless
+\import lib.invariants
+\import lib.invariants_derived1
+\import lib.invariants_derived3a
+\import lib.invariants_derived4b1
+\import lib.invariants_derived4b2
+
+-- inv_inner N1 P ∗ inv_inner N2 Q ⊢ inv_inner N (P ∗ Q)
+\sfunc inv_combine_inner {S : gFunctors} (W : wsatGS S)
+    (N1 N2 N : Namespace) (P Q : iProp S)
+    (hdisj : ndisjoint N1 N2)
+    (hsub : coPSubset (coPset_union (nclose N1) (nclose N2)) (nclose N))
+  : properUPred_ent
+      (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q))
+      (inv_inner W N (mkProperSep P Q)) =>
+  forall_intro_ent
+    (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q))
+    (\lam E => mkProperImpl (mkProperPure (coPSubset (nclose N) E))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater (mkProperSep P Q))
+          (mkProperWand (mkProperLater (mkProperSep P Q))
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp)))))
+    (\lam E => impl_pure_intro_ent (coPSubset (nclose N) E)
+      (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater (mkProperSep P Q))
+          (mkProperWand (mkProperLater (mkProperSep P Q))
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp))))
+      (\lam hNE =>
+        \let
+          | U1 => nclose N1
+          | U2 => nclose N2
+          | UN => nclose N
+          | D1 => coPset_difference E U1
+          | D12 => coPset_difference D1 U2
+          | DN => coPset_difference E UN
+          | hU1N : coPSubset U1 UN => coPSubset_union_l U1 U2 UN hsub
+          | hU2N : coPSubset U2 UN => coPSubset_union_r U1 U2 UN hsub
+          | hU1E : coPSubset U1 E => coPSubset_trans U1 UN E hU1N hNE
+          | hU2E : coPSubset U2 E => coPSubset_trans U2 UN E hU2N hNE
+          | hU2D1 : coPSubset U2 D1 =>
+              coPSubset_difference_of_disjoint U2 U1 E hU2E hdisj
+          | hDN12 : coPSubset DN D12 =>
+              coPset_diff_mono_subsets E UN U1 U2 hU1N hU2N
+          | CP => mkProperWand (mkProperLater P)
+              (mkProperFUpd W D1 E mkProperEmp)
+          | CQ => mkProperWand (mkProperLater Q)
+              (mkProperFUpd W D12 D1 mkProperEmp)
+          | bodyP => mkProperSep (mkProperLater P) CP
+          | bodyQ => mkProperSep (mkProperLater Q) CQ
+          | LPQ => mkProperLater (mkProperSep P Q)
+          | Ts => mkProperSep LPQ
+              (mkProperWand LPQ (sealedFUpd W DN E mkProperEmp))
+          | openP : properUPred_ent (inv_inner W N1 P)
+              (mkProperFUpd W E D1 bodyP) =>
+              properUPred_ent_trans (inv_inner W N1 P)
+                (mkProperImpl (mkProperPure (coPSubset U1 E))
+                  (mkProperFUpd W E D1 bodyP))
+                (mkProperFUpd W E D1 bodyP)
+                (forall_elim_ent
+                  (\lam E' => mkProperImpl
+                    (mkProperPure (coPSubset (nclose N1) E'))
+                    (mkProperFUpd W E' (coPset_difference E' (nclose N1))
+                      (mkProperSep (mkProperLater P)
+                        (mkProperWand (mkProperLater P)
+                          (mkProperFUpd W
+                            (coPset_difference E' (nclose N1)) E'
+                            mkProperEmp)))))
+                  E)
+                (impl_pure_elim_ent (coPSubset U1 E)
+                  (mkProperFUpd W E D1 bodyP) hU1E)
+          | openQ : properUPred_ent (inv_inner W N2 Q)
+              (mkProperFUpd W D1 D12 bodyQ) =>
+              properUPred_ent_trans (inv_inner W N2 Q)
+                (mkProperImpl (mkProperPure (coPSubset U2 D1))
+                  (mkProperFUpd W D1 D12 bodyQ))
+                (mkProperFUpd W D1 D12 bodyQ)
+                (forall_elim_ent
+                  (\lam E' => mkProperImpl
+                    (mkProperPure (coPSubset (nclose N2) E'))
+                    (mkProperFUpd W E' (coPset_difference E' (nclose N2))
+                      (mkProperSep (mkProperLater Q)
+                        (mkProperWand (mkProperLater Q)
+                          (mkProperFUpd W
+                            (coPset_difference E' (nclose N2)) E'
+                            mkProperEmp)))))
+                  D1)
+                (impl_pure_elim_ent (coPSubset U2 D1)
+                  (mkProperFUpd W D1 D12 bodyQ) hU2D1)
+        \in \lam n x hv h =>
+          \let
+            | c1 => sep_mono_l_ent (inv_inner W N1 P)
+                (mkProperFUpd W E D1 bodyP)
+                (inv_inner W N2 Q) openP n x hv h
+            | c2 => fupd_frame_r W E D1 bodyP (inv_inner W N2 Q)
+                n x hv c1
+            | c3 => fupd_mono W E D1
+                (mkProperSep bodyP (inv_inner W N2 Q))
+                (mkProperSep bodyP (mkProperFUpd W D1 D12 bodyQ))
+                (sep_mono_r_ent bodyP (inv_inner W N2 Q)
+                  (mkProperFUpd W D1 D12 bodyQ) openQ)
+                n x hv c2
+            | c4 => fupd_mono W E D1
+                (mkProperSep bodyP (mkProperFUpd W D1 D12 bodyQ))
+                (mkProperFUpd W D1 D12 (mkProperSep bodyP bodyQ))
+                (fupd_frame_l W D1 D12 bodyP bodyQ)
+                n x hv c3
+            | c5 => fupd_trans W E D1 D12 (mkProperSep bodyP bodyQ)
+                n x hv c4
+            | c6 => fupd_mono W E D12
+                (mkProperSep bodyP bodyQ)
+                (mkProperFUpd W D12 DN Ts)
+                (inv_combine_at_inner_mask W E D1 D12 DN P Q hDN12)
+                n x hv c5
+            | c7 => fupd_trans W E D12 DN Ts n x hv c6
+          \in transport
+            (\lam (Z : iProp S) =>
+              (mkProperFUpd W E DN
+                (mkProperSep LPQ (mkProperWand LPQ Z))).upred_holds n x)
+            (sealedFUpd_peval W DN E mkProperEmp)
+            c7))
+
+\lemma inv_combine {S : gFunctors} (W : wsatGS S)
+    (N1 N2 N : Namespace) (P Q : iProp S)
+    (hdisj : ndisjoint N1 N2)
+    (hsub : coPSubset (coPset_union (nclose N1) (nclose N2)) (nclose N))
+  : properUPred_ent
+      (mkProperSep (inv W N1 P) (inv W N2 Q))
+      (inv W N (mkProperSep P Q)) =>
+  \let
+    | s1 : properUPred_ent
+        (mkProperSep (inv W N1 P) (inv W N2 Q))
+        (mkProperSep (inv_body W N1 P) (inv_body W N2 Q)) =>
+        properUPred_ent_trans
+          (mkProperSep (inv W N1 P) (inv W N2 Q))
+          (mkProperSep (inv_body W N1 P) (inv W N2 Q))
+          (mkProperSep (inv_body W N1 P) (inv_body W N2 Q))
+          (sep_mono_l_ent (inv W N1 P) (inv_body W N1 P) (inv W N2 Q)
+            (inv_unfold_ent W N1 P))
+          (sep_mono_r_ent (inv_body W N1 P) (inv W N2 Q)
+            (inv_body W N2 Q)
+            (inv_unfold_ent W N2 Q))
+    | s2 : properUPred_ent
+        (mkProperSep (inv_body W N1 P) (inv_body W N2 Q))
+        (mkProperPersistently
+          (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q))) =>
+        persistently_sep_2_ent (inv_inner W N1 P) (inv_inner W N2 Q)
+    | s3 : properUPred_ent
+        (mkProperPersistently
+          (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q)))
+        (inv_body W N (mkProperSep P Q)) =>
+        (BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+          (mkProperSep (inv_inner W N1 P) (inv_inner W N2 Q))
+          (inv_inner W N (mkProperSep P Q))
+          (inv_combine_inner W N1 N2 N P Q hdisj hsub)
+  \in \lam n x hv h =>
+    inv_fold_ent W N (mkProperSep P Q) n x hv
+      (s3 n x hv (s2 n x hv (s1 n x hv h)))
+
+-- =================================================================================
+-- inv_combine_dup_l: same namespace on both sides, P duplicable.
+-- =================================================================================

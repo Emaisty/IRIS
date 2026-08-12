@@ -179,14 +179,23 @@
 -- wsat_alloc (Rocq: `wsat_alloc`): allocate an initial world.
 --   ⊢ |==> ∃ (W : wsatGS Σ). wsat W ∗ ownE ⊤
 -- Parameterised by the `wsatGpreS` evidence (Rocq's `!wsatGpreS Σ`).
+--
+-- This is the one place where we use `mkProperExist1`.  Rocq keeps `wsatGS`
+-- in `Set` because equality of CMRAs is proof-irrelevant (`Prop`); Arend's
+-- CMRA path stored by `inG` instead makes `wsatGS S : Set1`.  The specialized
+-- concrete-UPred existential preserves Rocq's direct `W : wsatGS S` witness
+-- without raising the universe of the generic BI interface.  Consequently,
+-- future consumers of this allocation result must eliminate the witness with
+-- `exist1_elim_ent` (or `sep_exist1_l_elim`) rather than the Set0-only generic
+-- BI existential laws.  Ordinary Iris existentials remain `mkProperExist`.
 -- =================================================================================
 
 \lemma wsat_alloc {S : gFunctors} (WP : wsatGpreS S)
   : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist (wsatGS S) (\lam W =>
+      (mkProperBUpd (mkProperExist1 (wsatGS S) (\lam W =>
           mkProperSep (wsat W) (ownE W coPset_universe))))
   => \let
-       | M : UCMRA => iResUR S
+       | M => iResUR S
        | av => wsat_inv_auth (DfracOwn qp_one)
            (invariant_unfold_map (gempty {gname} {gnameCountable} {iProp S}))
        | hval_I : (wsat_invR S).valid av =>
@@ -205,7 +214,7 @@
        | alloc_E => own_alloc WP.wsatGpreS_enabled (CoPset coPset_universe) hval_E
        | alloc_D => own_alloc WP.wsatGpreS_disabled (GSet gset_empty) hval_D
        | Goal_body : ProperUPred (iResUR S) =>
-           mkProperExist (wsatGS S) (\lam W => mkProperSep (wsat W) (ownE W coPset_universe))
+           mkProperExist1 (wsatGS S) (\lam W => mkProperSep (wsat W) (ownE W coPset_universe))
        | final : properUPred_ent (mkProperSep A_D (mkProperSep A_E A_I)) Goal_body =>
            \lam n x hv h => \case h \with {
              | inP (aD, aEI, dx, hAD, hAEI) => \case hAEI \with {
@@ -260,7 +269,7 @@
       (mkProperBUpd (mkProperExist gname (\lam i =>
           mkProperSep (mkProperPure (psi i)) (ownD W (gset_singleton i)))))
   => \let
-       | M : UCMRA => iResUR S
+       | M => iResUR S
        | Xi : gset_disj -> \Prop => \lam y => TruncP (\Sigma (i : gname)
              (y = GSet (gset_singleton i)) (psi i))
        | step_unit => own_unit {S} {gset_disj_UCMRA} W.wsatGpreS_disabled W.disabled_name
@@ -362,7 +371,7 @@
       (mkProperBUpd (mkProperExist gname (\lam i =>
           mkProperSep (mkProperPure (phi i)) (mkProperSep (wsat W) (ownI W i P)))))
   => \let
-       | M : UCMRA => iResUR S
+       | M => iResUR S
        | au : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
            \lam J => own W.wsatGpreS_inv W.invariant_name
                (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map J))
@@ -528,7 +537,7 @@
               (mkProperSep (mkProperWand (ownE W (coPset_singleton i)) (wsat W))
                   (mkProperSep (ownI W i P) (ownD W (gset_singleton i)))))))
   => \let
-       | M : UCMRA => iResUR S
+       | M => iResUR S
        | au : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
            \lam J => own W.wsatGpreS_inv W.invariant_name
                (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map J))

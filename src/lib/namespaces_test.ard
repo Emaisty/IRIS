@@ -1,0 +1,60 @@
+\import Logic
+\import Set
+\import lib.pmap
+\import lib.coPset
+\import lib.gset_cmra
+\import lib.finite_coPset
+\import lib.namespaces
+
+\lemma test_gsetToCoPset_in (p : Pos) (E : Gset)
+    (h : gset_in p E) : coPIn p (gsetToCoPset E) =>
+  gsetToCoPset_in p E h
+
+\lemma test_gsetToCoPset_in_inv (p : Pos) (E : Gset)
+    (h : coPIn p (gsetToCoPset E)) : gset_in p E =>
+  gsetToCoPset_in_inv p E h
+
+\lemma test_nclose_nroot : nclose nroot = coPset_universe =>
+  nclose_nroot
+
+\lemma test_nclose_subseteq (N : Namespace) (p : Pos)
+  : coPSubset (nclose (ndot N p)) (nclose N) =>
+  nclose_ndot_subseteq N p
+
+\lemma test_ndot_ne_disjoint (N : Namespace) (p1 p2 : Pos)
+    (hne : p1 = p2 -> Empty)
+  : ndisjoint (ndot N p1) (ndot N p2) =>
+  ndot_ne_disjoint N p1 p2 hne
+
+\lemma test_ndot_preserve_disjoint_l (N : Namespace) (E : coPset) (p : Pos)
+    (h : coPDisjoint (nclose N) E)
+  : coPDisjoint (nclose (ndot N p)) E =>
+  ndot_preserve_disjoint_l N E p h
+
+\lemma test_ndot_preserve_disjoint_r (N : Namespace) (E : coPset) (p : Pos)
+    (h : coPDisjoint E (nclose N))
+  : coPDisjoint E (nclose (ndot N p)) =>
+  ndot_preserve_disjoint_r N E p h
+
+\func test_nclose_infinite (N : Namespace) (E : Gset)
+  : \Sigma (i : Pos) (coPIn i (nclose N)) (Not (gset_in i E)) =>
+  nclose_infinite N E
+
+\func test_fresh_inv_name (E : Gset) (N : Namespace)
+  : \Sigma (i : Pos) (Not (gset_in i E)) (coPIn i (nclose N)) =>
+  fresh_inv_name E N
+
+\func test_fresh_inv_name_empty (N : Namespace)
+  : \Sigma (i : Pos) (Not (gset_in i gset_empty)) (coPIn i (nclose N)) =>
+  fresh_inv_name gset_empty N
+
+\func test_fresh_inv_name_singleton (N : Namespace) (p : Pos)
+  : \Sigma (i : Pos) (Not (gset_in i (gset_singleton p)))
+      (coPIn i (nclose N)) =>
+  fresh_inv_name (gset_singleton p) N
+
+\func test_fresh_inv_name_union (N : Namespace) (p1 p2 : Pos)
+  : \Sigma (i : Pos)
+      (Not (gset_in i (gset_union (gset_singleton p1) (gset_singleton p2))))
+      (coPIn i (nclose N)) =>
+  fresh_inv_name (gset_union (gset_singleton p1) (gset_singleton p2)) N
