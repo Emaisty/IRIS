@@ -237,7 +237,7 @@
 
 \lemma rat_diff_zro (x : Rat) :
   x - RatField.zro = x =>
-  pmap (RatField.+ x) RatField.negative_zro *> RatField.zro-right
+  pmap (\lam z => x RatField.+ z) RatField.negative_zro *> RatField.zro-right
 
 \func qp_gap (q : Qp) (h : q.qp_val RatField.< RatField.ide) : Qp \cowith
   | qp_val => RatField.mid q.qp_val RatField.ide - q.qp_val
@@ -248,7 +248,7 @@
   (qp_add (qp_gap q h) q).qp_val RatField.< RatField.ide =>
   transport (\lam z => z RatField.< RatField.ide)
     (inv
-       (pmap (RatField.+ (RatField.mid q.qp_val RatField.ide - q.qp_val))
+       (pmap (\lam z => (RatField.mid q.qp_val RatField.ide - q.qp_val) RatField.+ z)
          (inv (rat_diff_zro q.qp_val))
        *> RatField.diff_+ {RatField.zro} {q.qp_val}
             {RatField.mid q.qp_val RatField.ide}

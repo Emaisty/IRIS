@@ -154,7 +154,7 @@
 -- gmapURF: the URFunctor `A B ↦ gmapUR K (F A B)` (Rocq `gmapURF`).
 -- =================================================================================
 
-\func gmapURF (K : \Set) (cnt : Countable K) (F : RFunctor) : URFunctor \cowith
+\func gmapURF (K : \Set0) (cnt : Countable K) (F : RFunctor) : URFunctor \cowith
   | urFunctor_car => \lam A B => GmapUCMRA K cnt (F.rFunctor_car A B)
   | urFunctor_map => \lam fg => gmapO_map (F.rFunctor_map fg)
   | urFunctor_map_ne => \lam n fg fg' h =>
@@ -183,7 +183,7 @@
   | urFunctor_mor => \lam fg =>
       gmap_fmap_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
 
-\func gmapURF_contractive (K : \Set) (cnt : Countable K) (F : RFunctor)
+\func gmapURF_contractive (K : \Set0) (cnt : Countable K) (F : RFunctor)
                           (hF : RFunctorContractive F)
   : URFunctorContractive (gmapURF K cnt F) \cowith
   | urFunctor_map_contractive => \lam n fg fg' h =>

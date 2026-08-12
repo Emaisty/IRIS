@@ -1,0 +1,36 @@
+\import Logic
+\import Data.Maybe
+\import cmra
+\import uPred
+\import iprop
+\import lib.gFunctors
+\import lib.gmap_cmra
+\import lib.dfrac_cmra
+\import lib.gen_heap
+
+-- Compile-time signature checks for the A12 generic heap surface.
+
+\lemma gen_heap_subG_test {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (h : subG (gen_heapSigma L cnt V) S) =>
+  subG_gen_heapGpreS h
+
+\lemma gen_heap_alloc_test {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V)
+    (fresh : glookup m l = nothing) (hdq : dfrac_valid dq) =>
+  gen_heap_alloc H m l dq v fresh hdq
+
+\lemma gen_heap_update_test {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (v v' : V) =>
+  gen_heap_update H m l v v'
+
+\lemma gen_heap_valid_test {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V) =>
+  gen_heap_valid H m l dq v
+
+\lemma gen_heap_init_test {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (Hpre : gen_heapGpreS L cnt V S)
+    (m : Gmap L cnt V) =>
+  gen_heap_init Hpre m

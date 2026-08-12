@@ -208,6 +208,61 @@
         \in Q.upred_mono n n (M.op a2 a1) a hq_swap inclN_swap_a <=-refl
     }
 
+\instance BIuPredPersistentlyMixin (M : UCMRA) : BIPersistentlyMixin
+  | BIBase => BIuPred M
+  | persistently_mono P Q =>
+      \lam h n a hv hp => h n (ucmra_core a) (ucmra_core_validN n a hv) hp
+  | persistently_idemp_2 P =>
+      \lam n a _ hp =>
+        P.upred_mono n n (ucmra_core a) (ucmra_core (ucmra_core a)) hp
+          (inclN_of_dist_unit n (ucmra_core a) (ucmra_core (ucmra_core a))
+            (equiv_dist {M} (ucmra_core_idemp a) n)) <=-refl
+  | persistently_emp_2 =>
+      \lam n a _ _ =>
+        inP (ucmra_core a,
+          M.ofe_dist_sym n (M.op M.unit (ucmra_core a)) (ucmra_core a)
+            (ucmra_unit_left_id_dist n (ucmra_core a)))
+  | persistently_and_2 P Q =>
+      \lam _ _ _ hpq => (hpq.1, hpq.2)
+  | persistently_exist_1 {A} Phi =>
+      \lam _ _ _ hex => \case hex \with {
+        | inP (x, hx) => inP (x, hx)
+      }
+  | persistently_absorbing P Q =>
+      \lam n a _ hsep => \case hsep \with {
+        | inP (a1, a2, da, hp, _) =>
+          P.upred_mono n n (ucmra_core a1) (ucmra_core a) hp
+            (ucmra_core_monoN n a1 a (inP (a2, da))) <=-refl
+      }
+  | persistently_and_sep_elim P Q =>
+      \lam n a _ hpq =>
+        inP (ucmra_core a, a,
+          equiv_dist {M}
+            (M.equiv_sym (M.op (ucmra_core a) a) a
+              (ucmra_core_left_id a)) n,
+          hpq.1, hpq.2)
+
+
+\instance BIuPredLaterMixin (M : UCMRA) : BILaterMixin
+  | BIBase => BIuPred M
+  | later_mono => proper_later_mono
+  | later_intro => proper_later_intro
+  | later_forall_2 => proper_later_forall_2
+  | later_exist_false => proper_later_exist_false
+  | later_sep_1 => proper_later_sep_1
+  | later_sep_2 => proper_later_sep_2
+  | later_persistently_1 => proper_later_persistently_1
+  | later_persistently_2 => proper_later_persistently_2
+  | later_false_em => proper_later_false_em
+
+
+-- The complete concrete BI instance for uPred: all three mixins assembled
+-- over the shared `BIuPred M` base (Rocq `uPred_bi` in base_logic/bi.v).
+\instance BIuPredBI (M : UCMRA) : BI
+  | BIMixin => BIuPredMixin M
+  | BIPersistentlyMixin => BIuPredPersistentlyMixin M
+  | BILaterMixin => BIuPredLaterMixin M
+
 
 
 
@@ -228,7 +283,7 @@
            \case hP k k_le_m yf hv_op \with {
              | inP (a', hv'_op, hp_a') =>
                \let
-                 | k_le_n : k <= n => NatSemiring.<=∘ k_le_m m_le_n
+                 | k_le_n : k <= n => (NatSemiring.<=∘) k_le_m m_le_n
                  | hv_a' : M.validN k a' => M.cmra_validN_op_l k a' yf hv'_op
                  | hq_a' : Q.upred_holds k a' => (hPQ k a' k_le_n hv_a').1 hp_a'
                \in inP (a', hv'_op, hq_a')
@@ -237,7 +292,7 @@
            \case hQ k k_le_m yf hv_op \with {
              | inP (a', hv'_op, hq_a') =>
                \let
-                 | k_le_n : k <= n => NatSemiring.<=∘ k_le_m m_le_n
+                 | k_le_n : k <= n => (NatSemiring.<=∘) k_le_m m_le_n
                  | hv_a' : M.validN k a' => M.cmra_validN_op_l k a' yf hv'_op
                  | hp_a' : P.upred_holds k a' => (hPQ k a' k_le_n hv_a').2 hq_a'
                \in inP (a', hv'_op, hp_a')

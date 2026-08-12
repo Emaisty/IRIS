@@ -1220,14 +1220,12 @@
     absurd (LinearOrder.notLess (suc<=suc zero<=_) (suc_<=_< h))
   | PNode v l r, xO q =>
     plookup'_beyond_depth l q
-        (NatSemiring.<=∘
-            (suc<=suc {pmap_depth' l} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_l (pmap_depth' l) (pmap_depth' r)))
-            (suc<=suc.conv {suc (depth_max (pmap_depth' l) (pmap_depth' r))} {pos_len q} h))
+        ((suc<=suc {pmap_depth' l} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_l (pmap_depth' l) (pmap_depth' r)))
+          NatSemiring.<=∘ (suc<=suc.conv h))
   | PNode v l r, xI q =>
     plookup'_beyond_depth r q
-        (NatSemiring.<=∘
-            (suc<=suc {pmap_depth' r} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_r (pmap_depth' l) (pmap_depth' r)))
-            (suc<=suc.conv {suc (depth_max (pmap_depth' l) (pmap_depth' r))} {pos_len q} h))
+        ((suc<=suc {pmap_depth' r} {depth_max (pmap_depth' l) (pmap_depth' r)} (depth_max_le_r (pmap_depth' l) (pmap_depth' r)))
+          NatSemiring.<=∘ (suc<=suc.conv h))
 
 \func pmap_fresh_key {A : \Set} (m : Pmap A) : \Sigma (k : Pos) (plookup m k = nothing) =>
   ( pos_pad (pmap_depth' m.tree)

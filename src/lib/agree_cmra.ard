@@ -34,7 +34,7 @@
 -- List membership
 -- =================================================================================
 
-\func In {A : \Set} (a : A) (l : List A) : \Set \elim l
+\func In {A : \Set} (a : A) (l : List A) : \Set0 \elim l
   | nil       => Empty
   | :: x xs   => Or (a = x) (In a xs)
 
@@ -350,7 +350,7 @@
   -- dist n x y1 and dist n x y2 follow from agree_op_invN.
   | cmra_extend => \lam n x y1 y2 hv hd =>
       \let
-        | M : OFE => AgreeOFE A
+        | M => AgreeOFE A
         | hv_op : agree_validN n (agree_op y1 y2) =>
           \lam a b ha hb =>
             -- Use bidirectional dist to translate membership.

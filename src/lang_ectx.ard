@@ -1115,3 +1115,123 @@
     | EctxStep K e1' e2' p1 p2 base =>
       store_step_inv_ctx l v sigma e2 sigma2 K e1' e2' p1 p2 base
   }
+
+-- Load inversion is parameterized by the lookup fact supplied by the heap
+-- resource.  Keeping it with the other operational inversion lemmas lets both
+-- the historical and generic program logics use the same language theorem.
+\func base_load_step_inv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (lookup : glookup sigma.heap l = just v)
+  (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+  : \Sigma (e2 = Val v) (sigma2 = sigma) =>
+  \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS l' v' lookup' p1 p2 p3 =>
+      \let
+        | l_eq : l = l' =>
+          pmap (\lam (e : Expr) => \case e \with {
+            | Load (Val (LitV (LitLoc x))) => x
+            | _ => l
+          }) p1
+        | lookup'' : glookup sigma.heap l' = just v =>
+          transport (\lam ll => glookup sigma.heap ll = just v) l_eq lookup
+        | v_eq : v = v' =>
+          pmap (\lam (m : Maybe Value) => \case m \with {
+            | just w => w
+            | nothing => v
+          }) (inv lookup'' *> lookup')
+      \in (p2 *> pmap Val (inv v_eq), p3)
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+  }
+
+\truncated \data LoadStepInv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  | LoadStepInvIntro (e2_eq : e2 = Val v) (sigma2_eq : sigma2 = sigma)
+
+\func load_step_inv_ctx_item
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (lookup : glookup sigma.heap l = just v)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : Load (Val (LitV (LitLoc l))) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2)
+  : LoadStepInv l v sigma e2 sigma2 \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx =>
+    \let
+      | inner_eq : Val (LitV (LitLoc l)) = fill K' e1' =>
+        pmap (\lam e => \case e \with {
+          | Load e' => e'
+          | _ => Val (LitV (LitLoc l))
+        }) p1
+      | inner_not_val : to_val (fill K' e1') = nothing =>
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+      | impossible : just (LitV (LitLoc l)) = nothing =>
+        pmap to_val inner_eq *> inner_not_val
+    \in \case impossible \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+
+\func load_step_inv_ctx
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (lookup : glookup sigma.heap l = just v)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : Load (Val (LitV (LitLoc l))) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2)
+  : LoadStepInv l v sigma e2 sigma2 \elim K
+  | EmptyCtx =>
+    \let
+      | base' : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 =>
+        transport (\lam ee => BaseStep ee sigma e2' sigma2) (inv p1) base
+      | inv_base : \Sigma (e2' = Val v) (sigma2 = sigma) =>
+        base_load_step_inv l v sigma e2' sigma2 lookup base'
+    \in LoadStepInvIntro (p2 *> inv_base.1) inv_base.2
+  | ConsCtx Ki K' =>
+    load_step_inv_ctx_item l v sigma e2 sigma2 lookup
+      Ki K' e1' e2' p1 p2 base
+
+\func load_step_inv
+  {cnt : Countable Loc}
+  (l : Loc) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt)
+  (lookup : glookup sigma.heap l = just v)
+  (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+  : LoadStepInv l v sigma e2 sigma2 =>
+  \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      load_step_inv_ctx l v sigma e2 sigma2 lookup
+        K e1' e2' p1 p2 base
+  }

@@ -105,7 +105,7 @@
   =>
     \let
       | M => HeapCMRA Loc cnt Val
-      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | G => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
       | frag1 : M.E => heap_frag l v1
       | frag2 : M.E => heap_frag l v2
       | hv_frag : validN {G} n (M.op a1 a2).2 =>
@@ -384,7 +384,7 @@
   => \case hincl \with {
     | inP (z, hz) =>
       \let
-        | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+        | G => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
       \in inP (z, \lam k' =>
         \case NatSemiring.decideEq k' k \with {
           | yes p =>
@@ -524,7 +524,7 @@
   \elim z, yf
   | (nothing, zf), (nothing, yff) =>
     \let
-      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | G => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
       | sing : G.E => gmap_singleton l (just (excl v))
       | frame : G.E => G.op (G.op G.unit zf) yff
       | hv_old : AuthValidN {G} n (just (excl h), frame) => hv
@@ -614,7 +614,7 @@
   \elim z, yf
   | (nothing, zf), (nothing, yff) =>
     \let
-      | G : UCMRA => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
+      | G => GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Val))
       | singNew : G.E => gmap_singleton l (just (excl new))
       | frame : G.E => G.op (G.op G.unit zf) yff
       | hv_old : AuthValidN {G} n (just (excl h),

@@ -50,13 +50,21 @@
 --   * disabled set  : gset_disj positive
 -- =================================================================================
 
-\func wsat_invV (S : gFunctors) : CMRA => AgreeCMRA (LaterOFE (iPropO S))
+\func wsat_invV (S : gFunctors) : CMRA.{0} => AgreeCMRA (LaterOFE (iPropO S))
 
+-- The seal's *body* is built over `iPropCOFE S` (the COFE, coerced to its OFE
+-- part) rather than `iPropO S`.  The two are definitionally interchangeable at
+-- type level (`UPredCOFE`'s `OFE` field is `UPredOFE`), so the declared
+-- interface keeps the `iPropO` leaf and nothing downstream changes.  The
+-- `iPropCOFE` body leaf makes `\peval wsat_invKit S` land on the same leaf the
+-- functor package `wsatSigma` applies at (`rFunctor_apply … (iPropCOFE S)`),
+-- keeping the `subG_wsatSigma` conversion in the tractable same-leaf class —
+-- with mismatched leaves the conversion checker diverges (see wsat_sigma.ard).
 \sfunc wsat_invKit (S : gFunctors)
   : GmapViewAgreeKit gname gnameCountable (LaterOFE (iPropO S)) =>
-  gmap_view_agree_kit gname gnameCountable (LaterOFE (iPropO S))
+  gmap_view_agree_kit gname gnameCountable (LaterOFE (iPropCOFE S))
 
-\func wsat_invR (S : gFunctors) : CMRA =>
+\func wsat_invR (S : gFunctors) : CMRA.{0} =>
   (wsat_invKit S).gva_R
 
 \sfunc wsat_inv_auth {S : gFunctors} (dq : Dfrac)
@@ -124,7 +132,7 @@
     | py : y = y0 => pmap2 (\lam a b => (wsat_invR S).op a b)
         (wsat_inv_auth_peval (DfracOwn qp_one) (ginsert i v m))
         (wsat_inv_frag_peval i dq v)
-  \in cmra_update_det_paths
+  \in cmra_update_det_paths {K.gva_R}
     (wsat_inv_auth (DfracOwn qp_one) m) x0 y y0
     (wsat_inv_auth_peval (DfracOwn qp_one) m) py
     (K.gva_alloc m i dq v fresh hdq hv)
@@ -342,14 +350,14 @@
     | suc n', h' => (iPropO S).ofe_dist_sym n' P Q (h'.dist_later_lt n' id<suc)
   }
 
-\lemma own_op_valid_at {S : gFunctors} {A : CMRA}
+\lemma own_op_valid_at {S : gFunctors} {A : CMRA.{0}}
     (i : inG S A) (gam : gname) (a b : A.E)
     (n : Nat) (x : (iResUR S).E) (hv : (iResUR S).validN n x)
     (hsep : (mkProperSep (own i gam a) (own i gam b)).upred_holds n x)
   : A.validN n (A.op a b) =>
   own_op_valid i gam a b n x hv hsep
 
-\lemma own_op_valid_elim_at {S : gFunctors} {A : CMRA}
+\lemma own_op_valid_elim_at {S : gFunctors} {A : CMRA.{0}}
     (i : inG S A) (gam : gname) (a b : A.E)
     (n : Nat) (x : (iResUR S).E) (hv : (iResUR S).validN n x)
     (P : \Prop) (k : A.validN n (A.op a b) -> P)
@@ -464,7 +472,7 @@
       | inP (I, hI) => \case hI, hoe \with {
         | inP (y1, y2, d1, hauth, hbig), inP (z1, z2, d2, hfrag, hE) =>
           \let
-            | M : UCMRA => iResUR S
+            | M => iResUR S
             | dA : M.dist n x (M.op (M.op y1 y2) (M.op z1 z2)) =>
                 dist_op_congr {iResUR S} n x x1 x2 (M.op y1 y2) (M.op z1 z2) dx d1 d2
             | dB : M.dist n x (M.op (M.op y1 z1) (M.op y2 z2)) =>
@@ -588,7 +596,7 @@
         | inP (y1, y2, d1, hauth, hbig), inP (z1, z23, d2, hfrag, h23) => \case h23 \with {
           | inP (z2, z3, d3, hP, hD) =>
             \let
-              | M : UCMRA => iResUR S
+              | M => iResUR S
               | dA : M.dist n x (M.op (M.op y1 y2) (M.op z1 (M.op z2 z3))) =>
                   dist_op_congr {iResUR S} n x x1 x2 (M.op y1 y2) (M.op z1 (M.op z2 z3)) dx d1
                       (M.ofe_dist_trans n x2 (M.op z1 z23) (M.op z1 (M.op z2 z3))

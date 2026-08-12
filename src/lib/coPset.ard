@@ -171,6 +171,9 @@
 \func coPDisjoint (X Y : coPset) : \Prop =>
   \Pi (p : Pos) -> coPIn p X -> coPNotIn p Y
 
+\lemma coPSubset_empty_l (X : coPset) : coPSubset coPset_empty X =>
+  \lam p hp => \case coPmem_empty p *> hp \with {}
+
 
 \lemma coPset_equiv_refl (X : coPset) : coPset_equiv X X => \lam _ => idp
 

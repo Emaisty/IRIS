@@ -71,16 +71,16 @@
         (gmap_view_frag k (DfracOwn qp_one) v))) =>
   gmap_view_both_validN n dp m k v h
 
-\lemma full_view_urf_test (K : \Set) (cnt : Countable K) (F : RFunctor) =>
+\lemma full_view_urf_test (K : \Set0) (cnt : Countable K) (F : RFunctor) =>
   gmap_viewURF K cnt F
 
-\lemma full_view_rf_test (K : \Set) (cnt : Countable K) (F : RFunctor) =>
+\lemma full_view_rf_test (K : \Set0) (cnt : Countable K) (F : RFunctor) =>
   gmap_viewRF K cnt F
 
-\lemma full_view_urf_contractive_test (K : \Set) (cnt : Countable K)
+\lemma full_view_urf_contractive_test (K : \Set0) (cnt : Countable K)
     (F : RFunctor) (hF : RFunctorContractive F) =>
   gmap_viewURF_contractive K cnt F hF
 
-\lemma full_view_rf_contractive_test (K : \Set) (cnt : Countable K)
+\lemma full_view_rf_contractive_test (K : \Set0) (cnt : Countable K)
     (F : RFunctor) (hF : RFunctorContractive F) =>
   gmap_viewRF_contractive K cnt F hF

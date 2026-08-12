@@ -111,25 +111,6 @@
     (k : K) (dq : Dfrac) (v : V.E) : (gmap_viewR K cnt V).E =>
   view_frag (gsingleton k (dq, v))
 
-\lemma gmap_singleton_core_id {K : \Set} {cnt : Countable K} {A : CMRA}
-    (k : K) (x : A.E) (hx : CoreId {A} x)
-  : CoreId {GmapCMRA K cnt A} (gsingleton k x) =>
-  gmap_core_id (gsingleton k x) (\lam j y hy =>
-    \case EqDecision.decideEq {cnt} j k \with {
-      | yes e =>
-        \let
-          | atj : glookup (gsingleton k x) j = just x =>
-              transport (\lam z => glookup (gsingleton k x) z = just x)
-                (inv e) (glookup_singleton_eq k x)
-          | ey : y = x => pmap (\case __ \with {
-              | nothing => y
-              | just z => z
-            }) (inv hy *> atj)
-        \in transport (CoreId {A}) (inv ey) hx
-      | no ne => \case inv hy *>
-          glookup_singleton_ne k j x (\lam q => ne (inv q)) \with {}
-    })
-
 \lemma gmap_view_frag_core_id {K : \Set} {cnt : Countable K} {V : CMRA}
     (k : K) (dq : Dfrac) (v : V.E)
     (hdq : CoreId {DfracCMRA} dq) (hv : CoreId {V} v)
@@ -1189,9 +1170,11 @@
 -- An abstract package for the full gmap-view specialized to Agree values.
 -- Clients with recursive OFEs can seal this package and use its projections;
 -- conversion then compares projection applications instead of unfolding the
--- complete View CMRA record.
-\record GmapViewAgreeKit (K : \Set) (cnt : Countable K) (O : OFE)
-  | gva_R : UCMRA
+-- complete View CMRA record.  This package is intentionally level-0: all of
+-- its clients are RFunctor/iProp constructions at level 0, and leaving these
+-- levels unbounded makes paths over the package acquire an infinite level.
+\record GmapViewAgreeKit (K : \Set0) (cnt : Countable K) (O : OFE.{0})
+  | gva_R : UCMRA.{0}
   | gva_auth : Dfrac -> Gmap K cnt (AgreeElem O) -> gva_R.E
   | gva_frag : K -> Dfrac -> AgreeElem O -> gva_R.E
   | gva_auth_validN : \Pi (n : Nat) (dq : Dfrac)
@@ -1204,7 +1187,7 @@
       \Sigma (dfrac_valid dp)
         (TruncP (\Sigma (mv : AgreeElem O) (glookup m k = just mv)
           ((AgreeOFE O).dist n v mv)))
-  | gva_both_discarded_map_validN : \Pi (X : \Set) (n : Nat)
+  | gva_both_discarded_map_validN : \Pi (X : \Set0) (n : Nat)
       (dp : Dfrac) (m : Gmap K cnt X) (f : X -> O.E) (k : K) (x : O.E) ->
       gva_R.validN n (gva_R.op
         (gva_auth dp (gmap_to_agree_map m f))
@@ -1220,7 +1203,7 @@
           (gva_auth (DfracOwn qp_one) (ginsert k v m))
           (gva_frag k dq v))
 
-\func gmap_view_agree_kit (K : \Set) (cnt : Countable K) (O : OFE)
+\func gmap_view_agree_kit (K : \Set0) (cnt : Countable K) (O : OFE.{0})
   : GmapViewAgreeKit K cnt O \cowith
   | gva_R => gmap_viewUR K cnt (AgreeCMRA O)
   | gva_auth => \lam dq m => gmap_view_auth dq m
@@ -1234,6 +1217,11 @@
   | gva_alloc => \lam m k dq v fresh hdq hv =>
       gmap_view_alloc {K} {cnt} {AgreeCMRA O}
         m k dq v fresh hdq hv
+
+-- Expose the CMRA part of the unital construction without unfolding it at use
+-- sites.  Keeping this conversion separate prevents one very large comparison.
+\func gmap_viewUR_as_CMRA {K : \Set0} {cnt : Countable K} {V : CMRA.{0}}
+  : (gmap_viewUR K cnt V : CMRA.{0}) = gmap_viewR K cnt V => idp
 
 \lemma gmap_view_auth_persist {K : \Set} {cnt : Countable K} {V : CMRA}
     (dq : Dfrac) (m : Gmap K cnt V.E)

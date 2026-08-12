@@ -31,20 +31,20 @@
 -- =================================================================================
 
 \record RFunctor
-  | rFunctor_car (A B : COFE) : CMRA
-  | rFunctor_map {A1 A2 B1 B2 : COFE} :
+  | rFunctor_car (A B : COFE.{0}) : CMRA.{0}
+  | rFunctor_map {A1 A2 B1 B2 : COFE.{0}} :
       \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
       OFEMor (rFunctor_car A1 B1) (rFunctor_car A2 B2)
-  | rFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+  | rFunctor_map_ne {A1 A2 B1 B2 : COFE.{0}} :
       NonExpansive
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (rFunctor_car A1 B1) (rFunctor_car A2 B2)}
         rFunctor_map
-  | rFunctor_map_id {A B : COFE} (x : (rFunctor_car A B).E) :
+  | rFunctor_map_id {A B : COFE.{0}} (x : (rFunctor_car A B).E) :
       (rFunctor_car A B).equiv
         ((rFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
         x
-  | rFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+  | rFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE.{0}}
       (f : OFEMor A2 A1) (g : OFEMor A3 A2)
       (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
       (x : (rFunctor_car A1 B1).E) :
@@ -52,20 +52,43 @@
         ((rFunctor_map (g, g')).ofe_mor_car
           ((rFunctor_map (f, f')).ofe_mor_car x))
         ((rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
-  | rFunctor_mor {A1 A2 B1 B2 : COFE}
+  | rFunctor_mor {A1 A2 B1 B2 : COFE.{0}}
       (fg : \Sigma (OFEMor A2 A1) (OFEMor B1 B2)) :
       CmraMorphism {rFunctor_car A1 B1} {rFunctor_car A2 B2} (rFunctor_map fg)
 
 \record RFunctorContractive (F : RFunctor)
-  | rFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+  | rFunctor_map_contractive {A1 A2 B1 B2 : COFE.{0}} :
       ContractiveMap
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (F.rFunctor_car A1 B1) (F.rFunctor_car A2 B2)}
         (F.rFunctor_map {A1} {A2} {B1} {B2})
 
 -- Rocq's `rFunctor_apply F A : cmra := rFunctor_car F A A`.
-\func rFunctor_apply (F : RFunctor) (A : COFE) : CMRA =>
+\func rFunctor_apply (F : RFunctor) (A : COFE.{0}) : CMRA.{0} =>
   F.rFunctor_car A A
+
+-- =================================================================================
+-- constRF: the constant CMRA-valued functor (Rocq `constRF B`).  Ignores both
+-- arguments and returns `B`; its action on morphisms is the identity, which is
+-- a CMRA morphism (`cmra_morphism_id`).  Constant functors are contractive.
+-- Needed to package non-recursive resources (e.g. `coPset_disjR`, `gset_disjR`)
+-- as `gFunctor`s in `wsatΣ`.
+-- =================================================================================
+
+\func constRF (B : CMRA.{0}) : RFunctor \cowith
+  | rFunctor_car => \lam _ _ => B
+  | rFunctor_map => \lam _ => ofe_mor_id
+  | rFunctor_map_ne => \lam n fg fg' hfg x => B.ofe_dist_refl n x
+  | rFunctor_map_id => \lam x => B.equiv_refl x
+  | rFunctor_map_compose {A1} {A2} {A3} {B1} {B2} {B3} => \lam f g f' g' x => B.equiv_refl x
+  | rFunctor_mor => \lam _ => cmra_morphism_id {B}
+
+\func constRF_contractive (B : CMRA.{0}) : RFunctorContractive (constRF B) \cowith
+  | rFunctor_map_contractive => \lam n fg fg' hfg x => B.ofe_dist_refl n x
+
+-- Rocq's `constRF B` applied at any COFE `A` is `B` (definitionally).
+\func rFunctor_apply_constRF (B : CMRA.{0}) (A : COFE.{0})
+  : rFunctor_apply (constRF B) A = {CMRA.{0}} B => idp
 
 -- =================================================================================
 -- URFunctor: a UCMRA-valued functor C^op × C → UCMRA.
@@ -76,20 +99,20 @@
 -- =================================================================================
 
 \record URFunctor
-  | urFunctor_car (A B : COFE) : UCMRA
-  | urFunctor_map {A1 A2 B1 B2 : COFE} :
+  | urFunctor_car (A B : COFE.{0}) : UCMRA.{0}
+  | urFunctor_map {A1 A2 B1 B2 : COFE.{0}} :
       \Sigma (OFEMor A2 A1) (OFEMor B1 B2) ->
       OFEMor (urFunctor_car A1 B1) (urFunctor_car A2 B2)
-  | urFunctor_map_ne {A1 A2 B1 B2 : COFE} :
+  | urFunctor_map_ne {A1 A2 B1 B2 : COFE.{0}} :
       NonExpansive
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (urFunctor_car A1 B1) (urFunctor_car A2 B2)}
         urFunctor_map
-  | urFunctor_map_id {A B : COFE} (x : (urFunctor_car A B).E) :
+  | urFunctor_map_id {A B : COFE.{0}} (x : (urFunctor_car A B).E) :
       (urFunctor_car A B).equiv
         ((urFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
         x
-  | urFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE}
+  | urFunctor_map_compose {A1 A2 A3 B1 B2 B3 : COFE.{0}}
       (f : OFEMor A2 A1) (g : OFEMor A3 A2)
       (f' : OFEMor B1 B2) (g' : OFEMor B2 B3)
       (x : (urFunctor_car A1 B1).E) :
@@ -97,19 +120,19 @@
         ((urFunctor_map (g, g')).ofe_mor_car
           ((urFunctor_map (f, f')).ofe_mor_car x))
         ((urFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
-  | urFunctor_mor {A1 A2 B1 B2 : COFE}
+  | urFunctor_mor {A1 A2 B1 B2 : COFE.{0}}
       (fg : \Sigma (OFEMor A2 A1) (OFEMor B1 B2)) :
       CmraMorphism {urFunctor_car A1 B1} {urFunctor_car A2 B2} (urFunctor_map fg)
 
 \record URFunctorContractive (F : URFunctor)
-  | urFunctor_map_contractive {A1 A2 B1 B2 : COFE} :
+  | urFunctor_map_contractive {A1 A2 B1 B2 : COFE.{0}} :
       ContractiveMap
         {ProdOFE (OFEMorOFE A2 A1) (OFEMorOFE B1 B2)}
         {OFEMorOFE (F.urFunctor_car A1 B1) (F.urFunctor_car A2 B2)}
         (F.urFunctor_map {A1} {A2} {B1} {B2})
 
 -- Rocq's `urFunctor_apply F A : ucmra := urFunctor_car F A A`.
-\func urFunctor_apply (F : URFunctor) (A : COFE) : UCMRA =>
+\func urFunctor_apply (F : URFunctor) (A : COFE.{0}) : UCMRA.{0} =>
   F.urFunctor_car A A
 
 -- =================================================================================
@@ -125,6 +148,12 @@
 \record gFunctor
   | gFunctor_F : RFunctor
   | gFunctor_map_contractive : RFunctorContractive gFunctor_F
+
+-- Rocq's `GFunctor F` (requires `rFunctorContractive F`): the value constructor
+-- used inside the `#[ ... ]` list building a concrete `gFunctors` (e.g. `wsatΣ`).
+\func mkGFunctor (F : RFunctor) (h : RFunctorContractive F) : gFunctor \cowith
+  | gFunctor_F => F
+  | gFunctor_map_contractive => h
 
 -- =================================================================================
 -- gFunctors: indexable list of gFunctors.

@@ -37,10 +37,10 @@
 
 -- Following Iris-Coq: inclusion `x ≼ y` is stated up to OFE equivalence.
 -- The OFE parameter is required (replacing the previous `BaseSet`-only form).
-\func \infix 6 incl {O : OFE} {opO : Op O.E} (x y : O.E) : \Prop =>
+\func incl {O : OFE} {opO : Op O.E} (x y : O.E) : \Prop =>
   ∃ (z : O.E) (O.equiv y (op x z))
 
-\func \infix 6 inclN {O : OFE} {opO : Op O.E} (x : O.E) (n : Nat) (y : O.E) : \Prop =>
+\func inclN {O : OFE} {opO : Op O.E} (x : O.E) (n : Nat) (y : O.E) : \Prop =>
   ∃ (z : O.E) (O.dist n y (op x z))
 
 
@@ -105,7 +105,11 @@
   | ucmra_pcore_unit : (OptionOFE \this).equiv (pcore unit) (just unit)
 }
 
-\func CoreId {C : CMRA} (x : C.E) : \Prop => pcore {C} x = just x
+-- Iris's `CoreId`: the partial core is equivalent to the element.  This is
+-- deliberately OFE equivalence, not propositional equality, so CMRA morphisms
+-- preserve it.
+\func CoreId {C : CMRA} (x : C.E) : \Prop =>
+  (OptionOFE C).equiv (pcore {C} x) (just x)
 
 \func Exclusive {C : CMRA} (x : C.E) : \Prop =>
   \Pi (y : C.E) -> validN {C} 0 (op {C} x y) -> Empty
@@ -403,6 +407,17 @@
       option_equiv_to_inner_equiv (pcore {U} U.unit) U.unit U.unit U.ucmra_pcore_unit
   }
 
+\lemma ucmra_core_of_core_id {U : UCMRA} (x : U.E) (h : CoreId {U} x)
+  : U.equiv (ucmra_core x) x =>
+  option_equiv_to_inner_equiv (pcore {U} x) x U.unit h
+
+\lemma core_id_dup {U : UCMRA} (x : U.E) (h : CoreId {U} x)
+  : U.equiv (U.op x x) x =>
+  U.equiv_trans (U.op x x) (U.op (ucmra_core x) x) x
+    (op_proper_r {U} (U.equiv_sym (ucmra_core x) x
+      (ucmra_core_of_core_id x h)))
+    (ucmra_core_left_id x)
+
 \lemma ucmra_core_mono {U : UCMRA} (x y : U.E)
                        (h : incl {U} {\new Op U.E { | op => U.op }} x y)
   : incl {U} {\new Op U.E { | op => U.op }} (ucmra_core x) (ucmra_core y)
@@ -421,6 +436,30 @@
                   (\case py \with { | just c => c | nothing => U.unit }))
               (inv hpy)
               hincl_cy
+      }
+  }
+
+\lemma ucmra_core_validN {U : UCMRA} (n : Nat) (x : U.E)
+                          (h : U.validN n x)
+  : U.validN n (ucmra_core x) =>
+  U.cmra_validN_op_l n (ucmra_core x) x
+    (cmra_validN_proper n x (U.op (ucmra_core x) x)
+      (U.equiv_sym (U.op (ucmra_core x) x) x (ucmra_core_left_id x)) h)
+
+\lemma ucmra_core_monoN {U : UCMRA} (n : Nat) (x y : U.E)
+                         (h : inclN {U} {\new Op U.E { | op => U.op }} x n y)
+  : inclN {U} {\new Op U.E { | op => U.op }}
+      (ucmra_core x) n (ucmra_core y) =>
+  \case h \with {
+    | inP (z, dy) =>
+      \case ucmra_core_mono x (U.op x z)
+          (inP (z, U.equiv_refl (U.op x z))) \with {
+        | inP (w, heq) =>
+          inP (w, U.ofe_dist_trans n
+            (ucmra_core y) (ucmra_core (U.op x z))
+            (U.op (ucmra_core x) w)
+            (ucmra_core_ne n y (U.op x z) dy)
+            (equiv_dist {U} heq n))
       }
   }
 
@@ -505,6 +544,19 @@
   | cmra_morphism_op (x y : A.E) :
       B.equiv (f.ofe_mor_car (A.op x y))
               (B.op (f.ofe_mor_car x) (f.ofe_mor_car y))
+
+\lemma cmra_morphism_core_id {A B : CMRA} {f : OFEMor A B}
+    (hf : CmraMorphism f) (x : A.E) (h : CoreId {A} x)
+  : CoreId {B} (f.ofe_mor_car x) =>
+  (OptionOFE B).equiv_trans
+    (pcore {B} (f.ofe_mor_car x))
+    (maybe_fmap f.ofe_mor_car (pcore {A} x))
+    (just (f.ofe_mor_car x))
+    ((OptionOFE B).equiv_sym
+      (maybe_fmap f.ofe_mor_car (pcore {A} x))
+      (pcore {B} (f.ofe_mor_car x))
+      (hf.cmra_morphism_pcore x))
+    (maybe_fmap_proper f (pcore {A} x) (just x) h)
 
 -- Rocq's `cmra_morphism_monoN`: morphisms preserve step-indexed inclusion.
 \lemma cmra_morphism_monoN {A B : CMRA} {f : OFEMor A B} (hf : CmraMorphism f)
@@ -647,33 +699,38 @@
 -- Rocq's `cmra_transport` (`algebra/cmra.v`).  All laws follow by path
 -- elimination.
 
-\func cmra_transport {A B : CMRA} (H : A = B) (a : A.E) : B.E =>
-  transport (\lam (C : CMRA) => C.E) H a
+\func cmra_transport.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (a : A.E) : B.E =>
+  transport (\lam (C : CMRA.{u}) => C.E) H a
 
-\lemma cmra_transport_ne {A B : CMRA} (H : A = B) (n : Nat) (x y : A.E)
+\lemma cmra_transport_core_id.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (a : A.E)
+    (h : CoreId {A} a)
+  : CoreId {B} (cmra_transport H a) \elim H
+  | idp => h
+
+\lemma cmra_transport_ne.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (n : Nat) (x y : A.E)
                          (h : A.dist n x y)
   : B.dist n (cmra_transport H x) (cmra_transport H y) \elim H
   | idp => h
 
-\lemma cmra_transport_proper {A B : CMRA} (H : A = B) (x y : A.E)
+\lemma cmra_transport_proper.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (x y : A.E)
                              (h : A.equiv x y)
   : B.equiv (cmra_transport H x) (cmra_transport H y) \elim H
   | idp => h
 
-\lemma cmra_transport_op {A B : CMRA} (H : A = B) (x y : A.E)
+\lemma cmra_transport_op.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (x y : A.E)
   : B.equiv (cmra_transport H (A.op x y))
             (B.op (cmra_transport H x) (cmra_transport H y)) \elim H
   | idp => A.equiv_refl (A.op x y)
 
-\lemma cmra_transport_validN {A B : CMRA} (H : A = B) (n : Nat) (x : A.E)
+\lemma cmra_transport_validN.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (n : Nat) (x : A.E)
   : B.validN n (cmra_transport H x) <-> A.validN n x \elim H
   | idp => (\lam h => h, \lam h => h)
 
-\lemma cmra_transport_valid {A B : CMRA} (H : A = B) (x : A.E)
+\lemma cmra_transport_valid.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (x : A.E)
   : B.valid (cmra_transport H x) <-> A.valid x \elim H
   | idp => (\lam h => h, \lam h => h)
 
-\lemma cmra_transport_updatePM {A B : CMRA} (H : A = B) (x : A.E)
+\lemma cmra_transport_updatePM.{u} {A B : CMRA.{u}} (H : A = {CMRA.{u}} B) (x : A.E)
                                (P : A.E -> \Prop)
                                (h : cmra_updatePM {A} x P)
   : cmra_updatePM {B} (cmra_transport H x)
@@ -684,7 +741,8 @@
 
 -- The transported unit of a UCMRA is a left identity in the target CMRA.
 -- Used by `own_unit` to show the component image absorbs the injected ε.
-\lemma cmra_transport_unit_left_id {A : UCMRA} {B : CMRA} (H : A = {CMRA} B)
+\lemma cmra_transport_unit_left_id.{u} {A : UCMRA.{u}} {B : CMRA.{u}}
+    (H : A = {CMRA.{u}} B)
     (n : Nat) (w : B.E)
   : B.dist n (B.op (cmra_transport H A.unit) w) w \elim H
   | idp => equiv_dist {A} (A.ucmra_unit_left_id w) n

@@ -17,11 +17,6 @@
 -- oracle; for `gname = Pos` it is provided by `pmap_fresh_key` (lib/pmap).
 -- =================================================================================
 
-\lemma glookup_singleton_ne {K : \Set} {cnt : Countable K} {A : \Set}
-                            (k k' : K) (x : A) (hne : Not (k = k'))
-  : glookup (gsingleton {K} {cnt} k x) k' = nothing
-  => glookup_insert_ne k k' x gempty hne *> glookup_empty k'
-
 -- `option_op (just a) mz = just (a ⋅? mz)` — bridges gmap frames to the
 -- Maybe-frame update relation `cmra_updatePM`.
 \lemma option_op_just_l {A : CMRA} (a : A.E) (mz : Maybe A.E)
@@ -183,6 +178,51 @@
                       (hv k'))
             }
           )
+
+-- =================================================================================
+-- Strong allocation at a fresh key satisfying a predicate `P` (Rocq
+-- `alloc_updateP_strong_dep`).  The oracle now also certifies `P k`; the
+-- produced predicate carries it through.  The validity argument is identical
+-- to `gmap_alloc_updateP`.  Consumed by `own_alloc_strong` (A5).
+-- =================================================================================
+
+\lemma gmap_alloc_strong_updateP {K : \Set} {cnt : Countable K} {A : CMRA}
+    (P : K -> \Prop)
+    (fresh : \Pi (m : Gmap K cnt A.E)
+                 -> TruncP (\Sigma (k : K) (glookup m k = nothing) (P k)))
+    (a : A.E) (hva : A.valid a)
+  : cmra_updateP {GmapUCMRA K cnt A} gempty
+      (\lam m => TruncP (\Sigma (k : K) (m = gsingleton {K} {cnt} k a) (P k)))
+  => \lam n mf hv => \case fresh mf \with {
+    | inP (k, hk, hPk) => inP
+        ( gsingleton k a
+        , inP (k, idp, hPk)
+        , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+            | yes p => transport
+                (\lam kk => option_validN {A} n
+                    (glookup (gmap_op {K} {cnt} {A} (gsingleton k a) mf) kk))
+                p
+                (transport (option_validN {A} n)
+                    (inv (glookup_op (gsingleton k a) mf k *>
+                          pmap2 (option_op {A})
+                              (glookup_singleton_eq k a)
+                              hk))
+                    (((A.cmra_valid_validN a).1 hva n)
+                      : option_validN {A} n (option_op {A} (just a) nothing)))
+            | no np => transport (option_validN {A} n)
+                (inv (glookup_op (gsingleton k a) mf k' *>
+                      pmap (option_op {A} __ (glookup mf k'))
+                          (glookup_singleton_ne k k' a np) *>
+                      option_op_nothing_l {A} (glookup mf k')))
+                (transport (option_validN {A} n)
+                    (glookup_op gempty mf k' *>
+                     pmap (option_op {A} __ (glookup mf k'))
+                         (glookup_empty {K} {cnt} {A.E} k') *>
+                     option_op_nothing_l {A} (glookup mf k'))
+                    (hv k'))
+          }
+        )
+  }
 
 -- =================================================================================
 -- Allocation at a FIXED key of a left-unit-like element (Rocq:

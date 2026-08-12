@@ -15,33 +15,33 @@
 -- step-index type is already Nat in this port, so the solver is specialised to
 -- finite step indices from the start.
 
-\lemma solver_le_refl (k : Nat) : LinearOrder.<= k k \elim k
+\lemma solver_le_refl (k : Nat) : k LinearOrder.<= k \elim k
   | 0 => zero<=_
   | suc k => suc<=suc (solver_le_refl k)
 
-\lemma solver_le_plus_right (k i : Nat) : LinearOrder.<= k (Nat.+ i k) \elim i
+\lemma solver_le_plus_right (k i : Nat) : k LinearOrder.<= ((Nat.+) i k) \elim i
   | 0 => solver_le_refl k
-  | suc i => <=-transitive (solver_le_plus_right k i) (n<=sucn (Nat.+ i k))
+  | suc i => <=-transitive (solver_le_plus_right k i) (n<=sucn ((Nat.+) i k))
 
-\lemma solver_le_plus_left (n d : Nat) : LinearOrder.<= n (Nat.+ n d) \elim n
+\lemma solver_le_plus_left (n d : Nat) : n LinearOrder.<= ((Nat.+) n d) \elim n
   | 0 => zero<=_
   | suc n => suc<=suc (solver_le_plus_left n d)
 
-\lemma solver_plus_zero_right (n : Nat) : Nat.+ n 0 = n \elim n
+\lemma solver_plus_zero_right (n : Nat) : (Nat.+) n 0 = n \elim n
   | 0 => idp
   | suc n => pmap suc (solver_plus_zero_right n)
 
-\lemma solver_plus_suc_right (n m : Nat) : Nat.+ n (suc m) = suc (Nat.+ n m) \elim n
+\lemma solver_plus_suc_right (n m : Nat) : (Nat.+) n (suc m) = suc ((Nat.+) n m) \elim n
   | 0 => idp
   | suc n => pmap suc (solver_plus_suc_right n m)
 
-\func solver_plus_suc_right_fun (n m : Nat) : Nat.+ n (suc m) = suc (Nat.+ n m) \elim n
+\func solver_plus_suc_right_fun (n m : Nat) : (Nat.+) n (suc m) = suc ((Nat.+) n m) \elim n
   | 0 => idp
   | suc n => pmap suc (solver_plus_suc_right_fun n m)
 
 \data SolverNatSplit (a b : Nat)
-  | split_left (d : Nat) (p : a = (Nat.+ d b))
-  | split_right (d : Nat) (p : b = (Nat.+ d a))
+  | split_left (d : Nat) (p : a = ((Nat.+) d b))
+  | split_right (d : Nat) (p : b = ((Nat.+) d a))
 
 \func solver_nat_split (a b : Nat) : SolverNatSplit a b \elim a, b
   | 0, b => split_right b (inv (solver_plus_zero_right b))
@@ -54,26 +54,27 @@
     }
 
 \record OFunctorApplyCOFE (F : OFunctor)
-  | oFunctor_apply_compl (A : COFE)
+  | oFunctor_apply_compl (A : COFE.{0})
       (c : Nat -> (F.oFunctor_car A A).E)
       (hc : Chain {F.oFunctor_car A A} c) : (F.oFunctor_car A A).E
-  | oFunctor_apply_conv_compl (A : COFE)
+  | oFunctor_apply_conv_compl (A : COFE.{0})
       (c : Nat -> (F.oFunctor_car A A).E)
       (hc : Chain {F.oFunctor_car A A} c)
       (n : Nat) :
       (F.oFunctor_car A A).dist n (oFunctor_apply_compl A c hc) (c n)
 
-\func oFunctor_applyCOFE (F : OFunctor) (hF : OFunctorApplyCOFE F) (A : COFE) : COFE \cowith
+\func oFunctor_applyCOFE (F : OFunctor) (hF : OFunctorApplyCOFE F)
+    (A : COFE.{0}) : COFE.{0} \cowith
   | OFE => F.oFunctor_car A A
   | compl => hF.oFunctor_apply_compl A
   | cofe_conv_compl => hF.oFunctor_apply_conv_compl A
 
 \record Solution (F : OFunctor)
-  | solution_car : COFE
+  | solution_car : COFE.{0}
   | solution_inhabited : Inhabited solution_car.E
   | solution_iso : OFEIso (F.oFunctor_car solution_car solution_car) solution_car
 
-\func solver_A (F : OFunctor) (hF : OFunctorApplyCOFE F) (k : Nat) : COFE \elim k
+\func solver_A (F : OFunctor) (hF : OFunctorApplyCOFE F) (k : Nat) : COFE.{0} \elim k
   | 0 => UnitCOFE
   | suc k => oFunctor_applyCOFE F hF (solver_A F hF k)
 
@@ -102,12 +103,14 @@
                   (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                   (k : Nat) :
   solver_f hF hInh (suc k) =
+    {OFEMor (solver_A F hF (suc k)) (solver_A F hF (suc (suc k)))}
     F.oFunctor_map (solver_g hF hInh k, solver_f hF hInh k) => idp
 
 \func solver_g_S {F : OFunctor} (hF : OFunctorApplyCOFE F)
                   (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                   (k : Nat) :
   solver_g hF hInh (suc k) =
+    {OFEMor (solver_A F hF (suc (suc k))) (solver_A F hF (suc k))}
     F.oFunctor_map (solver_f hF hInh k, solver_g hF hInh k) => idp
 
 \lemma solver_gf {F : OFunctor} (hF : OFunctorApplyCOFE F)
@@ -276,15 +279,15 @@
 
 \func solver_ff {F : OFunctor} (hF : OFunctorApplyCOFE F)
                 (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
-                {k : Nat} (i : Nat) : OFEMor (solver_A F hF k) (solver_A F hF (Nat.+ i k)) \elim i
+                {k : Nat} (i : Nat) : OFEMor (solver_A F hF k) (solver_A F hF ((Nat.+) i k)) \elim i
   | 0 => ofe_mor_id
-  | suc i => ofe_mor_comp (solver_f hF hInh (Nat.+ i k)) (solver_ff hF hInh i)
+  | suc i => ofe_mor_comp (solver_f hF hInh ((Nat.+) i k)) (solver_ff hF hInh i)
 
 \func solver_gg {F : OFunctor} (hF : OFunctorApplyCOFE F)
                 (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
-                {k : Nat} (i : Nat) : OFEMor (solver_A F hF (Nat.+ i k)) (solver_A F hF k) \elim i
+                {k : Nat} (i : Nat) : OFEMor (solver_A F hF ((Nat.+) i k)) (solver_A F hF k) \elim i
   | 0 => ofe_mor_id
-  | suc i => ofe_mor_comp (solver_gg hF hInh i) (solver_g hF hInh (Nat.+ i k))
+  | suc i => ofe_mor_comp (solver_gg hF hInh i) (solver_g hF hInh ((Nat.+) i k))
 
 \lemma solver_ggff {F : OFunctor} (hF : OFunctorApplyCOFE F)
                    (hContr : OFunctorContractive F)
@@ -297,29 +300,29 @@
   | suc i =>
       (solver_A F hF k).equiv_trans
         ((solver_gg hF hInh i).ofe_mor_car
-          ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car
-            ((solver_f hF hInh (Nat.+ i k)).ofe_mor_car
+          ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car
+            ((solver_f hF hInh ((Nat.+) i k)).ofe_mor_car
               ((solver_ff hF hInh i).ofe_mor_car x))))
         ((solver_gg hF hInh i).ofe_mor_car ((solver_ff hF hInh i).ofe_mor_car x))
         x
         (((solver_A F hF k).ofe_equiv_dist
           ((solver_gg hF hInh i).ofe_mor_car
-            ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car
-              ((solver_f hF hInh (Nat.+ i k)).ofe_mor_car
+            ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car
+              ((solver_f hF hInh ((Nat.+) i k)).ofe_mor_car
                 ((solver_ff hF hInh i).ofe_mor_car x))))
           ((solver_gg hF hInh i).ofe_mor_car ((solver_ff hF hInh i).ofe_mor_car x))).2
           (\lam n =>
             (solver_gg hF hInh i).ofe_mor_ne n
-              ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car
-                ((solver_f hF hInh (Nat.+ i k)).ofe_mor_car
+              ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car
+                ((solver_f hF hInh ((Nat.+) i k)).ofe_mor_car
                   ((solver_ff hF hInh i).ofe_mor_car x)))
               ((solver_ff hF hInh i).ofe_mor_car x)
-              (((solver_A F hF (Nat.+ i k)).ofe_equiv_dist
-                ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car
-                  ((solver_f hF hInh (Nat.+ i k)).ofe_mor_car
+              (((solver_A F hF ((Nat.+) i k)).ofe_equiv_dist
+                ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car
+                  ((solver_f hF hInh ((Nat.+) i k)).ofe_mor_car
                     ((solver_ff hF hInh i).ofe_mor_car x)))
                 ((solver_ff hF hInh i).ofe_mor_car x)).1
-                (solver_gf hF hContr hInh (Nat.+ i k) ((solver_ff hF hInh i).ofe_mor_car x))
+                (solver_gf hF hContr hInh ((Nat.+) i k) ((solver_ff hF hInh i).ofe_mor_car x))
                 n)))
         (solver_ggff hF hContr hInh i x)
 
@@ -327,27 +330,27 @@
                        (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                        {k : Nat} (i : Nat) (X : (TowerCOFE F hF hInh).E) :
   (solver_A F hF k).equiv
-    ((solver_gg hF hInh i).ofe_mor_car (X.tower_car (Nat.+ i k)))
+    ((solver_gg hF hInh i).ofe_mor_car (X.tower_car ((Nat.+) i k)))
     (X.tower_car k) \elim i
   | 0 => (solver_A F hF k).equiv_refl (X.tower_car k)
   | suc i =>
       (solver_A F hF k).equiv_trans
         ((solver_gg hF hInh i).ofe_mor_car
-          ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car (X.tower_car (suc (Nat.+ i k)))))
-        ((solver_gg hF hInh i).ofe_mor_car (X.tower_car (Nat.+ i k)))
+          ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car (X.tower_car (suc ((Nat.+) i k)))))
+        ((solver_gg hF hInh i).ofe_mor_car (X.tower_car ((Nat.+) i k)))
         (X.tower_car k)
         (((solver_A F hF k).ofe_equiv_dist
           ((solver_gg hF hInh i).ofe_mor_car
-            ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car (X.tower_car (suc (Nat.+ i k)))))
-          ((solver_gg hF hInh i).ofe_mor_car (X.tower_car (Nat.+ i k)))).2
+            ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car (X.tower_car (suc ((Nat.+) i k)))))
+          ((solver_gg hF hInh i).ofe_mor_car (X.tower_car ((Nat.+) i k)))).2
           (\lam n =>
             (solver_gg hF hInh i).ofe_mor_ne n
-              ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car (X.tower_car (suc (Nat.+ i k))))
-              (X.tower_car (Nat.+ i k))
-              (((solver_A F hF (Nat.+ i k)).ofe_equiv_dist
-                ((solver_g hF hInh (Nat.+ i k)).ofe_mor_car (X.tower_car (suc (Nat.+ i k))))
-                (X.tower_car (Nat.+ i k))).1
-                (X.g_tower (Nat.+ i k))
+              ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car (X.tower_car (suc ((Nat.+) i k))))
+              (X.tower_car ((Nat.+) i k))
+              (((solver_A F hF ((Nat.+) i k)).ofe_equiv_dist
+                ((solver_g hF hInh ((Nat.+) i k)).ofe_mor_car (X.tower_car (suc ((Nat.+) i k))))
+                (X.tower_car ((Nat.+) i k))).1
+                (X.g_tower ((Nat.+) i k))
                 n)))
         (solver_gg_tower hF hInh i X)
 
@@ -475,26 +478,26 @@
                        (hContr : OFunctorContractive F)
                        (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                        (k i : Nat) (X : (TowerCOFE F hF hInh).E) :
-  (solver_A F hF (Nat.+ i (suc k))).dist k
+  (solver_A F hF ((Nat.+) i (suc k))).dist k
     ((solver_ff hF hInh {suc k} i).ofe_mor_car (X.tower_car (suc k)))
-    (X.tower_car (Nat.+ i (suc k))) \elim i
+    (X.tower_car ((Nat.+) i (suc k))) \elim i
   | 0 => (solver_A F hF (suc k)).ofe_dist_refl k (X.tower_car (suc k))
   | suc i =>
-      (solver_A F hF (suc (Nat.+ i (suc k)))).ofe_dist_trans k
-        ((solver_f hF hInh (Nat.+ i (suc k))).ofe_mor_car
+      (solver_A F hF (suc ((Nat.+) i (suc k)))).ofe_dist_trans k
+        ((solver_f hF hInh ((Nat.+) i (suc k))).ofe_mor_car
           ((solver_ff hF hInh {suc k} i).ofe_mor_car (X.tower_car (suc k))))
-        ((solver_f hF hInh (Nat.+ i (suc k))).ofe_mor_car
-          (X.tower_car (Nat.+ i (suc k))))
-        (X.tower_car (suc (Nat.+ i (suc k))))
-        ((solver_f hF hInh (Nat.+ i (suc k))).ofe_mor_ne k
+        ((solver_f hF hInh ((Nat.+) i (suc k))).ofe_mor_car
+          (X.tower_car ((Nat.+) i (suc k))))
+        (X.tower_car (suc ((Nat.+) i (suc k))))
+        ((solver_f hF hInh ((Nat.+) i (suc k))).ofe_mor_ne k
           ((solver_ff hF hInh {suc k} i).ofe_mor_car (X.tower_car (suc k)))
-          (X.tower_car (Nat.+ i (suc k)))
+          (X.tower_car ((Nat.+) i (suc k)))
           (solver_ff_tower hF hContr hInh k i X))
-        ((solver_A F hF (suc (suc (Nat.+ i k)))).ofe_dist_le (Nat.+ i k) k
-          ((solver_f hF hInh (suc (Nat.+ i k))).ofe_mor_car
-            (X.tower_car (suc (Nat.+ i k))))
-          (X.tower_car (suc (suc (Nat.+ i k))))
-          (solver_f_tower hF hContr hInh (Nat.+ i k) X)
+        ((solver_A F hF (suc (suc ((Nat.+) i k)))).ofe_dist_le ((Nat.+) i k) k
+          ((solver_f hF hInh (suc ((Nat.+) i k))).ofe_mor_car
+            (X.tower_car (suc ((Nat.+) i k))))
+          (X.tower_car (suc (suc ((Nat.+) i k))))
+          (solver_f_tower hF hContr hInh ((Nat.+) i k) X)
           (solver_le_plus_right k i))
 
 \func solver_coerce {F : OFunctor} (hF : OFunctorApplyCOFE F)
@@ -634,7 +637,7 @@
       }
 
 \lemma solver_oFunctor_map_equiv (F : OFunctor)
-                                 {A1 A2 B1 B2 : COFE}
+                                 {A1 A2 B1 B2 : COFE.{0}}
                                  (f g : OFEMor A2 A1)
                                  (f' g' : OFEMor B1 B2)
                                  (hfg : (OFEMorOFE A2 A1).equiv f g)
@@ -791,19 +794,19 @@
                        (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                        {k : Nat} (d : Nat) (x : (solver_A F hF k).E) :
   (TowerCOFE F hF hInh).equiv
-    (solver_embed hF hContr hInh (Nat.+ d k)
+    (solver_embed hF hContr hInh ((Nat.+) d k)
       ((solver_ff hF hInh {k} d).ofe_mor_car x))
     (solver_embed hF hContr hInh k x) \elim d
   | 0 => (TowerCOFE F hF hInh).equiv_refl (solver_embed hF hContr hInh k x)
   | suc d =>
       (TowerCOFE F hF hInh).equiv_trans
-        (solver_embed hF hContr hInh (suc (Nat.+ d k))
-          ((solver_f hF hInh (Nat.+ d k)).ofe_mor_car
+        (solver_embed hF hContr hInh (suc ((Nat.+) d k))
+          ((solver_f hF hInh ((Nat.+) d k)).ofe_mor_car
             ((solver_ff hF hInh {k} d).ofe_mor_car x)))
-        (solver_embed hF hContr hInh (Nat.+ d k)
+        (solver_embed hF hContr hInh ((Nat.+) d k)
           ((solver_ff hF hInh {k} d).ofe_mor_car x))
         (solver_embed hF hContr hInh k x)
-        (solver_embed_f hF hContr hInh (Nat.+ d k)
+        (solver_embed_f hF hContr hInh ((Nat.+) d k)
           ((solver_ff hF hInh {k} d).ofe_mor_car x))
         (solver_embed_ff hF hContr hInh d x)
 
@@ -811,38 +814,38 @@
                                 (hContr : OFunctorContractive F)
                                 (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                 (k d : Nat) (X : (TowerCOFE F hF hInh).E) :
-  (solver_A F hF (Nat.+ d (suc k))).dist k
-    ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
-    (X.tower_car (Nat.+ d (suc k))) =>
+  (solver_A F hF ((Nat.+) d (suc k))).dist k
+    ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
+    (X.tower_car ((Nat.+) d (suc k))) =>
   \let
-    | y : (solver_A F hF (Nat.+ d (suc k))).E =>
+    | y : (solver_A F hF ((Nat.+) d (suc k))).E =>
         ((solver_ff hF hInh {suc k} d).ofe_mor_car (X.tower_car (suc k)))
-    | h_embed_y : (solver_A F hF (Nat.+ d (suc k))).equiv
-        ((solver_embed hF hContr hInh (Nat.+ d (suc k)) y).tower_car (Nat.+ d (suc k)))
+    | h_embed_y : (solver_A F hF ((Nat.+) d (suc k))).equiv
+        ((solver_embed hF hContr hInh ((Nat.+) d (suc k)) y).tower_car ((Nat.+) d (suc k)))
         y =>
-        solver_embed_self hF hContr hInh (Nat.+ d (suc k)) y
-    | h_ff_embed : (solver_A F hF (Nat.+ d (suc k))).equiv
-        ((solver_embed hF hContr hInh (Nat.+ d (suc k)) y).tower_car (Nat.+ d (suc k)))
-        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k))) =>
-        (solver_embed_ff hF hContr hInh d (X.tower_car (suc k))) (Nat.+ d (suc k))
-    | h_embed_ff : (solver_A F hF (Nat.+ d (suc k))).equiv
-        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
+        solver_embed_self hF hContr hInh ((Nat.+) d (suc k)) y
+    | h_ff_embed : (solver_A F hF ((Nat.+) d (suc k))).equiv
+        ((solver_embed hF hContr hInh ((Nat.+) d (suc k)) y).tower_car ((Nat.+) d (suc k)))
+        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k))) =>
+        (solver_embed_ff hF hContr hInh d (X.tower_car (suc k))) ((Nat.+) d (suc k))
+    | h_embed_ff : (solver_A F hF ((Nat.+) d (suc k))).equiv
+        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
         y =>
-        (solver_A F hF (Nat.+ d (suc k))).equiv_trans
-          ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
-          ((solver_embed hF hContr hInh (Nat.+ d (suc k)) y).tower_car (Nat.+ d (suc k)))
+        (solver_A F hF ((Nat.+) d (suc k))).equiv_trans
+          ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
+          ((solver_embed hF hContr hInh ((Nat.+) d (suc k)) y).tower_car ((Nat.+) d (suc k)))
           y
-          ((solver_A F hF (Nat.+ d (suc k))).equiv_sym
-            ((solver_embed hF hContr hInh (Nat.+ d (suc k)) y).tower_car (Nat.+ d (suc k)))
-            ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
+          ((solver_A F hF ((Nat.+) d (suc k))).equiv_sym
+            ((solver_embed hF hContr hInh ((Nat.+) d (suc k)) y).tower_car ((Nat.+) d (suc k)))
+            ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
             h_ff_embed)
           h_embed_y
-  \in (solver_A F hF (Nat.+ d (suc k))).ofe_dist_trans k
-      ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
+  \in (solver_A F hF ((Nat.+) d (suc k))).ofe_dist_trans k
+      ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
       y
-      (X.tower_car (Nat.+ d (suc k)))
-      (((solver_A F hF (Nat.+ d (suc k))).ofe_equiv_dist
-        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car (Nat.+ d (suc k)))
+      (X.tower_car ((Nat.+) d (suc k)))
+      (((solver_A F hF ((Nat.+) d (suc k))).ofe_equiv_dist
+        ((solver_embed hF hContr hInh (suc k) (X.tower_car (suc k))).tower_car ((Nat.+) d (suc k)))
         y).1 h_embed_ff k)
       (solver_ff_tower hF hContr hInh k d X)
 
@@ -851,41 +854,41 @@
                                 (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                 (d i : Nat) (X : (TowerCOFE F hF hInh).E) :
   (solver_A F hF i).equiv
-    ((solver_embed hF hContr hInh (Nat.+ d i) (X.tower_car (Nat.+ d i))).tower_car i)
+    ((solver_embed hF hContr hInh ((Nat.+) d i) (X.tower_car ((Nat.+) d i))).tower_car i)
     (X.tower_car i) =>
   \let
     | E : (TowerCOFE F hF hInh).E =>
-        solver_embed hF hContr hInh (Nat.+ d i) (X.tower_car (Nat.+ d i))
+        solver_embed hF hContr hInh ((Nat.+) d i) (X.tower_car ((Nat.+) d i))
     | hE : (solver_A F hF i).equiv
-        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car (Nat.+ d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car ((Nat.+) d i)))
         (E.tower_car i) =>
         solver_gg_tower hF hInh d E
     | hX : (solver_A F hF i).equiv
-        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car (Nat.+ d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car ((Nat.+) d i)))
         (X.tower_car i) =>
         solver_gg_tower hF hInh d X
-    | hself : (solver_A F hF (Nat.+ d i)).equiv
-        (E.tower_car (Nat.+ d i))
-        (X.tower_car (Nat.+ d i)) =>
-        solver_embed_self hF hContr hInh (Nat.+ d i) (X.tower_car (Nat.+ d i))
+    | hself : (solver_A F hF ((Nat.+) d i)).equiv
+        (E.tower_car ((Nat.+) d i))
+        (X.tower_car ((Nat.+) d i)) =>
+        solver_embed_self hF hContr hInh ((Nat.+) d i) (X.tower_car ((Nat.+) d i))
     | hgg : (solver_A F hF i).equiv
-        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car (Nat.+ d i)))
-        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car (Nat.+ d i))) =>
+        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car ((Nat.+) d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car ((Nat.+) d i))) =>
         ofe_mor_proper (solver_gg hF hInh {i} d)
-          (E.tower_car (Nat.+ d i))
-          (X.tower_car (Nat.+ d i))
+          (E.tower_car ((Nat.+) d i))
+          (X.tower_car ((Nat.+) d i))
           hself
   \in (solver_A F hF i).equiv_trans
       (E.tower_car i)
-      ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car (Nat.+ d i)))
+      ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car ((Nat.+) d i)))
       (X.tower_car i)
       ((solver_A F hF i).equiv_sym
-        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car (Nat.+ d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car ((Nat.+) d i)))
         (E.tower_car i)
         hE)
       ((solver_A F hF i).equiv_trans
-        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car (Nat.+ d i)))
-        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car (Nat.+ d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (E.tower_car ((Nat.+) d i)))
+        ((solver_gg hF hInh {i} d).ofe_mor_car (X.tower_car ((Nat.+) d i)))
         (X.tower_car i)
         hgg
         hX)
@@ -905,7 +908,7 @@
             (X.tower_car i))
           (inv p)
           (((solver_A F hF i).ofe_equiv_dist
-            ((solver_embed hF hContr hInh (Nat.+ d i) (X.tower_car (Nat.+ d i))).tower_car i)
+            ((solver_embed hF hContr hInh ((Nat.+) d i) (X.tower_car ((Nat.+) d i))).tower_car i)
             (X.tower_car i)).1
             (solver_embed_tower_lower hF hContr hInh d i X)
             k)
@@ -1128,14 +1131,14 @@
         d_mid_pre
         d_pre_last)
 
-\lemma solver_suc_not_le_zero (n : Nat) : LinearOrder.<= (suc n) 0 -> Empty =>
+\lemma solver_suc_not_le_zero (n : Nat) : suc n LinearOrder.<= 0 -> Empty =>
   \lam le => le (NatOrder.zero<suc {n})
 
 \lemma solver_unfold_chain_cauchy_zero {F : OFunctor} (hF : OFunctorApplyCOFE F)
                                        (hContr : OFunctorContractive F)
                                        (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                        (X : (TowerCOFE F hF hInh).E)
-                                       (n : Nat) (le : LinearOrder.<= n 0) :
+                                       (n : Nat) (le : n LinearOrder.<= 0) :
   (F.oFunctor_car (TowerCOFE F hF hInh) (TowerCOFE F hF hInh)).dist n
     (solver_unfold_chain_car hF hContr hInh X 0)
     (solver_unfold_chain_car hF hContr hInh X n) \elim n
@@ -1147,7 +1150,7 @@
                                   (hContr : OFunctorContractive F)
                                   (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                   (X : (TowerCOFE F hF hInh).E)
-                                  (n m : Nat) (le : LinearOrder.<= n m) :
+                                  (n m : Nat) (le : n LinearOrder.<= m) :
   (F.oFunctor_car (TowerCOFE F hF hInh) (TowerCOFE F hF hInh)).dist n
     (solver_unfold_chain_car hF hContr hInh X m)
     (solver_unfold_chain_car hF hContr hInh X n) \elim m
@@ -1301,8 +1304,8 @@
       (suc n))
     X =>
   \let
-    | T : COFE => TowerCOFE F hF hInh
-    | G : OFE => F.oFunctor_car T T
+    | T : COFE.{0} => TowerCOFE F hF hInh
+    | G : OFE.{0} => F.oFunctor_car T T
     | z : (F.oFunctor_car (solver_A F hF (suc (suc n))) (solver_A F hF (suc (suc n)))).E =>
         ((F.oFunctor_map
           (solver_embed_mor hF hContr hInh (suc (suc n)),
@@ -1423,57 +1426,57 @@
                                (hContr : OFunctorContractive F)
                                (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                {k : Nat} (i : Nat) :
-  (OFEMorOFE (solver_A F hF k) (solver_A F hF (Nat.+ i k))).equiv
+  (OFEMorOFE (solver_A F hF k) (solver_A F hF ((Nat.+) i k))).equiv
     (ofe_mor_comp
-      (solver_project hF hInh (Nat.+ i k))
+      (solver_project hF hInh ((Nat.+) i k))
       (solver_embed_mor hF hContr hInh k))
     (solver_ff hF hInh {k} i) =>
   \lam x =>
-    (solver_A F hF (Nat.+ i k)).equiv_trans
-      ((solver_embed hF hContr hInh k x).tower_car (Nat.+ i k))
-      ((solver_embed hF hContr hInh (Nat.+ i k)
-        ((solver_ff hF hInh {k} i).ofe_mor_car x)).tower_car (Nat.+ i k))
+    (solver_A F hF ((Nat.+) i k)).equiv_trans
+      ((solver_embed hF hContr hInh k x).tower_car ((Nat.+) i k))
+      ((solver_embed hF hContr hInh ((Nat.+) i k)
+        ((solver_ff hF hInh {k} i).ofe_mor_car x)).tower_car ((Nat.+) i k))
       ((solver_ff hF hInh {k} i).ofe_mor_car x)
-      ((solver_A F hF (Nat.+ i k)).equiv_sym
-        ((solver_embed hF hContr hInh (Nat.+ i k)
-          ((solver_ff hF hInh {k} i).ofe_mor_car x)).tower_car (Nat.+ i k))
-        ((solver_embed hF hContr hInh k x).tower_car (Nat.+ i k))
-        ((solver_embed_ff hF hContr hInh i x) (Nat.+ i k)))
-      (solver_embed_self hF hContr hInh (Nat.+ i k)
+      ((solver_A F hF ((Nat.+) i k)).equiv_sym
+        ((solver_embed hF hContr hInh ((Nat.+) i k)
+          ((solver_ff hF hInh {k} i).ofe_mor_car x)).tower_car ((Nat.+) i k))
+        ((solver_embed hF hContr hInh k x).tower_car ((Nat.+) i k))
+        ((solver_embed_ff hF hContr hInh i x) ((Nat.+) i k)))
+      (solver_embed_self hF hContr hInh ((Nat.+) i k)
         ((solver_ff hF hInh {k} i).ofe_mor_car x))
 
 \lemma solver_project_embed_gg {F : OFunctor} (hF : OFunctorApplyCOFE F)
                                (hContr : OFunctorContractive F)
                                (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                                {k : Nat} (i : Nat) :
-  (OFEMorOFE (solver_A F hF (Nat.+ i k)) (solver_A F hF k)).equiv
+  (OFEMorOFE (solver_A F hF ((Nat.+) i k)) (solver_A F hF k)).equiv
     (ofe_mor_comp
       (solver_project hF hInh k)
-      (solver_embed_mor hF hContr hInh (Nat.+ i k)))
+      (solver_embed_mor hF hContr hInh ((Nat.+) i k)))
     (solver_gg hF hInh {k} i) =>
   \lam x =>
     \let
       | E : (TowerCOFE F hF hInh).E =>
-          solver_embed hF hContr hInh (Nat.+ i k) x
-      | hself : (solver_A F hF (Nat.+ i k)).equiv (E.tower_car (Nat.+ i k)) x =>
-          solver_embed_self hF hContr hInh (Nat.+ i k) x
+          solver_embed hF hContr hInh ((Nat.+) i k) x
+      | hself : (solver_A F hF ((Nat.+) i k)).equiv (E.tower_car ((Nat.+) i k)) x =>
+          solver_embed_self hF hContr hInh ((Nat.+) i k) x
       | hgg : (solver_A F hF k).equiv
-          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car (Nat.+ i k)))
+          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car ((Nat.+) i k)))
           (E.tower_car k) =>
           solver_gg_tower hF hInh i E
       | hproper : (solver_A F hF k).equiv
-          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car (Nat.+ i k)))
+          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car ((Nat.+) i k)))
           ((solver_gg hF hInh {k} i).ofe_mor_car x) =>
           ofe_mor_proper (solver_gg hF hInh {k} i)
-            (E.tower_car (Nat.+ i k))
+            (E.tower_car ((Nat.+) i k))
             x
             hself
     \in (solver_A F hF k).equiv_trans
         (E.tower_car k)
-        ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car (Nat.+ i k)))
+        ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car ((Nat.+) i k)))
         ((solver_gg hF hInh {k} i).ofe_mor_car x)
         ((solver_A F hF k).equiv_sym
-          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car (Nat.+ i k)))
+          ((solver_gg hF hInh {k} i).ofe_mor_car (E.tower_car ((Nat.+) i k)))
           (E.tower_car k)
           hgg)
         hproper
@@ -1481,7 +1484,7 @@
 \lemma solver_map_ff_gg {F : OFunctor} (hF : OFunctorApplyCOFE F)
                         (hInh : Inhabited (F.oFunctor_car UnitCOFE UnitCOFE).E)
                         (i k : Nat)
-                        (x : (solver_A F hF (suc (Nat.+ i k))).E) :
+                        (x : (solver_A F hF (suc ((Nat.+) i k))).E) :
   (solver_A F hF (suc k)).equiv
     ((F.oFunctor_map
       (solver_ff hF hInh {k} i,
@@ -1499,19 +1502,19 @@
         (solver_coerce_plus_suc_zero hF k x)
   | suc i =>
       \let
-        | y : (solver_A F hF (suc (Nat.+ i k))).E =>
-            (solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car x
+        | y : (solver_A F hF (suc ((Nat.+) i k))).E =>
+            (solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car x
         | pre : (solver_A F hF (suc k)).E =>
             ((F.oFunctor_map
               (solver_ff hF hInh {k} i,
                solver_gg hF hInh {k} i)).ofe_mor_car y)
         | hcomp : (solver_A F hF (suc k)).equiv pre
             ((F.oFunctor_map
-              (ofe_mor_comp (solver_f hF hInh (Nat.+ i k)) (solver_ff hF hInh {k} i),
-               ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh (Nat.+ i k)))).ofe_mor_car x) =>
+              (ofe_mor_comp (solver_f hF hInh ((Nat.+) i k)) (solver_ff hF hInh {k} i),
+               ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh ((Nat.+) i k)))).ofe_mor_car x) =>
             F.oFunctor_map_compose
-              (solver_f hF hInh (Nat.+ i k)) (solver_ff hF hInh {k} i)
-              (solver_g hF hInh (Nat.+ i k)) (solver_gg hF hInh {k} i)
+              (solver_f hF hInh ((Nat.+) i k)) (solver_ff hF hInh {k} i)
+              (solver_g hF hInh ((Nat.+) i k)) (solver_gg hF hInh {k} i)
               x
         | hIH : (solver_A F hF (suc k)).equiv pre
             ((solver_gg hF hInh {suc k} i).ofe_mor_car
@@ -1519,42 +1522,42 @@
             solver_map_ff_gg hF hInh i k y
       \in (solver_A F hF (suc k)).equiv_trans
           ((F.oFunctor_map
-            (ofe_mor_comp (solver_f hF hInh (Nat.+ i k)) (solver_ff hF hInh {k} i),
-             ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh (Nat.+ i k)))).ofe_mor_car x)
+            (ofe_mor_comp (solver_f hF hInh ((Nat.+) i k)) (solver_ff hF hInh {k} i),
+             ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh ((Nat.+) i k)))).ofe_mor_car x)
           pre
           ((solver_gg hF hInh {suc k} i).ofe_mor_car
-            ((solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+            ((solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
               ((solver_coerce hF (inv (solver_plus_suc_right_fun (suc i) k))).ofe_mor_car x)))
           ((solver_A F hF (suc k)).equiv_sym pre
             ((F.oFunctor_map
-              (ofe_mor_comp (solver_f hF hInh (Nat.+ i k)) (solver_ff hF hInh {k} i),
-               ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh (Nat.+ i k)))).ofe_mor_car x)
+              (ofe_mor_comp (solver_f hF hInh ((Nat.+) i k)) (solver_ff hF hInh {k} i),
+               ofe_mor_comp (solver_gg hF hInh {k} i) (solver_g hF hInh ((Nat.+) i k)))).ofe_mor_car x)
             hcomp)
           ((solver_A F hF (suc k)).equiv_trans
             pre
             ((solver_gg hF hInh {suc k} i).ofe_mor_car
               ((solver_coerce hF (inv (solver_plus_suc_right_fun i k))).ofe_mor_car y))
             ((solver_gg hF hInh {suc k} i).ofe_mor_car
-              ((solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+              ((solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
                 ((solver_coerce hF (inv (solver_plus_suc_right_fun (suc i) k))).ofe_mor_car x)))
             hIH
             (ofe_mor_proper (solver_gg hF hInh {suc k} i)
               ((solver_coerce hF (inv (solver_plus_suc_right_fun i k))).ofe_mor_car y)
-              ((solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+              ((solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
                 ((solver_coerce hF (inv (solver_plus_suc_right_fun (suc i) k))).ofe_mor_car x))
-              (((solver_A F hF (Nat.+ i (suc k))).ofe_equiv_dist
+              (((solver_A F hF ((Nat.+) i (suc k))).ofe_equiv_dist
                 ((solver_coerce hF (inv (solver_plus_suc_right_fun i k))).ofe_mor_car y)
-                ((solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+                ((solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
                   ((solver_coerce hF (inv (solver_plus_suc_right_fun (suc i) k))).ofe_mor_car x))).2
                 (equiv_dist_n
                   ((solver_coerce hF (inv (solver_plus_suc_right_fun i k))).ofe_mor_car y)
-                  ((solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+                  ((solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
                     ((solver_coerce hF (inv (solver_plus_suc_right_fun (suc i) k))).ofe_mor_car x))
                   (inv (solver_g_coerce hF hInh
                     (inv (solver_plus_suc_right_fun i k))
                     x)
                    *> pmap
-                    (\lam q => (solver_g hF hInh (suc (Nat.+ i k))).ofe_mor_car
+                    (\lam q => (solver_g hF hInh (suc ((Nat.+) i k))).ofe_mor_car
                       ((solver_coerce hF q).ofe_mor_car x))
                     (pmap_inv-comm suc (solver_plus_suc_right_fun i k)))))))
 
@@ -1579,8 +1582,8 @@
               ((solver_unfold hF hContr hInh).ofe_mor_car X))
             (X.tower_car (suc k))
             (\let
-              | r : Nat => Nat.+ n k
-              | G : OFE => F.oFunctor_car (TowerCOFE F hF hInh) (TowerCOFE F hF hInh)
+              | r : Nat => (Nat.+) n k
+              | G : OFE.{0} => F.oFunctor_car (TowerCOFE F hF hInh) (TowerCOFE F hF hInh)
               | U : G.E => (solver_unfold hF hContr hInh).ofe_mor_car X
               | x : (solver_A F hF (suc r)).E => X.tower_car (suc r)
               | C : G.E => solver_unfold_chain_car hF hContr hInh X r
@@ -1626,14 +1629,14 @@
                   (solver_A F hF (suc k)).equiv_trans
                     mid
                     ((solver_gg hF hInh {suc k} n).ofe_mor_car
-                      (X.tower_car (Nat.+ n (suc k))))
+                      (X.tower_car ((Nat.+) n (suc k))))
                     (X.tower_car (suc k))
                     (ofe_mor_proper (solver_gg hF hInh {suc k} n)
                       ((solver_coerce hF (inv (solver_plus_suc_right_fun n k))).ofe_mor_car x)
-                      (X.tower_car (Nat.+ n (suc k)))
+                      (X.tower_car ((Nat.+) n (suc k)))
                       (solver_eq_equiv
                         ((solver_coerce hF (inv (solver_plus_suc_right_fun n k))).ofe_mor_car x)
-                        (X.tower_car (Nat.+ n (suc k)))
+                        (X.tower_car ((Nat.+) n (suc k)))
                         (solver_tower_car_coerce hF hInh (inv (solver_plus_suc_right_fun n k)) X)))
                     (solver_gg_tower hF hInh n X)
             \in (solver_A F hF (suc k)).ofe_dist_trans n

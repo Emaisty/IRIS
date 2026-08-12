@@ -155,6 +155,12 @@
       }
   }
 
+\lemma discrete_fun_core_id {I : \Set} {B : I -> UCMRA}
+    (f : \Pi (i : I) -> (B i).E)
+    (h : \Pi (i : I) -> CoreId {B i} (f i))
+  : CoreId {DiscreteFunUCMRA B} f =>
+  \lam i => ucmra_core_of_core_id (f i) (h i)
+
 -- =================================================================================
 -- discrete_funURF: lift a family of URFunctors pointwise.
 --
@@ -166,7 +172,7 @@
 --   |}.
 -- =================================================================================
 
-\func discrete_funURF {I : \Set} (F : I -> URFunctor) : URFunctor \cowith
+\func discrete_funURF {I : \Set0} (F : I -> URFunctor) : URFunctor \cowith
   | urFunctor_car => \lam A B => DiscreteFunUCMRA (\lam i => (F i).urFunctor_car A B)
   | urFunctor_map => \lam fg => \new OFEMor _ _ {
       | ofe_mor_car => \lam g i => ((F i).urFunctor_map fg).ofe_mor_car (g i)
@@ -186,7 +192,7 @@
           cmra_morphism_op {(F i).urFunctor_mor fg} (g1 i) (g2 i)
     }
 
-\func discrete_funURF_contractive {I : \Set} (F : I -> URFunctor)
+\func discrete_funURF_contractive {I : \Set0} (F : I -> URFunctor)
                                   (hF : \Pi (i : I) -> URFunctorContractive (F i))
   : URFunctorContractive (discrete_funURF F) \cowith
   | urFunctor_map_contractive => \lam n fg fg' h g i =>
@@ -214,6 +220,21 @@
                              {B : I -> UCMRA} (x : I) (y : (B x).E)
   : \Pi (i : I) -> (B i).E =>
   discrete_fun_insert dec x y (\lam i => (B i).unit)
+
+\lemma discrete_fun_singleton_core_id {I : \Set}
+    (dec : \Pi (x y : I) -> Dec (x = y)) {B : I -> UCMRA}
+    (x : I) (y : (B x).E) (hy : CoreId {B x} y)
+  : CoreId {DiscreteFunUCMRA B} (discrete_fun_singleton dec x y) =>
+  discrete_fun_core_id (discrete_fun_singleton dec x y)
+    (\lam i => \case dec x i \as d
+      \return CoreId {B i} (\case d \with {
+        | yes p => transport (\lam j => (B j).E) p y
+        | no _ => (B i).unit
+      })
+      \with {
+        | yes p => dfun_transport_core_id p y hy
+        | no _ => (B i).ucmra_pcore_unit
+      })
 
 \lemma discrete_fun_lookup_insert {I : \Set} (dec : \Pi (x y : I) -> Dec (x = y))
                                   {B : I -> UCMRA} (x : I) (y : (B x).E)
@@ -260,6 +281,11 @@
                            (n : Nat) (y1 y2 : (B x).E) (h : (B x).dist n y1 y2)
   : (B i).dist n (transport (\lam j => (B j).E) p y1)
                  (transport (\lam j => (B j).E) p y2) \elim p
+  | idp => h
+
+\lemma dfun_transport_core_id {I : \Set} {B : I -> UCMRA} {x i : I}
+    (p : x = i) (y : (B x).E) (h : CoreId {B x} y)
+  : CoreId {B i} (transport (\lam j => (B j).E) p y) \elim p
   | idp => h
 
 \lemma dfun_transport_op_equiv {I : \Set} {B : I -> UCMRA} {x i : I} (p : x = i)

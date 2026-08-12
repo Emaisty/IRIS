@@ -7,9 +7,9 @@
 \import Set
 \import lang
 \import lang_subst
-\import hoare
-\import weakestpre
-\import lifting
+\import hoare_old
+\import weakestpre_old
+\import lifting_old
 \import uPred
 \import cmra
 \import lib.heap
@@ -788,10 +788,9 @@
           (Phi hfun)
       => \lam n a hv _ =>
           \lam k =>
-            \lam m m_le_n b unit_incl_b =>
-              \lam m' m'_le_m a' hv_ba' _ =>
-                subst_fact_public_k_beta k (factorial_post k) (factorial_call_correct k)
-                  m' (M.op b a') hv_ba' ()
+            \lam m m_le_n a' hv_core_a' _ =>
+              subst_fact_public_k_beta k (factorial_post k) (factorial_call_correct k)
+                m (M.op (ucmra_core {M} a) a') hv_core_a' ()
       | wp_value : properUPred_ent {M}
           (mkProperPure (\Sigma))
           (wp factorial_prog Phi)
@@ -803,9 +802,8 @@
           (wp_lam "k" factorial_call_body Phi)
     \in
       \lam n a hv _ =>
-        \lam m m_le_n b unit_incl_b =>
-          \lam m' m'_le_m a' hv_ba' _ =>
-            wp_value m' (M.op b a') hv_ba' ()
+        \lam m m_le_n a' hv_core_a' _ =>
+          wp_value m (M.op (ucmra_core {M} a) a') hv_core_a' ()
 
 \func factorial_correct_Q
   {cnt : Countable Loc}
@@ -843,22 +841,21 @@
         factorial_spec_Q
         base
         (\lam n a hv hspec =>
-          \lam m m_le_n b unit_incl_b =>
-            \lam m' m'_le_m a' hv_ba' htrue =>
-              wp_post_mono
-                factorial_prog
-                (\lam h => mkProperForall Nat (\lam k =>
-                  ht (mkProperPure (\Sigma))
-                    (App (Val h) (Val (natV k)))
-                    (factorial_post k)))
-                (\lam h => mkProperExist (ProperUPred M) (\lam Q' =>
-                  mkProperSep Q'
-                    (mkProperForall Nat (\lam k =>
-                      ht Q'
-                        (App (Val h) (Val (natV k)))
-                        (factorial_post k)))))
-                post_step
-                m'
-                (M.op b a')
-                hv_ba'
-                (hspec m m_le_n b unit_incl_b m' m'_le_m a' hv_ba' htrue))
+          \lam m m_le_n a' hv_core_a' htrue =>
+            wp_post_mono
+              factorial_prog
+              (\lam h => mkProperForall Nat (\lam k =>
+                ht (mkProperPure (\Sigma))
+                  (App (Val h) (Val (natV k)))
+                  (factorial_post k)))
+              (\lam h => mkProperExist (ProperUPred M) (\lam Q' =>
+                mkProperSep Q'
+                  (mkProperForall Nat (\lam k =>
+                    ht Q'
+                      (App (Val h) (Val (natV k)))
+                      (factorial_post k)))))
+              post_step
+              m
+              (M.op (ucmra_core {M} a) a')
+              hv_core_a'
+              (hspec m m_le_n a' hv_core_a' htrue))

@@ -566,7 +566,7 @@
       ((gmap_viewO_map {K} {cnt} u).ofe_mor_car x) =>
   gmap_view_map_compose_pair f g u h x.1 x.2
 
-\func gmap_viewURF (K : \Set) (cnt : Countable K) (F : RFunctor)
+\func gmap_viewURF (K : \Set0) (cnt : Countable K) (F : RFunctor)
   : URFunctor \cowith
   | urFunctor_car => \lam A B => gmap_viewUR K cnt (F.rFunctor_car A B)
   | urFunctor_map => \lam fg => gmap_viewO_map (F.rFunctor_map fg)
@@ -587,14 +587,14 @@
   | urFunctor_mor => \lam fg =>
       gmap_viewO_map_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
 
-\func gmap_viewURF_contractive (K : \Set) (cnt : Countable K) (F : RFunctor)
+\func gmap_viewURF_contractive (K : \Set0) (cnt : Countable K) (F : RFunctor)
     (hF : RFunctorContractive F)
   : URFunctorContractive (gmap_viewURF K cnt F) \cowith
   | urFunctor_map_contractive => \lam n fg fg' h =>
       gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
         (hF.rFunctor_map_contractive n fg fg' h)
 
-\func gmap_viewRF (K : \Set) (cnt : Countable K) (F : RFunctor)
+\func gmap_viewRF (K : \Set0) (cnt : Countable K) (F : RFunctor)
   : RFunctor \cowith
   | rFunctor_car => \lam A B => gmap_viewR K cnt (F.rFunctor_car A B)
   | rFunctor_map => \lam fg => gmap_viewO_map (F.rFunctor_map fg)
@@ -615,9 +615,59 @@
   | rFunctor_mor => \lam fg =>
       gmap_viewO_map_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
 
-\func gmap_viewRF_contractive (K : \Set) (cnt : Countable K) (F : RFunctor)
+-- The object part of gmap_viewRF computes to gmap_viewR.  State this small
+-- conversion explicitly so clients need not unfold the entire functor record.
+\func gmap_viewRF_apply_eq (K : \Set0) (cnt : Countable K)
+    (F : RFunctor) (A : COFE.{0})
+  : gmap_viewR K cnt (F.rFunctor_car A A) = {CMRA.{0}}
+      rFunctor_apply (gmap_viewRF K cnt F) A => idp
+
+\func gmap_viewRF_contractive (K : \Set0) (cnt : Countable K) (F : RFunctor)
     (hF : RFunctorContractive F)
   : RFunctorContractive (gmap_viewRF K cnt F) \cowith
   | rFunctor_map_contractive => \lam n fg fg' h =>
       gmap_viewO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
         (hF.rFunctor_map_contractive n fg fg' h)
+
+-- =================================================================================
+-- agreeRF: the agree RFunctor (Rocq `agreeRF`).  Objects: `agreeR (F A B)`.
+-- Bundles the already-proved `agreeO_map` / `agree_map_cmra_morphism` and the
+-- agree functor laws (`agree_map_equiv_id`, `agree_map_comp`,
+-- `agree_map_equiv_maps`) into a CMRA-valued functor, mirroring `gmap_viewRF`.
+-- Contractivity is inherited from an `OFunctorContractive F`; with
+-- `F = laterOF idOF` this is `agreeRF (laterOF idOF)`, the invariant-map value
+-- functor of `wsatΣ`.
+-- =================================================================================
+
+\func agreeRF (F : OFunctor) : RFunctor \cowith
+  | rFunctor_car => \lam A B => AgreeCMRA (F.oFunctor_car A B)
+  | rFunctor_map => \lam fg => agreeO_map (F.oFunctor_map fg)
+  | rFunctor_map_ne => \lam n fg fg' h =>
+      agreeO_map_ne_map n (F.oFunctor_map fg) (F.oFunctor_map fg')
+        (F.oFunctor_map_ne n fg fg' h)
+  | rFunctor_map_id => \lam {A} {B} x =>
+      agree_map_equiv_id (F.oFunctor_map (ofe_mor_id, ofe_mor_id))
+        (\lam a => F.oFunctor_map_id a) x
+  | rFunctor_map_compose {A1} {A2} {A3} {B1} {B2} {B3} => \lam f g f' g' x =>
+      (AgreeOFE (F.oFunctor_car A3 B3)).equiv_trans
+        (agree_map (F.oFunctor_map (g, g')).ofe_mor_car
+          (agree_map (F.oFunctor_map (f, f')).ofe_mor_car x))
+        (agree_map
+          (ofe_mor_comp (F.oFunctor_map (g, g'))
+            (F.oFunctor_map (f, f'))).ofe_mor_car x)
+        (agree_map
+          (F.oFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car x)
+        (equiv_of_path {AgreeOFE (F.oFunctor_car A3 B3)}
+          (agree_map_comp (F.oFunctor_map (f, f')).ofe_mor_car
+            (F.oFunctor_map (g, g')).ofe_mor_car x))
+        (agree_map_equiv_maps
+          (ofe_mor_comp (F.oFunctor_map (g, g')) (F.oFunctor_map (f, f')))
+          (F.oFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f'))
+          (\lam a => F.oFunctor_map_compose f g f' g' a) x)
+  | rFunctor_mor => \lam fg => agree_map_cmra_morphism (F.oFunctor_map fg)
+
+\func agreeRF_contractive (F : OFunctor) (hF : OFunctorContractive F)
+  : RFunctorContractive (agreeRF F) \cowith
+  | rFunctor_map_contractive => \lam n fg fg' h =>
+      agreeO_map_ne_map n (F.oFunctor_map fg) (F.oFunctor_map fg')
+        (hF.oFunctor_map_contractive n fg fg' h)

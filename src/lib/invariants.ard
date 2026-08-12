@@ -1,0 +1,878 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Bool
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.agree_cmra
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.dfrac_cmra
+\import lib.gFunctors
+\import lib.gmap_view_full
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+
+-- A11: semantic invariants, following Iris base_logic/lib/invariants.v.
+
+\func own_inv {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperExist gname (\lam i =>
+    mkProperAnd (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+
+\func inv_inner {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperForall coPset (\lam E =>
+    mkProperImpl (mkProperPure (coPSubset (nclose N) E))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P)
+          (mkProperWand (mkProperLater P)
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp)))))
+
+\func inv_body {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperPersistently (inv_inner W N P)
+
+\sfunc inv {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  inv_body W N P
+
+\func inv_peval {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : inv W N P = inv_body W N P =>
+  \peval inv W N P
+
+\lemma coPmem_singleton_inv (i j : Pos)
+    (h : coPIn j (coPset_singleton i)) : j = i \elim i, j
+  | xH, xH => idp
+  | xH, xO _ => \case h \with {}
+  | xH, xI _ => \case h \with {}
+  | xO _, xH => \case h \with {}
+  | xO i, xO j => pmap xO (coPmem_singleton_inv i j h)
+  | xO _, xI _ => \case h \with {}
+  | xI _, xH => \case h \with {}
+  | xI _, xO _ => \case h \with {}
+  | xI i, xI j => pmap xI (coPmem_singleton_inv i j h)
+
+\func coPset_singleton_subset (i : Pos) (X : coPset) (hi : coPIn i X)
+  : coPSubset (coPset_singleton i) X =>
+  \lam j hj => transport (\lam q => coPIn q X)
+    (Paths.inv (coPmem_singleton_inv i j hj)) hi
+
+\lemma ownE_equiv_ent {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (heq : coPset_equiv E1 E2)
+  : properUPred_ent (ownE W E1) (ownE W E2) =>
+  \lam n x hv ho =>
+    (own_proper W.wsatGpreS_enabled W.enabled_name
+      (CoPset E1) (CoPset E2) heq n x hv).1 ho
+
+\lemma ownE_split_subset {S : gFunctors} (W : wsatGS S)
+    (X Y : coPset) (hsub : coPSubset Y X)
+  : properUPred_ent (ownE W X)
+      (mkProperSep (ownE W Y) (ownE W (coPset_difference X Y))) =>
+  properUPred_ent_trans (ownE W X)
+    (ownE W (coPset_union Y (coPset_difference X Y)))
+    (mkProperSep (ownE W Y) (ownE W (coPset_difference X Y)))
+    (ownE_equiv_ent W X (coPset_union Y (coPset_difference X Y))
+      (coPset_subset_union_difference X Y hsub))
+    (\lam n x hv ho =>
+      (ownE_op W Y (coPset_difference X Y)
+        (coPset_subset_difference_disjoint X Y) n x hv).1 ho)
+
+\lemma ownE_join_subset {S : gFunctors} (W : wsatGS S)
+    (X Y : coPset) (hsub : coPSubset Y X)
+  : properUPred_ent
+      (mkProperSep (ownE W Y) (ownE W (coPset_difference X Y)))
+      (ownE W X) =>
+  properUPred_ent_trans
+    (mkProperSep (ownE W Y) (ownE W (coPset_difference X Y)))
+    (ownE W (coPset_union Y (coPset_difference X Y)))
+    (ownE W X)
+    (\lam n x hv hs =>
+      (ownE_op W Y (coPset_difference X Y)
+        (coPset_subset_difference_disjoint X Y) n x hv).2 hs)
+    (ownE_equiv_ent W (coPset_union Y (coPset_difference X Y)) X
+      (coPset_equiv_sym X (coPset_union Y (coPset_difference X Y))
+        (coPset_subset_union_difference X Y hsub)))
+
+\lemma pure_sep_to_and {M : UCMRA} (phi : \Prop) (P : ProperUPred M)
+  : properUPred_ent (mkProperSep (mkProperPure phi) P)
+      (mkProperAnd (mkProperPure phi) P) =>
+  \lam n x hv hs => \case hs \with {
+    | inP (_, _, _, hphi, _) =>
+      (hphi, sep_elim_r_ent (mkProperPure phi) P n x hv hs)
+  }
+
+\lemma own_inv_intro {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) (i : gname)
+  : properUPred_ent
+      (mkProperSep (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+      (own_inv W N P) =>
+  properUPred_ent_trans
+    (mkProperSep (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+    (mkProperAnd (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+    (own_inv W N P)
+    (pure_sep_to_and (coPIn i (nclose N)) (ownI W i P))
+    (exist_intro_ent (\lam j =>
+      mkProperAnd (mkProperPure (coPIn j (nclose N))) (ownI W j P)) i)
+
+\func fresh_inv_oracle (N : Namespace)
+  : \Pi (E : Gset) ->
+      TruncP (\Sigma (i : gname) (plookup E i = nothing)
+        (coPIn i (nclose N))) =>
+  \lam E =>
+    \let
+      | (i, hnot, hiN) => fresh_inv_name E N
+      | hfresh : plookup E i = nothing =>
+          \case maybe_unit_eta (plookup E i) \with {
+            | inl hn => hn
+            | inr hj => absurd (hnot hj)
+          }
+    \in inP (i, hfresh, hiN)
+
+\func ownI_core_id {S : gFunctors} (i : gname) (P : iProp S)
+  : CoreId {wsat_invR S}
+      (wsat_inv_frag i DfracDiscarded
+        (to_agree (invariant_unfold P))) =>
+  transport (CoreId {wsat_invR S})
+    (Paths.inv (wsat_inv_frag_peval i DfracDiscarded
+      (to_agree (invariant_unfold P))))
+    (transport
+      (\lam (K : GmapViewAgreeKit gname gnameCountable
+          (LaterOFE (iPropO S))) =>
+        CoreId {K.gva_R}
+          (K.gva_frag i DfracDiscarded
+            (to_agree (invariant_unfold P))))
+      (Paths.inv (\peval wsat_invKit S))
+      (gmap_view_frag_core_id i DfracDiscarded
+        (to_agree (invariant_unfold P)) idp
+        (\lam n => agree_dist_refl n
+          (to_agree (invariant_unfold P)))))
+
+\lemma ownI_dup {S : gFunctors} (W : wsatGS S)
+    (i : gname) (P : iProp S)
+  : properUPred_ent (ownI W i P)
+      (mkProperSep (ownI W i P) (ownI W i P)) =>
+  \let
+    | a => wsat_inv_frag i DfracDiscarded
+        (to_agree (invariant_unfold P))
+    | haa : (wsat_invR S).equiv ((wsat_invR S).op a a) a =>
+        core_id_dup a (ownI_core_id i P)
+  \in properUPred_ent_trans
+    (own W.wsatGpreS_inv W.invariant_name a)
+    (own W.wsatGpreS_inv W.invariant_name ((wsat_invR S).op a a))
+    (mkProperSep
+      (own W.wsatGpreS_inv W.invariant_name a)
+      (own W.wsatGpreS_inv W.invariant_name a))
+    (\lam n x hv ho =>
+      (own_proper W.wsatGpreS_inv W.invariant_name a
+        ((wsat_invR S).op a a)
+        ((wsat_invR S).equiv_sym ((wsat_invR S).op a a) a haa)
+        n x hv).1 ho)
+    (\lam n x hv ho =>
+      (own_op W.wsatGpreS_inv W.invariant_name a a n x hv).1 ho)
+
+\sfunc ownI_open_keep {S : gFunctors} (W : wsatGS S)
+    (i : gname) (P : iProp S)
+  : properUPred_ent
+      (mkProperSep (wsat W)
+        (mkProperSep (ownI W i P) (ownE W (coPset_singleton i))))
+      (mkProperSep (wsat W)
+        (mkProperSep (ownI W i P)
+          (mkProperSep (mkProperLater P) (ownD W (gset_singleton i))))) =>
+  \let
+    | I => ownI W i P
+    | O => ownE W (coPset_singleton i)
+    | LD => mkProperSep (mkProperLater P) (ownD W (gset_singleton i))
+    | step1 : properUPred_ent (mkProperSep (wsat W) (mkProperSep I O))
+        (mkProperSep (wsat W) (mkProperSep (mkProperSep I I) O)) =>
+        sep_mono_r_ent (wsat W) (mkProperSep I O)
+          (mkProperSep (mkProperSep I I) O)
+          (sep_mono_l_ent I (mkProperSep I I) O (ownI_dup W i P))
+    | step2 : properUPred_ent
+        (mkProperSep (wsat W) (mkProperSep (mkProperSep I I) O))
+        (mkProperSep I (mkProperSep (wsat W) (mkProperSep I O))) =>
+        properUPred_ent_trans
+          (mkProperSep (wsat W) (mkProperSep (mkProperSep I I) O))
+          (mkProperSep (wsat W) (mkProperSep I (mkProperSep I O)))
+          (mkProperSep I (mkProperSep (wsat W) (mkProperSep I O)))
+          (sep_mono_r_ent (wsat W) (mkProperSep (mkProperSep I I) O)
+            (mkProperSep I (mkProperSep I O))
+            (sep_assoc_l_ent I I O))
+          (sep_swap_ent (wsat W) I (mkProperSep I O))
+    | step3 : properUPred_ent
+        (mkProperSep I (mkProperSep (wsat W) (mkProperSep I O)))
+        (mkProperSep I (mkProperSep (wsat W) LD)) =>
+        sep_mono_r_ent I (mkProperSep (wsat W) (mkProperSep I O))
+          (mkProperSep (wsat W) LD) (ownI_open W i P)
+    | step4 : properUPred_ent (mkProperSep I (mkProperSep (wsat W) LD))
+        (mkProperSep (wsat W) (mkProperSep I LD)) =>
+        sep_swap_ent I (wsat W) LD
+  \in \lam n x hv h =>
+    step4 n x hv (step3 n x hv (step2 n x hv (step1 n x hv h)))
+
+-- (A * (B * C)) * (D * E) |- E * (B * (A * (C * D))).
+\lemma sep_permute5 {M : UCMRA} (A B C D E : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep (mkProperSep A (mkProperSep B C)) (mkProperSep D E))
+      (mkProperSep E (mkProperSep B (mkProperSep A (mkProperSep C D)))) =>
+  \let
+    | S0 => mkProperSep (mkProperSep A (mkProperSep B C)) (mkProperSep D E)
+    | S1 => mkProperSep (mkProperSep D E) (mkProperSep A (mkProperSep B C))
+    | S2 => mkProperSep D (mkProperSep E (mkProperSep A (mkProperSep B C)))
+    | S3 => mkProperSep E (mkProperSep D (mkProperSep A (mkProperSep B C)))
+    | S4 => mkProperSep E (mkProperSep A (mkProperSep D (mkProperSep B C)))
+    | S5 => mkProperSep E (mkProperSep A (mkProperSep B (mkProperSep D C)))
+    | S6 => mkProperSep E (mkProperSep B (mkProperSep A (mkProperSep D C)))
+    | S7 => mkProperSep E (mkProperSep B (mkProperSep A (mkProperSep C D)))
+    | h01 : properUPred_ent S0 S1 =>
+        sep_comm_ent (mkProperSep A (mkProperSep B C)) (mkProperSep D E)
+    | h12 : properUPred_ent S1 S2 =>
+        sep_assoc_l_ent D E (mkProperSep A (mkProperSep B C))
+    | h23 : properUPred_ent S2 S3 => sep_swap_ent D E (mkProperSep A (mkProperSep B C))
+    | h34 : properUPred_ent S3 S4 =>
+        sep_mono_r_ent E (mkProperSep D (mkProperSep A (mkProperSep B C)))
+          (mkProperSep A (mkProperSep D (mkProperSep B C)))
+          (sep_swap_ent D A (mkProperSep B C))
+    | h45 : properUPred_ent S4 S5 =>
+        sep_mono_r_ent E (mkProperSep A (mkProperSep D (mkProperSep B C)))
+          (mkProperSep A (mkProperSep B (mkProperSep D C)))
+          (sep_mono_r_ent A (mkProperSep D (mkProperSep B C))
+            (mkProperSep B (mkProperSep D C)) (sep_swap_ent D B C))
+    | h56 : properUPred_ent S5 S6 =>
+        sep_mono_r_ent E (mkProperSep A (mkProperSep B (mkProperSep D C)))
+          (mkProperSep B (mkProperSep A (mkProperSep D C)))
+          (sep_swap_ent A B (mkProperSep D C))
+    | h67 : properUPred_ent S6 S7 =>
+        sep_mono_r_ent E (mkProperSep B (mkProperSep A (mkProperSep D C)))
+          (mkProperSep B (mkProperSep A (mkProperSep C D)))
+          (sep_mono_r_ent B (mkProperSep A (mkProperSep D C))
+            (mkProperSep A (mkProperSep C D))
+            (sep_mono_r_ent A (mkProperSep D C) (mkProperSep C D)
+              (sep_comm_ent D C)))
+  \in \lam n x hv h => h67 n x hv (h56 n x hv (h45 n x hv
+      (h34 n x hv (h23 n x hv (h12 n x hv (h01 n x hv h))))))
+
+\lemma sep_move_fifth_front {M : UCMRA}
+    (A B C D E F : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep A (mkProperSep B (mkProperSep C
+        (mkProperSep D (mkProperSep E F)))))
+      (mkProperSep E (mkProperSep A (mkProperSep B
+        (mkProperSep C (mkProperSep D F))))) =>
+  \let
+    | h1 => sep_mono_r_ent C
+        (mkProperSep D (mkProperSep E F))
+        (mkProperSep E (mkProperSep D F))
+        (sep_swap_ent D E F)
+    | h2 => sep_mono_r_ent B
+        (mkProperSep C (mkProperSep E (mkProperSep D F)))
+        (mkProperSep E (mkProperSep C (mkProperSep D F)))
+        (sep_swap_ent C E (mkProperSep D F))
+    | h3 => sep_mono_r_ent A
+        (mkProperSep B (mkProperSep E (mkProperSep C (mkProperSep D F))))
+        (mkProperSep E (mkProperSep B (mkProperSep C (mkProperSep D F))))
+        (sep_swap_ent B E (mkProperSep C (mkProperSep D F)))
+    | h4 => sep_swap_ent A E
+        (mkProperSep B (mkProperSep C (mkProperSep D F)))
+  \in \lam n x hv h =>
+    \let
+      | r1 => sep_mono_r_ent A
+            (mkProperSep B (mkProperSep C (mkProperSep D (mkProperSep E F))))
+            (mkProperSep B (mkProperSep C (mkProperSep E (mkProperSep D F))))
+            (sep_mono_r_ent B
+              (mkProperSep C (mkProperSep D (mkProperSep E F)))
+              (mkProperSep C (mkProperSep E (mkProperSep D F))) h1)
+            n x hv h
+      | r2 => sep_mono_r_ent A
+          (mkProperSep B (mkProperSep C (mkProperSep E (mkProperSep D F))))
+          (mkProperSep B (mkProperSep E (mkProperSep C (mkProperSep D F))))
+          h2 n x hv r1
+      | r3 => h3 n x hv r2
+    \in h4 n x hv r3
+
+\lemma sep_rotate_third_front {M : UCMRA} (A B C R : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep A (mkProperSep B (mkProperSep C R)))
+      (mkProperSep C (mkProperSep A (mkProperSep B R))) =>
+  \let
+    | h1 : properUPred_ent
+        (mkProperSep A (mkProperSep B (mkProperSep C R)))
+        (mkProperSep A (mkProperSep C (mkProperSep B R))) =>
+        sep_mono_r_ent A (mkProperSep B (mkProperSep C R))
+          (mkProperSep C (mkProperSep B R)) (sep_swap_ent B C R)
+    | h2 : properUPred_ent
+        (mkProperSep A (mkProperSep C (mkProperSep B R)))
+        (mkProperSep C (mkProperSep A (mkProperSep B R))) =>
+        sep_swap_ent A C (mkProperSep B R)
+  \in \lam n x hv h => h2 n x hv (h1 n x hv h)
+
+\lemma sep_permute6_close {M : UCMRA} (A B C D E F : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep (mkProperSep (mkProperSep A (mkProperSep B C)) D)
+        (mkProperSep E F))
+      (mkProperSep (mkProperSep E (mkProperSep A (mkProperSep D B)))
+        (mkProperSep C F)) =>
+  \let
+    | Flat => mkProperSep A (mkProperSep B (mkProperSep C
+        (mkProperSep D (mkProperSep E F))))
+    | Moved => mkProperSep E (mkProperSep A (mkProperSep B
+        (mkProperSep C (mkProperSep D F))))
+    | Rotated => mkProperSep E (mkProperSep A (mkProperSep D
+        (mkProperSep B (mkProperSep C F))))
+    | hflat : properUPred_ent
+        (mkProperSep (mkProperSep (mkProperSep A (mkProperSep B C)) D)
+          (mkProperSep E F)) Flat =>
+        \lam n x hv h =>
+          \let
+            | h1 => sep_assoc_l_ent (mkProperSep A (mkProperSep B C)) D
+                (mkProperSep E F) n x hv h
+            | h2 => sep_assoc_l_ent A (mkProperSep B C)
+                (mkProperSep D (mkProperSep E F)) n x hv h1
+            | h3 => sep_mono_r_ent A
+                (mkProperSep (mkProperSep B C) (mkProperSep D (mkProperSep E F)))
+                (mkProperSep B (mkProperSep C (mkProperSep D (mkProperSep E F))))
+                (sep_assoc_l_ent B C (mkProperSep D (mkProperSep E F)))
+                n x hv h2
+          \in h3
+    | hmove : properUPred_ent Flat Moved =>
+        sep_move_fifth_front A B C D E F
+    | hrotate : properUPred_ent Moved Rotated =>
+        sep_mono_r_ent E
+          (mkProperSep A (mkProperSep B (mkProperSep C (mkProperSep D F))))
+          (mkProperSep A (mkProperSep D (mkProperSep B (mkProperSep C F))))
+          (sep_mono_r_ent A
+            (mkProperSep B (mkProperSep C (mkProperSep D F)))
+            (mkProperSep D (mkProperSep B (mkProperSep C F)))
+            (sep_rotate_third_front B C D F))
+    | hgroup : properUPred_ent Rotated
+        (mkProperSep (mkProperSep E (mkProperSep A (mkProperSep D B)))
+          (mkProperSep C F)) =>
+        \lam n x hv h =>
+          \let
+            | inner1 => sep_mono_r_ent A
+                (mkProperSep D (mkProperSep B (mkProperSep C F)))
+                (mkProperSep (mkProperSep D B) (mkProperSep C F))
+                (sep_assoc_r_ent D B (mkProperSep C F))
+            | inner2 => sep_assoc_r_ent A (mkProperSep D B) (mkProperSep C F)
+            | h1 => sep_mono_r_ent E
+                (mkProperSep A (mkProperSep D (mkProperSep B (mkProperSep C F))))
+                (mkProperSep (mkProperSep A (mkProperSep D B)) (mkProperSep C F))
+                (properUPred_ent_trans
+                  (mkProperSep A (mkProperSep D (mkProperSep B (mkProperSep C F))))
+                  (mkProperSep A (mkProperSep (mkProperSep D B) (mkProperSep C F)))
+                  (mkProperSep (mkProperSep A (mkProperSep D B)) (mkProperSep C F))
+                  inner1 inner2) n x hv h
+          \in sep_assoc_r_ent E (mkProperSep A (mkProperSep D B))
+            (mkProperSep C F) n x hv h1
+  \in \lam n x hv h => hgroup n x hv
+    (hrotate n x hv (hmove n x hv (hflat n x hv h)))
+
+\sfunc own_inv_open_resources {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+    (hiN : coPIn i (nclose N)) (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep (ownI W i P) (mkProperSep (wsat W) (ownE W E)))
+      (mkProperSep
+        (mkProperSep (wsat W)
+          (mkProperSep (ownI W i P)
+            (mkProperSep (mkProperLater P) (ownD W (gset_singleton i)))))
+        (mkProperSep
+          (ownE W (coPset_difference (nclose N) (coPset_singleton i)))
+          (ownE W (coPset_difference E (nclose N))))) =>
+  \let
+    | I => ownI W i P
+    | OE => ownE W E
+    | ON => ownE W (nclose N)
+    | Oi => ownE W (coPset_singleton i)
+    | ONi => ownE W (coPset_difference (nclose N) (coPset_singleton i))
+    | OR => ownE W (coPset_difference E (nclose N))
+    | Tail => mkProperSep ONi OR
+    | step1 : properUPred_ent (mkProperSep I (mkProperSep (wsat W) OE))
+        (mkProperSep (wsat W) (mkProperSep I OE)) =>
+        sep_swap_ent I (wsat W) OE
+    | splitE : properUPred_ent OE (mkProperSep ON OR) =>
+        ownE_split_subset W E (nclose N) hNE
+    | splitN : properUPred_ent ON (mkProperSep Oi ONi) =>
+        ownE_split_subset W (nclose N) (coPset_singleton i)
+          (coPset_singleton_subset i (nclose N) hiN)
+    | step2 : properUPred_ent (mkProperSep (wsat W) (mkProperSep I OE))
+        (mkProperSep (wsat W)
+          (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR))) =>
+        sep_mono_r_ent (wsat W) (mkProperSep I OE)
+          (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR))
+          (sep_mono_r_ent I OE (mkProperSep (mkProperSep Oi ONi) OR)
+            (properUPred_ent_trans OE (mkProperSep ON OR)
+              (mkProperSep (mkProperSep Oi ONi) OR) splitE
+              (sep_mono_l_ent ON (mkProperSep Oi ONi) OR splitN)))
+    | step3 : properUPred_ent
+        (mkProperSep (wsat W)
+          (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR)))
+        (mkProperSep (mkProperSep (wsat W) (mkProperSep I Oi)) Tail) =>
+        properUPred_ent_trans
+          (mkProperSep (wsat W)
+            (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR)))
+          (mkProperSep (wsat W)
+            (mkProperSep (mkProperSep I Oi) (mkProperSep ONi OR)))
+          (mkProperSep (mkProperSep (wsat W) (mkProperSep I Oi)) Tail)
+          (sep_mono_r_ent (wsat W)
+            (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR))
+            (mkProperSep (mkProperSep I Oi) (mkProperSep ONi OR))
+            (properUPred_ent_trans
+              (mkProperSep I (mkProperSep (mkProperSep Oi ONi) OR))
+              (mkProperSep I (mkProperSep Oi (mkProperSep ONi OR)))
+              (mkProperSep (mkProperSep I Oi) (mkProperSep ONi OR))
+              (sep_mono_r_ent I (mkProperSep (mkProperSep Oi ONi) OR)
+                (mkProperSep Oi (mkProperSep ONi OR))
+                (sep_assoc_l_ent Oi ONi OR))
+              (sep_assoc_r_ent I Oi (mkProperSep ONi OR))))
+          (sep_assoc_r_ent (wsat W) (mkProperSep I Oi) Tail)
+    | step4 : properUPred_ent
+        (mkProperSep (mkProperSep (wsat W) (mkProperSep I Oi)) Tail)
+        (mkProperSep
+          (mkProperSep (wsat W)
+            (mkProperSep I (mkProperSep (mkProperLater P)
+              (ownD W (gset_singleton i))))) Tail) =>
+        sep_mono_l_ent (mkProperSep (wsat W) (mkProperSep I Oi))
+          (mkProperSep (wsat W)
+            (mkProperSep I (mkProperSep (mkProperLater P)
+              (ownD W (gset_singleton i))))) Tail
+          (ownI_open_keep W i P)
+  \in \lam n x hv h => step4 n x hv (step3 n x hv (step2 n x hv (step1 n x hv h)))
+
+\sfunc own_inv_close_world {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+    (hiN : coPIn i (nclose N)) (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep
+        (mkProperSep
+          (mkProperSep (ownI W i P)
+            (mkProperSep (ownD W (gset_singleton i))
+              (ownE W (coPset_difference (nclose N) (coPset_singleton i)))))
+          (mkProperLater P))
+        (mkProperSep (wsat W) (ownE W (coPset_difference E (nclose N)))))
+      (mkProperSep (wsat W) (ownE W E)) =>
+  \let
+    | I => ownI W i P
+    | D => ownD W (gset_singleton i)
+    | ONi => ownE W (coPset_difference (nclose N) (coPset_singleton i))
+    | LP => mkProperLater P
+    | OR => ownE W (coPset_difference E (nclose N))
+    | Oi => ownE W (coPset_singleton i)
+    | ON => ownE W (nclose N)
+    | permuted : properUPred_ent
+        (mkProperSep (mkProperSep (mkProperSep I (mkProperSep D ONi)) LP)
+          (mkProperSep (wsat W) OR))
+        (mkProperSep
+          (mkProperSep (wsat W) (mkProperSep I (mkProperSep LP D)))
+          (mkProperSep ONi OR)) =>
+        sep_permute6_close I D ONi LP (wsat W) OR
+    | closed : properUPred_ent
+        (mkProperSep
+          (mkProperSep (wsat W) (mkProperSep I (mkProperSep LP D)))
+          (mkProperSep ONi OR))
+        (mkProperSep (mkProperSep (wsat W) Oi) (mkProperSep ONi OR)) =>
+        sep_mono_l_ent
+          (mkProperSep (wsat W) (mkProperSep I (mkProperSep LP D)))
+          (mkProperSep (wsat W) Oi) (mkProperSep ONi OR)
+          (ownI_close W i P)
+    | joined : properUPred_ent
+        (mkProperSep (mkProperSep (wsat W) Oi) (mkProperSep ONi OR))
+        (mkProperSep (wsat W) (ownE W E)) =>
+        \lam n x hv h =>
+          \let
+            | h1 => sep_assoc_l_ent (wsat W) Oi (mkProperSep ONi OR)
+                n x hv h
+            | h2 => sep_mono_r_ent (wsat W)
+                (mkProperSep Oi (mkProperSep ONi OR))
+                (mkProperSep ON (ownE W (coPset_difference E (nclose N))))
+                (properUPred_ent_trans
+                  (mkProperSep Oi (mkProperSep ONi OR))
+                  (mkProperSep (mkProperSep Oi ONi) OR)
+                  (mkProperSep ON OR)
+                  (sep_assoc_r_ent Oi ONi OR)
+                  (sep_mono_l_ent (mkProperSep Oi ONi) ON OR
+                    (ownE_join_subset W (nclose N) (coPset_singleton i)
+                      (coPset_singleton_subset i (nclose N) hiN))))
+                n x hv h1
+          \in sep_mono_r_ent (wsat W)
+            (mkProperSep ON (ownE W (coPset_difference E (nclose N))))
+            (ownE W E)
+            (ownE_join_subset W E (nclose N) hNE) n x hv h2
+  \in \lam n x hv h => joined n x hv (closed n x hv (permuted n x hv h))
+
+\sfunc own_inv_close_fupd {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+    (hiN : coPIn i (nclose N)) (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep
+        (mkProperSep
+          (mkProperSep (ownI W i P)
+            (mkProperSep (ownD W (gset_singleton i))
+              (ownE W (coPset_difference (nclose N) (coPset_singleton i)))))
+          (mkProperLater P))
+        (mkProperSep (wsat W) (ownE W (coPset_difference E (nclose N)))))
+      (mkProperBUpd (mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E) mkProperEmp)))) =>
+  \let
+    | World => mkProperSep (wsat W) (ownE W E)
+    | Target => mkProperSep (wsat W) (mkProperSep (ownE W E) mkProperEmp)
+    | addEmp : properUPred_ent World Target =>
+        sep_mono_r_ent (wsat W) (ownE W E)
+          (mkProperSep (ownE W E) mkProperEmp) (add_emp_r_ent (ownE W E))
+  \in \lam n x hv h =>
+    bupd_intro (mkProperExceptZero Target) n x hv
+      (byRight (addEmp n x hv (own_inv_close_world W N E P i hiN hNE n x hv h)))
+
+\sfunc own_inv_close_token {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+    (hiN : coPIn i (nclose N)) (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep (ownI W i P)
+        (mkProperSep (ownD W (gset_singleton i))
+          (ownE W (coPset_difference (nclose N) (coPset_singleton i)))))
+      (mkProperWand (mkProperLater P)
+        (mkProperFUpd W (coPset_difference E (nclose N)) E mkProperEmp)) =>
+  \let
+    | R => mkProperSep (ownI W i P)
+        (mkProperSep (ownD W (gset_singleton i))
+          (ownE W (coPset_difference (nclose N) (coPset_singleton i))))
+    | LP => mkProperLater P
+    | F => mkProperFUpd W (coPset_difference E (nclose N)) E mkProperEmp
+    | close : properUPred_ent (mkProperSep R LP) F =>
+        \lam n x hv h m m_le_n frame hv_op hworld =>
+          \let
+            | hm : (mkProperSep R LP).upred_holds m x =>
+                (mkProperSep R LP).upred_mono n m x x h
+                  (inclN_refl_ucmra {iResUR S} m x) m_le_n
+            | combined : (mkProperSep (mkProperSep R LP)
+                (mkProperSep (wsat W)
+                  (ownE W (coPset_difference E (nclose N))))).upred_holds m
+                ((iResUR S).op x frame) =>
+                inP (x, frame, (iResUR S).ofe_dist_refl m ((iResUR S).op x frame),
+                  hm, hworld)
+          \in own_inv_close_fupd W N E P i hiN hNE
+            m ((iResUR S).op x frame) hv_op combined
+  \in wand_intro_ent R LP F close
+
+\func own_inv_acc_target {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) : iProp S =>
+  mkProperSep (wsat W)
+    (mkProperSep (ownE W (coPset_difference E (nclose N)))
+      (mkProperSep (mkProperLater P)
+        (mkProperWand (mkProperLater P)
+          (mkProperFUpd W (coPset_difference E (nclose N)) E mkProperEmp))))
+
+\sfunc own_inv_acc_open_i {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+    (hiN : coPIn i (nclose N)) (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep (ownI W i P) (mkProperSep (wsat W) (ownE W E)))
+      (own_inv_acc_target W N E P) =>
+  \let
+    | I => ownI W i P
+    | LP => mkProperLater P
+    | D => ownD W (gset_singleton i)
+    | ONi => ownE W (coPset_difference (nclose N) (coPset_singleton i))
+    | OR => ownE W (coPset_difference E (nclose N))
+    | CloseR => mkProperSep I (mkProperSep D ONi)
+    | Close => mkProperWand LP
+        (mkProperFUpd W (coPset_difference E (nclose N)) E mkProperEmp)
+    | opened => own_inv_open_resources W N E P i hiN hNE
+    | arranged : properUPred_ent
+        (mkProperSep
+          (mkProperSep (wsat W) (mkProperSep I (mkProperSep LP D)))
+          (mkProperSep ONi OR))
+        (mkProperSep (wsat W) (mkProperSep OR (mkProperSep LP CloseR))) =>
+        \lam n x hv h =>
+          \let
+            | h1 => sep_assoc_l_ent (wsat W) (mkProperSep I (mkProperSep LP D))
+                (mkProperSep ONi OR) n x hv h
+            | h2 => sep_mono_r_ent (wsat W)
+                (mkProperSep (mkProperSep I (mkProperSep LP D))
+                  (mkProperSep ONi OR))
+                (mkProperSep OR (mkProperSep LP (mkProperSep I (mkProperSep D ONi))))
+                (sep_permute5 I LP D ONi OR) n x hv h1
+          \in h2
+    | closeToken : properUPred_ent
+        (mkProperSep (wsat W) (mkProperSep OR (mkProperSep LP CloseR)))
+        (own_inv_acc_target W N E P) =>
+        sep_mono_r_ent (wsat W) (mkProperSep OR (mkProperSep LP CloseR))
+          (mkProperSep OR (mkProperSep LP Close))
+          (sep_mono_r_ent OR (mkProperSep LP CloseR) (mkProperSep LP Close)
+            (sep_mono_r_ent LP CloseR Close
+              (own_inv_close_token W N E P i hiN hNE)))
+  \in \lam n x hv h => closeToken n x hv (arranged n x hv (opened n x hv h))
+
+\sfunc own_inv_acc_prepare {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+  : properUPred_ent
+      (mkProperSep (own_inv W N P) (mkProperSep (wsat W) (ownE W E)))
+      (own_inv_acc_target W N E P) =>
+  sep_exist_l_elim
+    (\lam i => mkProperAnd (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+    (mkProperSep (wsat W) (ownE W E)) (own_inv_acc_target W N E P)
+    (\lam i n x hv h =>
+      \case h \with {
+        | inP (a, b, dab, hi, hworld) =>
+          own_inv_acc_open_i W N E P i hi.1 hNE n x hv
+            (sep_mono_l_ent
+              (mkProperAnd (mkProperPure (coPIn i (nclose N))) (ownI W i P))
+              (ownI W i P) (mkProperSep (wsat W) (ownE W E))
+              (\lam k y _ hand => hand.2)
+              n x hv (inP (a, b, dab, hi, hworld)))
+      })
+
+\sfunc own_inv_acc {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (N : Namespace) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+  : properUPred_ent (own_inv W N P)
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P)
+          (mkProperWand (mkProperLater P)
+            (mkProperFUpd W (coPset_difference E (nclose N)) E mkProperEmp)))) =>
+  \lam n x hv hown m m_le_n frame hv_op hworld =>
+    \let
+      | hown_m : (own_inv W N P).upred_holds m x =>
+          (own_inv W N P).upred_mono n m x x hown
+            (inclN_refl_ucmra {iResUR S} m x) m_le_n
+      | combined : (mkProperSep (own_inv W N P)
+          (mkProperSep (wsat W) (ownE W E))).upred_holds m
+          ((iResUR S).op x frame) =>
+          inP (x, frame, (iResUR S).ofe_dist_refl m ((iResUR S).op x frame),
+            hown_m, hworld)
+      | opened => own_inv_acc_prepare W N E P hNE
+          m ((iResUR S).op x frame) hv_op combined
+    \in bupd_intro
+      (mkProperExceptZero (own_inv_acc_target W N E P))
+      m ((iResUR S).op x frame) hv_op (byRight opened)
+
+\lemma own_inv_persistent {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : properUPred_ent (own_inv W N P)
+      (mkProperPersistently (own_inv W N P)) =>
+  \lam n x hv hown => \case hown \with {
+    | inP (i, hi) => inP (i,
+        (hi.1, own_core_persistent W.wsatGpreS_inv W.invariant_name
+          (wsat_inv_frag i DfracDiscarded
+            (to_agree (invariant_unfold P)))
+          (ownI_core_id i P) n x hv hi.2))
+  }
+
+\lemma own_inv_to_inv {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : properUPred_ent (own_inv W N P) (inv W N P) =>
+  \lam n x hv hown =>
+    transport (\lam (Q : iProp S) => Q.upred_holds n x)
+      (Paths.inv (inv_peval W N P))
+      (\let
+        | hcore : (own_inv W N P).upred_holds n
+            (ucmra_core {iResUR S} x) =>
+            own_inv_persistent W N P n x hv hown
+        \in \lam E m m_le_n b incl_core_b hv_b hNE =>
+          own_inv_acc W E N P hNE m b hv_b
+          ((own_inv W N P).upred_mono n m (ucmra_core {iResUR S} x) b
+            hcore incl_core_b m_le_n))
+
+\lemma inv_persistent {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : properUPred_ent (inv W N P) (mkProperPersistently (inv W N P)) =>
+  \lam n x hv hinv =>
+    transport (\lam (Q : iProp S) => Q.upred_holds n x)
+      (Paths.inv (pmap mkProperPersistently (inv_peval W N P)))
+      ((BIuPredPersistentlyMixin (iResUR S)).persistently_idemp_2
+        (inv_inner W N P) n x hv
+        (transport (\lam (Q : iProp S) => Q.upred_holds n x)
+          (inv_peval W N P) hinv))
+
+\lemma inv_acc {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (N : Namespace) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+  : properUPred_ent (inv W N P)
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P)
+          (mkProperWand (mkProperLater P)
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp)))) =>
+  \lam n x hv hinv =>
+    \let
+      | hbody : (inv_body W N P).upred_holds n x =>
+          transport (\lam (Q : iProp S) => Q.upred_holds n x)
+            (inv_peval W N P) hinv
+      | hinner_core : (inv_inner W N P).upred_holds n
+          (ucmra_core {iResUR S} x) => hbody
+      | core_incl : inclN {iResUR S}
+          {\new Op (iResUR S).E { | op => (iResUR S).op }}
+          (ucmra_core {iResUR S} x) n x =>
+          inP (x, equiv_dist {iResUR S}
+            {x} {(iResUR S).op (ucmra_core {iResUR S} x) x}
+            ((iResUR S).equiv_sym
+              ((iResUR S).op (ucmra_core {iResUR S} x) x) x
+              (ucmra_core_left_id {iResUR S} x)) n)
+      | hinner : (inv_inner W N P).upred_holds n x =>
+          (inv_inner W N P).upred_mono n n (ucmra_core {iResUR S} x) x
+            hinner_core core_incl <=-refl
+    \in hinner E n <=-refl x (inclN_refl_ucmra {iResUR S} n x) hv hNE
+
+\func own_inv_alloc_result {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperExist gname (\lam i =>
+    mkProperSep (mkProperPure (coPIn i (nclose N)))
+      (mkProperSep (wsat W) (ownI W i P)))
+
+\func own_inv_alloc_target {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) : iProp S =>
+  mkProperSep (wsat W) (mkProperSep (ownE W E) (own_inv W N P))
+
+\sfunc own_inv_alloc_inner {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+  : properUPred_ent
+      (mkProperSep (mkProperPure (coPIn i (nclose N)))
+        (mkProperSep (ownI W i P) (ownE W E)))
+      (mkProperSep (ownE W E) (own_inv W N P)) =>
+  \let
+    | A => mkProperPure (coPIn i (nclose N))
+    | I => ownI W i P
+    | O => ownE W E
+    | AI => mkProperSep A I
+    | step1 : properUPred_ent (mkProperSep A (mkProperSep I O))
+        (mkProperSep AI O) => sep_assoc_r_ent A I O
+    | step2 : properUPred_ent (mkProperSep AI O)
+        (mkProperSep O AI) => sep_comm_ent AI O
+    | step3 : properUPred_ent (mkProperSep O AI)
+        (mkProperSep O (own_inv W N P)) =>
+        sep_mono_r_ent O AI (own_inv W N P) (own_inv_intro W N P i)
+  \in \lam n x hv h =>
+    \let
+      | h1 => step1 n x hv h
+      | h2 => step2 n x hv h1
+    \in step3 n x hv h2
+
+\sfunc own_inv_alloc_witness {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S) (i : gname)
+  : properUPred_ent
+      (mkProperSep
+        (mkProperSep (mkProperPure (coPIn i (nclose N)))
+          (mkProperSep (wsat W) (ownI W i P)))
+        (ownE W E))
+      (own_inv_alloc_target W N E P) =>
+  \let
+    | A => mkProperPure (coPIn i (nclose N))
+    | I => ownI W i P
+    | O => ownE W E
+    | step1a : properUPred_ent (mkProperSep (mkProperSep A
+        (mkProperSep (wsat W) I)) O)
+        (mkProperSep A (mkProperSep (mkProperSep (wsat W) I) O)) =>
+        sep_assoc_l_ent A (mkProperSep (wsat W) I) O
+    | step1b : properUPred_ent
+        (mkProperSep A (mkProperSep (mkProperSep (wsat W) I) O))
+        (mkProperSep A (mkProperSep (wsat W) (mkProperSep I O))) =>
+        sep_mono_r_ent A (mkProperSep (mkProperSep (wsat W) I) O)
+          (mkProperSep (wsat W) (mkProperSep I O))
+          (sep_assoc_l_ent (wsat W) I O)
+    | step2 : properUPred_ent
+        (mkProperSep A (mkProperSep (wsat W) (mkProperSep I O)))
+        (mkProperSep (wsat W) (mkProperSep A (mkProperSep I O))) =>
+        sep_swap_ent A (wsat W) (mkProperSep I O)
+    | step3 : properUPred_ent
+        (mkProperSep (wsat W) (mkProperSep A (mkProperSep I O)))
+        (own_inv_alloc_target W N E P) =>
+        sep_mono_r_ent (wsat W) (mkProperSep A (mkProperSep I O))
+          (mkProperSep O (own_inv W N P))
+          (own_inv_alloc_inner W N E P i)
+  \in \lam n x hv h =>
+    \let
+      | h1a => step1a n x hv h
+      | h1b => step1b n x hv h1a
+      | h2 => step2 n x hv h1b
+    \in step3 n x hv h2
+
+\sfunc own_inv_alloc_reshape {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperSep (own_inv_alloc_result W N P) (ownE W E))
+      (own_inv_alloc_target W N E P) =>
+  sep_exist_l_elim
+    (\lam i => mkProperSep (mkProperPure (coPIn i (nclose N)))
+      (mkProperSep (wsat W) (ownI W i P)))
+    (ownE W E) (own_inv_alloc_target W N E P)
+    (own_inv_alloc_witness W N E P)
+
+\sfunc own_inv_alloc_finish {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S)
+  : properUPred_ent
+      (mkProperSep (mkProperBUpd (own_inv_alloc_result W N P)) (ownE W E))
+      (mkProperBUpd (mkProperExceptZero (own_inv_alloc_target W N E P))) =>
+  \let
+    | R => own_inv_alloc_result W N P
+    | T => own_inv_alloc_target W N E P
+    | cont : properUPred_ent (mkProperSep R (ownE W E))
+        (mkProperBUpd (mkProperExceptZero T)) =>
+        properUPred_ent_trans (mkProperSep R (ownE W E)) T
+          (mkProperBUpd (mkProperExceptZero T))
+          (own_inv_alloc_reshape W N E P)
+          (properUPred_ent_trans T (mkProperExceptZero T)
+            (mkProperBUpd (mkProperExceptZero T))
+            (or_intro_r_ent (mkProperLater (mkProperPure Empty)) T)
+            (bupd_intro (mkProperExceptZero T)))
+  \in bupd_frame_trans R (ownE W E) (mkProperExceptZero T) cont
+
+\sfunc own_inv_alloc {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S)
+  : properUPred_ent (mkProperLater P)
+      (mkProperFUpd W E E (own_inv W N P)) =>
+  \lam n x hv hp m m_le_n frame hv_op hworld =>
+    \let
+      | hp_m : (mkProperLater P).upred_holds m x =>
+          (mkProperLater P).upred_mono n m x x hp
+            (inclN_refl_ucmra {iResUR S} m x) m_le_n
+      | start : (mkProperSep (mkProperLater P)
+          (mkProperSep (wsat W) (ownE W E))).upred_holds m
+          ((iResUR S).op x frame) =>
+          inP (x, frame, (iResUR S).ofe_dist_refl m ((iResUR S).op x frame),
+            hp_m, hworld)
+      | prepared : (mkProperSep (mkProperSep (wsat W) (mkProperLater P))
+          (ownE W E)).upred_holds m ((iResUR S).op x frame) =>
+          properUPred_ent_trans
+            (mkProperSep (mkProperLater P) (mkProperSep (wsat W) (ownE W E)))
+            (mkProperSep (wsat W) (mkProperSep (mkProperLater P) (ownE W E)))
+            (mkProperSep (mkProperSep (wsat W) (mkProperLater P)) (ownE W E))
+            (sep_swap_ent (mkProperLater P) (wsat W) (ownE W E))
+            (sep_assoc_r_ent (wsat W) (mkProperLater P) (ownE W E))
+            m ((iResUR S).op x frame) hv_op start
+      | framed : (mkProperSep (mkProperBUpd (own_inv_alloc_result W N P))
+          (ownE W E)).upred_holds m ((iResUR S).op x frame) =>
+          sep_mono_l_ent (mkProperSep (wsat W) (mkProperLater P))
+            (mkProperBUpd (own_inv_alloc_result W N P)) (ownE W E)
+            (ownI_alloc W (\lam i => coPIn i (nclose N)) P
+              (fresh_inv_oracle N))
+            m ((iResUR S).op x frame) hv_op prepared
+    \in own_inv_alloc_finish W N E P
+      m ((iResUR S).op x frame) hv_op framed
+
+\lemma inv_alloc {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (E : coPset) (P : iProp S)
+  : properUPred_ent (mkProperLater P)
+      (mkProperFUpd W E E (inv W N P)) =>
+  properUPred_ent_trans (mkProperLater P)
+    (mkProperFUpd W E E (own_inv W N P))
+    (mkProperFUpd W E E (inv W N P))
+    (own_inv_alloc W N E P)
+    (fupd_mono W E E (own_inv W N P) (inv W N P)
+      (own_inv_to_inv W N P))

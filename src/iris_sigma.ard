@@ -1,0 +1,26 @@
+\import lang
+\import wsat
+\import wsat_sigma
+\import weakestpre
+\import lib.gFunctors
+\import lib.gmap_cmra
+\import lib.gen_heap
+
+-- The program-logic signature is the disjoint concatenation used by Rocq
+-- Iris: world satisfaction/invariants plus the generic heap ghost map.
+\func irisSigma (cnt : Countable Loc) : gFunctors =>
+  gFunctors_app wsatSigma (gen_heapSigma Loc cnt Value)
+
+\record irisGpreS (cnt : Countable Loc) (S : gFunctors)
+  | iris_wsat_pre : wsatGpreS S
+  | iris_heap_pre : gen_heapGpreS Loc cnt Value S
+
+\func subG_irisGpreS {cnt : Countable Loc} {S : gFunctors}
+    (h : subG (irisSigma cnt) S) : irisGpreS cnt S \cowith
+  | iris_wsat_pre => subG_wsatSigma (subG_inv_l h)
+  | iris_heap_pre => subG_gen_heapGpreS (subG_inv_r h)
+
+\func mkIrisGS {cnt : Countable Loc} {S : gFunctors}
+    (W : wsatGS S) (G : gen_heapGS Loc cnt Value S) : irisGS cnt S \cowith
+  | iris_wsat => W
+  | iris_gen_heap => G

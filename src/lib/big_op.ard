@@ -526,7 +526,7 @@
     }
   }
 
-\lemma sep_exist_l_ent {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M) (R : ProperUPred M)
+\lemma sep_exist_l_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (R : ProperUPred M)
   : properUPred_ent (mkProperSep (mkProperExist A Phi) R)
                     (mkProperExist A (\lam a => mkProperSep (Phi a) R))
   => \lam n x hv hs => \case hs \with {
@@ -536,7 +536,7 @@
   }
 
 -- Pull a big_sep existential out of an outer sep, then eliminate per-witness.
-\lemma sep_exist_l_elim {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M)
+\lemma sep_exist_l_elim {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M)
     (R Z : ProperUPred M)
     (h : \Pi (a : A) -> properUPred_ent (mkProperSep (Phi a) R) Z)
   : properUPred_ent (mkProperSep (mkProperExist A Phi) R) Z
@@ -560,7 +560,7 @@
   : properUPred_ent P (mkProperOr P Q)
   => \lam n x hv h => byLeft h
 
-\lemma exist_intro_ent {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M) (a : A)
+\lemma exist_intro_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (a : A)
   : properUPred_ent (Phi a) (mkProperExist A Phi)
   => \lam n x hv h => inP (a, h)
 
@@ -593,7 +593,7 @@
   : properUPred_ent Q (mkProperOr P Q)
   => \lam n x hv h => byRight h
 
-\lemma exist_elim_ent {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M) (Z : ProperUPred M)
+\lemma exist_elim_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (Z : ProperUPred M)
     (h : \Pi (a : A) -> properUPred_ent (Phi a) Z)
   : properUPred_ent (mkProperExist A Phi) Z
   => \lam n x hv hex => \case hex \with { | inP (t, hp) => h t n x hv hp }

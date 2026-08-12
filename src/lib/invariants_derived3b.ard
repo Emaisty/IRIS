@@ -1,0 +1,166 @@
+\import Logic
+\import Paths \hiding (inv)
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+\import lib.timeless
+\import lib.invariants
+\import lib.invariants_derived1
+\import lib.invariants_derived3a
+
+-- =================================================================================
+-- §8  inv_acc_strong (Rocq invariants.v:183): the close continuation works
+--     at an arbitrary mask E', returning ↑N ∪ E'.
+-- =================================================================================
+-- Sealed rewrite of §8 inv_acc_strong (replacement for the current body in
+-- invariants_derived3.ard / future d3b module).  The inner per-E' fancy
+-- update is kept opaque behind `sealedFUpd` (from fupd_mask.ard) during all
+-- entailment composition, and the public unsealed statement is recovered by
+-- one transport at the very end — the same discipline as
+-- fupd_mask_subseteq_sealed.
+
+-- the strong close continuation, sealed and unsealed forms
+\func inv_acc_strong_close_sealed {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperForall coPset (\lam E' =>
+    mkProperWand (mkProperLater P)
+      (sealedFUpd W E' (coPset_union (nclose N) E') mkProperEmp))
+
+\func inv_acc_strong_close {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S) : iProp S =>
+  mkProperForall coPset (\lam E' =>
+    mkProperWand (mkProperLater P)
+      (mkProperFUpd W E' (coPset_union (nclose N) E') mkProperEmp))
+
+\func inv_acc_strong_close_peval {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : inv_acc_strong_close_sealed W N P = inv_acc_strong_close W N P =>
+  pmap (mkProperForall coPset)
+    (path (\lam i => \lam E' =>
+      mkProperWand (mkProperLater P)
+        (sealedFUpd_peval W E' (coPset_union (nclose N) E')
+          mkProperEmp @ i)))
+
+-- sealed-form core proof
+\sfunc inv_acc_strong_sealed {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (N : Namespace) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+  : properUPred_ent (inv W N P)
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P)
+          (inv_acc_strong_close_sealed W N P))) =>
+  \let
+    | UN => nclose N
+    | Z => coPset_difference UN UN
+    | ER => coPset_difference E UN
+    | F0 => mkProperFUpd W Z UN mkProperEmp
+    | C0 => mkProperWand (mkProperLater P) F0
+    | body0 => mkProperSep (mkProperLater P) C0
+    | strongC : properUPred_ent C0 (inv_acc_strong_close_sealed W N P) =>
+        forall_intro_ent C0
+          (\lam E' => mkProperWand (mkProperLater P)
+            (sealedFUpd W E' (coPset_union UN E') mkProperEmp))
+          (\lam E' => wand_intro_ent C0 (mkProperLater P)
+            (sealedFUpd W E' (coPset_union UN E') mkProperEmp)
+            (transport
+              (\lam (Z' : iProp S) => properUPred_ent
+                (mkProperSep C0 (mkProperLater P)) Z')
+              (Paths.inv (sealedFUpd_peval W E' (coPset_union UN E')
+                mkProperEmp))
+              (properUPred_ent_trans
+                (mkProperSep C0 (mkProperLater P)) F0
+                (mkProperFUpd W E' (coPset_union UN E') mkProperEmp)
+                (wand_elim_ent (mkProperLater P) F0)
+                (properUPred_ent_trans F0
+                  (mkProperFUpd W (coPset_union Z E')
+                    (coPset_union UN E') mkProperEmp)
+                  (mkProperFUpd W E' (coPset_union UN E') mkProperEmp)
+                  (properUPred_ent_trans F0
+                    (mkProperFUpd W Z UN
+                      (mkProperImpl
+                        (mkProperPure (coPset_overlap UN E' = false))
+                        mkProperEmp))
+                    (mkProperFUpd W (coPset_union Z E')
+                      (coPset_union UN E') mkProperEmp)
+                    (fupd_intro_impl_pure W Z UN
+                      (coPset_overlap UN E' = false) mkProperEmp)
+                    (fupd_mask_frame_r W Z UN E' mkProperEmp
+                      (coPset_diff_self_overlap_false UN E')))
+                  (fupd_masks_proper W (coPset_union Z E') E'
+                    (coPset_union UN E') (coPset_union UN E')
+                    mkProperEmp
+                    (coPset_diff_self_union_equiv UN E')
+                    (coPset_equiv_refl (coPset_union UN E')))))))
+    | acc0 : properUPred_ent (inv W N P)
+        (mkProperFUpd W UN Z body0) =>
+        inv_acc W UN N P (coPSubset_refl UN)
+    | framed : properUPred_ent (mkProperFUpd W UN Z body0)
+        (mkProperFUpd W E ER body0) =>
+        properUPred_ent_trans
+          (mkProperFUpd W UN Z body0)
+          (mkProperFUpd W (coPset_union UN ER) (coPset_union Z ER) body0)
+          (mkProperFUpd W E ER body0)
+          (properUPred_ent_trans
+            (mkProperFUpd W UN Z body0)
+            (mkProperFUpd W UN Z
+              (mkProperImpl (mkProperPure (coPset_overlap Z ER = false))
+                body0))
+            (mkProperFUpd W (coPset_union UN ER) (coPset_union Z ER)
+              body0)
+            (fupd_intro_impl_pure W UN Z
+              (coPset_overlap Z ER = false) body0)
+            (fupd_mask_frame_r W UN Z ER body0
+              (coPset_subset_difference_disjoint E UN)))
+          (fupd_masks_proper W (coPset_union UN ER) E
+            (coPset_union Z ER) ER body0
+            (coPset_equiv_sym E (coPset_union UN ER)
+              (coPset_subset_union_difference E UN hNE))
+            (coPset_diff_self_union_equiv UN ER))
+  \in properUPred_ent_trans (inv W N P)
+    (mkProperFUpd W E ER body0)
+    (mkProperFUpd W E ER
+      (mkProperSep (mkProperLater P) (inv_acc_strong_close_sealed W N P)))
+    (properUPred_ent_trans (inv W N P)
+      (mkProperFUpd W UN Z body0)
+      (mkProperFUpd W E ER body0)
+      acc0 framed)
+    (fupd_mono W E ER body0
+      (mkProperSep (mkProperLater P) (inv_acc_strong_close_sealed W N P))
+      (sep_mono_r_ent (mkProperLater P) C0
+        (inv_acc_strong_close_sealed W N P) strongC))
+
+-- public statement, recovered by transporting the sealed proof
+\lemma inv_acc_strong {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (N : Namespace) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+  : properUPred_ent (inv W N P)
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P)
+          (mkProperForall coPset (\lam E' =>
+            mkProperWand (mkProperLater P)
+              (mkProperFUpd W E' (coPset_union (nclose N) E')
+                mkProperEmp))))) =>
+  transport
+    (\lam (Z' : iProp S) => properUPred_ent (inv W N P)
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater P) Z')))
+    (inv_acc_strong_close_peval W N P)
+    (inv_acc_strong_sealed W E N P hNE)

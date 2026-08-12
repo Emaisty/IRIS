@@ -43,13 +43,13 @@
   | LitUnit
   | LitLoc (l : Loc)
 
-\data Value : \Set
+\data Value : \Set0
   | LitV (l : Lit)
   | LamV (x : String) (body : Expr)
   | RecV (f x : String) (body : Expr)
   | PairV (v1 v2 : Value)
 
-\data Expr : \Set
+\data Expr : \Set0
   | Val (v : Value)
   | Var (x : String)
   | Lam (x : String) (body : Expr)

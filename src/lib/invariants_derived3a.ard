@@ -1,0 +1,155 @@
+\import Logic
+\import Paths \hiding (inv)
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+\import lib.timeless
+\import lib.invariants
+\import lib.invariants_derived1
+
+-- =================================================================================
+-- §7  coPset mask algebra + fupd mask rewriting (support for §8/§10/§11).
+-- =================================================================================
+
+\lemma bool_and_not_self (a : Bool) : (a and not a) = false \elim a
+  | true => idp
+  | false => idp
+
+\lemma bool_and_not_self_or (a b : Bool) : ((a and not a) or b) = b \elim a
+  | true => idp
+  | false => idp
+
+\lemma not_true_to_false (b : Bool) (h : not b = true) : b = false \elim b
+  | true => false_neq_true h
+  | false => idp
+
+\lemma coPSubset_refl (X : coPset) : coPSubset X X => \lam _ h => h
+
+\lemma coPSubset_trans (X Y Z : coPset)
+    (h1 : coPSubset X Y) (h2 : coPSubset Y Z) : coPSubset X Z =>
+  \lam p hp => h2 p (h1 p hp)
+
+\lemma coPSubset_union_l (X Y Z : coPset)
+    (h : coPSubset (coPset_union X Y) Z) : coPSubset X Z =>
+  \lam p hp => h p (coPmem_union_just_inl X Y p hp)
+
+\lemma coPSubset_union_r (X Y Z : coPset)
+    (h : coPSubset (coPset_union X Y) Z) : coPSubset Y Z =>
+  \lam p hp => h p (coPmem_union_just_inr X Y p hp)
+
+-- p ∉ N transfers down a subset A ⊆ N.
+\lemma subset_false_transfer (A N : coPset) (p : Pos)
+    (h : coPSubset A N) (hN : coPmem p N = false)
+  : coPmem p A = false =>
+  \case coPmem p A \as b, idp : coPmem p A = b \return b = false \with {
+    | true, e => absurd (true/=false (Paths.inv (h p e) *> hN))
+    | false, _ => idp
+  }
+
+-- A ⊆ E and B ## A imply A ⊆ E ∖ B.
+\lemma coPSubset_difference_of_disjoint (A B E : coPset)
+    (hAE : coPSubset A E) (hdisj : coPDisjoint B A)
+  : coPSubset A (coPset_difference E B) =>
+  \lam p hp =>
+    \let
+      | hE : coPmem p E = true => hAE p hp
+      | hB : coPmem p B = false =>
+          \case coPmem p B \as b, idp : coPmem p B = b \return b = false \with {
+            | true, e => absurd (true/=false (Paths.inv hp *> hdisj p e))
+            | false, _ => idp
+          }
+    \in coPmem_difference p E B *> pmap2 (\lam u v => u and not v) hE hB
+
+-- E∖N ⊆ (E∖N1)∖N2 when N1 ⊆ N and N2 ⊆ N.
+\lemma coPset_diff_mono_subsets (E N N1 N2 : coPset)
+    (h1 : coPSubset N1 N) (h2 : coPSubset N2 N)
+  : coPSubset (coPset_difference E N)
+      (coPset_difference (coPset_difference E N1) N2) =>
+  \lam p hp =>
+    \let
+      | hpair => bool_and_true_inv (coPmem p E) (not (coPmem p N))
+          (Paths.inv (coPmem_difference p E N) *> hp)
+      | hE : coPmem p E = true => hpair.1
+      | hN : coPmem p N = false => not_true_to_false (coPmem p N) hpair.2
+      | hN1 : coPmem p N1 = false => subset_false_transfer N1 N p h1 hN
+      | hN2 : coPmem p N2 = false => subset_false_transfer N2 N p h2 hN
+      | hD1 : coPmem p (coPset_difference E N1) = true =>
+          coPmem_difference p E N1
+            *> pmap2 (\lam u v => u and not v) hE hN1
+    \in coPmem_difference p (coPset_difference E N1) N2
+        *> pmap2 (\lam u v => u and not v) hD1 hN2
+
+-- (X∖X) ∪ Y ≡ Y
+\lemma coPset_diff_self_union_equiv (X Y : coPset)
+  : coPset_equiv (coPset_union (coPset_difference X X) Y) Y =>
+  \lam p =>
+    coPmem_union p (coPset_difference X X) Y
+    *> pmap (\lam b => b or coPmem p Y) (coPmem_difference p X X)
+    *> bool_and_not_self_or (coPmem p X) (coPmem p Y)
+
+-- overlap (X∖X) Y = false
+\lemma coPset_diff_self_overlap_false (X Y : coPset)
+  : coPset_overlap (coPset_difference X X) Y = false =>
+  coPset_overlap_disjoint (coPset_difference X X) Y
+    (\lam p hp _ =>
+      true/=false
+        (Paths.inv hp
+          *> coPmem_difference p X X
+          *> bool_and_not_self (coPmem p X)))
+
+-- fupd is proper for coPset_equiv in both masks (generalizes
+-- fupd_same_mask_equiv from fupd_mask.ard).
+\sfunc fupd_masks_proper {S : gFunctors} (W : wsatGS S)
+    (E1 E1' E2 E2' : coPset) (P : iProp S)
+    (h1 : coPset_equiv E1 E1') (h2 : coPset_equiv E2 E2')
+  : properUPred_ent (mkProperFUpd W E1 E2 P) (mkProperFUpd W E1' E2' P) =>
+  \let
+    | body => mkProperSep (wsat W) (mkProperSep (ownE W E2) P)
+    | body' => mkProperSep (wsat W) (mkProperSep (ownE W E2') P)
+    | body_mono : properUPred_ent body body' =>
+        sep_mono_r_ent (wsat W) (mkProperSep (ownE W E2) P)
+          (mkProperSep (ownE W E2') P)
+          (sep_mono_l_ent (ownE W E2) (ownE W E2') P
+            (ownE_equiv_ent W E2 E2' h2))
+  \in \lam n x hv hf m m_le_n frame hv_op hworld' =>
+    \let
+      | hworld : (mkProperSep (wsat W) (ownE W E1)).upred_holds m frame =>
+          sep_mono_r_ent (wsat W) (ownE W E1') (ownE W E1)
+            (ownE_equiv_ent W E1' E1 (coPset_equiv_sym E1 E1' h1))
+            m frame (cmra_validN_op_r {iResUR S} m x frame hv_op) hworld'
+      | hb : (mkProperBUpd (mkProperExceptZero body)).upred_holds m
+          ((iResUR S).op x frame) =>
+          hf m m_le_n frame hv_op hworld
+    \in bupd_mono (mkProperExceptZero body) (mkProperExceptZero body')
+          (except_zero_mono body body' body_mono)
+          m ((iResUR S).op x frame) hv_op hb
+
+-- weaken a fupd body into the disjointness implication that
+-- fupd_mask_frame_r consumes.
+\lemma fupd_intro_impl_pure {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (phi : \Prop) (P : iProp S)
+  : properUPred_ent (mkProperFUpd W E1 E2 P)
+      (mkProperFUpd W E1 E2
+        (mkProperImpl (mkProperPure phi) P)) =>
+  fupd_mono W E1 E2 P (mkProperImpl (mkProperPure phi) P)
+    (\lam n x hv hp m m_le_n b incl hvb _ =>
+      P.upred_mono n m x b hp incl m_le_n)
+

@@ -1,0 +1,363 @@
+\import Logic
+\import Paths \hiding (inv)
+\import Set
+\import Data.Bool
+\import Arith.Nat
+\import Order.PartialOrder
+\import ofe
+\import cmra
+\import uPred \hiding (own_valid, own_mono, own_unit)
+\import updates
+\import iprop
+\import own
+\import wsat
+\import wsat_alloc
+\import fupd
+\import fupd_mask
+\import lib.big_op
+\import lib.coPset
+\import lib.coPset_cmra
+\import lib.gFunctors
+\import lib.gset_cmra
+\import lib.pmap (Pos, xH, xO, xI, plookup)
+\import lib.namespaces
+\import lib.timeless
+\import lib.invariants
+\import lib.invariants_derived1
+
+-- =================================================================================
+-- §5  inv_alter and inv_iff (Rocq invariants.v:101, :109).
+-- =================================================================================
+
+\func alter_wand {S : gFunctors} (P Q : iProp S) : iProp S =>
+  mkProperWand P (mkProperSep Q (mkProperWand Q P))
+
+-- (▷P ∗ (▷P -∗ F)) ∗ ▷(alter_wand P Q) ⊢ ▷Q ∗ (▷Q -∗ F)
+\sfunc inv_alter_body {S : gFunctors} (P Q F : iProp S)
+  : properUPred_ent
+      (mkProperSep
+        (mkProperSep (mkProperLater P) (mkProperWand (mkProperLater P) F))
+        (mkProperLater (alter_wand P Q)))
+      (mkProperSep (mkProperLater Q) (mkProperWand (mkProperLater Q) F)) =>
+  \let
+    | LP => mkProperLater P
+    | LQ => mkProperLater Q
+    | WPF => mkProperWand LP F
+    | LW => mkProperLater (alter_wand P Q)
+    | LQP => mkProperLater (mkProperWand Q P)
+    | LQpair => mkProperLater (mkProperSep Q (mkProperWand Q P))
+    | s1 : properUPred_ent (mkProperSep (mkProperSep LP WPF) LW)
+        (mkProperSep LW (mkProperSep LP WPF)) =>
+        sep_comm_ent (mkProperSep LP WPF) LW
+    | s2 : properUPred_ent (mkProperSep LW (mkProperSep LP WPF))
+        (mkProperSep (mkProperSep LW LP) WPF) =>
+        sep_assoc_r_ent LW LP WPF
+    | s3 : properUPred_ent (mkProperSep LW LP) (mkProperSep LQ LQP) =>
+        properUPred_ent_trans (mkProperSep LW LP) LQpair
+          (mkProperSep LQ LQP)
+          (later_wand_apply_ent P (mkProperSep Q (mkProperWand Q P)))
+          (proper_later_sep_1 Q (mkProperWand Q P))
+    | s4 : properUPred_ent (mkProperSep (mkProperSep LW LP) WPF)
+        (mkProperSep (mkProperSep LQ LQP) WPF) =>
+        sep_mono_l_ent (mkProperSep LW LP) (mkProperSep LQ LQP) WPF s3
+    | s5 : properUPred_ent (mkProperSep (mkProperSep LQ LQP) WPF)
+        (mkProperSep LQ (mkProperSep LQP WPF)) =>
+        sep_assoc_l_ent LQ LQP WPF
+    | closeF : properUPred_ent
+        (mkProperSep (mkProperSep LQP WPF) LQ) F =>
+        \let
+          | c1 : properUPred_ent (mkProperSep (mkProperSep LQP WPF) LQ)
+              (mkProperSep LQ (mkProperSep LQP WPF)) =>
+              sep_comm_ent (mkProperSep LQP WPF) LQ
+          | c2 : properUPred_ent (mkProperSep LQ (mkProperSep LQP WPF))
+              (mkProperSep LQP (mkProperSep LQ WPF)) =>
+              sep_swap_ent LQ LQP WPF
+          | c3 : properUPred_ent (mkProperSep LQP (mkProperSep LQ WPF))
+              (mkProperSep (mkProperSep LQP LQ) WPF) =>
+              sep_assoc_r_ent LQP LQ WPF
+          | c4 : properUPred_ent (mkProperSep (mkProperSep LQP LQ) WPF)
+              (mkProperSep LP WPF) =>
+              sep_mono_l_ent (mkProperSep LQP LQ) LP WPF
+                (later_wand_apply_ent Q P)
+          | c5 : properUPred_ent (mkProperSep LP WPF) F =>
+              properUPred_ent_trans (mkProperSep LP WPF)
+                (mkProperSep WPF LP) F
+                (sep_comm_ent LP WPF)
+                (wand_elim_ent LP F)
+        \in \lam n x hv h =>
+          c5 n x hv (c4 n x hv (c3 n x hv (c2 n x hv (c1 n x hv h))))
+    | s6 : properUPred_ent (mkProperSep LQ (mkProperSep LQP WPF))
+        (mkProperSep LQ (mkProperWand LQ F)) =>
+        sep_mono_r_ent LQ (mkProperSep LQP WPF) (mkProperWand LQ F)
+          (wand_intro_ent (mkProperSep LQP WPF) LQ F closeF)
+  \in \lam n x hv h =>
+    s6 n x hv (s5 n x hv (s4 n x hv (s2 n x hv (s1 n x hv h))))
+
+-- inv_inner P ∗ ▷(alter_wand P Q) ⊢ inv_inner Q
+\sfunc inv_alter_inner {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent
+      (mkProperSep (inv_inner W N P) (mkProperLater (alter_wand P Q)))
+      (inv_inner W N Q) =>
+  forall_intro_ent
+    (mkProperSep (inv_inner W N P) (mkProperLater (alter_wand P Q)))
+    (\lam E => mkProperImpl (mkProperPure (coPSubset (nclose N) E))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater Q)
+          (mkProperWand (mkProperLater Q)
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp)))))
+    (\lam E => impl_pure_intro_ent (coPSubset (nclose N) E)
+      (mkProperSep (inv_inner W N P) (mkProperLater (alter_wand P Q)))
+      (mkProperFUpd W E (coPset_difference E (nclose N))
+        (mkProperSep (mkProperLater Q)
+          (mkProperWand (mkProperLater Q)
+            (mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp))))
+      (\lam hNE =>
+        \let
+          | F => mkProperFUpd W (coPset_difference E (nclose N)) E
+              mkProperEmp
+          | bodyP => mkProperSep (mkProperLater P)
+              (mkProperWand (mkProperLater P) F)
+          | bodyQ => mkProperSep (mkProperLater Q)
+              (mkProperWand (mkProperLater Q) F)
+          | LW => mkProperLater (alter_wand P Q)
+          | fupdP => mkProperFUpd W E (coPset_difference E (nclose N)) bodyP
+          | fupdQ => mkProperFUpd W E (coPset_difference E (nclose N)) bodyQ
+          | openP : properUPred_ent (inv_inner W N P) fupdP =>
+              properUPred_ent_trans (inv_inner W N P)
+                (mkProperImpl (mkProperPure (coPSubset (nclose N) E)) fupdP)
+                fupdP
+                (forall_elim_ent
+                  (\lam E' => mkProperImpl
+                    (mkProperPure (coPSubset (nclose N) E'))
+                    (mkProperFUpd W E' (coPset_difference E' (nclose N))
+                      (mkProperSep (mkProperLater P)
+                        (mkProperWand (mkProperLater P)
+                          (mkProperFUpd W
+                            (coPset_difference E' (nclose N)) E'
+                            mkProperEmp)))))
+                  E)
+                (impl_pure_elim_ent (coPSubset (nclose N) E) fupdP hNE)
+        \in properUPred_ent_trans
+          (mkProperSep (inv_inner W N P) LW)
+          (mkProperFUpd W E (coPset_difference E (nclose N))
+            (mkProperSep bodyP LW))
+          fupdQ
+          (properUPred_ent_trans
+            (mkProperSep (inv_inner W N P) LW)
+            (mkProperSep fupdP LW)
+            (mkProperFUpd W E (coPset_difference E (nclose N))
+              (mkProperSep bodyP LW))
+            (sep_mono_l_ent (inv_inner W N P) fupdP LW openP)
+            (fupd_frame_r W E (coPset_difference E (nclose N)) bodyP LW))
+          (fupd_mono W E (coPset_difference E (nclose N))
+            (mkProperSep bodyP LW) bodyQ
+            (inv_alter_body P Q F))))
+
+\lemma inv_alter {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent
+      (mkProperSep (inv W N P)
+        (mkProperLater (mkProperPersistently (alter_wand P Q))))
+      (inv W N Q) =>
+  \let
+    | LPW => mkProperLater (mkProperPersistently (alter_wand P Q))
+    | PLW => mkProperPersistently (mkProperLater (alter_wand P Q))
+    | s1 : properUPred_ent
+        (mkProperSep (inv W N P) LPW)
+        (mkProperSep (inv_body W N P) PLW) =>
+        properUPred_ent_trans
+          (mkProperSep (inv W N P) LPW)
+          (mkProperSep (inv_body W N P) LPW)
+          (mkProperSep (inv_body W N P) PLW)
+          (sep_mono_l_ent (inv W N P) (inv_body W N P) LPW
+            (inv_unfold_ent W N P))
+          (sep_mono_r_ent (inv_body W N P) LPW PLW
+            (proper_later_persistently_1 (alter_wand P Q)))
+    | s2 : properUPred_ent
+        (mkProperSep (inv_body W N P) PLW)
+        (mkProperPersistently
+          (mkProperSep (inv_inner W N P)
+            (mkProperLater (alter_wand P Q)))) =>
+        persistently_sep_2_ent (inv_inner W N P)
+          (mkProperLater (alter_wand P Q))
+    | s3 : properUPred_ent
+        (mkProperPersistently
+          (mkProperSep (inv_inner W N P)
+            (mkProperLater (alter_wand P Q))))
+        (inv_body W N Q) =>
+        (BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+          (mkProperSep (inv_inner W N P) (mkProperLater (alter_wand P Q)))
+          (inv_inner W N Q)
+          (inv_alter_inner W N P Q)
+  \in \lam n x hv h =>
+    inv_fold_ent W N Q n x hv (s3 n x hv (s2 n x hv (s1 n x hv h)))
+
+\func iff_body {S : gFunctors} (P Q : iProp S) : iProp S =>
+  mkProperAnd (mkProperImpl P Q) (mkProperImpl Q P)
+
+-- □(P ↔ Q) ⊢ alter_wand P Q
+\sfunc persistently_iff_to_alter {S : gFunctors} (P Q : iProp S)
+  : properUPred_ent
+      (mkProperPersistently (iff_body P Q))
+      (alter_wand P Q) =>
+  \let
+    | PIF => mkProperPersistently (iff_body P Q)
+    | body : properUPred_ent (mkProperSep PIF P)
+        (mkProperSep Q (mkProperWand Q P)) =>
+        \let
+          | d1 : properUPred_ent (mkProperSep PIF P)
+              (mkProperSep (mkProperSep PIF PIF) P) =>
+              sep_mono_l_ent PIF (mkProperSep PIF PIF) P
+                (persistently_dup_ent (iff_body P Q))
+          | d2 : properUPred_ent (mkProperSep (mkProperSep PIF PIF) P)
+              (mkProperSep PIF (mkProperSep PIF P)) =>
+              sep_assoc_l_ent PIF PIF P
+          | d3 : properUPred_ent (mkProperSep PIF (mkProperSep PIF P))
+              (mkProperSep PIF Q) =>
+              sep_mono_r_ent PIF (mkProperSep PIF P) Q
+                (properUPred_ent_trans (mkProperSep PIF P)
+                  (mkProperSep
+                    (mkProperPersistently (mkProperImpl P Q)) P)
+                  Q
+                  (sep_mono_l_ent PIF
+                    (mkProperPersistently (mkProperImpl P Q)) P
+                    ((BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+                      (iff_body P Q) (mkProperImpl P Q)
+                      (and_elim_l_ent (mkProperImpl P Q)
+                        (mkProperImpl Q P))))
+                  (persistently_impl_elim_ent P Q))
+          | d4 : properUPred_ent (mkProperSep PIF Q)
+              (mkProperSep Q PIF) => sep_comm_ent PIF Q
+          | d5 : properUPred_ent (mkProperSep Q PIF)
+              (mkProperSep Q (mkProperWand Q P)) =>
+              sep_mono_r_ent Q PIF (mkProperWand Q P)
+                (wand_intro_ent PIF Q P
+                  (properUPred_ent_trans (mkProperSep PIF Q)
+                    (mkProperSep
+                      (mkProperPersistently (mkProperImpl Q P)) Q)
+                    P
+                    (sep_mono_l_ent PIF
+                      (mkProperPersistently (mkProperImpl Q P)) Q
+                      ((BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+                        (iff_body P Q) (mkProperImpl Q P)
+                        (and_elim_r_ent (mkProperImpl P Q)
+                          (mkProperImpl Q P))))
+                    (persistently_impl_elim_ent Q P)))
+        \in \lam n x hv h =>
+          d5 n x hv (d4 n x hv (d3 n x hv (d2 n x hv (d1 n x hv h))))
+  \in wand_intro_ent PIF P (mkProperSep Q (mkProperWand Q P)) body
+
+\lemma inv_iff {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent
+      (mkProperSep (inv W N P)
+        (mkProperLater (mkProperPersistently (iff_body P Q))))
+      (inv W N Q) =>
+  \let
+    | PIF => mkProperPersistently (iff_body P Q)
+    | convert : properUPred_ent (mkProperLater PIF)
+        (mkProperLater (mkProperPersistently (alter_wand P Q))) =>
+        proper_later_mono PIF
+          (mkProperPersistently (alter_wand P Q))
+          (properUPred_ent_trans PIF
+            (mkProperPersistently PIF)
+            (mkProperPersistently (alter_wand P Q))
+            ((BIuPredPersistentlyMixin (iResUR S)).persistently_idemp_2
+              (iff_body P Q))
+            ((BIuPredPersistentlyMixin (iResUR S)).persistently_mono
+              PIF (alter_wand P Q)
+              (persistently_iff_to_alter P Q)))
+  \in \lam n x hv h =>
+    inv_alter W N P Q n x hv
+      (sep_mono_r_ent (inv W N P) (mkProperLater PIF)
+        (mkProperLater (mkProperPersistently (alter_wand P Q)))
+        convert n x hv h)
+
+-- =================================================================================
+-- §6  inv_split_l / inv_split_r / inv_split (Rocq invariants.v:203-217).
+-- =================================================================================
+
+-- emp ⊢ (P∗Q) -∗ (P ∗ (P -∗ P∗Q))
+\sfunc split_l_wand_valid {S : gFunctors} (P Q : iProp S)
+  : properUPred_ent mkProperEmp (alter_wand (mkProperSep P Q) P) =>
+  wand_intro_ent mkProperEmp (mkProperSep P Q)
+    (mkProperSep P (mkProperWand P (mkProperSep P Q)))
+    (properUPred_ent_trans
+      (mkProperSep mkProperEmp (mkProperSep P Q))
+      (mkProperSep P Q)
+      (mkProperSep P (mkProperWand P (mkProperSep P Q)))
+      (sep_elim_r_ent mkProperEmp (mkProperSep P Q))
+      (sep_mono_r_ent P Q (mkProperWand P (mkProperSep P Q))
+        (wand_intro_ent Q P (mkProperSep P Q)
+          (sep_comm_ent Q P))))
+
+-- emp ⊢ (P∗Q) -∗ (Q ∗ (Q -∗ P∗Q))
+\sfunc split_r_wand_valid {S : gFunctors} (P Q : iProp S)
+  : properUPred_ent mkProperEmp (alter_wand (mkProperSep P Q) Q) =>
+  wand_intro_ent mkProperEmp (mkProperSep P Q)
+    (mkProperSep Q (mkProperWand Q (mkProperSep P Q)))
+    (properUPred_ent_trans
+      (mkProperSep mkProperEmp (mkProperSep P Q))
+      (mkProperSep P Q)
+      (mkProperSep Q (mkProperWand Q (mkProperSep P Q)))
+      (sep_elim_r_ent mkProperEmp (mkProperSep P Q))
+      (properUPred_ent_trans (mkProperSep P Q) (mkProperSep Q P)
+        (mkProperSep Q (mkProperWand Q (mkProperSep P Q)))
+        (sep_comm_ent P Q)
+        (sep_mono_r_ent Q P (mkProperWand Q (mkProperSep P Q))
+          (wand_intro_ent P Q (mkProperSep P Q)
+            (properUPred_ent_refl (mkProperSep P Q))))))
+
+\lemma inv_split_l {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent (inv W N (mkProperSep P Q)) (inv W N P) =>
+  \lam n x hv h =>
+    inv_alter W N (mkProperSep P Q) P n x hv
+      (attach_valid_r_ent (inv W N (mkProperSep P Q))
+        (mkProperLater (mkProperPersistently
+          (alter_wand (mkProperSep P Q) P)))
+        (later_persistently_of_emp
+          (alter_wand (mkProperSep P Q) P)
+          (split_l_wand_valid P Q))
+        n x hv h)
+
+\lemma inv_split_r {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent (inv W N (mkProperSep P Q)) (inv W N Q) =>
+  \lam n x hv h =>
+    inv_alter W N (mkProperSep P Q) Q n x hv
+      (attach_valid_r_ent (inv W N (mkProperSep P Q))
+        (mkProperLater (mkProperPersistently
+          (alter_wand (mkProperSep P Q) Q)))
+        (later_persistently_of_emp
+          (alter_wand (mkProperSep P Q) Q)
+          (split_r_wand_valid P Q))
+        n x hv h)
+
+-- inv is persistent, hence duplicable.
+\lemma inv_dup_ent {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P : iProp S)
+  : properUPred_ent (inv W N P)
+      (mkProperSep (inv W N P) (inv W N P)) =>
+  \lam n x hv h =>
+    inP (ucmra_core {iResUR S} x, x,
+      equiv_dist {iResUR S} {x} {(iResUR S).op (ucmra_core {iResUR S} x) x}
+        ((iResUR S).equiv_sym ((iResUR S).op (ucmra_core {iResUR S} x) x) x
+          (ucmra_core_left_id {iResUR S} x)) n,
+      inv_persistent W N P n x hv h, h)
+
+\lemma inv_split {S : gFunctors} (W : wsatGS S) (N : Namespace)
+    (P Q : iProp S)
+  : properUPred_ent (inv W N (mkProperSep P Q))
+      (mkProperSep (inv W N P) (inv W N Q)) =>
+  \lam n x hv h =>
+    sep_mono_r_ent (inv W N P) (inv W N (mkProperSep P Q)) (inv W N Q)
+      (inv_split_r W N P Q) n x hv
+      (sep_mono_l_ent (inv W N (mkProperSep P Q)) (inv W N P)
+        (inv W N (mkProperSep P Q))
+        (inv_split_l W N P Q) n x hv
+        (inv_dup_ent W N (mkProperSep P Q) n x hv h))
+
