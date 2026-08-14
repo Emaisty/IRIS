@@ -7,9 +7,7 @@
 \import Set
 \import lang
 \import lang_subst
-\import hoare_old
-\import weakestpre_old
-\import lifting_old
+\import example.program_logic
 \import uPred
 \import cmra
 \import lib.heap

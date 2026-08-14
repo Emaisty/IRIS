@@ -21,12 +21,12 @@
 -- =================================================================================
 -- A12: canonical Iris weakest precondition over a generic ghost signature.
 --
--- The historical fixed-HeapCMRA implementation is preserved in
--- `weakestpre_old`.  This module follows Rocq Iris' dependency
+-- The factorial example's fixed-HeapCMRA compatibility implementation lives
+-- in `example.program_logic`.  This module follows Rocq Iris' dependency
 -- shape: the logical carrier is `iProp S`, the physical state is represented
 -- by `gen_heap_interp`, and every program step temporarily changes the mask
 -- from E to the empty mask before restoring E around the successor state/WP.
--- The fixed-carrier module is only a compatibility layer for saved old proofs.
+-- That fixed-carrier module is only a compatibility layer for the example.
 -- =================================================================================
 
 \record irisGS (cnt : Countable Loc) (S : gFunctors)
