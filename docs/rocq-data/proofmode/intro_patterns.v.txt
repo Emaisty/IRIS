@@ -1,0 +1,10 @@
+gallina_ident	
+intro_pat	
+intro_pat.big_conj	
+intro_pat.close	
+intro_pat.close_conj_list	
+intro_pat.close_list	
+intro_pat.parse	
+intro_pat.parse_go	
+intro_pat.stack_item	
+intro_pat_intuitionistic	

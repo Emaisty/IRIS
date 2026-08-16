@@ -1,0 +1,14 @@
+is_op_ufrac	
+ufrac	
+ufracO	
+ufracR	
+ufrac_cancelable	
+ufrac_cmra_discrete	
+ufrac_id_free	
+ufrac_included	
+ufrac_included_weak	
+ufrac_op	
+ufrac_op_instance	
+ufrac_pcore_instance	
+ufrac_ra_mixin	
+ufrac_valid_instance	

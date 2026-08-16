@@ -1,0 +1,17 @@
+fracO	
+fracR	
+frac_cancelable	
+frac_cmra_discrete	
+frac_full_exclusive	
+frac_id_free	
+frac_included	
+frac_included_weak	
+frac_is_op	
+frac_op	
+frac_op_instance	
+frac_pcore_instance	
+frac_ra_mixin	
+frac_valid	
+frac_valid_1	
+frac_valid_instance	
+is_op_frac	

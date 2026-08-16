@@ -1,0 +1,12 @@
+coreP	
+coreP_affine	
+coreP_elim	
+coreP_entails	
+coreP_entails'	
+coreP_flip_mono	
+coreP_intro	
+coreP_mono	
+coreP_ne	
+coreP_persistent	
+coreP_proper	
+coreP_wand	
