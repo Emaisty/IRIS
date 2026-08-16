@@ -1,0 +1,103 @@
+\import Logic
+\import Paths
+\import Arith.Nat
+\import Order.PartialOrder
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.bi.big_op
+
+-- =================================================================================
+-- A11 extras: a minimal `Timeless` class (Rocq: `Timeless P := ▷ P ⊢ ◇ P`,
+-- iris/bi/derived_laws_later.v), with closure instances for the basic
+-- connectives.  Only what `inv_acc_timeless` and the examples need; the
+-- full `Timeless` typeclass machinery (proof-mode integration, `own`
+-- instances) is out of scope for the term-mode port.
+-- =================================================================================
+
+\func Timeless {M : UCMRA} (P : ProperUPred M) : \Prop =>
+  properUPred_ent (mkProperLater P) (mkProperExceptZero P)
+
+-- `emp` holds at every resource (the unit is below everything); the stated
+-- type is definitionally `mkProperEmp.upred_holds n a`.
+\lemma emp_holds_all {M : UCMRA} (n : Nat) (a : M.E)
+  : inclN {M} {\new Op M.E { | op => M.op }} M.unit n a =>
+  inP (a, M.ofe_dist_sym n (M.op M.unit a) a (ucmra_unit_left_id_dist n a))
+
+\lemma timeless_pure {M : UCMRA} (phi : \Prop)
+  : Timeless {M} (mkProperPure phi) =>
+  \lam n x hv h => \case \elim n, h \with {
+    | 0, _ => byLeft ()
+    | suc n', hphi => byRight hphi
+  }
+
+\lemma timeless_emp {M : UCMRA} : Timeless {M} mkProperEmp =>
+  \lam n x hv _ => byRight (emp_holds_all n x)
+
+-- ◇ A ∗ ◇ B ⊢ ◇ (A ∗ B)
+\lemma except_0_sep_2 {M : UCMRA} (A B : ProperUPred M)
+  : properUPred_ent
+      (mkProperSep (mkProperExceptZero A) (mkProperExceptZero B))
+      (mkProperExceptZero (mkProperSep A B)) =>
+  \lam n x hv hs => \case \elim n, hs, hv \with {
+    | 0, _, _ => byLeft ()
+    | suc n', inP (a1, a2, da, hA, hB), hv' => \case hA, hB \with {
+      | byLeft hz, _ => absurd hz
+      | _, byLeft hz => absurd hz
+      | byRight ha, byRight hb => byRight (inP (a1, a2, da, ha, hb))
+    }
+  }
+
+\lemma timeless_sep {M : UCMRA} (P Q : ProperUPred M)
+    (hP : Timeless P) (hQ : Timeless Q)
+  : Timeless (mkProperSep P Q) =>
+  \lam n x hv h =>
+    except_0_sep_2 P Q n x hv
+      (sep_mono_r_ent (mkProperExceptZero P) (mkProperLater Q)
+        (mkProperExceptZero Q) hQ n x hv
+        (sep_mono_l_ent (mkProperLater P) (mkProperExceptZero P)
+          (mkProperLater Q) hP n x hv
+          (proper_later_sep_1 P Q n x hv h)))
+
+\lemma timeless_and {M : UCMRA} (P Q : ProperUPred M)
+    (hP : Timeless P) (hQ : Timeless Q)
+  : Timeless (mkProperAnd P Q) =>
+  \lam n x hv h => \case \elim n, h, hv \with {
+    | 0, _, _ => byLeft ()
+    | suc n', hpq, hv' =>
+      \case hP (suc n') x hv' hpq.1, hQ (suc n') x hv' hpq.2 \with {
+        | byLeft hz, _ => absurd hz
+        | _, byLeft hz => absurd hz
+        | byRight ha, byRight hb => byRight (ha, hb)
+      }
+  }
+
+\lemma timeless_or {M : UCMRA} (P Q : ProperUPred M)
+    (hP : Timeless P) (hQ : Timeless Q)
+  : Timeless (mkProperOr P Q) =>
+  \lam n x hv h => \case \elim n, h, hv \with {
+    | 0, _, _ => byLeft ()
+    | suc n', hpq, hv' => \case hpq \with {
+      | byLeft hp => \case hP (suc n') x hv' hp \with {
+        | byLeft hz => absurd hz
+        | byRight ha => byRight (byLeft ha)
+      }
+      | byRight hq => \case hQ (suc n') x hv' hq \with {
+        | byLeft hz => absurd hz
+        | byRight hb => byRight (byRight hb)
+      }
+    }
+  }
+
+\lemma timeless_exist {M : UCMRA} {T : \Set0} (Phi : T -> ProperUPred M)
+    (hT : \Pi (t : T) -> Timeless (Phi t))
+  : Timeless (mkProperExist T Phi) =>
+  \lam n x hv h => \case \elim n, h, hv \with {
+    | 0, _, _ => byLeft ()
+    | suc n', hex, hv' => \case hex \with {
+      | inP (t, ht) => \case hT t (suc n') x hv' ht \with {
+        | byLeft hz => absurd hz
+        | byRight ha => byRight (inP (t, ha))
+      }
+    }
+  }

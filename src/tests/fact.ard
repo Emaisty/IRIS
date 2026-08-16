@@ -1,0 +1,859 @@
+\import Logic
+\import Arith.Nat
+\import Data.Bool
+\import Data.Maybe
+\import Order.PartialOrder
+\import Paths
+\import Set
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_subst
+\import tests.fact.program_logic
+\import iris.base_logic.upred
+\import iris.algebra.cmra
+\import tests.fact.heap
+\import iris.algebra.gmap
+\import iris.algebra.excl
+\import iris.bi.interface
+
+-- =================================================================================
+-- Factorial in IRIS
+-- =================================================================================
+--
+--   fact n l :=
+--          if n = 0 then !l
+--          else  l := !l * n;
+--                fact (n-1) l
+--
+--   factorial :=
+--          \k. let l = ref 1 in fact k l
+--
+-- The mutable location is an implementation detail of each call.  This is the
+-- reusable function whose public result is exactly k!.
+-- =================================================================================
+
+\func fact_rec_body : Expr =>
+  Lam "l" (
+    If (IsZero (Var "n"))
+        (Load (Var "l"))
+        (App
+            (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
+            (Store (Var "l")
+                (Mul (Load (Var "l")) (Var "n")))))
+
+\func fact_recV : Value =>
+  RecV "fact" "n" fact_rec_body
+
+\func fact_body : Expr =>
+  Val fact_recV
+
+\func factorial_call_body : Expr =>
+  App
+    (Lam "l" (App (App fact_body (Var "k")) (Var "l")))
+    (Alloc (Val (LitV (LitInt 1))))
+
+\func factorial_call_body_at (k : Nat) : Expr =>
+  App
+    (Lam "l" (App (App fact_body (Val (natV k))) (Var "l")))
+    (Alloc (Val (LitV (LitInt 1))))
+
+\func factorial_prog : Expr =>
+  Lam "k" factorial_call_body
+
+-- =================================================================================
+-- Specifications
+-- =================================================================================
+
+\func fact_worker_post
+  {cnt : Countable Loc} (l : Loc) (j k : Nat)
+  : Value -> ProperUPred (HeapCMRA Loc cnt Value) =>
+  \lam v => mkProperAnd
+    (mkProperPure (v = natV (j Nat.* nat_fact k)))
+    (pointsTo l (natV (j Nat.* nat_fact k)))
+
+\func factorial_post
+  {cnt : Countable Loc} (k : Nat)
+  : Value -> ProperUPred (HeapCMRA Loc cnt Value) =>
+  \lam v => mkProperAnd
+    (mkProperPure (v = natV (nat_fact k)))
+    (mkProperExist Loc (\lam l => pointsTo l (natV (nat_fact k))))
+
+\func factorial_spec
+  {cnt : Countable Loc}
+  : ProperUPred (HeapCMRA Loc cnt Value) =>
+  ht (mkProperPure (\Sigma)) factorial_prog
+    (\lam h => mkProperForall Nat (\lam k =>
+      ht (mkProperPure (\Sigma))
+        (App (Val h) (Val (natV k)))
+        (factorial_post k)))
+
+-- Q-style version for a hidden fresh allocation per call.  Since every call
+-- allocates its own accumulator, the public reusable resource is trivial.
+\func factorial_spec_Q
+  {cnt : Countable Loc}
+  : ProperUPred (HeapCMRA Loc cnt Value) =>
+  ht (mkProperPure (\Sigma)) factorial_prog
+    (\lam h =>
+      mkProperExist (ProperUPred (HeapCMRA Loc cnt Value)) (\lam Q =>
+        mkProperSep Q
+          (mkProperForall Nat (\lam k =>
+            ht Q
+              (App (Val h) (Val (natV k)))
+              (factorial_post k)))))
+
+-- Factorial-specific substitution/beta facts.  These are deliberately kept in
+-- the example: they are not generic language laws, and their missing proofs are
+-- blocked by the String comparisons inside lang.subst.
+
+\lemma subst_fact_zero_l
+  (l : Loc) (recV : Value)
+  : (subst "l" (LitV (LitLoc l))
+      (If (IsZero (Val (natV 0)))
+          (Load (Var "l"))
+          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+    =
+      If (IsZero (Val (natV 0)))
+        (Load (Val (LitV (LitLoc l))))
+        (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+          (Store (Val (LitV (LitLoc l)))
+            (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+  =>
+    subst_by_string_decisions "l" (LitV (LitLoc l))
+      (If (IsZero (Val (natV 0)))
+          (Load (Var "l"))
+          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+      (If (IsZero (Val (natV 0)))
+        (Load (Val (LitV (LitLoc l))))
+        (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+          (Store (Val (LitV (LitLoc l)))
+            (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+
+\lemma subst_fact_zero_unfold
+  {cnt : Countable Loc} (l : Loc) (j : Nat)
+  (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (step_after_n : properUPred_ent
+    (pointsTo l (natV j))
+    (wp (App (Val (LamV "l"
+          (If (IsZero (Val (natV 0)))
+              (Load (Var "l"))
+              (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
+                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+        (Val (LitV (LitLoc l)))) Post))
+  : properUPred_ent
+      (pointsTo l (natV j))
+      (wp (App (App fact_body (Val (natV 0))) (Val (LitV (LitLoc l)))) Post)
+  =>
+    properUPred_ent_trans
+      (pointsTo l (natV j))
+      (wp (App (Val (LamV "l"
+            (If (IsZero (Val (natV 0)))
+                (Load (Var "l"))
+                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
+                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+          (Val (LitV (LitLoc l)))) Post)
+      (wp (App (App fact_body (Val (natV 0))) (Val (LitV (LitLoc l)))) Post)
+      step_after_n
+      (wp_rec_lam_app1_to "fact" "n" "l"
+        (If (IsZero (Var "n"))
+            (Load (Var "l"))
+            (App (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
+                (Store (Var "l")
+                    (Mul (Load (Var "l")) (Var "n")))))
+        (If (IsZero (Val (natV 0)))
+            (Load (Var "l"))
+            (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
+                (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+        (natV 0)
+        (Val (LitV (LitLoc l)))
+        (subst_by_string_decisions "n" (natV 0)
+          (subst "fact" fact_recV fact_rec_body)
+          (Lam "l"
+            (If (IsZero (Val (natV 0)))
+                (Load (Var "l"))
+                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
+                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+        Post)
+
+\lemma subst_fact_suc_after_store
+  {cnt : Countable Loc} (l : Loc) (j k' : Nat)
+  (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (rec_call : properUPred_ent
+    (pointsTo l (natV (j Nat.* suc k')))
+    (wp (App (App (Val fact_recV) (Val (natV k'))) (Val (LitV (LitLoc l)))) Post))
+  : properUPred_ent
+      (pointsTo l (natV (j Nat.* suc k')))
+      (wp (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post)
+  =>
+    properUPred_ent_trans
+      (pointsTo l (natV (j Nat.* suc k')))
+      (wp (App (App (Val fact_recV) (Val (natV k'))) (Val (LitV (LitLoc l)))) Post)
+      (wp (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post)
+      rec_call
+      (properUPred_ent_trans
+        (wp (App (App (Val fact_recV) (Val (natV k'))) (Val (LitV (LitLoc l)))) Post)
+        (wp (Pred (Val (natV (suc k'))))
+          (\lam v => wp (App (App (Val fact_recV) (Val v)) (Val (LitV (LitLoc l)))) Post))
+        (wp (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post)
+        (wp_pred_suc k'
+          (\lam v => wp (App (App (Val fact_recV) (Val v)) (Val (LitV (LitLoc l)))) Post))
+        (wp_bind
+          (ConsCtx (AppLCtx (Val (LitV (LitLoc l))))
+            (ConsCtx (AppRCtx fact_recV) EmptyCtx))
+          (Pred (Val (natV (suc k'))))
+          Post))
+
+\lemma subst_fact_suc_else
+  {cnt : Countable Loc} (l : Loc) (j k' : Nat)
+  (recV : Value) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (after_store : properUPred_ent
+    (pointsTo l (natV j))
+    (wp (Store (Val (LitV (LitLoc l)))
+          (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))
+        (\lam _ => wp (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post)))
+  : properUPred_ent
+      (pointsTo l (natV j))
+      (wp (App (Lam "_" (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))))
+            (Store (Val (LitV (LitLoc l)))
+              (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))) Post)
+  =>
+    \lam n a hv hpts =>
+      wp_lam_expr_app_r_to "_"
+        (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
+        (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
+        (Store (Val (LitV (LitLoc l)))
+          (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))
+        (\lam v => subst_by_string_decisions "_" v
+          (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
+          (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))))
+        Post
+        n a hv (after_store n a hv hpts)
+
+\lemma subst_fact_suc_unfold
+  {cnt : Countable Loc} (l : Loc) (j k' : Nat)
+  (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (normalized : Expr)
+  (step_normalized : properUPred_ent (pointsTo l (natV j)) (wp normalized Post))
+  : properUPred_ent
+      (pointsTo l (natV j))
+      (wp (App (App fact_body (Val (natV (suc k')))) (Val (LitV (LitLoc l)))) Post)
+  =>
+    properUPred_ent_trans
+      (pointsTo l (natV j))
+      (wp normalized Post)
+      (wp (App (App fact_body (Val (natV (suc k')))) (Val (LitV (LitLoc l)))) Post)
+      step_normalized
+      (wp_rec_lam_app2_to "fact" "n" "l"
+        (If (IsZero (Var "n"))
+            (Load (Var "l"))
+            (App (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
+                (Store (Var "l")
+                    (Mul (Load (Var "l")) (Var "n")))))
+        (If (IsZero (Val (natV (suc k'))))
+            (Load (Var "l"))
+            (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
+                (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))
+        normalized
+        (natV (suc k'))
+        (LitV (LitLoc l))
+        (subst_by_string_decisions "n" (natV (suc k'))
+          (subst "fact" fact_recV fact_rec_body)
+          (Lam "l"
+            (If (IsZero (Val (natV (suc k'))))
+                (Load (Var "l"))
+                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
+                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))))
+        (subst_by_string_decisions "l" (LitV (LitLoc l))
+          (If (IsZero (Val (natV (suc k'))))
+              (Load (Var "l"))
+              (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
+                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))
+          normalized)
+        Post)
+
+\lemma subst_fact_call_l_beta
+  {cnt : Countable Loc} (l : Loc) (k : Nat)
+  (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (worker : properUPred_ent
+    (pointsTo l (natV 1))
+    (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) Post))
+  : properUPred_ent
+      (pointsTo l (natV 1))
+      (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+            (Val (LitV (LitLoc l)))) Post)
+  =>
+    properUPred_ent_trans
+      (pointsTo l (natV 1))
+      (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) Post)
+      (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+            (Val (LitV (LitLoc l)))) Post)
+      worker
+      (wp_lam_beta_to "l"
+        (App (App fact_body (Val (natV k))) (Var "l"))
+        (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+        (LitV (LitLoc l))
+        (subst_by_string_decisions "l" (LitV (LitLoc l))
+          (App (App fact_body (Val (natV k))) (Var "l"))
+          (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))))
+        Post)
+
+\lemma subst_fact_public_k_beta
+  {cnt : Countable Loc} (k : Nat)
+  (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (body_step : properUPred_ent (mkProperPure (\Sigma)) (wp (factorial_call_body_at k) Post))
+  : properUPred_ent
+      (mkProperPure (\Sigma))
+      (wp (App (Val (LamV "k" factorial_call_body)) (Val (natV k))) Post)
+  =>
+    properUPred_ent_trans
+      (mkProperPure (\Sigma))
+      (wp (factorial_call_body_at k) Post)
+      (wp (App (Val (LamV "k" factorial_call_body)) (Val (natV k))) Post)
+      body_step
+      (wp_lam_beta_to "k" factorial_call_body (factorial_call_body_at k)
+        (natV k)
+        (subst_by_string_decisions "k" (natV k) factorial_call_body (factorial_call_body_at k))
+        Post)
+
+-- =================================================================================
+-- Worker lemma
+-- =================================================================================
+
+\func fact_var_spec
+  {cnt : Countable Loc} (l : Loc) (j k : Nat)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l (natV j))
+    (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+        (fact_worker_post l j k))
+\elim k
+  | 0 =>
+    \let
+      | M => HeapCMRA Loc cnt Value
+      | Post : Value -> ProperUPred M => fact_worker_post l j 0
+      | recV : Value => fact_recV
+      | after_n : Expr =>
+        App (Val (LamV "l" (
+          If (IsZero (Val (natV 0)))
+              (Load (Var "l"))
+              (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+          (Val (LitV (LitLoc l)))
+      | after_l : Expr =>
+        subst "l" (LitV (LitLoc l))
+          (If (IsZero (Val (natV 0)))
+              (Load (Var "l"))
+              (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+      | thenE : Expr => Load (Val (LitV (LitLoc l)))
+      | elseE : Expr =>
+        App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+            (Store (Val (LitV (LitLoc l)))
+                (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))
+      | normalized : Expr => If (IsZero (Val (natV 0))) thenE elseE
+      | s_load : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Load (Val (LitV (LitLoc l))))
+              (\lam v' => mkProperAnd (mkProperPure (v' = natV j)) (pointsTo l (natV j))))
+      => wp_load l (natV j)
+      | s_load_post : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Load (Val (LitV (LitLoc l)))) Post)
+      => properUPred_ent_trans
+            (pointsTo l (natV j))
+            (wp (Load (Val (LitV (LitLoc l))))
+                (\lam v' => mkProperAnd (mkProperPure (v' = natV j)) (pointsTo l (natV j))))
+            (wp (Load (Val (LitV (LitLoc l)))) Post)
+            s_load
+            (wp_post_mono (Load (Val (LitV (LitLoc l))))
+              (\lam v' => mkProperAnd (mkProperPure (v' = natV j)) (pointsTo l (natV j)))
+              Post
+              (\lam v' n a hv hand =>
+                \let
+                  | eq : natV j = natV (j Nat.* nat_fact 0) =>
+                    pmap natV (inv NatSemiring.ide-right)
+                \in
+                  ( hand.1 *> eq
+                  , transport (\lam w => (pointsTo l w).upred_holds n a) eq hand.2 )))
+      | s_if_true : properUPred_ent
+          (wp (Load (Val (LitV (LitLoc l)))) Post)
+          (wp (If (Val (LitV (LitBool true))) thenE elseE) Post)
+      => wp_pure_step
+          (If (Val (LitV (LitBool true))) thenE elseE)
+          thenE
+          (\lam s => BasePrim (IfTrueS _ _ idp idp idp))
+          (base_redex_step_det
+            (If (Val (LitV (LitBool true))) thenE elseE)
+            thenE
+            (base_if_true_step_det thenE elseE)
+            (if_ctx_absurd true thenE elseE))
+          idp
+          Post
+      | InnerPost : Value -> ProperUPred M =>
+        \lam v => wp (If (Val v) thenE elseE) Post
+      | s_iszero : properUPred_ent
+          (wp (Load (Val (LitV (LitLoc l)))) Post)
+          (wp (IsZero (Val (natV 0))) InnerPost)
+      => properUPred_ent_trans
+          (wp (Load (Val (LitV (LitLoc l)))) Post)
+          (InnerPost (LitV (LitBool true)))
+          (wp (IsZero (Val (natV 0))) InnerPost)
+          s_if_true
+          (wp_iszero_zero InnerPost)
+      | s_normalized : properUPred_ent
+          (pointsTo l (natV j))
+          (wp normalized Post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp (Load (Val (LitV (LitLoc l)))) Post)
+          (wp normalized Post)
+          s_load_post
+          (properUPred_ent_trans
+            (wp (Load (Val (LitV (LitLoc l)))) Post)
+            (wp (IsZero (Val (natV 0))) InnerPost)
+            (wp normalized Post)
+            s_iszero
+            (wp_bind_if (IsZero (Val (natV 0))) thenE elseE Post))
+      | s_beta_l : properUPred_ent
+          (wp after_l Post)
+          (wp after_n Post)
+      => wp_pure_step
+          after_n
+          after_l
+          (\lam s => BasePrim (BetaS "l" _ _ idp idp idp))
+          (base_redex_step_det
+            after_n
+            after_l
+            (base_lam_beta_step_det "l"
+              (If (IsZero (Val (natV 0)))
+                  (Load (Var "l"))
+                  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                      (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+              (LitV (LitLoc l)))
+            (app_lam_ctx_absurd "l"
+              (If (IsZero (Val (natV 0)))
+                  (Load (Var "l"))
+                  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
+                      (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+              (LitV (LitLoc l))))
+          idp
+          Post
+      | s_after_l : properUPred_ent
+          (pointsTo l (natV j))
+          (wp after_l Post)
+      => \lam n a hv hpts =>
+          \let
+            | subst_l_eq : after_l = normalized =>
+              subst_fact_zero_l l recV
+          \in transport
+              (\lam e => (wp e Post).upred_holds n a)
+              (inv subst_l_eq)
+              (s_normalized n a hv hpts)
+      | s_after_n : properUPred_ent
+          (pointsTo l (natV j))
+          (wp after_n Post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp after_l Post)
+          (wp after_n Post)
+          s_after_l
+          s_beta_l
+    \in
+      subst_fact_zero_unfold l j Post s_after_n
+  | suc k' =>
+    \let
+      | M => HeapCMRA Loc cnt Value
+      | jk : Nat => j Nat.* suc k'
+      | Post : Value -> ProperUPred M => fact_worker_post l j (suc k')
+      | locV : Value => LitV (LitLoc l)
+      | nV : Value => natV (suc k')
+      | recV : Value => fact_recV
+      | thenE : Expr => Load (Val locV)
+      | elseE : Expr =>
+        App (Lam "_" (App (App (Val recV) (Pred (Val nV))) (Val locV)))
+            (Store (Val locV) (Mul (Load (Val locV)) (Val nV)))
+      | normalized : Expr => If (IsZero (Val nV)) thenE elseE
+      | mul_post : Value -> ProperUPred M =>
+        \lam u => mkProperAnd (mkProperPure (u = natV jk)) (pointsTo l (natV j))
+      | s_load : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Load (Val locV))
+              (\lam v => mkProperAnd (mkProperPure (v = natV j)) (pointsTo l (natV j))))
+      => wp_load l (natV j)
+      | s_mul_after_load : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Mul (Load (Val locV)) (Val nV)) mul_post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp (Load (Val locV))
+              (\lam v => mkProperAnd (mkProperPure (v = natV j)) (pointsTo l (natV j))))
+          (wp (Mul (Load (Val locV)) (Val nV)) mul_post)
+          s_load
+          (properUPred_ent_trans
+            (wp (Load (Val locV))
+                (\lam v => mkProperAnd (mkProperPure (v = natV j)) (pointsTo l (natV j))))
+            (wp (Load (Val locV))
+                (\lam v => wp (Mul (Val v) (Val nV)) mul_post))
+            (wp (Mul (Load (Val locV)) (Val nV)) mul_post)
+            (wp_post_mono (Load (Val locV))
+              (\lam v => mkProperAnd (mkProperPure (v = natV j)) (pointsTo l (natV j)))
+              (\lam v => wp (Mul (Val v) (Val nV)) mul_post)
+              (\lam v n a hv hand =>
+                transport
+                  (\lam w => (wp (Mul (Val w) (Val nV)) mul_post).upred_holds n a)
+                  (inv hand.1)
+                  (wp_mul j (suc k') mul_post n a hv (idp, hand.2))))
+            (wp_bind_mul_l (Load (Val locV)) (Val nV) mul_post))
+      | store_post : Value -> ProperUPred M =>
+        \lam _ => pointsTo l (natV jk)
+      | s_store_value : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Store (Val locV) (Val (natV jk))) store_post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp (Store (Val locV) (Val (natV jk)))
+              (\lam v' => mkProperAnd
+                  (mkProperPure (v' = LitV LitUnit))
+                  (pointsTo l (natV jk))))
+          (wp (Store (Val locV) (Val (natV jk))) store_post)
+          (wp_store l (natV j) (natV jk))
+          (wp_post_mono (Store (Val locV) (Val (natV jk)))
+            (\lam v' => mkProperAnd
+                (mkProperPure (v' = LitV LitUnit))
+                (pointsTo l (natV jk)))
+            store_post
+            (\lam v' n a hv hand => hand.2))
+      | s_store_after_mul : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) store_post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp (Mul (Load (Val locV)) (Val nV)) mul_post)
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) store_post)
+          s_mul_after_load
+          (properUPred_ent_trans
+            (wp (Mul (Load (Val locV)) (Val nV)) mul_post)
+            (wp (Mul (Load (Val locV)) (Val nV))
+              (\lam v => wp (Store (Val locV) (Val v)) store_post))
+            (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) store_post)
+            (wp_post_mono
+              (Mul (Load (Val locV)) (Val nV))
+              mul_post
+              (\lam v => wp (Store (Val locV) (Val v)) store_post)
+              (\lam v n a hv hand =>
+                transport
+                  (\lam w => (wp (Store (Val locV) (Val w)) store_post).upred_holds n a)
+                  (inv hand.1)
+                  (s_store_value n a hv hand.2)))
+            (wp_bind_store_r locV (Mul (Load (Val locV)) (Val nV)) store_post))
+      | after_store_post : Value -> ProperUPred M =>
+        \lam _ => wp (App (App (Val recV) (Pred (Val nV))) (Val locV)) Post
+      | s_rec_call : properUPred_ent
+          (pointsTo l (natV jk))
+          (wp (App (App (Val recV) (Val (natV k'))) (Val locV)) Post)
+      => properUPred_ent_trans
+          (pointsTo l (natV jk))
+          (wp (App (App (Val recV) (Val (natV k'))) (Val locV))
+              (fact_worker_post l jk k'))
+          (wp (App (App (Val recV) (Val (natV k'))) (Val locV)) Post)
+          (fact_var_spec l jk k')
+          (wp_post_mono
+            (App (App (Val recV) (Val (natV k'))) (Val locV))
+            (fact_worker_post l jk k')
+            Post
+            (\lam v n a hv hand =>
+              \let
+                | eq : natV (jk Nat.* nat_fact k') = natV (j Nat.* nat_fact (suc k')) =>
+                  pmap natV NatSemiring.*-assoc
+              \in (hand.1 *> eq,
+                   transport (\lam w => (pointsTo l w).upred_holds n a) eq hand.2)))
+      | s_store_to_rec : properUPred_ent
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) store_post)
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) after_store_post)
+      => wp_post_mono
+          (Store (Val locV) (Mul (Load (Val locV)) (Val nV)))
+          store_post
+          after_store_post
+          (\lam v n a hv hpts =>
+            subst_fact_suc_after_store l j k' Post s_rec_call n a hv hpts)
+      | s_after_store : properUPred_ent
+          (pointsTo l (natV j))
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) after_store_post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) store_post)
+          (wp (Store (Val locV) (Mul (Load (Val locV)) (Val nV))) after_store_post)
+          s_store_after_mul
+          s_store_to_rec
+      | s_else : properUPred_ent
+          (pointsTo l (natV j))
+          (wp elseE Post)
+      =>
+        subst_fact_suc_else l j k' recV Post s_after_store
+      | s_if_false : properUPred_ent
+          (wp elseE Post)
+          (wp (If (Val (LitV (LitBool false))) thenE elseE) Post)
+      => wp_pure_step
+          (If (Val (LitV (LitBool false))) thenE elseE)
+          elseE
+          (\lam s => BasePrim (IfFalseS _ _ idp idp idp))
+          (base_redex_step_det
+            (If (Val (LitV (LitBool false))) thenE elseE)
+            elseE
+            (base_if_false_step_det thenE elseE)
+            (if_ctx_absurd false thenE elseE))
+          idp
+          Post
+      | InnerPost : Value -> ProperUPred M =>
+        \lam v => wp (If (Val v) thenE elseE) Post
+      | s_iszero : properUPred_ent
+          (pointsTo l (natV j))
+          (wp normalized Post)
+      => properUPred_ent_trans
+          (pointsTo l (natV j))
+          (wp elseE Post)
+          (wp normalized Post)
+          s_else
+          (properUPred_ent_trans
+            (wp elseE Post)
+            (wp (IsZero (Val nV)) InnerPost)
+            (wp normalized Post)
+            (properUPred_ent_trans
+              (wp elseE Post)
+              (InnerPost (LitV (LitBool false)))
+              (wp (IsZero (Val nV)) InnerPost)
+              s_if_false
+              (wp_iszero_suc k' InnerPost))
+            (wp_bind_if (IsZero (Val nV)) thenE elseE Post))
+    \in
+      subst_fact_suc_unfold l j k' Post normalized s_iszero
+
+\func fact_closure_correct
+  {cnt : Countable Loc}
+  (l   : Loc)
+  (j k : Nat)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l (natV j))
+    (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+        (fact_worker_post l j k))
+  => fact_var_spec l j k
+
+\func fact_body_correct
+  {cnt : Countable Loc}
+  (l   : Loc)
+  (j k : Nat)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (pointsTo l (natV j))
+    (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+        (fact_worker_post l j k))
+  => fact_var_spec l j k
+
+-- =================================================================================
+-- Public call lemma
+-- =================================================================================
+
+\lemma factorial_call_correct
+  {cnt : Countable Loc}
+  (k : Nat)
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (mkProperPure (\Sigma))
+    (wp (factorial_call_body_at k) (factorial_post k))
+  =>
+    \let
+      | M => HeapCMRA Loc cnt Value
+      | alloc_post : Value -> ProperUPred M =>
+        \lam vloc => mkProperExist Loc (\lam l =>
+          mkProperAnd
+            (mkProperPure (vloc = LitV (LitLoc l)))
+            (pointsTo l (natV 1)))
+      | s_alloc : properUPred_ent {M}
+          (mkProperPure (\Sigma))
+          (wp (Alloc (Val (natV 1))) alloc_post)
+      => wp_alloc (natV 1)
+      | worker_ent : \Pi (l : Loc) -> properUPred_ent {M}
+          (pointsTo l (natV 1))
+          (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+            (factorial_post k))
+      => \lam l =>
+          properUPred_ent_trans
+            (pointsTo l (natV 1))
+            (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+              (fact_worker_post l 1 k))
+            (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+              (factorial_post k))
+            (fact_var_spec l 1 k)
+            (wp_post_mono
+              (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
+              (fact_worker_post l 1 k)
+              (factorial_post k)
+              (\lam v n a hv hand =>
+                \let
+                  | eq : natV (1 Nat.* nat_fact k) = natV (nat_fact k) =>
+                    pmap natV NatSemiring.ide-left
+                \in
+                  ( hand.1 *> eq
+                  , inP (l, transport
+                      (\lam w => (pointsTo l w).upred_holds n a)
+                      eq
+                      hand.2) )))
+      | s_after_alloc : \Pi (vloc : Value) -> properUPred_ent {M}
+          (alloc_post vloc)
+          (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+            (factorial_post k))
+      => \lam vloc =>
+          exist_elim_ent Loc
+            (\lam l => mkProperAnd
+              (mkProperPure (vloc = LitV (LitLoc l)))
+              (pointsTo l (natV 1)))
+            (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+              (factorial_post k))
+            (\lam l n a hv hand =>
+              transport
+                (\lam vv =>
+                  (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vv))
+                    (factorial_post k)).upred_holds n a)
+                (inv hand.1)
+                (subst_fact_call_l_beta l k (factorial_post k) (worker_ent l)
+                  n a hv hand.2))
+      | s_alloc_then : properUPred_ent {M}
+          (mkProperPure (\Sigma))
+          (wp (Alloc (Val (natV 1)))
+            (\lam vloc =>
+              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+                (factorial_post k)))
+      => properUPred_ent_trans
+          (mkProperPure (\Sigma))
+          (wp (Alloc (Val (natV 1))) alloc_post)
+          (wp (Alloc (Val (natV 1)))
+            (\lam vloc =>
+              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+                (factorial_post k)))
+          s_alloc
+          (wp_post_mono
+            (Alloc (Val (natV 1)))
+            alloc_post
+            (\lam vloc =>
+              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+                (factorial_post k))
+            s_after_alloc)
+	    \in
+	      properUPred_ent_trans
+	        (mkProperPure (\Sigma))
+	        (wp (Alloc (Val (natV 1)))
+	          (\lam vloc =>
+	            wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+	              (factorial_post k)))
+	        (wp (factorial_call_body_at k) (factorial_post k))
+	        s_alloc_then
+	        (properUPred_ent_trans
+	          (wp (Alloc (Val (natV 1)))
+	            (\lam vloc =>
+	              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+	                (factorial_post k)))
+	          (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+	                (Alloc (Val (natV 1))))
+	            (factorial_post k))
+	          (wp (factorial_call_body_at k) (factorial_post k))
+	          (wp_bind_app_r
+	            (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))
+	            (Alloc (Val (natV 1)))
+	            (factorial_post k))
+	          (wp_lam_expr_app_arg_to
+	            "l"
+	            (App (App fact_body (Val (natV k))) (Var "l"))
+            (Alloc (Val (natV 1)))
+            (factorial_post k)))
+
+-- =================================================================================
+-- Proof of the public spec
+-- =================================================================================
+
+\func factorial_correct'
+  {cnt : Countable Loc}
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (mkProperPure (\Sigma))
+    factorial_spec
+  =>
+    \let
+      | M => HeapCMRA Loc cnt Value
+      | hfun : Value => LamV "k" factorial_call_body
+      | Phi : Value -> ProperUPred M =>
+        \lam h => mkProperForall Nat (\lam k =>
+          ht (mkProperPure (\Sigma))
+            (App (Val h) (Val (natV k)))
+            (factorial_post k))
+      | phi_hfun : properUPred_ent {M}
+          (mkProperPure (\Sigma))
+          (Phi hfun)
+      => \lam n a hv _ =>
+          \lam k =>
+            \lam m m_le_n a' hv_core_a' _ =>
+              subst_fact_public_k_beta k (factorial_post k) (factorial_call_correct k)
+                m (M.op (ucmra_core {M} a) a') hv_core_a' ()
+      | wp_value : properUPred_ent {M}
+          (mkProperPure (\Sigma))
+          (wp factorial_prog Phi)
+      => properUPred_ent_trans
+          (mkProperPure (\Sigma))
+          (Phi hfun)
+          (wp factorial_prog Phi)
+          phi_hfun
+          (wp_lam "k" factorial_call_body Phi)
+    \in
+      \lam n a hv _ =>
+        \lam m m_le_n a' hv_core_a' _ =>
+          wp_value m (M.op (ucmra_core {M} a) a') hv_core_a' ()
+
+\func factorial_correct_Q
+  {cnt : Countable Loc}
+  : properUPred_ent {HeapCMRA Loc cnt Value}
+    (mkProperPure (\Sigma))
+    factorial_spec_Q
+  =>
+    \let
+      | M => HeapCMRA Loc cnt Value
+      | Q : ProperUPred M => mkProperPure (\Sigma)
+      | base : properUPred_ent {M} (mkProperPure (\Sigma)) factorial_spec =>
+        factorial_correct'
+      | post_step : \Pi (h : Value) -> properUPred_ent {M}
+          (mkProperForall Nat (\lam k =>
+            ht (mkProperPure (\Sigma))
+              (App (Val h) (Val (natV k)))
+              (factorial_post k)))
+          (mkProperExist (ProperUPred M) (\lam Q' =>
+            mkProperSep Q'
+              (mkProperForall Nat (\lam k =>
+                ht Q'
+                  (App (Val h) (Val (natV k)))
+                  (factorial_post k)))))
+      => \lam h n a hv hforall =>
+          inP (Q,
+            inP (M.unit, a,
+              M.ofe_dist_sym n (M.op M.unit a) a
+                (ucmra_unit_left_id_dist {M} n a),
+              (),
+              hforall))
+    \in
+      properUPred_ent_trans
+        (mkProperPure (\Sigma))
+        factorial_spec
+        factorial_spec_Q
+        base
+        (\lam n a hv hspec =>
+          \lam m m_le_n a' hv_core_a' htrue =>
+            wp_post_mono
+              factorial_prog
+              (\lam h => mkProperForall Nat (\lam k =>
+                ht (mkProperPure (\Sigma))
+                  (App (Val h) (Val (natV k)))
+                  (factorial_post k)))
+              (\lam h => mkProperExist (ProperUPred M) (\lam Q' =>
+                mkProperSep Q'
+                  (mkProperForall Nat (\lam k =>
+                    ht Q'
+                      (App (Val h) (Val (natV k)))
+                      (factorial_post k)))))
+              post_step
+              m
+              (M.op (ucmra_core {M} a) a')
+              hv_core_a'
+              (hspec m m_le_n a' hv_core_a' htrue))

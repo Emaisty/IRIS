@@ -1,0 +1,454 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import Arith.Rat
+\import Order.PartialOrder
+\import Order.LinearOrder
+\import Algebra.StrictlyOrdered
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.frac
+\import iris.algebra.dfrac
+\import iris.algebra.agree
+\import iris.algebra.prod
+\import iris.algebra.option
+
+\record ViewRel (A : OFE) (B : UCMRA)
+  | view_rel_holds (n : Nat) (a : A.E) (b : B.E) : \Prop
+  | view_rel_mono (n m : Nat) (a a' : A.E) (b b' : B.E)
+      (h : view_rel_holds n a b)
+      (ha : A.dist m a a')
+      (hb : inclN {B} {\new Op B.E { | op => B.op }} b' m b)
+      (le : m <= n) : view_rel_holds m a' b'
+  | view_rel_validN (n : Nat) (a : A.E) (b : B.E)
+      (h : view_rel_holds n a b) : B.validN n b
+  | view_rel_unit (n : Nat) : \Sigma (a : A.E) (view_rel_holds n a B.unit)
+
+\func ViewAuth (A : OFE) : \Set =>
+  Maybe (\Sigma Dfrac (AgreeElem A))
+
+\func ViewOFE (A : OFE) (B : UCMRA) : OFE =>
+  ProdOFE (OptionOFE (ProdCMRA DfracCMRA (AgreeCMRA A))) B
+
+\func RawViewCMRA (A : OFE) (B : UCMRA) : CMRA =>
+  ProdCMRA (OptionCMRA (ProdCMRA DfracCMRA (AgreeCMRA A))) B
+
+\func view_auth {A : OFE} {B : UCMRA} (dq : Dfrac) (a : A.E)
+  : (ViewOFE A B).E => (just (dq, to_agree a), B.unit)
+
+\func view_frag {A : OFE} {B : UCMRA} (b : B.E)
+  : (ViewOFE A B).E => (nothing, b)
+
+\func view_validN {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (x : (ViewOFE A B).E) : \Prop =>
+  \case x.1 \with {
+    | nothing => TruncP (\Sigma (a : A.E) (rel.view_rel_holds n a x.2))
+    | just da => \Sigma (dfrac_valid da.1)
+        (TruncP (\Sigma (a : A.E)
+          ((AgreeOFE A).dist n da.2 (to_agree a))
+          (rel.view_rel_holds n a x.2)))
+  }
+
+\func view_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (x : (ViewOFE A B).E) : \Prop =>
+  \Pi (n : Nat) -> view_validN rel n x
+
+\func view_to_agree_validN {A : OFE} (n : Nat) (a : A.E) :
+    agree_validN n (to_agree a) =>
+  \lam x y hx hy => \case hx, hy \with {
+    | inl ex, inl ey =>
+        transport2 (\lam u v => A.dist n u v) (inv ex) (inv ey)
+          (A.ofe_dist_refl n a)
+    | inl _, inr e => \case e \with {}
+    | inr e, _ => \case e \with {}
+  }
+
+\func view_validN_raw_pair {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (auth : ViewAuth A) (frag : B.E)
+    (h : view_validN rel n (auth, frag))
+  : (RawViewCMRA A B).validN n (auth, frag) \elim auth
+    | nothing => \case h \with {
+        | inP (a, hr) => ((), rel.view_rel_validN n a frag hr)
+      }
+    | just da => \case h.2 \with {
+        | inP (a, dag, hr) =>
+          ((h.1,
+            (AgreeCMRA A).cmra_validN_ne n (to_agree a) da.2
+              ((AgreeOFE A).ofe_dist_sym n da.2 (to_agree a) dag)
+              (view_to_agree_validN n a)),
+           rel.view_rel_validN n a frag hr)
+      }
+
+\lemma view_validN_raw {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (x : (ViewOFE A B).E) (h : view_validN rel n x)
+  : (RawViewCMRA A B).validN n x =>
+  view_validN_raw_pair rel n x.1 x.2 h
+
+\func view_validN_ne_pair {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (ax ay : ViewAuth A) (fx fy : B.E)
+    (d : (ViewOFE A B).dist n (ax, fx) (ay, fy))
+    (h : view_validN rel n (ax, fx))
+  : view_validN rel n (ay, fy) \elim ax, ay
+  | nothing, nothing => \case h \with {
+      | inP (a, hr) => inP (a,
+          rel.view_rel_mono n n a a fx fy hr
+            (A.ofe_dist_refl n a)
+            (inclN_of_dist_unit n fy fx d.2)
+            NatSemiring.<=-refl)
+    }
+  | nothing, just _ => \case d.1 \with {}
+  | just _, nothing => \case d.1 \with {}
+  | just dx, just dy =>
+      (transport dfrac_valid d.1.1 h.1,
+       \case h.2 \with {
+         | inP (a, dag, hr) => inP (a,
+             (AgreeOFE A).ofe_dist_trans n dy.2 dx.2 (to_agree a)
+               ((AgreeOFE A).ofe_dist_sym n dx.2 dy.2 d.1.2) dag,
+             rel.view_rel_mono n n a a fx fy hr
+               (A.ofe_dist_refl n a)
+               (inclN_of_dist_unit n fy fx d.2)
+               NatSemiring.<=-refl)
+       })
+
+\lemma view_validN_ne {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (x y : (ViewOFE A B).E)
+    (d : (ViewOFE A B).dist n x y) (h : view_validN rel n x)
+  : view_validN rel n y => view_validN_ne_pair rel n x.1 y.1 x.2 y.2 d h
+
+\func view_validN_le_pair {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n m : Nat) (auth : ViewAuth A) (frag : B.E)
+    (h : view_validN rel n (auth, frag)) (le : m <= n)
+  : view_validN rel m (auth, frag) \elim auth
+  | nothing => \case h \with {
+      | inP (a, hr) => inP (a,
+          rel.view_rel_mono n m a a frag frag hr
+            (A.ofe_dist_refl m a) (inclN_refl_ucmra m frag) le)
+    }
+  | just da => (h.1, \case h.2 \with {
+      | inP (a, dag, hr) => inP (a,
+          (AgreeOFE A).ofe_dist_le n m da.2 (to_agree a) dag le,
+          rel.view_rel_mono n m a a frag frag hr
+            (A.ofe_dist_refl m a) (inclN_refl_ucmra m frag) le)
+    })
+
+\lemma view_validN_le {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n m : Nat) (x : (ViewOFE A B).E)
+    (h : view_validN rel n x) (le : m <= n)
+  : view_validN rel m x => view_validN_le_pair rel n m x.1 x.2 h le
+
+\lemma agree_op_dist_left_valid {A : OFE} (n : Nat) (x y : AgreeElem A)
+    (hv : agree_validN n (agree_op x y))
+  : (AgreeOFE A).dist n (agree_op x y) x =>
+  (\lam a ha => \case in_agree_op_inv a x y ha \with {
+      | inl hx => inP (a, hx, A.ofe_dist_refl n a)
+      | inr hy => inP (x.agree_hd, inl idp,
+          hv a x.agree_hd
+            (in_agree_op a x y (inr hy))
+            (in_agree_op x.agree_hd x y (inl (inl idp))))
+    },
+   \lam a hx => inP (a, in_agree_op a x y (inl hx), A.ofe_dist_refl n a))
+
+\func view_validN_op_l_pair {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (ax ay : ViewAuth A) (fx fy : B.E)
+    (h : view_validN rel n ((RawViewCMRA A B).op (ax, fx) (ay, fy)))
+  : view_validN rel n (ax, fx) \elim ax, ay
+  | nothing, nothing => \case h \with {
+      | inP (a, hr) => inP (a,
+          rel.view_rel_mono n n a a (B.op fx fy) fx hr
+            (A.ofe_dist_refl n a) (inclN_op_l n fx fy) NatSemiring.<=-refl)
+    }
+  | nothing, just dy => \case h.2 \with {
+      | inP (a, dag, hr) => inP (a,
+          rel.view_rel_mono n n a a (B.op fx fy) fx hr
+            (A.ofe_dist_refl n a) (inclN_op_l n fx fy) NatSemiring.<=-refl)
+    }
+  | just dx, nothing =>
+      (h.1, \case h.2 \with {
+        | inP (a, dag, hr) => inP (a, dag,
+            rel.view_rel_mono n n a a (B.op fx fy) fx hr
+              (A.ofe_dist_refl n a) (inclN_op_l n fx fy) NatSemiring.<=-refl)
+      })
+  | just dx, just dy =>
+      (dfrac_valid_op_l dx.1 dy.1 h.1,
+       \case h.2 \with {
+         | inP (a, dag, hr) =>
+           \let
+             | hvAgree : agree_validN n (agree_op dx.2 dy.2) =>
+                 (AgreeCMRA A).cmra_validN_ne n (to_agree a) (agree_op dx.2 dy.2)
+                   ((AgreeOFE A).ofe_dist_sym n (agree_op dx.2 dy.2) (to_agree a) dag)
+                   (view_to_agree_validN n a)
+             | dxToOp : (AgreeOFE A).dist n dx.2 (agree_op dx.2 dy.2) =>
+                 (AgreeOFE A).ofe_dist_sym n (agree_op dx.2 dy.2) dx.2
+                   (agree_op_dist_left_valid n dx.2 dy.2 hvAgree)
+           \in inP (a,
+                (AgreeOFE A).ofe_dist_trans n dx.2 (agree_op dx.2 dy.2)
+                  (to_agree a) dxToOp dag,
+                rel.view_rel_mono n n a a (B.op fx fy) fx hr
+                  (A.ofe_dist_refl n a) (inclN_op_l n fx fy) NatSemiring.<=-refl)
+       })
+
+\lemma view_validN_op_l {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (n : Nat) (x y : (ViewOFE A B).E)
+    (h : view_validN rel n ((RawViewCMRA A B).op x y))
+  : view_validN rel n x => view_validN_op_l_pair rel n x.1 y.1 x.2 y.2 h
+
+\func ViewCMRA {A : OFE} {B : UCMRA} (rel : ViewRel A B) : CMRA \cowith
+  | OFE => ViewOFE A B
+  | op => (RawViewCMRA A B).op
+  | pcore => pcore {RawViewCMRA A B}
+  | valid => view_valid rel
+  | validN => view_validN rel
+  | cmra_op_ne => (RawViewCMRA A B).cmra_op_ne
+  | cmra_op_ne_2 => (RawViewCMRA A B).cmra_op_ne_2
+  | cmra_pcore_ne => (RawViewCMRA A B).cmra_pcore_ne
+  | cmra_validN_ne => view_validN_ne rel
+  | cmra_valid_validN => \lam _ => (\lam h => h, \lam h => h)
+  | cmra_validN_le => view_validN_le rel
+  | cmra_assoc => (RawViewCMRA A B).cmra_assoc
+  | cmra_comm => (RawViewCMRA A B).cmra_comm
+  | cmra_pcore_l => (RawViewCMRA A B).cmra_pcore_l
+  | cmra_pcore_idemp => (RawViewCMRA A B).cmra_pcore_idemp
+  | cmra_pcore_mono => (RawViewCMRA A B).cmra_pcore_mono
+  | cmra_validN_op_l => view_validN_op_l rel
+  | cmra_extend => \lam n x y1 y2 hv hd =>
+      (RawViewCMRA A B).cmra_extend n x y1 y2
+        (view_validN_raw rel n x hv) hd
+
+\func ViewUCMRA {A : OFE} {B : UCMRA} (rel : ViewRel A B) : UCMRA \cowith
+  | CMRA => ViewCMRA rel
+  | unit => (nothing, B.unit)
+  | ucmra_unit_valid => \lam n => inP (rel.view_rel_unit n)
+  | ucmra_unit_left_id => (ProdUCMRA
+      (OptionUCMRA (ProdCMRA DfracCMRA (AgreeCMRA A))) B).ucmra_unit_left_id
+  | ucmra_pcore_unit => (ProdUCMRA
+      (OptionUCMRA (ProdCMRA DfracCMRA (AgreeCMRA A))) B).ucmra_pcore_unit
+
+\lemma view_frag_core_id {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (b : B.E) (hb : CoreId {B} b)
+  : CoreId {ViewCMRA rel} (view_frag b) =>
+  prod_core_id (nothing, b) () hb
+
+\lemma view_agree_dist_extract {A : OFE} (n : Nat) (a : A.E) (x : AgreeElem A)
+    (h : (AgreeOFE A).dist n (to_agree a) x) : A.dist n a x.agree_hd =>
+  \case h.2 x.agree_hd (inl idp) \with {
+    | inP (a', ha', d) => \case ha' \with {
+        | inl e => transport (\lam z => A.dist n z x.agree_hd) e d
+        | inr e => \case e \with {}
+      }
+  }
+
+\func view_update_alloc_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a a' : A.E) (b' : B.E)
+    (hup : \Pi (n : Nat) (bf : B.E) -> rel.view_rel_holds n a bf ->
+      rel.view_rel_holds n a' (B.op b' bf))
+    (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth (DfracOwn qp_one) a) (fa, ff)))
+  : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op
+        ((ViewCMRA rel).op (view_auth (DfracOwn qp_one) a') (view_frag b'))
+        (fa, ff)) \elim fa
+  | just da => \case dfrac_full_exclusive da.1 h.1 \with {}
+  | nothing =>
+      (h.1,
+       \case h.2 \with {
+         | inP (a0, dag, hr) =>
+           \let
+             | da_a0 : A.dist n a a0 => view_agree_dist_extract n a (to_agree a0) dag
+             | hr_a : rel.view_rel_holds n a ff =>
+                 rel.view_rel_mono n n a0 a (B.op B.unit ff) ff hr
+                   (A.ofe_dist_sym n a a0 da_a0)
+                   (inclN_of_dist_unit n ff (B.op B.unit ff)
+                     (ucmra_unit_left_id_dist n ff)) NatSemiring.<=-refl
+             | hr_updated : rel.view_rel_holds n a' (B.op b' ff) =>
+                 hup n ff hr_a
+             | updated_dist : B.dist n (B.op b' ff)
+                   (B.op (B.op B.unit b') ff) =>
+                 dist_op_ne_l n b' (B.op B.unit b') ff
+                   (B.ofe_dist_sym n (B.op B.unit b') b'
+                     (ucmra_unit_left_id_dist n b'))
+           \in inP (a',
+             (AgreeOFE A).ofe_dist_refl n (to_agree a'),
+             rel.view_rel_mono n n a' a'
+               (B.op b' ff) (B.op (B.op B.unit b') ff) hr_updated
+               (A.ofe_dist_refl n a')
+               (inclN_of_dist_unit n (B.op (B.op B.unit b') ff)
+                 (B.op b' ff) updated_dist)
+               NatSemiring.<=-refl)
+       })
+
+\lemma view_update_alloc {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a a' : A.E) (b' : B.E)
+    (hup : \Pi (n : Nat) (bf : B.E) -> rel.view_rel_holds n a bf ->
+      rel.view_rel_holds n a' (B.op b' bf))
+  : cmra_updateP {ViewUCMRA rel} (view_auth (DfracOwn qp_one) a)
+      (\lam y => y = (ViewCMRA rel).op
+        (view_auth (DfracOwn qp_one) a') (view_frag b')) =>
+  \lam n frame hv => inP (
+    (ViewCMRA rel).op (view_auth (DfracOwn qp_one) a') (view_frag b'),
+    idp,
+    view_update_alloc_valid rel a a' b' hup n frame.1 frame.2 hv)
+
+\func view_auth_persist_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (dq : Dfrac) (a : A.E) (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth dq a) (fa, ff)))
+  : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth DfracDiscarded a) (fa, ff)) \elim fa
+  | nothing => ((), h.2)
+  | just da => \scase dfrac_discard_update_at dq (just da.1) h.1 \with {
+      | inP (_, e, hd) =>
+          (transport (\lam z => dfrac_valid (dfrac_op z da.1)) e hd, h.2)
+    }
+
+\lemma view_auth_persist {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (dq : Dfrac) (a : A.E)
+  : cmra_updateP {ViewUCMRA rel} (view_auth dq a)
+      (\lam y => y = view_auth DfracDiscarded a) =>
+  \lam n frame hv => inP (view_auth DfracDiscarded a, idp,
+    view_auth_persist_valid rel dq a n frame.1 frame.2 hv)
+
+\func view_auth_unpersist_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a : A.E) (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth DfracDiscarded a) (fa, ff)))
+  : TruncP (\Sigma (q : Qp) (validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth (DfracOwn q) a) (fa, ff)))) \elim fa
+  | nothing => inP (qp_one, (RatField.<=-refl, h.2))
+  | just da => \scase dfrac_undiscard_update_at (just da.1) h.1 \with {
+      | inP (y, py, hy) => \scase py \with {
+          | inP (q, e) => inP (q,
+              (transport (\lam z => dfrac_valid (dfrac_op z da.1)) e hy,
+               h.2))
+        }
+    }
+
+\lemma view_auth_unpersist {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a : A.E)
+  : cmra_updateP {ViewUCMRA rel} (view_auth DfracDiscarded a)
+      (\lam y => TruncP (\Sigma (q : Qp)
+        (y = view_auth (DfracOwn q) a))) =>
+  \lam n frame hv =>
+    \scase view_auth_unpersist_valid rel a n frame.1 frame.2 hv \with {
+      | inP (q, hq) => inP (view_auth (DfracOwn q) a,
+          inP (q, idp), hq)
+    }
+
+\func view_update_dealloc_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a : A.E) (b : B.E) (a' : A.E)
+    (hup : \Pi (n : Nat) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) -> rel.view_rel_holds n a' bf)
+    (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op
+        ((ViewCMRA rel).op (view_auth (DfracOwn qp_one) a) (view_frag b))
+        (fa, ff)))
+  : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_auth (DfracOwn qp_one) a') (fa, ff)) \elim fa
+  | just da => \case dfrac_full_exclusive da.1 h.1 \with {}
+  | nothing =>
+      (h.1, \case h.2 \with {
+        | inP (a0, dag, hr) =>
+          \let
+            | da_a0 : A.dist n a a0 =>
+                view_agree_dist_extract n a (to_agree a0) dag
+            | source_dist : B.dist n
+                  (B.op (B.op B.unit b) ff) (B.op b ff) =>
+                dist_op_ne_l n (B.op B.unit b) b ff
+                  (ucmra_unit_left_id_dist n b)
+            | hr_input : rel.view_rel_holds n a (B.op b ff) =>
+                rel.view_rel_mono n n a0 a
+                  (B.op (B.op B.unit b) ff) (B.op b ff) hr
+                  (A.ofe_dist_sym n a a0 da_a0)
+                  (inclN_of_dist_unit n (B.op b ff)
+                    (B.op (B.op B.unit b) ff) source_dist)
+                  NatSemiring.<=-refl
+            | hr_output : rel.view_rel_holds n a' ff => hup n ff hr_input
+          \in inP (a',
+            (AgreeOFE A).ofe_dist_refl n (to_agree a'),
+            rel.view_rel_mono n n a' a' ff (B.op B.unit ff) hr_output
+              (A.ofe_dist_refl n a')
+              (inclN_of_dist_unit n (B.op B.unit ff) ff
+                (B.ofe_dist_sym n (B.op B.unit ff) ff
+                  (ucmra_unit_left_id_dist n ff)))
+              NatSemiring.<=-refl)
+      })
+
+\lemma view_update_dealloc {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (a : A.E) (b : B.E) (a' : A.E)
+    (hup : \Pi (n : Nat) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) -> rel.view_rel_holds n a' bf)
+  : cmra_updateP {ViewUCMRA rel}
+      ((ViewCMRA rel).op (view_auth (DfracOwn qp_one) a) (view_frag b))
+      (\lam y => y = view_auth (DfracOwn qp_one) a') =>
+  \lam n frame hv => inP (view_auth (DfracOwn qp_one) a', idp,
+    view_update_dealloc_valid rel a b a' hup n frame.1 frame.2 hv)
+
+\func view_update_frag_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (b b' : B.E)
+    (hup : \Pi (n : Nat) (a : A.E) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) ->
+      rel.view_rel_holds n a (B.op b' bf))
+    (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_frag b) (fa, ff)))
+  : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_frag b') (fa, ff)) \elim fa
+  | nothing => \scase h \with {
+      | inP (a, hr) => inP (a, hup n a ff hr)
+    }
+  | just da => (h.1, \scase h.2 \with {
+      | inP (a, dag, hr) => inP (a, dag, hup n a ff hr)
+    })
+
+\lemma view_update_frag {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (b b' : B.E)
+    (hup : \Pi (n : Nat) (a : A.E) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) ->
+      rel.view_rel_holds n a (B.op b' bf))
+  : cmra_updateP {ViewUCMRA rel} (view_frag b)
+      (\lam y => y = view_frag b') =>
+  \lam n frame hv => inP (view_frag b', idp,
+    view_update_frag_valid rel b b' hup n frame.1 frame.2 hv)
+
+\func view_updateP_frag_valid {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (b : B.E) (P : B.E -> \Prop)
+    (hup : \Pi (n : Nat) (a : A.E) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) ->
+      TruncP (\Sigma (b' : B.E) (P b')
+        (rel.view_rel_holds n a (B.op b' bf))))
+    (n : Nat) (fa : ViewAuth A) (ff : B.E)
+    (h : validN {ViewCMRA rel} n
+      ((ViewCMRA rel).op (view_frag b) (fa, ff)))
+  : TruncP (\Sigma (b' : B.E) (P b')
+      (validN {ViewCMRA rel} n
+        ((ViewCMRA rel).op (view_frag b') (fa, ff)))) \elim fa
+  | nothing => \scase h \with {
+      | inP (a, hr) => \scase hup n a ff hr \with {
+          | inP (b', pb', hr') => inP (b', pb', inP (a, hr'))
+        }
+    }
+  | just da => \scase h.2 \with {
+      | inP (a, dag, hr) => \scase hup n a ff hr \with {
+          | inP (b', pb', hr') => inP (b', pb',
+              (h.1, inP (a, dag, hr')))
+        }
+    }
+
+\lemma view_updateP_frag {A : OFE} {B : UCMRA} (rel : ViewRel A B)
+    (b : B.E) (P : B.E -> \Prop)
+    (hup : \Pi (n : Nat) (a : A.E) (bf : B.E) ->
+      rel.view_rel_holds n a (B.op b bf) ->
+      TruncP (\Sigma (b' : B.E) (P b')
+        (rel.view_rel_holds n a (B.op b' bf))))
+  : cmra_updateP {ViewUCMRA rel} (view_frag b)
+      (\lam y => TruncP (\Sigma (b' : B.E)
+        (y = view_frag b') (P b'))) =>
+  \lam n frame hv =>
+    \scase view_updateP_frag_valid rel b P hup n frame.1 frame.2 hv \with {
+      | inP (b', pb', hb') => inP (view_frag b',
+          inP (b', idp, pb'), hb')
+    }
