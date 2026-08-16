@@ -1,0 +1,899 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Paths.Meta
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.gmap
+\import iris.algebra.gmap_updates
+\import iris.algebra.functions
+\import stdpp.pmap
+
+-- =================================================================================
+-- Plan A, §A5: `inG Σ A` and the generic ghost-state connective `own gam a`.
+--
+-- Faithful port of the core of Rocq `base_logic/lib/own.v`:
+--   * `inG` with a propositional CMRA equality `inG_prf` (as in Rocq),
+--   * `inG_unfold` / `inG_fold` moving between the user CMRA instantiated at
+--     `iPropO` and the resource-level CMRA at `iPrePropO`,
+--   * `iRes_singleton`, `own`,
+--   * `own_dist/proper`, `own_op`, `own_mono`, `own_valid`,
+--     `own_updatePM`/`own_update`, `own_alloc`.
+--
+-- `later_own`/timelessness need the internal-equality machinery and remain out
+-- of scope for A5.
+-- =================================================================================
+
+\record inG (S : gFunctors) (A : CMRA.{0})
+  | inG_id : gid S
+  | inG_prf : A = {CMRA.{0}}
+      rFunctor_apply (S.gFunctors_lookup inG_id).gFunctor_F (iPropCOFE S)
+
+-- =================================================================================
+-- subG_inG (Rocq `subG_inG` / the `solve_inG` core): a `gFunctor F` contained
+-- in `Σ` yields an `inG Σ (F (iProp Σ))`.  The `inG_id` is the witness index
+-- provided by `subG`; the `inG_prf` transports the singleton-lookup equation
+-- through `rFunctor_apply`.  This is the generic bridge used to derive concrete
+-- `inG` instances (e.g. `wsatGpreS`) from a `subG … Σ` hypothesis.
+-- =================================================================================
+\func subG_inG {F : gFunctor} {S : gFunctors}
+    (h : subG (gFunctors_singleton F) S)
+  : inG S (rFunctor_apply F.gFunctor_F (iPropCOFE S)) \cowith
+  | inG_id => (h.in_subG 0).1
+  | inG_prf =>
+      pmap (\lam (G : gFunctor) => rFunctor_apply G.gFunctor_F (iPropCOFE S))
+          (h.in_subG 0).2
+
+-- The component CMRA of `iResUR Σ` addressed by `inG_id`, at both levels.
+\func inG_apply_iProp {S : gFunctors} {A : CMRA.{0}} (i : inG S A) : CMRA.{0} =>
+  rFunctor_apply (S.gFunctors_lookup i.inG_id).gFunctor_F (iPropCOFE S)
+
+\func inG_apply_pre {S : gFunctors} {A : CMRA.{0}} (i : inG S A) : CMRA.{0} =>
+  rFunctor_apply (S.gFunctors_lookup i.inG_id).gFunctor_F (iPrePropO S)
+
+-- The family underlying `iResUR S` (definitionally).
+\func iResB (S : gFunctors) (j : gid S) : UCMRA.{0} =>
+  GmapUCMRA gname gnameCountable
+      (rFunctor_apply (S.gFunctors_lookup j).gFunctor_F (iPrePropO S))
+
+-- =================================================================================
+-- inG_unfold / inG_fold and their laws.
+-- =================================================================================
+
+\func inG_unfold {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+  : OFEMor (inG_apply_iProp i) (inG_apply_pre i) =>
+  (S.gFunctors_lookup i.inG_id).gFunctor_F.rFunctor_map
+      {iPropCOFE S} {iPrePropO S} {iPropCOFE S} {iPrePropO S}
+      (iProp_fold {S}, iProp_unfold {S})
+
+\func inG_fold {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+  : OFEMor (inG_apply_pre i) (inG_apply_iProp i) =>
+  (S.gFunctors_lookup i.inG_id).gFunctor_F.rFunctor_map
+      {iPrePropO S} {iPropCOFE S} {iPrePropO S} {iPropCOFE S}
+      (iProp_unfold {S}, iProp_fold {S})
+
+\func inG_unfold_mor {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+  : CmraMorphism {inG_apply_iProp i} {inG_apply_pre i} (inG_unfold i) =>
+  (S.gFunctors_lookup i.inG_id).gFunctor_F.rFunctor_mor
+      {iPropCOFE S} {iPrePropO S} {iPropCOFE S} {iPrePropO S}
+      (iProp_fold {S}, iProp_unfold {S})
+
+\func inG_fold_mor {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+  : CmraMorphism {inG_apply_pre i} {inG_apply_iProp i} (inG_fold i) =>
+  (S.gFunctors_lookup i.inG_id).gFunctor_F.rFunctor_mor
+      {iPrePropO S} {iPropCOFE S} {iPrePropO S} {iPropCOFE S}
+      (iProp_unfold {S}, iProp_fold {S})
+
+-- Properness of `rFunctor_map` in the morphism pair, from `rFunctor_map_ne`.
+\lemma rFunctor_map_proper {F : RFunctor} {A1 A2 B1 B2 : COFE.{0}}
+    (fg fg' : \Sigma (OFEMor A2 A1) (OFEMor B1 B2))
+    (h1 : \Pi (x : A2.E) -> A1.equiv (fg.1.ofe_mor_car x) (fg'.1.ofe_mor_car x))
+    (h2 : \Pi (x : B1.E) -> B2.equiv (fg.2.ofe_mor_car x) (fg'.2.ofe_mor_car x))
+    (x : (F.rFunctor_car A1 B1).E)
+  : (F.rFunctor_car A2 B2).equiv
+      ((F.rFunctor_map fg).ofe_mor_car x)
+      ((F.rFunctor_map fg').ofe_mor_car x)
+  => ((F.rFunctor_car A2 B2).ofe_equiv_dist ((F.rFunctor_map fg).ofe_mor_car x) ((F.rFunctor_map fg').ofe_mor_car x)).2
+      (\lam n => F.rFunctor_map_ne n fg fg'
+          ( \lam y => equiv_dist {A1} (h1 y) n
+          , \lam y => equiv_dist {B2} (h2 y) n
+          )
+          x)
+
+\lemma inG_unfold_fold {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+                       (x : (inG_apply_pre i).E)
+  : (inG_apply_pre i).equiv
+      ((inG_unfold i).ofe_mor_car ((inG_fold i).ofe_mor_car x)) x
+  => \let F => (S.gFunctors_lookup i.inG_id).gFunctor_F
+     \in (inG_apply_pre i).equiv_trans
+        ((inG_unfold i).ofe_mor_car ((inG_fold i).ofe_mor_car x))
+        ((F.rFunctor_map {iPrePropO S} {iPrePropO S} {iPrePropO S} {iPrePropO S}
+            (ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}),
+             ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}))).ofe_mor_car x)
+        x
+        (F.rFunctor_map_compose {iPrePropO S} {iPropCOFE S} {iPrePropO S}
+            {iPrePropO S} {iPropCOFE S} {iPrePropO S}
+            (iProp_unfold {S}) (iProp_fold {S})
+            (iProp_fold {S}) (iProp_unfold {S}) x)
+        ((inG_apply_pre i).equiv_trans
+            ((F.rFunctor_map {iPrePropO S} {iPrePropO S} {iPrePropO S} {iPrePropO S}
+                (ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}),
+                 ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}))).ofe_mor_car x)
+            ((F.rFunctor_map {iPrePropO S} {iPrePropO S} {iPrePropO S} {iPrePropO S} (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
+            x
+            (rFunctor_map_proper {F} {iPrePropO S} {iPrePropO S} {iPrePropO S} {iPrePropO S}
+                (ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}),
+                 ofe_mor_comp (iProp_unfold {S}) (iProp_fold {S}))
+                (ofe_mor_id, ofe_mor_id)
+                (\lam y => iProp_unfold_fold y)
+                (\lam y => iProp_unfold_fold y)
+                x)
+            (F.rFunctor_map_id {iPrePropO S} {iPrePropO S} x))
+
+\lemma inG_fold_unfold {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+                       (x : (inG_apply_iProp i).E)
+  : (inG_apply_iProp i).equiv
+      ((inG_fold i).ofe_mor_car ((inG_unfold i).ofe_mor_car x)) x
+  => \let F => (S.gFunctors_lookup i.inG_id).gFunctor_F
+     \in (inG_apply_iProp i).equiv_trans
+        ((inG_fold i).ofe_mor_car ((inG_unfold i).ofe_mor_car x))
+        ((F.rFunctor_map {iPropCOFE S} {iPropCOFE S} {iPropCOFE S} {iPropCOFE S}
+            (ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}),
+             ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}))).ofe_mor_car x)
+        x
+        (F.rFunctor_map_compose {iPropCOFE S} {iPrePropO S} {iPropCOFE S}
+            {iPropCOFE S} {iPrePropO S} {iPropCOFE S}
+            (iProp_fold {S}) (iProp_unfold {S})
+            (iProp_unfold {S}) (iProp_fold {S}) x)
+        ((inG_apply_iProp i).equiv_trans
+            ((F.rFunctor_map {iPropCOFE S} {iPropCOFE S} {iPropCOFE S} {iPropCOFE S}
+                (ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}),
+                 ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}))).ofe_mor_car x)
+            ((F.rFunctor_map {iPropCOFE S} {iPropCOFE S} {iPropCOFE S} {iPropCOFE S} (ofe_mor_id, ofe_mor_id)).ofe_mor_car x)
+            x
+            (rFunctor_map_proper {F} {iPropCOFE S} {iPropCOFE S} {iPropCOFE S} {iPropCOFE S}
+                (ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}),
+                 ofe_mor_comp (iProp_fold {S}) (iProp_unfold {S}))
+                (ofe_mor_id, ofe_mor_id)
+                (\lam y => iProp_fold_unfold y)
+                (\lam y => iProp_fold_unfold y)
+                x)
+            (F.rFunctor_map_id {iPropCOFE S} {iPropCOFE S} x))
+
+\lemma inG_unfold_validN {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+                         (n : Nat) (x : (inG_apply_iProp i).E)
+  : (inG_apply_pre i).validN n ((inG_unfold i).ofe_mor_car x) <->
+    (inG_apply_iProp i).validN n x
+  => ( \lam hv => (inG_apply_iProp i).cmra_validN_ne n
+          ((inG_fold i).ofe_mor_car ((inG_unfold i).ofe_mor_car x)) x
+          (equiv_dist {inG_apply_iProp i} (inG_fold_unfold i x) n)
+          (cmra_morphism_validN {inG_fold_mor i} n
+              ((inG_unfold i).ofe_mor_car x) hv)
+     , \lam hv => cmra_morphism_validN {inG_unfold_mor i} n x hv
+     )
+
+-- =================================================================================
+-- iRes_singleton and own.
+-- =================================================================================
+
+-- Seal the per-key value with `\sfunc` so conversion compares `own i gam a`
+-- terms by congruence on the arguments, instead of unfolding `inG_unfold` into
+-- the recursive resource domain (which makes conversion diverge on the
+-- allocation lemmas).  `iRes_singleton` still reduces through
+-- `discrete_fun_singleton`/`gsingleton`, so no transport at the `Gmap` type is
+-- needed; only `own_val_dist` / `iRes_singleton_op` unfold `own_val` explicitly.
+\sfunc own_val {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (a : A.E)
+  : (inG_apply_pre i).E =>
+  (inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a)
+
+\func own_val_peval {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (a : A.E)
+  : own_val i a = (inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a)
+  => \peval own_val i a
+
+\func iRes_singleton {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+                     (gam : gname) (a : A.E) : (iResUR S).E =>
+  discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i a))
+
+\func own {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+          (gam : gname) (a : A.E) : iProp S =>
+  mkProperOwn (iRes_singleton i gam a)
+
+-- Generic value-level path lemmas (path induction, so they never touch the
+-- concrete `Gmap`/`iResUR` type).
+\lemma pathDist {M : OFE} (n : Nat) {a1 a2 b1 b2 : M.E} (pa : a1 = a2) (pb : b1 = b2)
+    (h : M.dist n a1 b1) : M.dist n a2 b2 \elim pa, pb
+  | idp, idp => h
+
+\lemma pathEquiv {M : OFE} {a1 a2 b1 b2 : M.E} (pa : a1 = a2) (pb : b1 = b2)
+    (h : M.equiv a1 b1) : M.equiv a2 b2 \elim pa, pb
+  | idp, idp => h
+
+-- Resource-level helpers that rewrite the sealed `own_val` inside a singleton by
+-- a value-level path, again by path induction to dodge `Gmap` unification.
+\lemma dfs_own_holds_val_path {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+    {v1 v2 : (inG_apply_pre i).E} (p : v1 = v2) {n : Nat} {x : (iResUR S).E}
+    (h : (mkProperOwn {iResUR S}
+            (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam v1))).upred_holds n x)
+  : (mkProperOwn {iResUR S}
+      (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam v2))).upred_holds n x
+  \elim p
+  | idp => h
+
+\lemma dfs_updateP_val_path {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+    {v1 v2 : (inG_apply_pre i).E} (p : v1 = v2) (Phi : (iResUR S).E -> \Prop)
+    (h : cmra_updateP {iResUR S}
+           (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam v1)) Phi)
+  : cmra_updateP {iResUR S}
+      (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam v2)) Phi
+  \elim p
+  | idp => h
+
+-- =================================================================================
+-- Properties of iRes_singleton.
+-- =================================================================================
+
+\lemma own_val_dist {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (n : Nat)
+                    (a b : A.E) (h : A.dist n a b)
+  : (inG_apply_pre i).dist n (own_val i a) (own_val i b)
+  => pathDist {inG_apply_pre i} n (inv (own_val_peval i a)) (inv (own_val_peval i b))
+      ((inG_unfold i).ofe_mor_ne n (cmra_transport i.inG_prf a) (cmra_transport i.inG_prf b)
+          (cmra_transport_ne i.inG_prf n a b h))
+
+\lemma iRes_singleton_dist {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                           (n : Nat) (a b : A.E) (h : A.dist n a b)
+  : (iResUR S).dist n (iRes_singleton i gam a) (iRes_singleton i gam b)
+  => discrete_fun_singleton_ne fin_eq_dec {iResB S} i.inG_id n
+      (gsingleton gam (own_val i a)) (gsingleton gam (own_val i b))
+      (gmap_singleton_dist gam n (own_val i a) (own_val i b) (own_val_dist i n a b h))
+
+\lemma iRes_singleton_proper {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                             (a b : A.E) (h : A.equiv a b)
+  : (iResUR S).equiv (iRes_singleton i gam a) (iRes_singleton i gam b)
+  => ((iResUR S).ofe_equiv_dist (iRes_singleton i gam a) (iRes_singleton i gam b)).2
+      (\lam n => iRes_singleton_dist i gam n a b (equiv_dist {A} h n))
+
+\lemma own_val_core_id {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+    (a : A.E) (ha : CoreId {A} a)
+  : CoreId {inG_apply_pre i} (own_val i a) =>
+  transport (CoreId {inG_apply_pre i}) (inv (own_val_peval i a))
+    (cmra_morphism_core_id (inG_unfold_mor i)
+      (cmra_transport i.inG_prf a)
+      (cmra_transport_core_id i.inG_prf a ha))
+
+\lemma iRes_singleton_core_id {S : gFunctors} {A : CMRA.{0}} (i : inG S A)
+    (gam : gname) (a : A.E) (ha : CoreId {A} a)
+  : CoreId {iResUR S} (iRes_singleton i gam a) =>
+  discrete_fun_singleton_core_id fin_eq_dec {iResB S} i.inG_id
+    (gsingleton gam (own_val i a))
+    (gmap_singleton_core_id gam (own_val i a) (own_val_core_id i a ha))
+
+-- Properness of both singleton layers in their value (equiv versions).
+\lemma gmap_singleton_proper {K : \Set} {cnt : Countable K} {A : CMRA}
+                             (k : K) (a b : A.E) (h : A.equiv a b)
+  : (GmapCMRA K cnt A).equiv (gsingleton k a) (gsingleton k b)
+  => ((GmapCMRA K cnt A).ofe_equiv_dist (gsingleton k a) (gsingleton k b)).2
+      (\lam n => gmap_singleton_dist k n a b (equiv_dist {A} h n))
+
+\lemma discrete_fun_singleton_proper {I : \Set} (dec : \Pi (x y : I) -> Dec (x = y))
+                                     {B : I -> UCMRA} (x : I) (y1 y2 : (B x).E)
+                                     (h : (B x).equiv y1 y2)
+  : (DiscreteFunUCMRA B).equiv (discrete_fun_singleton dec x y1)
+                               (discrete_fun_singleton dec x y2)
+  => ((DiscreteFunUCMRA B).ofe_equiv_dist (discrete_fun_singleton dec x y1) (discrete_fun_singleton dec x y2)).2
+      (\lam n => discrete_fun_singleton_ne dec x n y1 y2 (equiv_dist {B x} h n))
+
+\lemma iRes_singleton_op {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                         (a b : A.E)
+  : (iResUR S).equiv (iRes_singleton i gam (A.op a b))
+      ((iResUR S).op (iRes_singleton i gam a) (iRes_singleton i gam b))
+  => \let
+      | CP => inG_apply_pre i
+      | val_op_inlined : CP.equiv
+          ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf (A.op a b)))
+          (CP.op ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a))
+                 ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf b))) =>
+          CP.equiv_trans ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf (A.op a b)))
+              ((inG_unfold i).ofe_mor_car
+                  ((inG_apply_iProp i).op (cmra_transport i.inG_prf a)
+                                          (cmra_transport i.inG_prf b)))
+              (CP.op ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a))
+                     ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf b)))
+              (ne_proper_equiv (inG_unfold i).ofe_mor_car (inG_unfold i).ofe_mor_ne _ _
+                  (cmra_transport_op i.inG_prf a b))
+              (cmra_morphism_op {inG_unfold_mor i}
+                  (cmra_transport i.inG_prf a) (cmra_transport i.inG_prf b))
+      | val_op : CP.equiv (own_val i (A.op a b)) (CP.op (own_val i a) (own_val i b)) =>
+          pathEquiv {CP}
+              (inv (own_val_peval i (A.op a b)))
+              (pmap2 CP.op (inv (own_val_peval i a)) (inv (own_val_peval i b)))
+              val_op_inlined
+      | core : (iResUR S).equiv
+          (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i (A.op a b))))
+          ((iResUR S).op
+              (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i a)))
+              (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i b)))) =>
+          (iResUR S).equiv_trans
+              (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i (A.op a b))))
+              (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id
+                  (gmap_op (gsingleton gam (own_val i a)) (gsingleton gam (own_val i b))))
+              ((iResUR S).op
+                  (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i a)))
+                  (discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id (gsingleton gam (own_val i b))))
+              (discrete_fun_singleton_proper fin_eq_dec {iResB S} i.inG_id _ _
+                  ((GmapCMRA gname gnameCountable CP).equiv_trans
+                      (gsingleton gam (own_val i (A.op a b)))
+                      (gsingleton gam (CP.op (own_val i a) (own_val i b)))
+                      (gmap_op (gsingleton gam (own_val i a)) (gsingleton gam (own_val i b)))
+                      (gmap_singleton_proper gam _ _ val_op)
+                      (gmap_singleton_op gam (own_val i a) (own_val i b))))
+              (discrete_fun_singleton_op fin_eq_dec {iResB S} i.inG_id
+                  (gsingleton gam (own_val i a)) (gsingleton gam (own_val i b)))
+    \in core
+
+\lemma iRes_singleton_validN {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                             (n : Nat) (a : A.E)
+                             (hv : (iResUR S).validN n (iRes_singleton i gam a))
+  : A.validN n a
+  => (cmra_transport_validN i.inG_prf n a).1
+      ((inG_unfold_validN i n (cmra_transport i.inG_prf a)).1
+          (transport (\lam v => (inG_apply_pre i).validN n v) (own_val_peval i a)
+              (gmap_singleton_validN_1 gam n (own_val i a)
+                  (discrete_fun_singleton_validN_1 fin_eq_dec {iResB S} i.inG_id n
+                      (gsingleton gam (own_val i a))
+                      hv))))
+
+-- =================================================================================
+-- Generic ProperUPred helpers (semantic-level counterparts of BI steps that
+-- Rocq does through the proofmode).
+-- =================================================================================
+
+-- Validity of an element of an arbitrary CMRA, as a resource-independent
+-- assertion (Rocq's `✓ a` for `a : A`, `A` not the global resource CMRA).
+\func mkProperValidOf {M : UCMRA} {A : CMRA} (a : A.E) : ProperUPred M \cowith
+  | upred_holds => \lam n _ => A.validN n a
+  | upred_mono => \lam n1 n2 _ _ hv _ le => A.cmra_validN_le n1 n2 a hv le
+
+\lemma ownM_dist {M : UCMRA} (n : Nat) (a b : M.E) (h : M.dist n a b)
+  : upredDist n (mkProperOwn a) (mkProperOwn b)
+  => \lam m x hm hv =>
+      \let hab : M.dist m a b => M.ofe_dist_le n m a b h hm
+      \in
+      ( \lam hincl => \case hincl \with {
+          | inP (z, d) => inP (z, M.ofe_dist_trans m x (M.op a z) (M.op b z) d
+              (M.cmra_op_ne_2 z m a b hab))
+        }
+      , \lam hincl => \case hincl \with {
+          | inP (z, d) => inP (z, M.ofe_dist_trans m x (M.op b z) (M.op a z) d
+              (M.cmra_op_ne_2 z m b a (M.ofe_dist_sym m a b hab)))
+        }
+      )
+
+\lemma ownM_proper {M : UCMRA} (a b : M.E) (h : M.equiv a b)
+  : upredEquiv (mkProperOwn a) (mkProperOwn b)
+  => \lam n x hv =>
+      \let d => ownM_dist n a b (equiv_dist {M} h n) n x <=-refl hv
+      \in (d.1, d.2)
+
+\lemma ownM_op {M : UCMRA} (a b : M.E)
+  : upredEquiv (mkProperOwn (M.op a b))
+               (mkProperSep (mkProperOwn a) (mkProperOwn b))
+  => \lam n x hv =>
+      ( \lam h => \case h \with {
+          | inP (z, d) => inP
+              ( a
+              , M.op b z
+              , M.ofe_dist_trans n x (M.op (M.op a b) z) (M.op a (M.op b z))
+                  d
+                  (M.ofe_dist_sym n (M.op a (M.op b z)) (M.op (M.op a b) z)
+                      (cmra_assoc_dist n a b z))
+              , inclN_refl_ucmra n a
+              , inclN_op_l n b z
+              )
+        }
+      , \lam h => \case h \with {
+          | inP (x1, x2, dxx, h1, h2) => \case h1, h2 \with {
+              | inP (z1, d1), inP (z2, d2) => inP
+                  ( M.op z1 z2
+                  , -- x ≡n x1·x2 ≡n (a·z1)·(b·z2) ≡n (a·b)·(z1·z2)
+                    M.ofe_dist_trans n x (M.op x1 x2) (M.op (M.op a b) (M.op z1 z2))
+                        dxx
+                        (M.ofe_dist_trans n (M.op x1 x2)
+                            (M.op (M.op a z1) (M.op b z2))
+                            (M.op (M.op a b) (M.op z1 z2))
+                            (cmra_op_ne_both n x1 (M.op a z1) x2 (M.op b z2) d1 d2)
+                            (op_shuffle n a z1 b z2))
+                  )
+            }
+        }
+      )
+  \where {
+    -- (a·z1)·(b·z2) ≡n (a·b)·(z1·z2)
+    \lemma op_shuffle {M : UCMRA} (n : Nat) (a z1 b z2 : M.E)
+      : M.dist n (M.op (M.op a z1) (M.op b z2)) (M.op (M.op a b) (M.op z1 z2))
+      => M.ofe_dist_trans n (M.op (M.op a z1) (M.op b z2))
+          (M.op a (M.op z1 (M.op b z2)))
+          (M.op (M.op a b) (M.op z1 z2))
+          (M.ofe_dist_sym n (M.op a (M.op z1 (M.op b z2)))
+              (M.op (M.op a z1) (M.op b z2))
+              (cmra_assoc_dist n a z1 (M.op b z2)))
+          (M.ofe_dist_trans n (M.op a (M.op z1 (M.op b z2)))
+              (M.op a (M.op b (M.op z1 z2)))
+              (M.op (M.op a b) (M.op z1 z2))
+              (M.cmra_op_ne a n (M.op z1 (M.op b z2)) (M.op b (M.op z1 z2))
+                  (M.ofe_dist_trans n (M.op z1 (M.op b z2)) (M.op (M.op z1 b) z2)
+                      (M.op b (M.op z1 z2))
+                      (cmra_assoc_dist n z1 b z2)
+                      (M.ofe_dist_trans n (M.op (M.op z1 b) z2) (M.op (M.op b z1) z2)
+                          (M.op b (M.op z1 z2))
+                          (M.cmra_op_ne_2 z2 n (M.op z1 b) (M.op b z1)
+                              (cmra_comm_dist n z1 b))
+                          (M.ofe_dist_sym n (M.op b (M.op z1 z2)) (M.op (M.op b z1) z2)
+                              (cmra_assoc_dist n b z1 z2)))))
+              (cmra_assoc_dist n a b (M.op z1 z2)))
+  }
+
+-- Path rewriting under `mkProperOwn`.  These are deliberately generic: writing
+-- `transport` directly at the concrete type `(iResUR S).E` sends the
+-- typechecker into an unsolvable record-subtyping equation (partial `Gmap`
+-- type vs its full form); a generic lemma instantiated at `iResUR S` avoids
+-- re-elaborating the transport there.
+\lemma ownM_holds_path {M : UCMRA} {m w : M.E} (p : m = w) {n : Nat} {x : M.E}
+    (h : (mkProperOwn {M} m).upred_holds n x)
+  : (mkProperOwn {M} w).upred_holds n x \elim p
+  | idp => h
+
+\lemma ownM_holds_congr {M : UCMRA} {T : \Type} (f : T -> M.E) {t t' : T} (p : t = t')
+    {n : Nat} {x : M.E} (h : (mkProperOwn {M} (f t)).upred_holds n x)
+  : (mkProperOwn {M} (f t')).upred_holds n x \elim p
+  | idp => h
+
+\lemma mkProperSep_elim_l {M : UCMRA} (P Q : ProperUPred M)
+  : properUPred_ent (mkProperSep P Q) P
+  => \lam n x hv h => \case h \with {
+    | inP (x1, x2, d, hp, hq) =>
+      P.upred_mono n n x1 x hp (inP (x2, d)) <=-refl
+  }
+
+-- =================================================================================
+-- Properties of own.
+-- =================================================================================
+
+\lemma own_dist {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                (n : Nat) (a b : A.E) (h : A.dist n a b)
+  : upredDist n (own i gam a) (own i gam b)
+  => ownM_dist {iResUR S} n (iRes_singleton i gam a) (iRes_singleton i gam b)
+      (iRes_singleton_dist i gam n a b h)
+
+\lemma own_proper {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
+                  (a b : A.E) (h : A.equiv a b)
+  : upredEquiv (own i gam a) (own i gam b)
+  => ownM_proper {iResUR S} (iRes_singleton i gam a) (iRes_singleton i gam b)
+      (iRes_singleton_proper i gam a b h)
+
+\lemma own_op {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a b : A.E)
+  : upredEquiv (own i gam (A.op a b))
+               (mkProperSep (own i gam a) (own i gam b))
+  => (UPredOFE (iResUR S)).equiv_trans
+      (own i gam (A.op a b))
+      (mkProperOwn ((iResUR S).op (iRes_singleton i gam a) (iRes_singleton i gam b)))
+      (mkProperSep (own i gam a) (own i gam b))
+      (ownM_proper {iResUR S} (iRes_singleton i gam (A.op a b))
+          ((iResUR S).op (iRes_singleton i gam a) (iRes_singleton i gam b))
+          (iRes_singleton_op i gam a b))
+      (ownM_op {iResUR S} (iRes_singleton i gam a) (iRes_singleton i gam b))
+
+\lemma own_mono {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a1 a2 : A.E)
+                (h : incl {A} {\new Op A.E { | op => A.op }} a2 a1)
+  : properUPred_ent (own i gam a1) (own i gam a2)
+  => \case h \with {
+    | inP (c, hc) => properUPred_ent_trans (own i gam a1)
+        (mkProperSep (own i gam a2) (own i gam c))
+        (own i gam a2)
+        (\lam n x hv hp =>
+            ((UPredOFE (iResUR S)).equiv_trans (own i gam a1) (own i gam (A.op a2 c))
+                (mkProperSep (own i gam a2) (own i gam c))
+                (own_proper i gam a1 (A.op a2 c) hc)
+                (own_op i gam a2 c)
+              n x hv).1 hp)
+        (mkProperSep_elim_l (own i gam a2) (own i gam c))
+  }
+
+\lemma own_valid {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a : A.E)
+  : properUPred_ent (own i gam a) (mkProperValidOf {iResUR S} {A} a)
+  => \lam n x hvx h =>
+      iRes_singleton_validN i gam n a
+          (cmra_validN_includedN {iResUR S} n (iRes_singleton i gam a) x hvx h)
+
+\lemma own_core_persistent {S : gFunctors} {A : CMRA.{0}}
+    (i : inG S A) (gam : gname) (a : A.E) (ha : CoreId {A} a)
+  : properUPred_ent (own i gam a) (mkProperPersistently (own i gam a)) =>
+  ownM_core_persistent {iResUR S} (iRes_singleton i gam a)
+    (iRes_singleton_core_id i gam a ha)
+
+-- Fused `own_op` + `own_valid`: ownership of two pieces entails validity of
+-- their composite.  Kept as a single generic lemma so call sites at large
+-- concrete CMRAs (e.g. wsat's invariant map) instantiate one lemma instead of
+-- composing two — the composition at the instantiated types is what sends
+-- conversion checking into a blow-up.
+\lemma own_op_valid {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a b : A.E)
+  : properUPred_ent (mkProperSep (own i gam a) (own i gam b))
+                    (mkProperValidOf {iResUR S} {A} (A.op a b))
+  => properUPred_ent_trans
+      (mkProperSep (own i gam a) (own i gam b))
+      (own i gam (A.op a b))
+      (mkProperValidOf {iResUR S} {A} (A.op a b))
+      (\lam n x hv hsep => (own_op i gam a b n x hv).2 hsep)
+      (own_valid i gam (A.op a b))
+
+-- =================================================================================
+-- Frame-preserving updates.
+-- =================================================================================
+
+\lemma own_updatePM {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a : A.E)
+    (P : A.E -> \Prop) (h : cmra_updatePM {A} a P)
+  : properUPred_ent (own i gam a)
+      (mkProperBUpd (mkProperExist A.E (\lam b =>
+          mkProperAnd (mkProperPure (P b)) (own i gam b))))
+  => \let
+      | u => (inG_unfold i).ofe_mor_car
+      | t => cmra_transport i.inG_prf
+      | Phi1 : (inG_apply_iProp i).E -> \Prop =>
+          \lam v => TruncP (\Sigma (a' : A.E) (v = cmra_transport i.inG_prf a') (P a'))
+      | Phi2 : (inG_apply_pre i).E -> \Prop =>
+          \lam v => TruncP (\Sigma (y' : (inG_apply_iProp i).E)
+              (v = (inG_unfold i).ofe_mor_car y') (Phi1 y'))
+      | Phi3 : (iResB S i.inG_id).E -> \Prop =>
+          \lam m => TruncP (\Sigma (b : (inG_apply_pre i).E)
+              (m = {(iResB S i.inG_id).E} gsingleton {gname} {gnameCountable} gam b) (Phi2 b))
+      | Phi4 : (iResUR S).E -> \Prop =>
+          \lam g => TruncP (\Sigma (y' : (iResB S i.inG_id).E)
+              (g = {(iResUR S).E} discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id y') (Phi3 y'))
+      | Mid : ProperUPred (iResUR S) => mkProperExist (iResUR S).E (\lam m =>
+          mkProperAnd (mkProperPure (Phi4 m)) (mkProperOwn {iResUR S} m))
+      | Tgt : ProperUPred (iResUR S) => mkProperExist A.E (\lam b =>
+          mkProperAnd (mkProperPure (P b)) (own i gam b))
+      | step1 => cmra_transport_updatePM i.inG_prf a P h
+      | step2 => iso_cmra_updatePM {inG_apply_iProp i} {inG_apply_pre i}
+          (inG_fold i).ofe_mor_car u
+          (inG_unfold_fold i)
+          (\lam y1 y2 => cmra_morphism_op {inG_unfold_mor i} y1 y2)
+          (inG_unfold_validN i)
+          (t a) Phi1 step1
+      | step3 => gmap_singleton_updatePM {gname} {gnameCountable} gam (u (t a)) Phi2 step2
+      | step4 => discrete_fun_singleton_updateP fin_eq_dec {iResB S} i.inG_id
+          (gsingleton gam (u (t a))) Phi3 step3
+      | step5 => bupd_ownM_updateP {iResUR S} (iRes_singleton i gam a) Phi4
+          (dfs_updateP_val_path i gam (inv (own_val_peval i a)) Phi4 step4)
+    \in properUPred_ent_trans (own i gam a) (mkProperBUpd Mid) (mkProperBUpd Tgt)
+        step5
+        (bupd_mono Mid Tgt
+            (\lam n x hv hex => \case hex \with {
+              | inP (m, (hm, hown)) => \case hm \with {
+                | inP (y', pm, hy') => \case hy' \with {
+                  | inP (b', pb', hb') => \case hb' \with {
+                    | inP (y'', py'', hy'') => \case hy'' \with {
+                      | inP (a', pa', hPa') =>
+                        \let
+                          | hown1 => ownM_holds_path {iResUR S} pm hown
+                          | hown2 => ownM_holds_congr {iResUR S}
+                              (\lam (yy : (iResB S i.inG_id).E) =>
+                                  discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id yy)
+                              pb' hown1
+                          | hown3 => ownM_holds_congr {iResUR S}
+                              (\lam (bb : (inG_apply_pre i).E) =>
+                                  discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id
+                                      (gsingleton {gname} {gnameCountable} gam bb))
+                              py'' hown2
+                          | hown4 => ownM_holds_congr {iResUR S}
+                              (\lam (yy : (inG_apply_iProp i).E) =>
+                                  discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id
+                                      (gsingleton {gname} {gnameCountable} gam
+                                          ((inG_unfold i).ofe_mor_car yy)))
+                              pa' hown3
+                        \in inP (a', (hPa',
+                            dfs_own_holds_val_path i gam (inv (own_val_peval i a')) hown4))
+                    }
+                  }
+                }
+              }
+            }))
+
+-- =================================================================================
+-- own_updateP (Rocq `own_updateP`): the nondeterministic frame-preserving
+-- update in separating-conjunction form.
+--
+--   a ~~>: P  →  own γ a ⊢ |==> ∃ b, ⌜P b⌝ ∗ own γ b.
+--
+-- Same content as `own_updatePM` (which yields the `∧` form); the pure witness
+-- `⌜P b⌝` is persistent so `∧` and `∗` coincide, but the Rocq-standard public
+-- API and downstream code expect the `∗` shape.  This is the "nondeterministic
+-- ownership wrapper" (own_update_ND) of the planned A5 surface.
+-- =================================================================================
+\lemma own_updateP {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a : A.E)
+    (P : A.E -> \Prop) (h : cmra_updatePM {A} a P)
+  : properUPred_ent (own i gam a)
+      (mkProperBUpd (mkProperExist A.E (\lam b =>
+          mkProperSep (mkProperPure (P b)) (own i gam b))))
+  => properUPred_ent_trans (own i gam a)
+      (mkProperBUpd (mkProperExist A.E (\lam b =>
+          mkProperAnd (mkProperPure (P b)) (own i gam b))))
+      (mkProperBUpd (mkProperExist A.E (\lam b =>
+          mkProperSep (mkProperPure (P b)) (own i gam b))))
+      (own_updatePM i gam a P h)
+      (bupd_mono
+          (mkProperExist A.E (\lam b => mkProperAnd (mkProperPure (P b)) (own i gam b)))
+          (mkProperExist A.E (\lam b => mkProperSep (mkProperPure (P b)) (own i gam b)))
+          (\lam n x hv hex => \case hex \with {
+            | inP (b, (hpure, hown)) =>
+              inP (b, inP ((iResUR S).unit, x,
+                (iResUR S).ofe_dist_sym n ((iResUR S).op (iResUR S).unit x) x
+                    (ucmra_unit_left_id_dist {iResUR S} n x),
+                hpure, hown))
+          }))
+
+\func cmra_update {A : CMRA} (a b : A.E) : \Prop =>
+  \Pi (n : Nat) (mz : Maybe A.E) -> A.validN n (cmra_opM a mz) ->
+      A.validN n (cmra_opM b mz)
+
+\lemma own_update {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a b : A.E)
+    (h : cmra_update a b)
+  : properUPred_ent (own i gam a) (mkProperBUpd (own i gam b))
+  => properUPred_ent_trans (own i gam a)
+      (mkProperBUpd (mkProperExist A.E (\lam b' =>
+          mkProperAnd (mkProperPure (b' = b)) (own i gam b'))))
+      (mkProperBUpd (own i gam b))
+      (own_updatePM i gam a (\lam y => y = b)
+          (\lam n mz hv => inP (b, idp, h n mz hv)))
+      (bupd_mono
+          (mkProperExist A.E (\lam b' =>
+              mkProperAnd (mkProperPure (b' = b)) (own i gam b')))
+          (own i gam b)
+          (\lam n x hv hex => \case hex \with {
+            | inP (b', (pb, hown)) =>
+              transport (\lam c => (own i gam c).upred_holds n x) pb hown
+          }))
+
+-- =================================================================================
+-- Allocation.
+-- =================================================================================
+
+-- Fresh gnames: any positive longer than the underlying radix tree is absent.
+\func gname_fresh {A : \Set} (m : Gmap gname gnameCountable A)
+  : \Sigma (gam : gname) (glookup m gam = nothing)
+  => \let (k, hk) => pmap_fresh_key m.gtree
+     \in (k, pmap (\lam o => \case o \with {
+       | nothing => nothing
+       | just p => just p.2
+     }) hk)
+
+\lemma own_alloc {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (a : A.E)
+                 (hva : A.valid a)
+  : properUPred_ent mkProperEmp
+      (mkProperBUpd (mkProperExist gname (\lam gam => own i gam a)))
+  => \let
+      | u => (inG_unfold i).ofe_mor_car
+      | t => cmra_transport i.inG_prf
+      | hv_val : (inG_apply_pre i).valid (u (t a)) =>
+          ((inG_apply_pre i).cmra_valid_validN (u (t a))).2
+              (\lam n => cmra_morphism_validN {inG_unfold_mor i} n (t a)
+                  ((cmra_transport_validN i.inG_prf n a).2
+                      ((A.cmra_valid_validN a).1 hva n)))
+      | Psi1 : (iResB S i.inG_id).E -> \Prop =>
+          \lam m => TruncP (\Sigma (k : gname)
+              (m = {(iResB S i.inG_id).E} gsingleton {gname} {gnameCountable} k ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a))))
+      | Psi2 : (iResUR S).E -> \Prop =>
+          \lam g => TruncP (\Sigma (y' : (iResB S i.inG_id).E)
+              (g = {(iResUR S).E} discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id y') (Psi1 y'))
+      | Mid : ProperUPred (iResUR S) => mkProperExist (iResUR S).E (\lam m =>
+          mkProperAnd (mkProperPure (Psi2 m)) (mkProperOwn {iResUR S} m))
+      | Tgt : ProperUPred (iResUR S) => mkProperExist gname (\lam gam => own i gam a)
+      | step1 => gmap_alloc_updateP {gname} {gnameCountable} gname_fresh (u (t a)) hv_val
+      | step2 => discrete_fun_singleton_updateP_empty fin_eq_dec {iResB S} i.inG_id
+          Psi1 step1
+      | step3 => bupd_ownM_updateP {iResUR S} (iResUR S).unit Psi2 step2
+    \in properUPred_ent_trans mkProperEmp (mkProperBUpd Mid) (mkProperBUpd Tgt)
+        (\lam n x hv h => step3 n x hv h)
+        (bupd_mono Mid Tgt
+            (\lam n x hv hex => \case hex \with {
+              | inP (m, (hm, hown)) => \case hm \with {
+                | inP (y', pm, hy') => \case hy' \with {
+                  | inP (gam, pgam) =>
+                    \let
+                      | hown1 => ownM_holds_path {iResUR S} pm hown
+                      | hown2 => ownM_holds_congr {iResUR S}
+                          (\lam (yy : (iResB S i.inG_id).E) =>
+                              discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id yy)
+                          pgam hown1
+                    \in inP (gam, dfs_own_holds_val_path i gam (inv (own_val_peval i a)) hown2)
+                }
+              }
+            }))
+
+-- =================================================================================
+-- own_alloc_strong (Rocq `own_alloc_strong` / `own_alloc_strong_dep`):
+-- allocate a fresh name that additionally satisfies a predicate `P`:
+--
+--   (∀ m, ∃ γ, m!!γ = None ∧ P γ)  →  ✓ a  →  ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ own γ a.
+--
+-- The freshness oracle is the generic (value-polymorphic) analogue of the
+-- namespace oracle consumed by `ownI_alloc` in `wsat_alloc.ard`; a caller
+-- builds it from an infinite predicate (`coPsetInfinite`) exactly as
+-- `fresh_inv_oracle` does.  The proof mirrors `own_alloc`, threading the extra
+-- witness `P γ` through `gmap_alloc_strong_updateP`.
+-- =================================================================================
+\lemma own_alloc_strong {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (a : A.E)
+    (P : gname -> \Prop) (hva : A.valid a)
+    (fresh : \Pi {V : \Set0} (m : Gmap gname gnameCountable V)
+                 -> TruncP (\Sigma (gam : gname) (glookup m gam = nothing) (P gam)))
+  : properUPred_ent mkProperEmp
+      (mkProperBUpd (mkProperExist gname (\lam gam =>
+          mkProperSep (mkProperPure (P gam)) (own i gam a))))
+  => \let
+      | u => (inG_unfold i).ofe_mor_car
+      | t => cmra_transport i.inG_prf
+      | hv_val : (inG_apply_pre i).valid (u (t a)) =>
+          ((inG_apply_pre i).cmra_valid_validN (u (t a))).2
+              (\lam n => cmra_morphism_validN {inG_unfold_mor i} n (t a)
+                  ((cmra_transport_validN i.inG_prf n a).2
+                      ((A.cmra_valid_validN a).1 hva n)))
+      | Psi1 : (iResB S i.inG_id).E -> \Prop =>
+          \lam m => TruncP (\Sigma (k : gname)
+              (m = {(iResB S i.inG_id).E} gsingleton {gname} {gnameCountable} k ((inG_unfold i).ofe_mor_car (cmra_transport i.inG_prf a)))
+              (P k))
+      | Psi2 : (iResUR S).E -> \Prop =>
+          \lam g => TruncP (\Sigma (y' : (iResB S i.inG_id).E)
+              (g = {(iResUR S).E} discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id y') (Psi1 y'))
+      | Mid : ProperUPred (iResUR S) => mkProperExist (iResUR S).E (\lam m =>
+          mkProperAnd (mkProperPure (Psi2 m)) (mkProperOwn {iResUR S} m))
+      | Tgt : ProperUPred (iResUR S) => mkProperExist gname (\lam gam =>
+          mkProperSep (mkProperPure (P gam)) (own i gam a))
+      | step1 => gmap_alloc_strong_updateP {gname} {gnameCountable} P
+          (fresh {(inG_apply_pre i).E}) (u (t a)) hv_val
+      | step2 => discrete_fun_singleton_updateP_empty fin_eq_dec {iResB S} i.inG_id
+          Psi1 step1
+      | step3 => bupd_ownM_updateP {iResUR S} (iResUR S).unit Psi2 step2
+    \in properUPred_ent_trans mkProperEmp (mkProperBUpd Mid) (mkProperBUpd Tgt)
+        (\lam n x hv h => step3 n x hv h)
+        (bupd_mono Mid Tgt
+            (\lam n x hv hex => \case hex \with {
+              | inP (m, (hm, hown)) => \case hm \with {
+                | inP (y', pm, hy') => \case hy' \with {
+                  | inP (gam, pgam, hPgam) =>
+                    \let
+                      | hown1 => ownM_holds_path {iResUR S} pm hown
+                      | hown2 => ownM_holds_congr {iResUR S}
+                          (\lam (yy : (iResB S i.inG_id).E) =>
+                              discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id yy)
+                          pgam hown1
+                      | hown_own : (own i gam a).upred_holds n x =>
+                          dfs_own_holds_val_path i gam (inv (own_val_peval i a)) hown2
+                    \in inP (gam, inP ((iResUR S).unit, x,
+                        (iResUR S).ofe_dist_sym n ((iResUR S).op (iResUR S).unit x) x
+                            (ucmra_unit_left_id_dist {iResUR S} n x),
+                        hPgam, hown_own))
+                }
+              }
+            }))
+
+-- =================================================================================
+-- own_unit (Rocq `own_unit`): for a UCMRA-valued inG, the unit can always be
+-- allocated at any name:  ⊢ |==> own γ ε.
+--
+-- The frame-preserving update goes: gmap-level allocation of the left-unit-like
+-- element `inG_unfold (transport ε)` at the fixed key γ
+-- (`gmap_alloc_unit_singleton_updateP`), lifted through
+-- `discrete_fun_singleton_updateP_empty` and `bupd_ownM_updateP`.  The
+-- left-unit property on the component image is Rocq's surjectivity argument:
+-- w ≡ unfold (fold w), morphisms commute with ⋅, and ε is a left id in A.
+-- =================================================================================
+
+\lemma own_unit {S : gFunctors} {A : UCMRA.{0}} (i : inG S A) (gam : gname)
+  : properUPred_ent mkProperEmp (mkProperBUpd (own i gam A.unit))
+  => \let
+      | u => own_val i A.unit
+      | hu_val : \Pi (n : Nat) -> (inG_apply_pre i).validN n u =>
+          \lam n => transport (\lam v => (inG_apply_pre i).validN n v)
+              (inv (own_val_peval i A.unit))
+              (cmra_morphism_validN {inG_unfold_mor i} n
+                  (cmra_transport i.inG_prf A.unit)
+                  ((cmra_transport_validN i.inG_prf n A.unit).2
+                      ((A.cmra_valid_validN A.unit).1 A.ucmra_unit_valid n)))
+      | hid : \Pi (n : Nat) (w : (inG_apply_pre i).E) ->
+            (inG_apply_pre i).dist n ((inG_apply_pre i).op u w) w =>
+          \lam n w =>
+            \let
+              | CP => inG_apply_pre i
+              | CI => inG_apply_iProp i
+              | uf => (inG_unfold i).ofe_mor_car
+              | fd => (inG_fold i).ofe_mor_car
+              | tE => cmra_transport i.inG_prf A.unit
+              | dw : CP.dist n w (uf (fd w)) =>
+                  CP.ofe_dist_sym n (uf (fd w)) w
+                      (equiv_dist {CP} (inG_unfold_fold i w) n)
+              | d1 : CP.dist n (CP.op u w) (CP.op u (uf (fd w))) =>
+                  CP.cmra_op_ne u n w (uf (fd w)) dw
+              | d2 : CP.dist n (CP.op u (uf (fd w))) (uf (CI.op tE (fd w))) =>
+                  CP.ofe_dist_sym n (uf (CI.op tE (fd w))) (CP.op u (uf (fd w)))
+                      (transport (\lam z => CP.dist n (uf (CI.op tE (fd w))) (CP.op z (uf (fd w))))
+                          (inv (own_val_peval i A.unit))
+                          (equiv_dist {CP} (cmra_morphism_op {inG_unfold_mor i} tE (fd w)) n))
+              | d3 : CP.dist n (uf (CI.op tE (fd w))) (uf (fd w)) =>
+                  (inG_unfold i).ofe_mor_ne n (CI.op tE (fd w)) (fd w)
+                      (cmra_transport_unit_left_id i.inG_prf n (fd w))
+              | d4 : CP.dist n (uf (fd w)) w =>
+                  equiv_dist {CP} (inG_unfold_fold i w) n
+            \in CP.ofe_dist_trans n (CP.op u w) (CP.op u (uf (fd w))) w d1
+                  (CP.ofe_dist_trans n (CP.op u (uf (fd w))) (uf (CI.op tE (fd w))) w d2
+                      (CP.ofe_dist_trans n (uf (CI.op tE (fd w))) (uf (fd w)) w d3 d4))
+      | Phi1 : (iResB S i.inG_id).E -> \Prop =>
+          \lam m => m = {(iResB S i.inG_id).E} gsingleton {gname} {gnameCountable} gam u
+      | Phi2 : (iResUR S).E -> \Prop =>
+          \lam g => TruncP (\Sigma (y' : (iResB S i.inG_id).E)
+              (g = {(iResUR S).E} discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id y')
+              (Phi1 y'))
+      | Mid : ProperUPred (iResUR S) => mkProperExist (iResUR S).E (\lam m =>
+          mkProperAnd (mkProperPure (Phi2 m)) (mkProperOwn {iResUR S} m))
+      | step1 => gmap_alloc_unit_singleton_updateP {gname} {gnameCountable} gam u hu_val hid
+      | step2 => discrete_fun_singleton_updateP_empty fin_eq_dec {iResB S} i.inG_id Phi1 step1
+      | step3 => bupd_ownM_updateP {iResUR S} (iResUR S).unit Phi2 step2
+    \in properUPred_ent_trans mkProperEmp (mkProperBUpd Mid)
+        (mkProperBUpd (own i gam A.unit))
+        (\lam n x hv h => step3 n x hv h)
+        (bupd_mono Mid (own i gam A.unit)
+            (\lam n x hv hex => \case hex \with {
+              | inP (m, (hm, hown)) => \case hm \with {
+                | inP (y', pm, py') =>
+                  \let
+                    | hown1 => ownM_holds_path {iResUR S} pm hown
+                    | hown2 => ownM_holds_congr {iResUR S}
+                        (\lam (yy : (iResB S i.inG_id).E) =>
+                            discrete_fun_singleton fin_eq_dec {iResB S} i.inG_id yy)
+                        py' hown1
+                  \in hown2
+              }
+            }))
+-- A deterministic frame-preserving update `x ~~>: (= b)` is a plain update
+-- `x ~~> b`.  Bridges the `cmra_updateP` produced by `gmap_view_alloc` (direct
+-- UCMRA frame) into the Maybe-framed `cmra_update` consumed by `own_update`.
+\lemma cmra_updateP_update_det {M : UCMRA} (x b : M.E)
+    (h : cmra_updateP {M} x (\lam y => y = b)) : cmra_update x b =>
+  \lam n mz => \case \elim mz \with {
+    | nothing => \lam hv =>
+        \case h n M.unit
+              (cmra_validN_proper {M} n x (M.op x M.unit)
+                  (M.equiv_sym (M.op x M.unit) x (ucmra_unit_right_id x)) hv)
+        \with {
+          | inP (y, hy, hvy) =>
+              cmra_validN_proper {M} n (M.op b M.unit) b (ucmra_unit_right_id b)
+                  (transport (\lam w => M.validN n (M.op w M.unit)) hy hvy)
+        }
+    | just z => \lam hv =>
+        \case h n z hv \with {
+          | inP (y, hy, hvy) => transport (\lam w => M.validN n (M.op w z)) hy hvy
+        }
+  }
+
+-- Fused update-then-split: `a ~~> b · c` gives `own a ⊢ |==> (own b ∗ own c)`.
+-- Generic in `A`, so the `own_update`/`own_op` composition is elaborated once at
+-- the abstract CMRA; instantiating at a large concrete CMRA (e.g. wsat's
+-- `gmap_viewR` over `LaterOFE (iPropO S)`) then costs a single delta step rather
+-- than re-normalising the whole tower.  Same rationale as `own_op_valid`; see
+-- the memory note on own-composition blow-up.
+\lemma own_update_op {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname) (a b c : A.E)
+    (h : cmra_update a (A.op b c))
+  : properUPred_ent (own i gam a)
+      (mkProperBUpd (mkProperSep (own i gam b) (own i gam c)))
+  => properUPred_ent_trans (own i gam a)
+      (mkProperBUpd (own i gam (A.op b c)))
+      (mkProperBUpd (mkProperSep (own i gam b) (own i gam c)))
+      (own_update i gam a (A.op b c) h)
+      (bupd_mono (own i gam (A.op b c)) (mkProperSep (own i gam b) (own i gam c))
+          (\lam n x hv hh => (own_op i gam b c n x hv).1 hh))

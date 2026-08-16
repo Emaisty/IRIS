@@ -1,0 +1,191 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Data.Maybe
+\import Arith.Nat
+\import Set
+\import iris.algebra.cmra
+\import iris.algebra.ofe
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.gmap
+
+-- =================================================================================
+-- Gmap functor lifting: `gmap_fmap`, `gmapO_map`, `gmapURF`.
+--
+-- Port of the "Functor" section of Rocq's `algebra/gmap.v`:
+--   * `gmap_fmap` / `gmap_fmap_ne`      — fmap over values,
+--   * `gmap_fmap_cmra_morphism`         — fmap of a CMRA morphism is one,
+--   * `gmapO_map` / `gmapO_map_ne`      — the bundled OFE morphism,
+--   * `gmapURF` (+ contractivity)       — the URFunctor `K →fin F(·)`.
+--
+-- All gmap-level goals are discharged pointwise per key through
+-- `glookup_fmap`, mirroring Rocq's `lookup_fmap` rewrites.
+-- =================================================================================
+
+\func gmap_fmap {K : \Set} {cnt : Countable K} {A B : \Set}
+                (f : A -> B) (m : Gmap K cnt A) : Gmap K cnt B =>
+  gmap_map_support m (\lam p => just (f p.2))
+
+\lemma glookup_fmap {K : \Set} {cnt : Countable K} {A B : \Set}
+                    (f : A -> B) (m : Gmap K cnt A) (k : K)
+  : glookup (gmap_fmap f m) k = maybe_fmap f (glookup m k)
+  => \case glookup m k \as o, idp : glookup m k = o
+  \return glookup (gmap_fmap f m) k = maybe_fmap f o
+  \with {
+    | nothing, hm => glookup_map_support_absent m (\lam p => just (f p.2)) k hm
+    | just a, hm => glookup_map_support_present m (\lam p => just (f p.2)) k a hm
+  }
+
+-- =================================================================================
+-- Option-level transport lemmas for `maybe_fmap`.
+-- =================================================================================
+
+\lemma maybe_fmap_equiv_id {A : OFE} (f : A.E -> A.E)
+                           (hid : \Pi (a : A.E) -> A.equiv (f a) a) (o : Maybe A.E)
+  : (OptionOFE A).equiv (maybe_fmap f o) o
+  => \case \elim o \with {
+    | nothing => ()
+    | just a => hid a
+  }
+
+\lemma maybe_fmap_equiv_2 {A B : OFE} (f g : A.E -> B.E)
+                          (h : \Pi (a : A.E) -> B.equiv (f a) (g a)) (o : Maybe A.E)
+  : (OptionOFE B).equiv (maybe_fmap f o) (maybe_fmap g o)
+  => \case \elim o \with {
+    | nothing => ()
+    | just a => h a
+  }
+
+\lemma maybe_fmap_validN {A B : CMRA} (f : OFEMor A B) (hf : CmraMorphism f)
+                         (n : Nat) (o : Maybe A.E) (hv : option_validN {A} n o)
+  : option_validN {B} n (maybe_fmap f.ofe_mor_car o)
+  => \case \elim o, hv \with {
+    | nothing, _ => ()
+    | just a, hv => hf.cmra_morphism_validN n a hv
+  }
+
+\lemma maybe_fmap_op {A B : CMRA} (f : OFEMor A B) (hf : CmraMorphism f)
+                     (o1 o2 : Maybe A.E)
+  : (OptionOFE B).equiv (maybe_fmap f.ofe_mor_car (option_op {A} o1 o2))
+                        (option_op {B} (maybe_fmap f.ofe_mor_car o1)
+                                       (maybe_fmap f.ofe_mor_car o2))
+  => \case \elim o1, \elim o2 \with {
+    | nothing, nothing => ()
+    | nothing, just a => B.equiv_refl (f.ofe_mor_car a)
+    | just a, nothing => B.equiv_refl (f.ofe_mor_car a)
+    | just a1, just a2 => hf.cmra_morphism_op a1 a2
+  }
+
+\lemma maybe_fmap_pcore {A B : CMRA} (f : OFEMor A B) (hf : CmraMorphism f)
+                        (o : Maybe A.E)
+  : (OptionOFE B).equiv (maybe_fmap f.ofe_mor_car (option_pcore {A} o))
+                        (option_pcore {B} (maybe_fmap f.ofe_mor_car o))
+  => \case \elim o \with {
+    | nothing => ()
+    | just a => hf.cmra_morphism_pcore a
+  }
+
+-- =================================================================================
+-- The bundled OFE morphism and its non-expansiveness in the function argument.
+-- =================================================================================
+
+\func gmapO_map {K : \Set} {cnt : Countable K} {A B : OFE} (f : OFEMor A B)
+  : OFEMor (GmapOFE K cnt A) (GmapOFE K cnt B) \cowith
+  | ofe_mor_car => gmap_fmap f.ofe_mor_car
+  | ofe_mor_ne => \lam n m1 m2 h k =>
+      transport2 (\lam u v => (OptionOFE B).dist n u v)
+          (inv (glookup_fmap f.ofe_mor_car m1 k))
+          (inv (glookup_fmap f.ofe_mor_car m2 k))
+          (maybe_fmap_ne f n (glookup m1 k) (glookup m2 k) (h k))
+
+\lemma gmapO_map_ne {K : \Set} {cnt : Countable K} {A B : OFE}
+                    (n : Nat) (f g : OFEMor A B)
+                    (h : (OFEMorOFE A B).dist n f g)
+  : (OFEMorOFE (GmapOFE K cnt A) (GmapOFE K cnt B)).dist n
+      (gmapO_map {K} {cnt} f) (gmapO_map {K} {cnt} g)
+  => \lam m k =>
+      transport2 (\lam u v => (OptionOFE B).dist n u v)
+          (inv (glookup_fmap f.ofe_mor_car m k))
+          (inv (glookup_fmap g.ofe_mor_car m k))
+          (\case glookup m k \as o
+           \return (OptionOFE B).dist n (maybe_fmap f.ofe_mor_car o)
+                                        (maybe_fmap g.ofe_mor_car o)
+           \with {
+             | nothing => ()
+             | just a => h a
+           })
+
+-- =================================================================================
+-- fmap of a CMRA morphism is a CMRA morphism (Rocq `gmap_fmap_cmra_morphism`).
+-- =================================================================================
+
+\func gmap_core {K : \Set} {cnt : Countable K} {A : CMRA} (m : Gmap K cnt A.E)
+  : Gmap K cnt A.E =>
+  \case gmap_pcore m \with {
+    | nothing => m
+    | just c => c
+  }
+
+\func gmap_fmap_cmra_morphism {K : \Set} {cnt : Countable K} {A B : CMRA}
+                              (f : OFEMor A B) (hf : CmraMorphism f)
+  : CmraMorphism {GmapCMRA K cnt A} {GmapCMRA K cnt B} (gmapO_map f) \cowith
+  | cmra_morphism_validN => \lam n m hv k =>
+      transport (option_validN {B} n)
+          (inv (glookup_fmap f.ofe_mor_car m k))
+          (maybe_fmap_validN f hf n (glookup m k) (hv k))
+  | cmra_morphism_pcore => \lam m k =>
+      transport2 (\lam u v => (OptionOFE B).equiv u v)
+          (inv (glookup_fmap f.ofe_mor_car (gmap_core m) k *>
+                pmap (maybe_fmap f.ofe_mor_car) (glookup_core m k)))
+          (inv (glookup_core (gmap_fmap f.ofe_mor_car m) k *>
+                pmap (option_pcore {B}) (glookup_fmap f.ofe_mor_car m k)))
+          (maybe_fmap_pcore f hf (glookup m k))
+  | cmra_morphism_op => \lam m1 m2 k =>
+      transport2 (\lam u v => (OptionOFE B).equiv u v)
+          (inv (glookup_fmap f.ofe_mor_car (gmap_op m1 m2) k *>
+                pmap (maybe_fmap f.ofe_mor_car) (glookup_op m1 m2 k)))
+          (inv (glookup_op (gmap_fmap f.ofe_mor_car m1) (gmap_fmap f.ofe_mor_car m2) k *>
+                pmap2 (option_op {B})
+                    (glookup_fmap f.ofe_mor_car m1 k)
+                    (glookup_fmap f.ofe_mor_car m2 k)))
+          (maybe_fmap_op f hf (glookup m1 k) (glookup m2 k))
+
+-- =================================================================================
+-- gmapURF: the URFunctor `A B ↦ gmapUR K (F A B)` (Rocq `gmapURF`).
+-- =================================================================================
+
+\func gmapURF (K : \Set0) (cnt : Countable K) (F : RFunctor) : URFunctor \cowith
+  | urFunctor_car => \lam A B => GmapUCMRA K cnt (F.rFunctor_car A B)
+  | urFunctor_map => \lam fg => gmapO_map (F.rFunctor_map fg)
+  | urFunctor_map_ne => \lam n fg fg' h =>
+      gmapO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+          (F.rFunctor_map_ne n fg fg' h)
+  | urFunctor_map_id => \lam {A} {B} m k =>
+      transport (\lam u => (OptionOFE (F.rFunctor_car A B)).equiv u (glookup m k))
+          (inv (glookup_fmap (F.rFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car m k))
+          (maybe_fmap_equiv_id
+              (F.rFunctor_map (ofe_mor_id, ofe_mor_id)).ofe_mor_car
+              (F.rFunctor_map_id {A} {B})
+              (glookup m k))
+  | urFunctor_map_compose => \lam {A1} {A2} {A3} {B1} {B2} {B3} f g f' g' m k =>
+      \let
+        | m1c => (F.rFunctor_map (f, f')).ofe_mor_car
+        | m2c => (F.rFunctor_map (g, g')).ofe_mor_car
+        | m3c => (F.rFunctor_map (ofe_mor_comp f g, ofe_mor_comp g' f')).ofe_mor_car
+      \in transport2 (\lam u v => (OptionOFE (F.rFunctor_car A3 B3)).equiv u v)
+          (inv (glookup_fmap m2c (gmap_fmap m1c m) k *>
+                pmap (maybe_fmap m2c) (glookup_fmap m1c m k) *>
+                inv (maybe_fmap_comp m1c m2c (glookup m k))))
+          (inv (glookup_fmap m3c m k))
+          (maybe_fmap_equiv_2 (\lam a => m2c (m1c a)) m3c
+              (F.rFunctor_map_compose f g f' g')
+              (glookup m k))
+  | urFunctor_mor => \lam fg =>
+      gmap_fmap_cmra_morphism (F.rFunctor_map fg) (F.rFunctor_mor fg)
+
+\func gmapURF_contractive (K : \Set0) (cnt : Countable K) (F : RFunctor)
+                          (hF : RFunctorContractive F)
+  : URFunctorContractive (gmapURF K cnt F) \cowith
+  | urFunctor_map_contractive => \lam n fg fg' h =>
+      gmapO_map_ne n (F.rFunctor_map fg) (F.rFunctor_map fg')
+          (hF.rFunctor_map_contractive n fg fg' h)

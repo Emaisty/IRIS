@@ -1,0 +1,755 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.Bool
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import Order.PartialOrder
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import stdpp.pmap
+\import stdpp.coPset
+
+
+-- =================================================================================
+-- coPset_disj: the disjoint-union variant of coPset.
+-- =================================================================================
+--
+-- Mirrors Iris-Coq's `Inductive coPset_disj := CoPset : coPset → coPset_disj
+--                                            | CoPsetInvalid : coPset_disj`.
+--
+-- The CMRA structure: `op` is disjoint union (invalid on overlap); validity is
+-- `¬ Invalid`; unit is `CoPset ∅`. The OFE is discrete (equiv = pointwise
+-- equality of underlying coPset).
+
+\data coPset_disj
+  | CoPset coPset
+  | CoPsetInvalid
+
+
+-- =================================================================================
+-- Decidable overlap and disjoint-union semantics
+-- =================================================================================
+--
+-- We implement disjointness by computing whether the intersection is non-empty.
+-- `coPset_overlap X Y = true` iff `X ∩ Y ≠ ∅`. Computed structurally.
+
+\func coPset_overlap (X Y : coPset) : Bool \elim X, Y
+  | coPLeaf bx, coPLeaf by_ => bx and by_
+  | coPLeaf bx, coPNode by_ Ly Ry =>
+      (bx and by_) or coPset_overlap (coPLeaf bx) Ly or coPset_overlap (coPLeaf bx) Ry
+  | coPNode bx Lx Rx, coPLeaf by_ =>
+      (bx and by_) or coPset_overlap Lx (coPLeaf by_) or coPset_overlap Rx (coPLeaf by_)
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry =>
+      (bx and by_) or coPset_overlap Lx Ly or coPset_overlap Rx Ry
+
+
+-- =================================================================================
+-- OFE: discrete
+-- =================================================================================
+
+\func coPset_disj_equiv (x y : coPset_disj) : \Prop \elim x, y
+  | CoPset X, CoPset Y => coPset_equiv X Y
+  | CoPsetInvalid, CoPsetInvalid => \Sigma
+  | _, _ => Empty
+
+\func coPset_disj_dist (n : Nat) (x y : coPset_disj) : \Prop => coPset_disj_equiv x y
+
+
+\lemma coPset_disj_equiv_refl (x : coPset_disj) : coPset_disj_equiv x x \elim x
+  | CoPset X => coPset_equiv_refl X
+  | CoPsetInvalid => ()
+
+\lemma coPset_disj_equiv_sym (x y : coPset_disj) (h : coPset_disj_equiv x y)
+  : coPset_disj_equiv y x \elim x, y
+  | CoPset X, CoPset Y => coPset_equiv_sym X Y h
+  | CoPsetInvalid, CoPsetInvalid => ()
+  | CoPset _, CoPsetInvalid => \case h \with {}
+  | CoPsetInvalid, CoPset _ => \case h \with {}
+
+\lemma coPset_disj_equiv_trans (x y z : coPset_disj)
+                                (h1 : coPset_disj_equiv x y) (h2 : coPset_disj_equiv y z)
+  : coPset_disj_equiv x z \elim x, y, z
+  | CoPset X, CoPset Y, CoPset Z => coPset_equiv_trans X Y Z h1 h2
+  | CoPsetInvalid, CoPsetInvalid, CoPsetInvalid => ()
+  | CoPset _, CoPsetInvalid, _ => \case h1 \with {}
+  | CoPsetInvalid, CoPset _, _ => \case h1 \with {}
+  | _, CoPset _, CoPsetInvalid => \case h2 \with {}
+  | _, CoPsetInvalid, CoPset _ => \case h2 \with {}
+
+
+\instance coPset_disj_OFE : OFE \cowith
+  | E => coPset_disj
+  | dist => coPset_disj_dist
+  | equiv => coPset_disj_equiv
+  | equiv_refl => coPset_disj_equiv_refl
+  | equiv_sym => coPset_disj_equiv_sym
+  | equiv_trans => coPset_disj_equiv_trans
+  | ofe_equiv_dist => \lam x y => (\lam h _ => h, \lam h => h 0)
+  | ofe_dist_refl => \lam _ => coPset_disj_equiv_refl
+  | ofe_dist_sym => \lam _ => coPset_disj_equiv_sym
+  | ofe_dist_trans => \lam _ => coPset_disj_equiv_trans
+  | ofe_dist_le => \lam _ _ _ _ h _ => h
+
+
+-- =================================================================================
+-- Op, pcore, valid, validN
+-- =================================================================================
+
+\func coPset_disj_op (x y : coPset_disj) : coPset_disj \elim x, y
+  | CoPset X, CoPset Y => \case coPset_overlap X Y \with {
+      | true => CoPsetInvalid
+      | false => CoPset (coPset_union X Y)
+    }
+  | _, _ => CoPsetInvalid
+
+\func coPset_disj_pcore (x : coPset_disj) : Maybe coPset_disj =>
+  just (CoPset coPset_empty)
+
+\func coPset_disj_valid (x : coPset_disj) : \Prop \elim x
+  | CoPset _ => \Sigma
+  | CoPsetInvalid => Empty
+
+\func coPset_disj_validN (n : Nat) (x : coPset_disj) : \Prop => coPset_disj_valid x
+
+
+-- =================================================================================
+-- Boolean lemmas used throughout
+-- =================================================================================
+
+\lemma bool_or_comm (a b : Bool) : (a or b) = (b or a) \elim a, b
+  | true, true => idp
+  | true, false => idp
+  | false, true => idp
+  | false, false => idp
+
+\lemma bool_or_assoc (a b c : Bool) : (a or (b or c)) = ((a or b) or c) \elim a
+  | true => idp
+  | false => idp
+
+\lemma bool_and_comm (a b : Bool) : (a and b) = (b and a) \elim a, b
+  | true, true => idp
+  | true, false => idp
+  | false, true => idp
+  | false, false => idp
+
+\lemma bool_and_idemp (a : Bool) : (a and a) = a \elim a
+  | true => idp
+  | false => idp
+
+\lemma bool_or_false_r (a : Bool) : (a or false) = a \elim a
+  | true => idp
+  | false => idp
+
+\lemma bool_and_true_r (a : Bool) : (a and true) = a \elim a
+  | true => idp
+  | false => idp
+
+
+-- =================================================================================
+-- Overlap lemmas
+-- =================================================================================
+
+\lemma coPset_overlap_comm (X Y : coPset) : coPset_overlap X Y = coPset_overlap Y X
+  \elim X, Y
+  | coPLeaf bx, coPLeaf by_ => bool_and_comm bx by_
+  | coPLeaf bx, coPNode by_ Ly Ry =>
+    pmap (\lam u => (u or coPset_overlap (coPLeaf bx) Ly) or coPset_overlap (coPLeaf bx) Ry)
+      (bool_and_comm bx by_)
+    *> pmap (\lam u => ((by_ and bx) or u) or coPset_overlap (coPLeaf bx) Ry)
+      (coPset_overlap_comm (coPLeaf bx) Ly)
+    *> pmap (\lam u => ((by_ and bx) or coPset_overlap Ly (coPLeaf bx)) or u)
+      (coPset_overlap_comm (coPLeaf bx) Ry)
+  | coPNode bx Lx Rx, coPLeaf by_ =>
+    pmap (\lam u => (u or coPset_overlap Lx (coPLeaf by_)) or coPset_overlap Rx (coPLeaf by_))
+      (bool_and_comm bx by_)
+    *> pmap (\lam u => ((by_ and bx) or u) or coPset_overlap Rx (coPLeaf by_))
+      (coPset_overlap_comm Lx (coPLeaf by_))
+    *> pmap (\lam u => ((by_ and bx) or coPset_overlap (coPLeaf by_) Lx) or u)
+      (coPset_overlap_comm Rx (coPLeaf by_))
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry =>
+    pmap (\lam u => (u or coPset_overlap Lx Ly) or coPset_overlap Rx Ry) (bool_and_comm bx by_)
+    *> pmap (\lam u => ((by_ and bx) or u) or coPset_overlap Rx Ry) (coPset_overlap_comm Lx Ly)
+    *> pmap (\lam u => ((by_ and bx) or coPset_overlap Ly Lx) or u) (coPset_overlap_comm Rx Ry)
+
+-- A boolean disjunction that is `true` lets us pick the true side.
+\func bool_or_inv (a b : Bool) (h : (a or b) = true) : Or (a = true) (b = true) \elim a
+  | true => inl idp
+  | false => inr h
+
+\lemma bool_and_true_inv (a b : Bool) (h : (a and b) = true) : \Sigma (a = true) (b = true)
+  \elim a, b
+  | true, true => (idp, idp)
+  | true, false => \case h \with {}
+  | false, _ => \case h \with {}
+
+-- Soundness: if `overlap X Y = true` then there is a common witness.
+\func coPset_overlap_sound (X Y : coPset) (h : coPset_overlap X Y = true)
+  : \Sigma (p : Pos) (coPmem p X = true) (coPmem p Y = true) \elim X, Y
+  | coPLeaf bx, coPLeaf by_ =>
+    \let | (hbx, hby) => bool_and_true_inv bx by_ h
+    \in (xH, hbx, hby)
+  | coPLeaf bx, coPNode by_ Ly Ry =>
+    \case bool_or_inv ((bx and by_) or coPset_overlap (coPLeaf bx) Ly)
+                      (coPset_overlap (coPLeaf bx) Ry) h
+    \with {
+      | inr h_R =>
+        \let | rec => coPset_overlap_sound (coPLeaf bx) Ry h_R
+        \in (xI rec.1, rec.2, rec.3)
+      | inl h_bjL =>
+        \case bool_or_inv (bx and by_) (coPset_overlap (coPLeaf bx) Ly) h_bjL \with {
+          | inl h_bj =>
+            \let | (hbx, hby) => bool_and_true_inv bx by_ h_bj
+            \in (xH, hbx, hby)
+          | inr h_L =>
+            \let | rec => coPset_overlap_sound (coPLeaf bx) Ly h_L
+            \in (xO rec.1, rec.2, rec.3)
+        }
+    }
+  | coPNode bx Lx Rx, coPLeaf by_ =>
+    \case bool_or_inv ((bx and by_) or coPset_overlap Lx (coPLeaf by_))
+                      (coPset_overlap Rx (coPLeaf by_)) h
+    \with {
+      | inr h_R =>
+        \let | rec => coPset_overlap_sound Rx (coPLeaf by_) h_R
+        \in (xI rec.1, rec.2, rec.3)
+      | inl h_bjL =>
+        \case bool_or_inv (bx and by_) (coPset_overlap Lx (coPLeaf by_)) h_bjL \with {
+          | inl h_bj =>
+            \let | (hbx, hby) => bool_and_true_inv bx by_ h_bj
+            \in (xH, hbx, hby)
+          | inr h_L =>
+            \let | rec => coPset_overlap_sound Lx (coPLeaf by_) h_L
+            \in (xO rec.1, rec.2, rec.3)
+        }
+    }
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry =>
+    \case bool_or_inv ((bx and by_) or coPset_overlap Lx Ly)
+                      (coPset_overlap Rx Ry) h
+    \with {
+      | inr h_R =>
+        \let | rec => coPset_overlap_sound Rx Ry h_R
+        \in (xI rec.1, rec.2, rec.3)
+      | inl h_bjL =>
+        \case bool_or_inv (bx and by_) (coPset_overlap Lx Ly) h_bjL \with {
+          | inl h_bj =>
+            \let | (hbx, hby) => bool_and_true_inv bx by_ h_bj
+            \in (xH, hbx, hby)
+          | inr h_L =>
+            \let | rec => coPset_overlap_sound Lx Ly h_L
+            \in (xO rec.1, rec.2, rec.3)
+        }
+    }
+
+-- Completeness: a common witness forces `overlap X Y = true`.
+\lemma coPset_overlap_complete (X Y : coPset) (p : Pos)
+                                (hX : coPmem p X = true) (hY : coPmem p Y = true)
+  : coPset_overlap X Y = true \elim X, Y, p
+  | coPLeaf bx, coPLeaf by_, _ =>
+    pmap (\lam u => u and by_) hX *> pmap (\lam u => true and u) hY
+  | coPLeaf bx, coPNode by_ Ly Ry, xH =>
+    -- bx = true ∧ by_ = true → bx and by_ = true → first disjunct
+    pmap (\lam u => (u or coPset_overlap (coPLeaf bx) Ly) or coPset_overlap (coPLeaf bx) Ry)
+      (pmap (\lam u => u and by_) hX *> pmap (\lam u => true and u) hY)
+  | coPLeaf bx, coPNode by_ Ly Ry, xO q =>
+    \let | h_rec : coPset_overlap (coPLeaf bx) Ly = true =>
+      coPset_overlap_complete (coPLeaf bx) Ly q hX hY
+    \in pmap (\lam u => ((bx and by_) or u) or coPset_overlap (coPLeaf bx) Ry) h_rec
+        *> bool_or_xx_true_l ((bx and by_)) (coPset_overlap (coPLeaf bx) Ry)
+  | coPLeaf bx, coPNode by_ Ly Ry, xI q =>
+    \let | h_rec : coPset_overlap (coPLeaf bx) Ry = true =>
+      coPset_overlap_complete (coPLeaf bx) Ry q hX hY
+    \in pmap (\lam u => ((bx and by_) or coPset_overlap (coPLeaf bx) Ly) or u) h_rec
+        *> bool_or_true_r ((bx and by_) or coPset_overlap (coPLeaf bx) Ly)
+  | coPNode bx Lx Rx, coPLeaf by_, xH =>
+    pmap (\lam u => (u or coPset_overlap Lx (coPLeaf by_)) or coPset_overlap Rx (coPLeaf by_))
+      (pmap (\lam u => u and by_) hX *> pmap (\lam u => true and u) hY)
+  | coPNode bx Lx Rx, coPLeaf by_, xO q =>
+    \let | h_rec : coPset_overlap Lx (coPLeaf by_) = true =>
+      coPset_overlap_complete Lx (coPLeaf by_) q hX hY
+    \in pmap (\lam u => ((bx and by_) or u) or coPset_overlap Rx (coPLeaf by_)) h_rec
+        *> bool_or_xx_true_l ((bx and by_)) (coPset_overlap Rx (coPLeaf by_))
+  | coPNode bx Lx Rx, coPLeaf by_, xI q =>
+    \let | h_rec : coPset_overlap Rx (coPLeaf by_) = true =>
+      coPset_overlap_complete Rx (coPLeaf by_) q hX hY
+    \in pmap (\lam u => ((bx and by_) or coPset_overlap Lx (coPLeaf by_)) or u) h_rec
+        *> bool_or_true_r ((bx and by_) or coPset_overlap Lx (coPLeaf by_))
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry, xH =>
+    pmap (\lam u => (u or coPset_overlap Lx Ly) or coPset_overlap Rx Ry)
+      (pmap (\lam u => u and by_) hX *> pmap (\lam u => true and u) hY)
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry, xO q =>
+    \let | h_rec : coPset_overlap Lx Ly = true =>
+      coPset_overlap_complete Lx Ly q hX hY
+    \in pmap (\lam u => ((bx and by_) or u) or coPset_overlap Rx Ry) h_rec
+        *> bool_or_xx_true_l ((bx and by_)) (coPset_overlap Rx Ry)
+  | coPNode bx Lx Rx, coPNode by_ Ly Ry, xI q =>
+    \let | h_rec : coPset_overlap Rx Ry = true =>
+      coPset_overlap_complete Rx Ry q hX hY
+    \in pmap (\lam u => ((bx and by_) or coPset_overlap Lx Ly) or u) h_rec
+        *> bool_or_true_r ((bx and by_) or coPset_overlap Lx Ly)
+  \where {
+    \lemma bool_or_true_r (a : Bool) : (a or true) = true \elim a
+      | true => idp
+      | false => idp
+    \lemma bool_or_xx_true_l (a b : Bool) : ((a or true) or b) = true \elim a, b
+      | true, true => idp
+      | true, false => idp
+      | false, true => idp
+      | false, false => idp
+  }
+
+\lemma coPset_overlap_disjoint
+       (X Y : coPset)
+       (h : \Pi (p : Pos) -> coPmem p X = true -> coPmem p Y = true -> Empty)
+  : coPset_overlap X Y = false =>
+  \case coPset_overlap X Y \as o, idp : coPset_overlap X Y = o \return o = false \with {
+    | true, e =>
+      \let | rec : \Sigma (q : Pos) (coPmem q X = true) (coPmem q Y = true) =>
+        coPset_overlap_sound X Y e
+      \in \case h rec.1 rec.2 rec.3 \with {}
+    | false, _ => idp
+  }
+
+\lemma coPset_subset_difference_disjoint (X Y : coPset)
+  : coPset_overlap Y (coPset_difference X Y) = false =>
+  \let disj : \Pi (p : Pos) -> coPmem p Y = true ->
+        coPmem p (coPset_difference X Y) = true -> Empty =>
+    \lam p hY hdiff =>
+      \let
+        | hd : (coPmem p X and not (coPmem p Y)) = true =>
+            inv (coPmem_difference p X Y) *> hdiff
+        | hn : not (coPmem p Y) = true => (bool_and_true_inv _ _ hd).2
+      \in (\case coPmem p Y \as b, idp : coPmem p Y = b
+           \return b = true -> not b = true -> Empty \with {
+           | false, _ => \lam bad _ => \case bad \with {}
+           | true, _ => \lam _ bad => \case bad \with {}
+         }) hY hn
+  \in coPset_overlap_disjoint Y (coPset_difference X Y) disj
+
+-- If two coPsets are equiv (same elements), they have the same overlap with any third set.
+\lemma coPset_overlap_proper_r (X Y1 Y2 : coPset) (h : coPset_equiv Y1 Y2)
+  : coPset_overlap X Y1 = coPset_overlap X Y2 =>
+  \case coPset_overlap X Y1 \as o1, idp : coPset_overlap X Y1 = o1,
+        coPset_overlap X Y2 \as o2, idp : coPset_overlap X Y2 = o2
+  \return o1 = o2 \with {
+    | true,  _,  true,  _  => idp
+    | false, _,  false, _  => idp
+    | true,  e1, false, e2 =>
+      \let | (p, hX, hY1) => coPset_overlap_sound X Y1 e1
+           | hY2 : coPmem p Y2 = true => inv (h p) *> hY1
+      \in \case (inv (coPset_overlap_complete X Y2 p hX hY2)) *> e2 \with {}
+    | false, e1, true,  e2 =>
+      \let | (p, hX, hY2) => coPset_overlap_sound X Y2 e2
+           | hY1 : coPmem p Y1 = true => h p *> hY2
+      \in \case (inv (coPset_overlap_complete X Y1 p hX hY1)) *> e1 \with {}
+  }
+
+\lemma coPset_overlap_proper_l (X1 X2 Y : coPset) (h : coPset_equiv X1 X2)
+  : coPset_overlap X1 Y = coPset_overlap X2 Y =>
+  coPset_overlap_comm X1 Y
+  *> coPset_overlap_proper_r Y X1 X2 h
+  *> coPset_overlap_comm Y X2
+
+-- A coPset is disjoint from itself iff it is empty.
+-- For the unit element ∅, overlap with any set is false.
+\lemma coPset_overlap_empty_l (X : coPset) : coPset_overlap coPset_empty X = false \elim X
+  | coPLeaf b => idp
+  | coPNode b L R =>
+    pmap (\lam u => (u or coPset_overlap coPset_empty L) or coPset_overlap coPset_empty R)
+      (idp : (false and b) = false)
+    *> pmap (\lam u => (false or u) or coPset_overlap coPset_empty R)
+      (coPset_overlap_empty_l L)
+    *> pmap (\lam u => (false or false) or u) (coPset_overlap_empty_l R)
+
+-- =================================================================================
+-- Commutativity / associativity of union, overlap distributivity over union.
+-- =================================================================================
+
+\lemma coPset_union_comm (X Y : coPset) : coPset_equiv (coPset_union X Y) (coPset_union Y X) =>
+  \lam p =>
+    coPmem_union p X Y *>
+    bool_or_comm (coPmem p X) (coPmem p Y) *>
+    inv (coPmem_union p Y X)
+
+\lemma coPset_union_assoc (X Y Z : coPset)
+  : coPset_equiv (coPset_union X (coPset_union Y Z)) (coPset_union (coPset_union X Y) Z) =>
+  \lam p =>
+    coPmem_union p X (coPset_union Y Z) *>
+    pmap (\lam u => coPmem p X or u) (coPmem_union p Y Z) *>
+    bool_or_assoc (coPmem p X) (coPmem p Y) (coPmem p Z) *>
+    inv (pmap (\lam u => u or coPmem p Z) (coPmem_union p X Y)) *>
+    inv (coPmem_union p (coPset_union X Y) Z)
+
+\lemma coPmem_union_just_inl (X Y : coPset) (p : Pos) (h : coPmem p X = true)
+  : coPmem p (coPset_union X Y) = true =>
+  coPmem_union p X Y *> pmap (\lam u => u or coPmem p Y) h
+
+\lemma coPmem_union_just_inr (X Y : coPset) (p : Pos) (h : coPmem p Y = true)
+  : coPmem p (coPset_union X Y) = true =>
+  coPmem_union p X Y *>
+  pmap (\lam u => coPmem p X or u) h *>
+  bool_or_true_r' (coPmem p X)
+  \where {
+    \lemma bool_or_true_r' (a : Bool) : (a or true) = true \elim a
+      | true => idp | false => idp
+  }
+
+\func coPmem_union_inv (X Y : coPset) (p : Pos) (h : coPmem p (coPset_union X Y) = true)
+  : Or (coPmem p X = true) (coPmem p Y = true) =>
+  \let | e : (coPmem p X or coPmem p Y) = true => inv (coPmem_union p X Y) *> h
+  \in \case coPmem p X \as a, idp : coPmem p X = a,
+            coPmem p Y \as b, idp : coPmem p Y = b,
+            e : (a or b) = true
+      \return Or (coPmem p X = true) (coPmem p Y = true)
+      \with {
+        | true,  ha, _,     _,  _  => inl ha
+        | false, _,  true,  hb, _  => inr hb
+        | false, _,  false, _,  he => \case he \with {}
+      }
+
+\lemma coPset_overlap_union_r (X Y Z : coPset)
+  : coPset_overlap X (coPset_union Y Z) = (coPset_overlap X Y or coPset_overlap X Z) =>
+  \case coPset_overlap X Y \as oXY, idp : coPset_overlap X Y = oXY,
+        coPset_overlap X Z \as oXZ, idp : coPset_overlap X Z = oXZ
+  \return coPset_overlap X (coPset_union Y Z) = (oXY or oXZ)
+  \with {
+    | true,  eXY, _,     _   =>
+      \let | (p, hX, hY) => coPset_overlap_sound X Y eXY
+      \in coPset_overlap_complete X (coPset_union Y Z) p hX
+            (coPmem_union_just_inl Y Z p hY)
+    | false, _,   true,  eXZ =>
+      \let | (p, hX, hZ) => coPset_overlap_sound X Z eXZ
+      \in coPset_overlap_complete X (coPset_union Y Z) p hX
+            (coPmem_union_just_inr Y Z p hZ)
+    | false, eXY, false, eXZ =>
+      coPset_overlap_disjoint X (coPset_union Y Z) (\lam p hX hU =>
+        \case coPmem_union_inv Y Z p hU \with {
+          | inl hY => \case (inv (coPset_overlap_complete X Y p hX hY)) *> eXY \with {}
+          | inr hZ => \case (inv (coPset_overlap_complete X Z p hX hZ)) *> eXZ \with {}
+        })
+  }
+
+\lemma coPset_overlap_union_l (X Y Z : coPset)
+  : coPset_overlap (coPset_union X Y) Z = (coPset_overlap X Z or coPset_overlap Y Z) =>
+  \case coPset_overlap X Z \as oXZ, idp : coPset_overlap X Z = oXZ,
+        coPset_overlap Y Z \as oYZ, idp : coPset_overlap Y Z = oYZ
+  \return coPset_overlap (coPset_union X Y) Z = (oXZ or oYZ)
+  \with {
+    | true,  eXZ, _,     _   =>
+      \let | (p, hX, hZ) => coPset_overlap_sound X Z eXZ
+      \in coPset_overlap_complete (coPset_union X Y) Z p
+            (coPmem_union_just_inl X Y p hX) hZ
+    | false, _,   true,  eYZ =>
+      \let | (p, hY, hZ) => coPset_overlap_sound Y Z eYZ
+      \in coPset_overlap_complete (coPset_union X Y) Z p
+            (coPmem_union_just_inr X Y p hY) hZ
+    | false, eXZ, false, eYZ =>
+      coPset_overlap_disjoint (coPset_union X Y) Z (\lam p hU hZ =>
+        \case coPmem_union_inv X Y p hU \with {
+          | inl hX => \case (inv (coPset_overlap_complete X Z p hX hZ)) *> eXZ \with {}
+          | inr hY => \case (inv (coPset_overlap_complete Y Z p hY hZ)) *> eYZ \with {}
+        })
+  }
+
+-- =================================================================================
+-- Helpers for `coPset_disj_op` and `coPset_disj_equiv`.
+-- =================================================================================
+
+\lemma bool_or_true_r (a : Bool) : (a or true) = true \elim a
+  | true => idp
+  | false => idp
+
+\lemma coPset_disj_op_invalid_l (y : coPset_disj) : coPset_disj_op CoPsetInvalid y = CoPsetInvalid
+  \elim y
+  | CoPset _ => idp
+  | CoPsetInvalid => idp
+
+\lemma coPset_disj_op_invalid_r (x : coPset_disj) : coPset_disj_op x CoPsetInvalid = CoPsetInvalid
+  \elim x
+  | CoPset _ => idp
+  | CoPsetInvalid => idp
+
+\lemma op_CoPset_eq_invalid (X Y : coPset) (h : coPset_overlap X Y = true)
+  : coPset_disj_op (CoPset X) (CoPset Y) = CoPsetInvalid =>
+  pmap (\lam o => \case o \with { | true => CoPsetInvalid | false => CoPset (coPset_union X Y) }) h
+
+\lemma op_CoPset_eq_CoPset (X Y : coPset) (h : coPset_overlap X Y = false)
+  : coPset_disj_op (CoPset X) (CoPset Y) = CoPset (coPset_union X Y) =>
+  pmap (\lam o => \case o \with { | true => CoPsetInvalid | false => CoPset (coPset_union X Y) }) h
+
+\lemma coPset_disj_equiv_via_invalid (a b : coPset_disj)
+                                      (ha : a = CoPsetInvalid) (hb : b = CoPsetInvalid)
+  : coPset_disj_equiv a b =>
+  transport (\lam x => coPset_disj_equiv x b) (inv ha)
+    (transport (\lam y => coPset_disj_equiv CoPsetInvalid y) (inv hb) ())
+
+\lemma coPset_disj_equiv_via_CoPset (a b : coPset_disj) (A B : coPset)
+                                     (ha : a = CoPset A) (hb : b = CoPset B)
+                                     (e : coPset_equiv A B)
+  : coPset_disj_equiv a b =>
+  transport (\lam x => coPset_disj_equiv x b) (inv ha)
+    (transport (\lam y => coPset_disj_equiv (CoPset A) y) (inv hb) e)
+
+
+-- =================================================================================
+-- CMRA mixin
+-- =================================================================================
+
+\instance coPset_disj_CMRA : CMRA \cowith
+  | OFE => coPset_disj_OFE
+  | PCore => \new PCore coPset_disj { | pcore => coPset_disj_pcore }
+  | Op => \new Op coPset_disj { | op => coPset_disj_op }
+  | Valid => \new Valid coPset_disj { | valid => coPset_disj_valid }
+  | ValidN => \new ValidN coPset_disj { | validN => coPset_disj_validN }
+
+  | cmra_op_ne => \lam x n y1 y2 hd => op_proper_inner x y1 y2 hd
+  | cmra_op_ne_2 => \lam y n x1 x2 hd => op_proper_outer x1 x2 y hd
+  | cmra_pcore_ne => \lam n x y cx _ hpx =>
+      \let
+        | cx_eq : cx = CoPset coPset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => CoPset coPset_empty }) (inv hpx)
+      \in (CoPset coPset_empty, idp,
+           transport (\lam c => coPset_disj_equiv c (CoPset coPset_empty))
+             (inv cx_eq) (coPset_disj_equiv_refl (CoPset coPset_empty)))
+  | cmra_validN_ne => validN_ne
+  | cmra_valid_validN => \lam x => (\lam h _ => h, \lam h => h 0)
+  | cmra_validN_le => \lam _ _ _ hv _ => hv
+
+  | cmra_assoc => op_assoc
+  | cmra_comm => op_comm
+  | cmra_pcore_l => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = CoPset coPset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => CoPset coPset_empty }) (inv hpx)
+      \in transport (\lam c => coPset_disj_equiv (coPset_disj_op c x) x) (inv cx_eq) (pcore_l x)
+  | cmra_pcore_idemp => \lam x cx hpx =>
+      \let
+        | cx_eq : cx = CoPset coPset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => CoPset coPset_empty }) (inv hpx)
+      \in transport (\lam c => (OptionOFE coPset_disj_OFE).equiv (coPset_disj_pcore c) (just c))
+            (inv cx_eq) (coPset_disj_equiv_refl (CoPset coPset_empty))
+  | cmra_pcore_mono => \lam x y cx _ hpx =>
+      \let
+        | cx_eq : cx = CoPset coPset_empty =>
+          pmap (\case __ \with { | just c => c | nothing => CoPset coPset_empty }) (inv hpx)
+      \in inP (CoPset coPset_empty, idp,
+            transport (\lam c => incl {coPset_disj_OFE}
+              {\new Op coPset_disj { | op => coPset_disj_op }} c (CoPset coPset_empty))
+              (inv cx_eq) (inP (CoPset coPset_empty, coPset_disj_equiv_refl (CoPset coPset_empty))))
+
+  | cmra_validN_op_l => validN_op_l
+  | cmra_extend => \lam n x y1 y2 _ hd =>
+      (y1, y2, hd, coPset_disj_equiv_refl y1, coPset_disj_equiv_refl y2)
+
+  \where {
+    -- Proper-ness in the second argument.
+    \func op_proper_inner (x y1 y2 : coPset_disj) (hd : coPset_disj_equiv y1 y2)
+      : coPset_disj_equiv (coPset_disj_op x y1) (coPset_disj_op x y2) \elim x, y1, y2
+      | CoPset X, CoPset Y1, CoPset Y2 => proper_inner_coPset X Y1 Y2 hd
+      | CoPset _, CoPset _, CoPsetInvalid => \case hd \with {}
+      | CoPset _, CoPsetInvalid, CoPset _ => \case hd \with {}
+      | CoPset _, CoPsetInvalid, CoPsetInvalid => ()
+      | CoPsetInvalid, _, _ => ()
+
+    \func proper_inner_coPset (X Y1 Y2 : coPset) (hd : coPset_equiv Y1 Y2)
+      : coPset_disj_equiv (coPset_disj_op (CoPset X) (CoPset Y1))
+                          (coPset_disj_op (CoPset X) (CoPset Y2)) =>
+      \case coPset_overlap X Y1 \as o1, idp : coPset_overlap X Y1 = o1,
+            coPset_overlap X Y2 \as o2, idp : coPset_overlap X Y2 = o2,
+            coPset_overlap_proper_r X Y1 Y2 hd : coPset_overlap X Y1 = coPset_overlap X Y2
+      \return coPset_disj_equiv
+                (\case o1 \with { | true => CoPsetInvalid | false => CoPset (coPset_union X Y1) })
+                (\case o2 \with { | true => CoPsetInvalid | false => CoPset (coPset_union X Y2) })
+      \with {
+        | true, _, true, _, _ => ()
+        | false, _, false, _, _ =>
+          \lam p =>
+            coPmem_union p X Y1 *>
+            pmap (\lam b => coPmem p X or b) (hd p) *>
+            inv (coPmem_union p X Y2)
+        | true, e1, false, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+        | false, e1, true, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+      }
+
+    \func op_proper_outer (x1 x2 y : coPset_disj) (hd : coPset_disj_equiv x1 x2)
+      : coPset_disj_equiv (coPset_disj_op x1 y) (coPset_disj_op x2 y) \elim x1, x2, y
+      | CoPset X1, CoPset X2, CoPset Y => proper_outer_coPset X1 X2 Y hd
+      | CoPset _, CoPset _, CoPsetInvalid => ()
+      | CoPset _, CoPsetInvalid, _ => \case hd \with {}
+      | CoPsetInvalid, CoPset _, _ => \case hd \with {}
+      | CoPsetInvalid, CoPsetInvalid, _ => ()
+
+    \func proper_outer_coPset (X1 X2 Y : coPset) (hd : coPset_equiv X1 X2)
+      : coPset_disj_equiv (coPset_disj_op (CoPset X1) (CoPset Y))
+                          (coPset_disj_op (CoPset X2) (CoPset Y)) =>
+      \case coPset_overlap X1 Y \as o1, idp : coPset_overlap X1 Y = o1,
+            coPset_overlap X2 Y \as o2, idp : coPset_overlap X2 Y = o2,
+            coPset_overlap_proper_l X1 X2 Y hd : coPset_overlap X1 Y = coPset_overlap X2 Y
+      \return coPset_disj_equiv
+                (\case o1 \with { | true => CoPsetInvalid | false => CoPset (coPset_union X1 Y) })
+                (\case o2 \with { | true => CoPsetInvalid | false => CoPset (coPset_union X2 Y) })
+      \with {
+        | true, _, true, _, _ => ()
+        | false, _, false, _, _ =>
+          \lam p =>
+            coPmem_union p X1 Y *>
+            pmap (\lam b => b or coPmem p Y) (hd p) *>
+            inv (coPmem_union p X2 Y)
+        | true, e1, false, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+        | false, e1, true, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+      }
+
+    \func validN_ne (n : Nat) (x y : coPset_disj)
+                     (hd : coPset_disj_equiv x y)
+                     (hv : coPset_disj_valid x) : coPset_disj_valid y \elim x, y
+      | CoPset _, CoPset _ => ()
+      | CoPset _, CoPsetInvalid => \case hd \with {}
+      | CoPsetInvalid, _ => \case hv \with {}
+
+    \func validN_op_l (n : Nat) (x y : coPset_disj)
+                       (hv : coPset_disj_valid (coPset_disj_op x y))
+      : coPset_disj_valid x \elim x, y
+      | CoPset _, CoPset _ => ()
+      | CoPset _, CoPsetInvalid => \case hv \with {}
+      | CoPsetInvalid, _ => \case hv \with {}
+
+    \lemma op_comm (x y : coPset_disj)
+      : coPset_disj_equiv (coPset_disj_op x y) (coPset_disj_op y x) \elim x, y
+      | CoPset X, CoPset Y =>
+        \case coPset_overlap X Y \as oxy, idp : coPset_overlap X Y = oxy,
+              coPset_overlap Y X \as oyx, idp : coPset_overlap Y X = oyx,
+              coPset_overlap_comm X Y : coPset_overlap X Y = coPset_overlap Y X
+        \return coPset_disj_equiv
+                  (\case oxy \with { | true => CoPsetInvalid | false => CoPset (coPset_union X Y) })
+                  (\case oyx \with { | true => CoPsetInvalid | false => CoPset (coPset_union Y X) })
+        \with {
+          | true, _, true, _, _ => ()
+          | false, _, false, _, _ => coPset_union_comm X Y
+          | true, e1, false, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+          | false, e1, true, e2, eq => \case (inv e1 *> eq *> e2) \with {}
+        }
+      | CoPset _, CoPsetInvalid => ()
+      | CoPsetInvalid, CoPset _ => ()
+      | CoPsetInvalid, CoPsetInvalid => ()
+
+    \lemma op_assoc (x y z : coPset_disj)
+      : coPset_disj_equiv (coPset_disj_op x (coPset_disj_op y z))
+                          (coPset_disj_op (coPset_disj_op x y) z) \elim x, y, z
+      | CoPsetInvalid, _, _ => ()
+      | CoPset _, CoPsetInvalid, _ => ()
+      | CoPset X, CoPset Y, CoPsetInvalid =>
+        coPset_disj_equiv_via_invalid _ _
+          idp
+          (coPset_disj_op_invalid_r (coPset_disj_op (CoPset X) (CoPset Y)))
+      | CoPset X, CoPset Y, CoPset Z => op_assoc_CoPset X Y Z
+
+    \func op_assoc_CoPset (X Y Z : coPset)
+      : coPset_disj_equiv
+          (coPset_disj_op (CoPset X) (coPset_disj_op (CoPset Y) (CoPset Z)))
+          (coPset_disj_op (coPset_disj_op (CoPset X) (CoPset Y)) (CoPset Z)) =>
+      \case coPset_overlap X Y \as oXY, idp : coPset_overlap X Y = oXY,
+            coPset_overlap Y Z \as oYZ, idp : coPset_overlap Y Z = oYZ,
+            coPset_overlap X Z \as oXZ, idp : coPset_overlap X Z = oXZ
+      \with {
+        | true, eXY, true, eYZ, _, _ =>
+          coPset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_YZ X Y Z eYZ)
+            (rhs_invalid_via_XY X Y Z eXY)
+        | true, eXY, false, eYZ, _, _ =>
+          coPset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_XY_or_XZ X Y Z eYZ
+              (pmap (\lam u => u or coPset_overlap X Z) eXY))
+            (rhs_invalid_via_XY X Y Z eXY)
+        | false, eXY, true, eYZ, _, _ =>
+          coPset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_YZ X Y Z eYZ)
+            (rhs_invalid_via_XY_or_YZ X Y Z eXY
+              (pmap (\lam u => coPset_overlap X Z or u) eYZ *>
+               bool_or_true_r (coPset_overlap X Z)))
+        | false, eXY, false, eYZ, true, eXZ =>
+          coPset_disj_equiv_via_invalid _ _
+            (lhs_invalid_via_XY_or_XZ X Y Z eYZ
+              (pmap (\lam u => coPset_overlap X Y or u) eXZ *>
+               bool_or_true_r (coPset_overlap X Y)))
+            (rhs_invalid_via_XY_or_YZ X Y Z eXY
+              (pmap (\lam u => u or coPset_overlap Y Z) eXZ))
+        | false, eXY, false, eYZ, false, eXZ =>
+          \let
+            | h_uYZ : coPset_overlap X (coPset_union Y Z) = false =>
+              coPset_overlap_union_r X Y Z *>
+              pmap (\lam u => u or coPset_overlap X Z) eXY *>
+              pmap (\lam u => false or u) eXZ
+            | h_uXY : coPset_overlap (coPset_union X Y) Z = false =>
+              coPset_overlap_union_l X Y Z *>
+              pmap (\lam u => u or coPset_overlap Y Z) eXZ *>
+              pmap (\lam u => false or u) eYZ
+            | h_YZ : coPset_disj_op (CoPset Y) (CoPset Z) = CoPset (coPset_union Y Z) =>
+              op_CoPset_eq_CoPset Y Z eYZ
+            | h_XY : coPset_disj_op (CoPset X) (CoPset Y) = CoPset (coPset_union X Y) =>
+              op_CoPset_eq_CoPset X Y eXY
+            | h_LHS : coPset_disj_op (CoPset X) (coPset_disj_op (CoPset Y) (CoPset Z))
+                      = CoPset (coPset_union X (coPset_union Y Z)) =>
+              pmap (\lam yz => coPset_disj_op (CoPset X) yz) h_YZ *>
+              op_CoPset_eq_CoPset X (coPset_union Y Z) h_uYZ
+            | h_RHS : coPset_disj_op (coPset_disj_op (CoPset X) (CoPset Y)) (CoPset Z)
+                      = CoPset (coPset_union (coPset_union X Y) Z) =>
+              pmap (\lam xy => coPset_disj_op xy (CoPset Z)) h_XY *>
+              op_CoPset_eq_CoPset (coPset_union X Y) Z h_uXY
+          \in coPset_disj_equiv_via_CoPset _ _ _ _ h_LHS h_RHS (coPset_union_assoc X Y Z)
+      }
+    \where {
+      \lemma lhs_invalid_via_YZ (X Y Z : coPset) (eYZ : coPset_overlap Y Z = true)
+        : coPset_disj_op (CoPset X) (coPset_disj_op (CoPset Y) (CoPset Z)) = CoPsetInvalid =>
+        pmap (\lam yz => coPset_disj_op (CoPset X) yz) (op_CoPset_eq_invalid Y Z eYZ)
+
+      \lemma lhs_invalid_via_XY_or_XZ (X Y Z : coPset) (eYZ : coPset_overlap Y Z = false)
+                                       (h : (coPset_overlap X Y or coPset_overlap X Z) = true)
+        : coPset_disj_op (CoPset X) (coPset_disj_op (CoPset Y) (CoPset Z)) = CoPsetInvalid =>
+        pmap (\lam yz => coPset_disj_op (CoPset X) yz) (op_CoPset_eq_CoPset Y Z eYZ) *>
+        op_CoPset_eq_invalid X (coPset_union Y Z) (coPset_overlap_union_r X Y Z *> h)
+
+      \lemma rhs_invalid_via_XY (X Y Z : coPset) (eXY : coPset_overlap X Y = true)
+        : coPset_disj_op (coPset_disj_op (CoPset X) (CoPset Y)) (CoPset Z) = CoPsetInvalid =>
+        pmap (\lam xy => coPset_disj_op xy (CoPset Z)) (op_CoPset_eq_invalid X Y eXY)
+
+      \lemma rhs_invalid_via_XY_or_YZ (X Y Z : coPset) (eXY : coPset_overlap X Y = false)
+                                       (h : (coPset_overlap X Z or coPset_overlap Y Z) = true)
+        : coPset_disj_op (coPset_disj_op (CoPset X) (CoPset Y)) (CoPset Z) = CoPsetInvalid =>
+        pmap (\lam xy => coPset_disj_op xy (CoPset Z)) (op_CoPset_eq_CoPset X Y eXY) *>
+        op_CoPset_eq_invalid (coPset_union X Y) Z (coPset_overlap_union_l X Y Z *> h)
+    }
+
+    \func pcore_l (x : coPset_disj)
+      : coPset_disj_equiv (coPset_disj_op (CoPset coPset_empty) x) x \elim x
+      | CoPset X => pcore_l_coPset X
+      | CoPsetInvalid => ()
+
+    \func pcore_l_coPset (X : coPset)
+      : coPset_disj_equiv (coPset_disj_op (CoPset coPset_empty) (CoPset X)) (CoPset X) =>
+      \case coPset_overlap coPset_empty X \as o, idp : coPset_overlap coPset_empty X = o,
+            coPset_overlap_empty_l X : coPset_overlap coPset_empty X = false
+      \return coPset_disj_equiv
+                (\case o \with { | true => CoPsetInvalid | false => CoPset (coPset_union coPset_empty X) })
+                (CoPset X)
+      \with {
+        | true, eq, abs => \case (inv eq *> abs) \with {}
+        | false, _, _ =>
+          \lam p => coPmem_union p coPset_empty X *>
+                    pmap (\lam b => b or coPmem p X) (coPmem_empty p)
+      }
+
+  }
+
+
+-- =================================================================================
+-- UCMRA: unit = CoPset ∅
+-- =================================================================================
+
+\instance coPset_disj_UCMRA : UCMRA \cowith
+  | CMRA => coPset_disj_CMRA
+  | unit => CoPset coPset_empty
+  | ucmra_unit_valid => ()
+  | ucmra_unit_left_id => coPset_disj_CMRA.pcore_l
+  | ucmra_pcore_unit => coPset_disj_equiv_refl (CoPset coPset_empty)

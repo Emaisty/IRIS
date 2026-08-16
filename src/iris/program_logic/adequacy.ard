@@ -1,0 +1,598 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import Order.PartialOrder
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+\import iris.base_logic.lib.wsat
+\import iris.base_logic.lib.wsat_alloc
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.fancy_updates_mask
+\import iris.program_logic.iris_sigma
+\import stdpp.coPset
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gen_heap
+\import iris.bi.big_op
+
+-- =================================================================================
+-- A12 adequacy bootstrap.
+--
+-- Rocq Iris builds the program logic by allocating the invariant world and the
+-- generic heap as two independent ghost resources, then packaging their names
+-- into a single `irisGS`.  Keeping that shape here is important: later adequacy
+-- proofs can quantify over this package and do not need to know either ghost
+-- name.  Both component packages live in Set1 in Arend (see `wsat_alloc`), so
+-- the result uses the concrete Set1 existential rather than changing BI's
+-- ordinary Set0 existential interface.
+-- =================================================================================
+
+\func init_resources {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (sigma : State cnt) : iProp S =>
+  mkProperSep (state_interp H sigma)
+    (mkProperSep (wsat H.iris_wsat)
+      (ownE H.iris_wsat coPset_universe))
+
+\func heap_package {cnt : Countable Loc} {S : gFunctors}
+    (sigma : State cnt) : iProp S =>
+  mkProperExist1 (gen_heapGS Loc cnt Value S)
+    (\lam G => gen_heap_interp G sigma.heap)
+
+\func world_package {S : gFunctors} : iProp S =>
+  mkProperExist1 (wsatGS S)
+    (\lam W => mkProperSep (wsat W) (ownE W coPset_universe))
+
+-- Kept abstract so Arend elaborates the bupd plumbing once, rather than
+-- unfolding both large allocation proofs while it is assembling `irisGS`.
+\lemma bupd_alloc_two_then {M : UCMRA}
+    (A B G : ProperUPred M)
+    (allocA : properUPred_ent mkProperEmp (mkProperBUpd A))
+    (allocB : properUPred_ent mkProperEmp (mkProperBUpd B))
+    (package : properUPred_ent (mkProperSep A B) G)
+  : properUPred_ent mkProperEmp (mkProperBUpd G) =>
+  \let
+    | addA : properUPred_ent B (mkProperBUpd (mkProperSep A B)) =>
+        bupd_alloc_frame A B allocA
+    | allocateBoth : properUPred_ent mkProperEmp
+        (mkProperBUpd (mkProperSep A B)) =>
+        properUPred_ent_trans mkProperEmp
+          (mkProperBUpd (mkProperBUpd (mkProperSep A B)))
+          (mkProperBUpd (mkProperSep A B))
+          (properUPred_ent_trans mkProperEmp
+            (mkProperBUpd B)
+            (mkProperBUpd (mkProperBUpd (mkProperSep A B)))
+            allocB
+            (bupd_mono B (mkProperBUpd (mkProperSep A B)) addA))
+          (bupd_trans (mkProperSep A B))
+  \in properUPred_ent_trans mkProperEmp
+      (mkProperBUpd (mkProperSep A B)) (mkProperBUpd G)
+      allocateBoth (bupd_mono (mkProperSep A B) G package)
+
+\lemma init_from_allocations {cnt : Countable Loc} {S : gFunctors}
+    (sigma : State cnt)
+    (heapAlloc : properUPred_ent mkProperEmp
+      (mkProperBUpd (heap_package {cnt} {S} sigma)))
+    (worldAlloc : properUPred_ent mkProperEmp
+      (mkProperBUpd (world_package {S})))
+  : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (mkProperExist1 (irisGS cnt S)
+          (\lam H => init_resources H sigma))) =>
+  \let
+    | HeapPackage : iProp S => heap_package {cnt} {S} sigma
+    | WorldPackage : iProp S => world_package
+    | Combined : iProp S => mkProperSep HeapPackage WorldPackage
+    | Goal : iProp S => mkProperExist1 (irisGS cnt S)
+        (\lam H => init_resources H sigma)
+    | package : properUPred_ent Combined Goal =>
+        \lam n x hx hcombined => \case hcombined \with {
+          | inP (aHeap, aWorld, dx, hHeapPackage, hWorldPackage) =>
+            \case hHeapPackage, hWorldPackage \with {
+              | inP (G, hHeap), inP (W, hWorld) =>
+                \let H : irisGS cnt S => mkIrisGS W G
+                \in inP (H,
+                  inP (aHeap, aWorld, dx, hHeap, hWorld))
+            }
+        }
+  \in bupd_alloc_two_then HeapPackage WorldPackage Goal
+      heapAlloc worldAlloc package
+
+-- Concrete Rocq-shaped initialization from the combined signature evidence.
+-- This is intentionally part of canonical adequacy.  Arend 1.12 may spend a
+-- long time converting the two Set1 allocation witnesses at this application;
+-- the preceding `init_from_allocations` isolates the checked logical
+-- content from that elaboration-performance issue.
+\lemma init {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (sigma : State cnt)
+  : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (mkProperExist1 (irisGS cnt S)
+          (\lam H => init_resources H sigma))) =>
+  init_from_allocations sigma
+    (gen_heap_init Hpre.iris_heap_pre sigma.heap)
+    (wsat_alloc Hpre.iris_wsat_pre)
+
+-- =================================================================================
+-- Sequential operational preservation.
+-- =================================================================================
+
+\truncated \data Steps {cnt : Countable Loc} (k : Nat)
+    (e : Expr) (sigma : State cnt) (e' : Expr) (sigma' : State cnt)
+    : \Prop \elim k
+  | 0 => StepsRefl (pe : e = e') (ps : sigma = sigma')
+  | suc k' => StepsStep
+      (emid : Expr) (smid : State cnt)
+      (head : PrimStep e sigma emid smid)
+      (tail : Steps k' emid smid e' sigma')
+
+\func wp_step_iter {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (k : Nat) (P : iProp S)
+  : iProp S \elim k
+  | 0 => P
+  | suc k' => mkProperFUpd H.iris_wsat E coPset_empty
+      (mkProperLater
+        (mkProperFUpd H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' P)))
+
+\lemma wp_step_iter_mono {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (k : Nat)
+    (P Q : iProp S) (hPQ : properUPred_ent P Q)
+  : properUPred_ent
+      (wp_step_iter H E k P) (wp_step_iter H E k Q) \elim k
+  | 0 => hPQ
+  | suc k' => fupd_mono H.iris_wsat E coPset_empty
+      (mkProperLater
+        (mkProperFUpd H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' P)))
+      (mkProperLater
+        (mkProperFUpd H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' Q)))
+      (proper_later_mono
+        (mkProperFUpd H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' P))
+        (mkProperFUpd H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' Q))
+        (fupd_mono H.iris_wsat coPset_empty E
+          (wp_step_iter H E k' P) (wp_step_iter H E k' Q)
+          (wp_step_iter_mono H E k' P Q hPQ)))
+
+\lemma wp_preservation {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (k : Nat)
+    (e e' : Expr) (Phi : Value -> iProp S)
+    (sigma sigma' : State cnt)
+    (steps : Steps k e sigma e' sigma')
+  : properUPred_ent
+      (mkProperSep (wp H E e Phi) (state_interp H sigma))
+      (wp_step_iter H E k
+        (mkProperSep (wp H E e' Phi) (state_interp H sigma'))) \elim k, steps
+  | 0, StepsRefl pe ps =>
+      transport
+        (\lam x => properUPred_ent
+          (mkProperSep (wp H E e Phi) (state_interp H sigma))
+          (mkProperSep (wp H E x.1 Phi) (state_interp H x.2)))
+        (path (\lam i => (pe @ i, ps @ i)))
+        (properUPred_ent_refl
+          (mkProperSep (wp H E e Phi) (state_interp H sigma)))
+  | suc k', StepsStep emid smid head tail =>
+      \let
+        | Mid => mkProperSep (wp H E emid Phi) (state_interp H smid)
+        | Final => mkProperSep (wp H E e' Phi) (state_interp H sigma')
+        | tailStep : properUPred_ent Mid (wp_step_iter H E k' Final) =>
+            wp_preservation H E k' emid e' Phi smid sigma' tail
+        | firstStep : properUPred_ent
+            (mkProperSep (wp H E e Phi) (state_interp H sigma))
+            (wp_step_result H E emid Phi smid) =>
+            wp_prim_step H E e emid Phi sigma smid head
+        | reorderThenTail : properUPred_ent
+            (mkProperSep (state_interp H smid) (wp H E emid Phi))
+            (wp_step_iter H E k' Final) =>
+            properUPred_ent_trans
+              (mkProperSep (state_interp H smid) (wp H E emid Phi))
+              Mid (wp_step_iter H E k' Final)
+              (sep_comm_ent (state_interp H smid) (wp H E emid Phi))
+              tailStep
+        | liftTail : properUPred_ent
+            (wp_step_result H E emid Phi smid)
+            (wp_step_iter H E (suc k') Final) =>
+            fupd_mono H.iris_wsat E coPset_empty
+              (mkProperLater
+                (mkProperFUpd H.iris_wsat coPset_empty E
+                  (mkProperSep (state_interp H smid)
+                    (wp H E emid Phi))))
+              (mkProperLater
+                (mkProperFUpd H.iris_wsat coPset_empty E
+                  (wp_step_iter H E k' Final)))
+              (proper_later_mono
+                (mkProperFUpd H.iris_wsat coPset_empty E
+                  (mkProperSep (state_interp H smid)
+                    (wp H E emid Phi)))
+                (mkProperFUpd H.iris_wsat coPset_empty E
+                  (wp_step_iter H E k' Final))
+                (fupd_mono H.iris_wsat coPset_empty E
+                  (mkProperSep (state_interp H smid)
+                    (wp H E emid Phi))
+                  (wp_step_iter H E k' Final)
+                  reorderThenTail))
+      \in properUPred_ent_trans
+          (mkProperSep (wp H E e Phi) (state_interp H sigma))
+          (wp_step_result H E emid Phi smid)
+          (wp_step_iter H E (suc k') Final)
+          firstStep liftTail
+
+\func not_stuck {cnt : Countable Loc} (e : Expr) (sigma : State cnt) : \Prop =>
+  (\Sigma (v : Value) (to_val e = just v)) || Reducible e sigma
+
+\lemma wp_steps_value {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (k : Nat)
+    (e : Expr) (v : Value) (Phi : Value -> iProp S)
+    (sigma sigma' : State cnt)
+    (steps : Steps k e sigma (Val v) sigma')
+  : properUPred_ent
+      (mkProperSep (wp H E e Phi) (state_interp H sigma))
+      (wp_step_iter H E k
+        (mkProperFUpd H.iris_wsat E E (Phi v))) =>
+  properUPred_ent_trans
+    (mkProperSep (wp H E e Phi) (state_interp H sigma))
+    (wp_step_iter H E k
+      (mkProperSep (wp H E (Val v) Phi) (state_interp H sigma')))
+    (wp_step_iter H E k
+      (mkProperFUpd H.iris_wsat E E (Phi v)))
+    (wp_preservation H E k e (Val v) Phi sigma sigma' steps)
+    (wp_step_iter_mono H E k
+      (mkProperSep (wp H E (Val v) Phi) (state_interp H sigma'))
+      (mkProperFUpd H.iris_wsat E E (Phi v))
+      (properUPred_ent_trans
+        (mkProperSep (wp H E (Val v) Phi) (state_interp H sigma'))
+        (wp H E (Val v) Phi)
+        (mkProperFUpd H.iris_wsat E E (Phi v))
+        (sep_elim_l_ent (wp H E (Val v) Phi) (state_interp H sigma'))
+        (wp_value_elim H E v Phi)))
+
+\lemma wp_steps_reducible {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (k : Nat)
+    (e e' : Expr) (Phi : Value -> iProp S)
+    (sigma sigma' : State cnt)
+    (steps : Steps k e sigma e' sigma')
+    (notVal : to_val e' = nothing)
+  : properUPred_ent
+      (mkProperSep (wp H E e Phi) (state_interp H sigma))
+      (wp_step_iter H E k
+        (mkProperFUpd H.iris_wsat E coPset_empty
+          (mkProperPure (Reducible e' sigma')))) =>
+  properUPred_ent_trans
+    (mkProperSep (wp H E e Phi) (state_interp H sigma))
+    (wp_step_iter H E k
+      (mkProperSep (wp H E e' Phi) (state_interp H sigma')))
+    (wp_step_iter H E k
+      (mkProperFUpd H.iris_wsat E coPset_empty
+        (mkProperPure (Reducible e' sigma'))))
+    (wp_preservation H E k e e' Phi sigma sigma' steps)
+    (wp_step_iter_mono H E k
+      (mkProperSep (wp H E e' Phi) (state_interp H sigma'))
+      (mkProperFUpd H.iris_wsat E coPset_empty
+        (mkProperPure (Reducible e' sigma')))
+      (wp_reducible H E e' Phi sigma' notVal))
+
+-- =================================================================================
+-- Closing the invariant world and extracting a meta-level proposition.
+--
+-- A fancy update is a wand from `wsat * ownE E1` to a basic update returning
+-- `wsat * ownE E2`.  Adequacy therefore keeps that world resource beside the
+-- step iterator and opens one fancy update at a time.  We evaluate a run of
+-- `k` physical steps at index `k + 1`: each step consumes one `later`, while
+-- the remaining positive index rules out the exceptional zero branch of
+-- `ExceptZero`.  This is the sequential, no-fork counterpart of Rocq Iris'
+-- `fupd_finally_soundness` / `step_fupdN_soundness` argument.
+-- =================================================================================
+
+\func world {S : gFunctors} (W : wsatGS S) (E : coPset) : iProp S =>
+  mkProperSep (wsat W) (ownE W E)
+
+\lemma except_zero_positive {M : UCMRA} (P : ProperUPred M)
+    (n : Nat) (a : M.E)
+  : (mkProperExceptZero P).upred_holds (suc n) a -> P.upred_holds (suc n) a =>
+  \lam h => \case h \with {
+    | byLeft impossible => absurd impossible
+    | byRight hp => hp
+  }
+
+\lemma truncP_elim_prop {A : \Type} {Q : \Prop}
+    (t : TruncP A) (f : A -> Q) : Q \elim t
+  | inP a => f a
+
+-- Run one fancy update after supplying its world resource.  The result still
+-- contains `ExceptZero`; callers eliminate it only when their current index
+-- is known to be positive.
+\lemma fupd_elim_with_world {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S) (n : Nat) (a : (iResUR S).E)
+    (ha : (iResUR S).validN n a)
+    (h : (mkProperSep (mkProperFUpd W E1 E2 P) (world W E1))
+      .upred_holds n a)
+  : TruncP (\Sigma (a' : (iResUR S).E)
+      ((iResUR S).validN n a')
+      ((mkProperExceptZero
+        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+        .upred_holds n a')) =>
+  \case h \with {
+    | inP (af, aw, da, hf, hw) =>
+      \let
+        | M => iResUR S
+        | hafw : M.validN n (M.op af aw) =>
+            M.cmra_validN_ne n a (M.op af aw) da ha
+        | hb : (mkProperBUpd
+            (mkProperExceptZero
+              (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))))
+            .upred_holds n (M.op af aw) =>
+            hf n <=-refl aw hafw hw
+        | hafwu : M.validN n (M.op (M.op af aw) M.unit) =>
+            cmra_validN_proper {M} n (M.op af aw)
+              (M.op (M.op af aw) M.unit)
+              (M.equiv_sym (M.op (M.op af aw) M.unit) (M.op af aw)
+                (ucmra_unit_right_id (M.op af aw))) hafw
+      \in \case hb n <=-refl M.unit hafwu \with {
+        | inP (a', ha'u, hp) =>
+          inP (a', M.cmra_validN_op_l n a' M.unit ha'u, hp)
+      }
+  }
+
+\lemma wp_step_iter_pure_soundness_zero {cnt : Countable Loc}
+    {S : gFunctors} (H : irisGS cnt S) (E : coPset)
+    (phi : \Prop) (a : (iResUR S).E) (ha : (iResUR S).validN 1 a)
+    (h : (mkProperSep (world H.iris_wsat E)
+      (mkProperFUpd H.iris_wsat E E (mkProperPure phi)))
+      .upred_holds 1 a)
+  : phi =>
+  \let
+    | reordered : (mkProperSep
+        (mkProperFUpd H.iris_wsat E E (mkProperPure phi))
+        (world H.iris_wsat E)).upred_holds 1 a =>
+        sep_comm_ent (world H.iris_wsat E)
+          (mkProperFUpd H.iris_wsat E E (mkProperPure phi)) 1 a ha h
+    | opened => fupd_elim_with_world H.iris_wsat E E
+        (mkProperPure phi) 1 a ha reordered
+  \in \scase opened \with {
+    | inP opened0 =>
+      \let
+        | a' => opened0.1
+        | hex => opened0.3
+        | hbody => except_zero_positive
+            (mkProperSep (wsat H.iris_wsat)
+              (mkProperSep (ownE H.iris_wsat E) (mkProperPure phi)))
+            0 a' hex
+      \in \case hbody \with {
+        | inP (_, _, _, _, htail) => \case htail \with {
+          | inP (_, _, _, _, hphi) => hphi
+        }
+      }
+  }
+
+\lemma wp_step_iter_pure_soundness_suc {cnt : Countable Loc}
+    {S : gFunctors} (H : irisGS cnt S) (E : coPset)
+    (k : Nat) (phi : \Prop) (a : (iResUR S).E)
+    (ha : (iResUR S).validN (suc (suc k)) a)
+    (h : (mkProperSep (world H.iris_wsat E)
+      (wp_step_iter H E (suc k)
+        (mkProperFUpd H.iris_wsat E E (mkProperPure phi))))
+      .upred_holds (suc (suc k)) a)
+    (ih : \Pi (a' : (iResUR S).E) -> (iResUR S).validN (suc k) a' ->
+      (mkProperSep (world H.iris_wsat E)
+        (wp_step_iter H E k
+          (mkProperFUpd H.iris_wsat E E (mkProperPure phi))))
+        .upred_holds (suc k) a' -> phi)
+  : phi =>
+  \let
+    | M => iResUR S
+    | Tail => wp_step_iter H E k
+        (mkProperFUpd H.iris_wsat E E (mkProperPure phi))
+    | Inner => mkProperFUpd H.iris_wsat coPset_empty E Tail
+    | reordered : (mkProperSep
+        (mkProperFUpd H.iris_wsat E coPset_empty (mkProperLater Inner))
+        (world H.iris_wsat E)).upred_holds (suc (suc k)) a =>
+        sep_comm_ent (world H.iris_wsat E)
+          (mkProperFUpd H.iris_wsat E coPset_empty (mkProperLater Inner))
+          (suc (suc k)) a ha h
+  \in truncP_elim_prop
+    (fupd_elim_with_world H.iris_wsat E coPset_empty
+      (mkProperLater Inner) (suc (suc k)) a ha reordered)
+    (\lam opened1 =>
+      \let
+        | a1 => opened1.1
+        | ha1 => opened1.2
+        | hex1 => opened1.3
+        | body1 => mkProperSep (wsat H.iris_wsat)
+            (mkProperSep (ownE H.iris_wsat coPset_empty)
+              (mkProperLater Inner))
+        | hbody1 : body1.upred_holds (suc (suc k)) a1 =>
+            except_zero_positive body1 (suc k) a1 hex1
+        | groupedLater : (mkProperLater
+            (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+            .upred_holds (suc (suc k)) a1 =>
+            properUPred_ent_trans body1
+              (mkProperSep (world H.iris_wsat coPset_empty)
+                (mkProperLater Inner))
+              (mkProperLater
+                (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+              (sep_assoc_r_ent (wsat H.iris_wsat)
+                (ownE H.iris_wsat coPset_empty) (mkProperLater Inner))
+              (properUPred_ent_trans
+                (mkProperSep (world H.iris_wsat coPset_empty)
+                  (mkProperLater Inner))
+                (mkProperSep
+                  (mkProperLater (world H.iris_wsat coPset_empty))
+                  (mkProperLater Inner))
+                (mkProperLater
+                  (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+                (sep_mono_l_ent (world H.iris_wsat coPset_empty)
+                  (mkProperLater (world H.iris_wsat coPset_empty))
+                  (mkProperLater Inner)
+                  (proper_later_intro (world H.iris_wsat coPset_empty)))
+                (proper_later_sep_2
+                  (world H.iris_wsat coPset_empty) Inner))
+              (suc (suc k)) a1 ha1 hbody1
+        | ha1' : M.validN (suc k) a1 =>
+            M.cmra_validN_le (suc (suc k)) (suc k) a1 ha1
+              (suc<=suc (id<=suc {k}))
+        | hworldInner : (mkProperSep
+            (world H.iris_wsat coPset_empty) Inner)
+            .upred_holds (suc k) a1 => groupedLater
+        | reorderedInner : (mkProperSep Inner
+            (world H.iris_wsat coPset_empty))
+            .upred_holds (suc k) a1 =>
+            sep_comm_ent (world H.iris_wsat coPset_empty) Inner
+              (suc k) a1 ha1' hworldInner
+        | openedInner => fupd_elim_with_world H.iris_wsat
+            coPset_empty E Tail (suc k) a1 ha1' reorderedInner
+      \in truncP_elim_prop openedInner (\lam opened2 =>
+          \let
+            | a2 => opened2.1
+            | ha2 => opened2.2
+            | hex2 => opened2.3
+            | body2 => mkProperSep (wsat H.iris_wsat)
+                (mkProperSep (ownE H.iris_wsat E) Tail)
+            | hbody2 : body2.upred_holds (suc k) a2 =>
+                except_zero_positive body2 k a2 hex2
+            | htail : (mkProperSep (world H.iris_wsat E) Tail)
+                .upred_holds (suc k) a2 =>
+                sep_assoc_r_ent (wsat H.iris_wsat)
+                  (ownE H.iris_wsat E) Tail (suc k) a2 ha2 hbody2
+          \in ih a2 ha2 htail))
+
+\lemma wp_step_iter_pure_soundness {cnt : Countable Loc}
+    {S : gFunctors} (H : irisGS cnt S) (E : coPset)
+    (k : Nat) (phi : \Prop) (a : (iResUR S).E)
+    (ha : (iResUR S).validN (suc k) a)
+    (h : (mkProperSep (world H.iris_wsat E)
+      (wp_step_iter H E k
+        (mkProperFUpd H.iris_wsat E E (mkProperPure phi))))
+      .upred_holds (suc k) a)
+  : phi \elim k
+  | 0 => wp_step_iter_pure_soundness_zero H E phi a ha h
+  | suc k' => wp_step_iter_pure_soundness_suc H E k' phi a ha h
+      (wp_step_iter_pure_soundness H E k' phi)
+
+-- Closed sequential value adequacy.  The client proof is polymorphic in the
+-- freshly allocated Iris names, just as Rocq's heap adequacy theorem quantifies
+-- over the freshly constructed `irisGS`.  No invariant or heap resource is
+-- exposed in the conclusion.
+\lemma wp_adequacy_from_init {cnt : Countable Loc} {S : gFunctors}
+    (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt) (k : Nat) (v : Value) (sigma' : State cnt)
+    (hinit : properUPred_ent mkProperEmp
+      (mkProperBUpd (mkProperExist1 (irisGS cnt S)
+        (\lam H => init_resources H sigma))))
+    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
+      (wp H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (steps : Steps k e sigma (Val v) sigma')
+  : phi v =>
+  \let
+    | M => iResUR S
+    | Phi : Value -> iProp S => \lam w => mkProperPure (phi w)
+    | Init => mkProperExist1 (irisGS cnt S)
+        (\lam H => init_resources H sigma)
+    | hu : M.validN (suc k) M.unit =>
+        (M.cmra_valid_validN M.unit).1 M.ucmra_unit_valid (suc k)
+    | hemp : mkProperEmp.upred_holds (suc k) M.unit =>
+        inP (M.unit,
+          M.ofe_dist_sym (suc k) (M.op M.unit M.unit) M.unit
+            (ucmra_unit_left_id_dist (suc k) M.unit))
+    | hb : (mkProperBUpd Init).upred_holds (suc k) M.unit =>
+        hinit (suc k) M.unit hu hemp
+    | huu : M.validN (suc k) (M.op M.unit M.unit) =>
+        cmra_validN_proper {M} (suc k) M.unit (M.op M.unit M.unit)
+          (M.equiv_sym (M.op M.unit M.unit) M.unit
+            (ucmra_unit_right_id M.unit)) hu
+  \in truncP_elim_prop
+    (hb (suc k) <=-refl M.unit huu)
+    \lam opened0 =>
+      \let
+        | a => opened0.1
+        | hau => opened0.2
+        | hex => opened0.3
+      \in truncP_elim_prop hex (\lam initialized =>
+        \let
+          | H => initialized.1
+          | hresources => initialized.2
+          | ha : M.validN (suc k) a =>
+              M.cmra_validN_op_l (suc k) a M.unit hau
+          | World => world H.iris_wsat coPset_universe
+          | WPState => mkProperSep (wp H coPset_universe e Phi)
+              (state_interp H sigma)
+          | withWP : properUPred_ent (init_resources H sigma)
+              (mkProperSep (init_resources H sigma)
+                (wp H coPset_universe e Phi)) =>
+              properUPred_ent_trans (init_resources H sigma)
+                (mkProperSep (init_resources H sigma) mkProperEmp)
+                (mkProperSep (init_resources H sigma)
+                  (wp H coPset_universe e Phi))
+                (add_emp_r_ent (init_resources H sigma))
+                (sep_mono_r_ent (init_resources H sigma) mkProperEmp
+                  (wp H coPset_universe e Phi) (hwp H))
+          | Added => mkProperSep (init_resources H sigma)
+              (wp H coPset_universe e Phi)
+          | Associated => mkProperSep (state_interp H sigma)
+              (mkProperSep World (wp H coPset_universe e Phi))
+          | Swapped => mkProperSep World
+              (mkProperSep (state_interp H sigma)
+                (wp H coPset_universe e Phi))
+          | associate : properUPred_ent Added Associated =>
+              sep_assoc_l_ent (state_interp H sigma) World
+                (wp H coPset_universe e Phi)
+          | swap : properUPred_ent Associated Swapped =>
+              sep_swap_ent (state_interp H sigma) World
+                (wp H coPset_universe e Phi)
+          | finish : properUPred_ent Swapped (mkProperSep World WPState) =>
+              sep_mono_r_ent World
+                (mkProperSep (state_interp H sigma)
+                  (wp H coPset_universe e Phi))
+                WPState
+                (sep_comm_ent (state_interp H sigma)
+                  (wp H coPset_universe e Phi))
+          | arranged : properUPred_ent (init_resources H sigma)
+              (mkProperSep World WPState) =>
+              properUPred_ent_trans (init_resources H sigma) Added
+                (mkProperSep World WPState) withWP
+                (properUPred_ent_trans Added Associated
+                  (mkProperSep World WPState) associate
+                  (properUPred_ent_trans Associated Swapped
+                    (mkProperSep World WPState) swap finish))
+          | hstart : (mkProperSep World WPState).upred_holds (suc k) a =>
+              arranged (suc k) a ha hresources
+          | run : properUPred_ent WPState
+              (wp_step_iter H coPset_universe k
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+                  (mkProperPure (phi v)))) =>
+              wp_steps_value H coPset_universe k e v Phi sigma sigma' steps
+          | hclosed : (mkProperSep World
+              (wp_step_iter H coPset_universe k
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+                  (mkProperPure (phi v)))))
+              .upred_holds (suc k) a =>
+              sep_mono_r_ent World WPState
+                (wp_step_iter H coPset_universe k
+                  (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+                    (mkProperPure (phi v)))) run
+                (suc k) a ha hstart
+        \in wp_step_iter_pure_soundness H coPset_universe k
+            (phi v) a ha hclosed)
+
+-- The public theorem specializes the checked soundness kernel with the
+-- concrete two-resource allocation.  It is kept as a one-line wrapper because
+-- Arend 1.12 can spend a long time converting the Set1 allocation witnesses;
+-- clients and cache builds can check the body above independently.
+\lemma wp_adequacy {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt) (k : Nat) (v : Value) (sigma' : State cnt)
+    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
+      (wp H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (steps : Steps k e sigma (Val v) sigma')
+  : phi v =>
+  wp_adequacy_from_init e phi sigma k v sigma'
+    (init Hpre sigma) hwp steps
