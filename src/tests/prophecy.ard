@@ -1,0 +1,52 @@
+\import Data.List
+\import iris.base_logic.upred
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gen_heap
+\import iris.base_logic.lib.proph_map
+\import iris_heap_lang.lang
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import stdpp.coPset
+
+-- A small but nontrivial prophecy client: the atomic store both mutates the
+-- heap and records its returned unit value in the prophecy trace.
+\func resolved_store_program
+    (l : Loc) (new : Value) (p : ProphId) (w : Value) : Expr =>
+  Resolve
+    (Store (Val (LitV (LitLoc l))) (Val new))
+    (Val (LitV (LitProphecy p))) (Val w)
+
+\lemma resolved_store_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (l : Loc) (old new : Value) (p : ProphId) (w : Value)
+    (resolves : List ProphPayload)
+  : properUPred_ent
+      (mkProperSep
+        (pointsto_full H.iris_gen_heap l old)
+        (proph H.iris_proph_map p resolves))
+      (wp H E (resolved_store_program l new p w)
+        (\lam returned =>
+          mkProperExist (List ProphPayload) (\lam remaining =>
+            mkProperSep
+              (mkProperPure
+                (\Sigma (returned = LitV LitUnit)
+                  (resolves = (LitV LitUnit, w) :: remaining)))
+              (mkProperSep
+                (pointsto_full H.iris_gen_heap l new)
+                (proph H.iris_proph_map p remaining))))) =>
+  wp_resolve_store H E l old new p w resolves
+
+-- Fresh prophecy allocation exposes the complete list of predictions for the
+-- identifier in the as-yet-unexecuted trace.
+\lemma new_proph_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+  : properUPred_ent mkProperEmp
+      (wp H E NewProph (\lam returned =>
+        mkProperExist ProphId (\lam p =>
+          mkProperExist (List ProphPayload) (\lam resolves =>
+            mkProperAnd
+              (mkProperPure (returned = LitV (LitProphecy p)))
+              (proph H.iris_proph_map p resolves))))) =>
+  wp_new_proph H E

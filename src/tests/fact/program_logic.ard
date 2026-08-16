@@ -4,6 +4,7 @@
 \import Order.PartialOrder
 \import Data.Bool
 \import Data.Maybe
+\import Data.List
 \import Paths
 \import Set
 \import iris.bi.interface
@@ -364,7 +365,7 @@
                       mkProperForall Expr (\lam e2 =>
                           mkProperForall (State cnt) (\lam sigma2 =>
                               mkProperImpl
-                                  (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd (
                                     mkProperSep
                                         (own_heap_auth sigma2)
@@ -409,12 +410,12 @@
         | step_body_f (sigma : State cnt) : Expr -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam e2 =>
               mkProperForall (State cnt) (\lam sigma2 =>
-                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                       (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))))
         | step_body_g (sigma : State cnt) : Expr -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam e2 =>
               mkProperForall (State cnt) (\lam sigma2 =>
-                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                       (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
         | wand_body_f : State cnt -> ProperUPred (HeapCMRA Loc cnt Value) =>
           \lam sigma => mkProperWand (own_heap_auth sigma)
@@ -450,14 +451,14 @@
                               (\lam e2 =>
                                   upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) k
                                       (\lam sigma2 =>
-                                          mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                          mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                               (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))))
                                       (\lam sigma2 =>
-                                          mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                          mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                               (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
                                       (\lam sigma2 =>
                                           upredDist_impl_r {HeapCMRA Loc cnt Value} k
-                                              (mkProperPure (PrimStep e sigma e2 sigma2))
+                                              (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                               (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi)))
                                               (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi)))
                                               (bupd_ne k
@@ -653,7 +654,7 @@
                             (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
                                 mkProperImpl
-                                  (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd
                                     (mkProperSep (own_heap_auth sigma2) (wp e2 Psi))))))).upred_holds k a' =>
                           \case \elim k, k_le_m, m_le_0, h_and.2 \with {
@@ -699,7 +700,7 @@
                           (mkProperForall Expr (\lam e2 =>
                             mkProperForall (State cnt) (\lam sigma2 =>
                               mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd
                                   (mkProperSep (own_heap_auth sigma2) (wp e2 Psi))))))).upred_holds k a' =>
                         \case \elim k, k_le_m, h_and.2 \with {
@@ -755,9 +756,9 @@
 \lemma wp_pure_step
   {cnt : Countable Loc}
   (e e' : Expr)
-  (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma)
+  (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma nil)
   (det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) ->
-      PrimStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+      PrimStep e sigma e2 sigma2 nil -> \Sigma (e2 = e') (sigma2 = sigma))
   (no_val : to_val e = nothing)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp e' Phi) (wp e Phi)
@@ -772,7 +773,7 @@
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e2 =>
                           mkProperForall (State cnt) (\lam sigma2 =>
-                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd (mkProperSep
                                       (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
             pmap (\lam tv => \case tv \with {
@@ -783,7 +784,7 @@
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
-                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                       (mkProperBUpd (mkProperSep
                                           (own_heap_auth sigma2) (wp e2 Phi))))))))))
             }) no_val
@@ -793,12 +794,12 @@
             (inv wp_pre_eq)
             (\lam sigma m m_le_n a_auth hv_op h_auth =>
               \let
-                | red : Reducible e sigma => inP (e', sigma, pure sigma)
+                | red : Reducible e sigma => inP (e', sigma, nil, pure sigma)
                 | later_body :
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a a_auth) =>
@@ -807,7 +808,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a a_auth)
@@ -880,7 +881,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi))))))))
                     .upred_holds m (M.op a a_auth) =>
@@ -911,7 +912,7 @@
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e2 =>
                           mkProperForall (State cnt) (\lam sigma2 =>
-                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd (mkProperSep
                                       (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
             pmap (\lam tv => \case tv \with {
@@ -922,7 +923,7 @@
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
-                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                       (mkProperBUpd (mkProperSep
                                           (own_heap_auth sigma2) (wp e2 Phi))))))))))
             }) tv_e
@@ -944,12 +945,13 @@
                                           (ucmra_unit_right_id_dist m a_frag))))
                                 m_le_n)
                       | red : Reducible e sigma =>
-                        inP (Val v, sigma, BasePrim (LoadS l v lookup idp idp idp))
+                        inP (Val v, sigma, nil,
+                          BasePrim (LoadS l v lookup idp idp idp {idp}))
                       | later_body :
                             (mkProperLater (mkProperForall Expr (\lam e2 =>
                                 mkProperForall (State cnt) (\lam sigma2 =>
                                     mkProperImpl
-                                        (mkProperPure (PrimStep e sigma e2 sigma2))
+                                        (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                         (mkProperBUpd (mkProperSep
                                             (own_heap_auth sigma2) (wp e2 Phi)))))))
                             .upred_holds m (M.op a_frag a_auth) =>
@@ -958,7 +960,7 @@
                             (mkProperLater (mkProperForall Expr (\lam e2 =>
                                 mkProperForall (State cnt) (\lam sigma2 =>
                                     mkProperImpl
-                                        (mkProperPure (PrimStep e sigma e2 sigma2))
+                                        (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                         (mkProperBUpd (mkProperSep
                                             (own_heap_auth sigma2) (wp e2 Phi)))))))
                             .upred_holds m (M.op a_frag a_auth)
@@ -1044,7 +1046,7 @@
                           (mkProperLater (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
                                   mkProperImpl
-                                      (mkProperPure (PrimStep e sigma e2 sigma2))
+                                      (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                       (mkProperBUpd (mkProperSep
                                           (own_heap_auth sigma2) (wp e2 Phi))))))))
                                .upred_holds m (M.op a_frag a_auth) =>
@@ -1196,7 +1198,7 @@
       (l : Loc) (v : Value) (sigma : State cnt)
       (e2 : Expr) (sigma2 : State cnt)
       (lookup : glookup sigma.heap l = just v)
-      (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+      (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil)
       : \Sigma (e2 = Val v) (sigma2 = sigma)
       => \case hstep \with {
         | BetaS _ _ _ p1 _ _ => \case p1 \with {}
@@ -1229,6 +1231,7 @@
         | IsZeroPosS _ p1 _ _ => \case p1 \with {}
         | PredS _ p1 _ _ => \case p1 \with {}
         | MulS _ _ p1 _ _ => \case p1 \with {}
+        | ForkS _ p1 _ _ => \case p1 \with {}
       }
 
     \truncated \data LoadStepInv
@@ -1245,7 +1248,7 @@
       (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
       (p1 : Load (Val (LitV (LitLoc l))) = fill_item Ki (fill K' e1'))
       (p2 : e2 = fill_item Ki (fill K' e2'))
-      (base : BaseStep e1' sigma e2' sigma2)
+      (base : BaseStep e1' sigma e2' sigma2 nil)
       : LoadStepInv l v sigma e2 sigma2 \elim Ki
       | AppLCtx _ => \case p1 \with {}
       | AppRCtx _ => \case p1 \with {}
@@ -1267,7 +1270,8 @@
               | _ => Val (LitV (LitLoc l))
             }) p1
           | inner_not_val : to_val (fill K' e1') = nothing =>
-            fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+            fill_not_val K' e1'
+              (base_val_stuck e1' sigma e2' sigma2 nil base)
           | impossible : just (LitV (LitLoc l)) = nothing =>
             pmap to_val inner_eq *> inner_not_val
         \in \case impossible \with {}
@@ -1282,12 +1286,12 @@
       (K : Ectx) (e1' e2' : Expr)
       (p1 : Load (Val (LitV (LitLoc l))) = fill K e1')
       (p2 : e2 = fill K e2')
-      (base : BaseStep e1' sigma e2' sigma2)
+      (base : BaseStep e1' sigma e2' sigma2 nil)
       : LoadStepInv l v sigma e2 sigma2 \elim K
       | EmptyCtx =>
         \let
-          | base' : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 =>
-            transport (\lam e => BaseStep e sigma e2' sigma2) (inv p1) base
+          | base' : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 nil =>
+            transport (\lam e => BaseStep e sigma e2' sigma2 nil) (inv p1) base
           | inv_base : \Sigma (e2' = Val v) (sigma2 = sigma) =>
             base_load_step_inv l v sigma e2' sigma2 lookup base'
         \in LoadStepInvIntro (p2 *> inv_base.1) inv_base.2
@@ -1299,7 +1303,7 @@
       (l : Loc) (v : Value) (sigma : State cnt)
       (e2 : Expr) (sigma2 : State cnt)
       (lookup : glookup sigma.heap l = just v)
-      (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
+      (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil)
       : LoadStepInv l v sigma e2 sigma2
       => \case hstep \with {
         | EctxStep K e1' e2' p1 p2 base =>
@@ -1333,7 +1337,7 @@
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e2 =>
                           mkProperForall (State cnt) (\lam sigma2 =>
-                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd (mkProperSep
                                       (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
             pmap (\lam tv => \case tv \with {
@@ -1344,7 +1348,7 @@
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
-                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                       (mkProperBUpd (mkProperSep
                                           (own_heap_auth sigma2) (wp e2 Phi))))))))))
             }) tv_e
@@ -1368,12 +1372,13 @@
                 | red : Reducible e sigma =>
                   inP (Val (LitV LitUnit),
                        \new State cnt { | heap => heap_update sigma.heap l v },
-                       BasePrim (StoreS l v old lookup idp idp idp))
+                       nil,
+                       BasePrim (StoreS l v old lookup idp idp idp {idp}))
                 | later_body :
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a_frag a_auth) =>
@@ -1382,7 +1387,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a_frag a_auth)
@@ -1391,10 +1396,10 @@
                     | suc k, hv_op_sk, h_auth_sk, h_frag_sk, le_sk =>
                       \lam e2 sigma2 j j_le_k b incl_b hv_b hstep =>
                         \let
-                          | step_inv : StoreStepInv l v sigma e2 sigma2 =>
-                            store_step_inv l v sigma e2 sigma2 hstep
+                          | step_inv : StoreStepInv l v sigma e2 sigma2 nil =>
+                            store_step_inv l v sigma e2 sigma2 nil hstep
                         \in \case step_inv \with {
-                          | StoreStepInvIntro old' allocated e2_eq sigma2_eq =>
+                          | StoreStepInvIntro old' allocated e2_eq sigma2_eq _ =>
                             \let
                               | newState : State cnt =>
                                 \new State cnt { | heap => heap_update sigma.heap l v }
@@ -1486,7 +1491,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi))))))))
                     .upred_holds m (M.op a_frag a_auth) =>
@@ -1523,7 +1528,7 @@
                       (mkProperPure (Reducible e sigma))
                       (mkProperLater (mkProperForall Expr (\lam e2 =>
                           mkProperForall (State cnt) (\lam sigma2 =>
-                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                              mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                   (mkProperBUpd (mkProperSep
                                       (own_heap_auth sigma2) (wp e2 Phi)))))))))) =>
             pmap (\lam tv => \case tv \with {
@@ -1534,7 +1539,7 @@
                           (mkProperPure (Reducible e sigma))
                           (mkProperLater (mkProperForall Expr (\lam e2 =>
                               mkProperForall (State cnt) (\lam sigma2 =>
-                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+                                  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                       (mkProperBUpd (mkProperSep
                                           (own_heap_auth sigma2) (wp e2 Phi))))))))))
             }) tv_e
@@ -1548,12 +1553,14 @@
                 | red : Reducible e sigma =>
                   inP (Val (LitV (LitLoc fresh_pair.1)),
                        \new State cnt { | heap => heap_update sigma.heap fresh_pair.1 v },
-                       BasePrim (AllocS v fresh_pair.1 fresh_pair.2 idp idp idp))
+                       nil,
+                       BasePrim (AllocS v fresh_pair.1 fresh_pair.2
+                         idp idp idp {idp}))
                 | later_body :
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a a_auth) =>
@@ -1562,7 +1569,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi)))))))
                     .upred_holds m (M.op a a_auth)
@@ -1571,10 +1578,10 @@
                     | suc k, hv_op_sk, h_auth_sk, le_sk =>
                       \lam e2 sigma2 j j_le_k b incl_b hv_b hstep =>
                         \let
-                          | step_inv : AllocStepInv v sigma e2 sigma2 =>
-                            alloc_step_inv v sigma e2 sigma2 hstep
+                          | step_inv : AllocStepInv v sigma e2 sigma2 nil =>
+                            alloc_step_inv v sigma e2 sigma2 nil hstep
                         \in \case step_inv \with {
-                          | AllocStepInvIntro l fresh e2_eq sigma2_eq =>
+                          | AllocStepInvIntro l fresh e2_eq sigma2_eq _ =>
                             \let
                               | newState : State cnt =>
                                 \new State cnt { | heap => heap_update sigma.heap l v }
@@ -1651,7 +1658,7 @@
                     (mkProperLater (mkProperForall Expr (\lam e2 =>
                         mkProperForall (State cnt) (\lam sigma2 =>
                             mkProperImpl
-                                (mkProperPure (PrimStep e sigma e2 sigma2))
+                                (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                                 (mkProperBUpd (mkProperSep
                                     (own_heap_auth sigma2) (wp e2 Phi))))))))
                     .upred_holds m (M.op a a_auth) =>
@@ -1685,12 +1692,12 @@
   {cnt : Countable Loc}
   (e e' : Expr)
   (base_det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) ->
-    BaseStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+    BaseStep e sigma e2 sigma2 nil -> \Sigma (e2 = e') (sigma2 = sigma))
   (ctx_absurd : \Pi (sigma : State cnt) (sigma2 : State cnt)
     (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) ->
-    e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 -> Empty)
+    e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 nil -> Empty)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (step : PrimStep e sigma e2 sigma2)
+  (step : PrimStep e sigma e2 sigma2 nil)
   : \Sigma (e2 = e') (sigma2 = sigma)
   => \case step \with {
     | EctxStep K e1' e2' p1 p2 base =>
@@ -1701,20 +1708,20 @@
       {cnt : Countable Loc}
       (e e' : Expr)
       (base_det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) ->
-        BaseStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+        BaseStep e sigma e2 sigma2 nil -> \Sigma (e2 = e') (sigma2 = sigma))
       (ctx_absurd : \Pi (sigma : State cnt) (sigma2 : State cnt)
         (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) ->
-        e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 -> Empty)
+        e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 nil -> Empty)
       (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
       (K : Ectx) (e1' e2' : Expr)
       (p1 : e = fill K e1')
       (p2 : e2 = fill K e2')
-      (base : BaseStep e1' sigma e2' sigma2)
+      (base : BaseStep e1' sigma e2' sigma2 nil)
       : \Sigma (e2 = e') (sigma2 = sigma) \elim K
       | EmptyCtx =>
         \let
-          | base' : BaseStep e sigma e2' sigma2 =>
-            transport (\lam ee => BaseStep ee sigma e2' sigma2) (inv p1) base
+          | base' : BaseStep e sigma e2' sigma2 nil =>
+            transport (\lam ee => BaseStep ee sigma e2' sigma2 nil) (inv p1) base
           | inv_base : \Sigma (e2' = e') (sigma2 = sigma) =>
             base_det sigma e2' sigma2 base'
         \in (p2 *> inv_base.1, inv_base.2)
@@ -1726,7 +1733,7 @@
   {cnt : Countable Loc} (f x : String) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Rec f x body = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | AppLCtx _ => \case p1 \with {}
   | AppRCtx _ => \case p1 \with {}
   | IfCtx _ _ => \case p1 \with {}
@@ -1747,7 +1754,7 @@
   {cnt : Countable Loc} (x : String) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Lam x body = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | AppLCtx _ => \case p1 \with {}
   | AppRCtx _ => \case p1 \with {}
   | IfCtx _ _ => \case p1 \with {}
@@ -1768,13 +1775,13 @@
   {cnt : Countable Loc} (arg : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : IsZero (Val arg) = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | IsZeroCtx =>
     \let
       | inner_eq : Val arg = fill K e1' =>
         pmap (iszero_arg (Val arg)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just arg = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1797,13 +1804,13 @@
   {cnt : Countable Loc} (arg : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Pred (Val arg) = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | PredCtx =>
     \let
       | inner_eq : Val arg = fill K e1' =>
         pmap (pred_arg (Val arg)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just arg = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1826,13 +1833,13 @@
   {cnt : Countable Loc} (v1 v2 : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Mul (Val v1) (Val v2) = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | MulLCtx _ =>
     \let
       | inner_eq : Val v1 = fill K e1' =>
         pmap (mul_l_arg (Val v1)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just v1 = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1841,7 +1848,7 @@
       | inner_eq : Val v2 = fill K e1' =>
         pmap (mul_r_arg (Val v2)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just v2 = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1863,13 +1870,13 @@
   {cnt : Countable Loc} (b : Bool) (thenE elseE : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : If (Val (LitV (LitBool b))) thenE elseE = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | IfCtx _ _ =>
     \let
       | inner_eq : Val (LitV (LitBool b)) = fill K e1' =>
         pmap (if_arg (Val (LitV (LitBool b)))) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just (LitV (LitBool b)) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1892,13 +1899,13 @@
   {cnt : Countable Loc} (x : String) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (LamV x body)) (Val v) = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | AppLCtx _ =>
     \let
       | inner_eq : Val (LamV x body) = fill K e1' =>
         pmap (app_l_arg (Val (LamV x body))) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just (LamV x body) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1907,7 +1914,7 @@
       | inner_eq : Val v = fill K e1' =>
         pmap (app_r_arg (Val v)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just v = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1929,13 +1936,13 @@
   {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (RecV f x body)) (Val v) = fill_item Ki (fill K e1'))
-  (base : BaseStep e1' sigma e2' sigma2) : Empty \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
   | AppLCtx _ =>
     \let
       | inner_eq : Val (RecV f x body) = fill K e1' =>
         pmap (app_l_arg (Val (RecV f x body))) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just (RecV f x body) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1944,7 +1951,7 @@
       | inner_eq : Val v = fill K e1' =>
         pmap (app_r_arg (Val v)) p1
       | inner_not_val : to_val (fill K e1') = nothing =>
-        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K e1' (base_val_stuck e1' sigma e2' sigma2 nil base)
       | impossible : just v = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1965,7 +1972,7 @@
 \func base_rec_step_det
   {cnt : Countable Loc} (f x : String) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (Rec f x body) sigma e2 sigma2)
+  (base : BaseStep (Rec f x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (RecV f x body)) (sigma2 = sigma)
   => \case base \with {
     | RecS f' x' body' p1 p2 p3 =>
@@ -1991,12 +1998,13 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_lam_step_det
   {cnt : Countable Loc} (x : String) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (Lam x body) sigma e2 sigma2)
+  (base : BaseStep (Lam x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (LamV x body)) (sigma2 = sigma)
   => \case base \with {
     | LamS x' body' p1 p2 p3 =>
@@ -2021,12 +2029,13 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_iszero_zero_step_det
   {cnt : Countable Loc}
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (IsZero (Val (natV 0))) sigma e2 sigma2)
+  (base : BaseStep (IsZero (Val (natV 0))) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (LitV (LitBool true))) (sigma2 = sigma)
   => \case base \with {
     | IsZeroZeroS p1 p2 p3 => (p2, p3)
@@ -2045,12 +2054,13 @@
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_iszero_suc_step_det
   {cnt : Countable Loc} (n : Nat)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (IsZero (Val (natV (suc n)))) sigma e2 sigma2)
+  (base : BaseStep (IsZero (Val (natV (suc n)))) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (LitV (LitBool false))) (sigma2 = sigma)
   => \case base \with {
     | IsZeroPosS _ p1 p2 p3 => (p2, p3)
@@ -2069,12 +2079,13 @@
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_pred_suc_step_det
   {cnt : Countable Loc} (n : Nat)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (Pred (Val (natV (suc n)))) sigma e2 sigma2)
+  (base : BaseStep (Pred (Val (natV (suc n)))) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (natV n)) (sigma2 = sigma)
   => \case base \with {
     | PredS n' p1 p2 p3 =>
@@ -2102,12 +2113,13 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_if_true_step_det
   {cnt : Countable Loc} (thenE elseE : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (If (Val (LitV (LitBool true))) thenE elseE) sigma e2 sigma2)
+  (base : BaseStep (If (Val (LitV (LitBool true))) thenE elseE) sigma e2 sigma2 nil)
   : \Sigma (e2 = thenE) (sigma2 = sigma)
   => \case base \with {
     | IfTrueS t f p1 p2 p3 =>
@@ -2130,12 +2142,13 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
   | MulS _ _ p1 _ _ => \case p1 \with {}
+  | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_if_false_step_det
   {cnt : Countable Loc} (thenE elseE : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2)
+  (base : BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2 nil)
   : \Sigma (e2 = elseE) (sigma2 = sigma)
   => \case base \with {
     | IfFalseS t f p1 p2 p3 =>
@@ -2158,12 +2171,13 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_lam_beta_step_det
   {cnt : Countable Loc} (x : String) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2)
+  (base : BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2 nil)
   : \Sigma (e2 = subst x v body) (sigma2 = sigma)
   => \case base \with {
     | BetaS x' body' v' p1 p2 p3 =>
@@ -2192,12 +2206,13 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func base_rec_beta_step_det
   {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2)
+  (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2 nil)
   : \Sigma (e2 = subst x v (subst f (RecV f x body) body)) (sigma2 = sigma)
   => \case base \with {
     | RecBetaS f' x' body' v' p1 p2 p3 =>
@@ -2233,6 +2248,7 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \func lit_nat_default (d : Nat) (l : Lit) : Nat \elim l
@@ -2255,7 +2271,7 @@
 \func base_mul_step_det
   {cnt : Countable Loc} (a b : Nat)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
-  (base : BaseStep (Mul (Val (natV a)) (Val (natV b))) sigma e2 sigma2)
+  (base : BaseStep (Mul (Val (natV a)) (Val (natV b))) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (natV (a Nat.* b))) (sigma2 = sigma)
   => \case base \with {
     | MulS a' b' p1 p2 p3 =>
@@ -2278,6 +2294,7 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
   }
 
 \lemma wp_rec
@@ -2293,7 +2310,7 @@
       (wp_pure_step
           (Rec f x body)
           (Val (RecV f x body))
-          (\lam s => BasePrim (RecS f x body idp idp idp))
+          (\lam s => BasePrim (RecS f x body idp idp idp {idp}))
           (base_redex_step_det
             (Rec f x body)
             (Val (RecV f x body))
@@ -2314,7 +2331,7 @@
       (wp_pure_step
           (Lam x body)
           (Val (LamV x body))
-          (\lam s => BasePrim (LamS x body idp idp idp))
+          (\lam s => BasePrim (LamS x body idp idp idp {idp}))
           (base_redex_step_det
             (Lam x body)
             (Val (LamV x body))
@@ -2331,7 +2348,7 @@
   => wp_pure_step
       (App (Val (LamV x body)) (Val v))
       (subst x v body)
-      (\lam s => BasePrim (BetaS x body v idp idp idp))
+      (\lam s => BasePrim (BetaS x body v idp idp idp {idp}))
       (base_redex_step_det
         (App (Val (LamV x body)) (Val v))
         (subst x v body)
@@ -2367,7 +2384,7 @@
   => wp_pure_step
       (App (Val (RecV f x body)) (Val v))
       (subst x v (subst f (RecV f x body) body))
-      (\lam s => BasePrim (RecBetaS f x body v idp idp idp))
+      (\lam s => BasePrim (RecBetaS f x body v idp idp idp {idp}))
       (base_redex_step_det
         (App (Val (RecV f x body)) (Val v))
         (subst x v (subst f (RecV f x body) body))
@@ -2407,7 +2424,7 @@
       (wp_pure_step
           (IsZero (Val (natV 0)))
           (Val (LitV (LitBool true)))
-          (\lam s => BasePrim (IsZeroZeroS idp idp idp))
+          (\lam s => BasePrim (IsZeroZeroS idp idp idp {idp}))
           (base_redex_step_det
             (IsZero (Val (natV 0)))
             (Val (LitV (LitBool true)))
@@ -2427,7 +2444,7 @@
       (wp_pure_step
           (IsZero (Val (natV (suc n))))
           (Val (LitV (LitBool false)))
-          (\lam s => BasePrim (IsZeroPosS n idp idp idp))
+          (\lam s => BasePrim (IsZeroPosS n idp idp idp {idp}))
           (base_redex_step_det
             (IsZero (Val (natV (suc n))))
             (Val (LitV (LitBool false)))
@@ -2446,7 +2463,7 @@
       (wp_pure_step
           (Pred (Val (natV (suc n))))
           (Val (natV n))
-          (\lam s => BasePrim (PredS n idp idp idp))
+          (\lam s => BasePrim (PredS n idp idp idp {idp}))
           (base_redex_step_det
             (Pred (Val (natV (suc n))))
             (Val (natV n))
@@ -2466,7 +2483,7 @@
       (wp_pure_step
           (Mul (Val (natV a)) (Val (natV b)))
           (Val (natV (a Nat.* b)))
-          (\lam s => BasePrim (MulS a b idp idp idp))
+          (\lam s => BasePrim (MulS a b idp idp idp {idp}))
           (base_redex_step_det
             (Mul (Val (natV a)) (Val (natV b)))
             (Val (natV (a Nat.* b)))
@@ -2521,7 +2538,7 @@
                        (mkProperForall Expr (\lam e2 =>
                          mkProperForall (State cnt) (\lam sigma2 =>
                            mkProperImpl
-                             (mkProperPure (PrimStep e sigma e2 sigma2))
+                             (mkProperPure (PrimStep e sigma e2 sigma2 nil))
                              (mkProperBUpd
                                (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))))))
                  | hbupd_wp_m : (mkProperBUpd (wp e Phi)).upred_holds m a =>
@@ -2660,7 +2677,7 @@
                              (mkProperForall Expr (\lam e2 =>
                                mkProperForall (State cnt) (\lam sigma2 =>
                                  mkProperImpl
-                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2))
+                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2 nil))
                                    (mkProperBUpd
                                      (mkProperSep (own_heap_auth sigma2) (wp e2 Phi))))))).upred_holds k b =>
                            \case \elim k, k_le_m, m_le_0, hcore.2 \with {
@@ -2727,7 +2744,7 @@
                              (mkProperForall Expr (\lam e2 =>
                                mkProperForall (State cnt) (\lam sigma2 =>
                                  mkProperImpl
-                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2))
+                                   (mkProperPure (PrimStep (fill K e) sigma e2 sigma2 nil))
                                    (mkProperBUpd
                                      (mkProperSep (own_heap_auth sigma2) (wp e2 Phi))))))).upred_holds k b =>
                            \case \elim k, k_le_m, hcore.2 \with {
@@ -2737,7 +2754,7 @@
                                  | k'_le_n : k' <= n =>
                                    suc<=suc.conv ((NatSemiring.<=∘) k_le_m_suc m_le_sucn)
                                \in \lam e2 sigma2 j j_le_k' c incl_c hv_c hstep_fill =>
-                                 \case fill_step_inv K e sigma e2 sigma2 peq hstep_fill \with {
+                                 \case fill_step_inv K e sigma e2 sigma2 nil peq hstep_fill \with {
                                    | inP (e2', e2_eq, hstep_inner) =>
                                      \let
                                        | hbupd_inner : (mkProperBUpd

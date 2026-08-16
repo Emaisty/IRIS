@@ -380,7 +380,7 @@
       => wp_pure_step
           (If (Val (LitV (LitBool true))) thenE elseE)
           thenE
-          (\lam s => BasePrim (IfTrueS _ _ idp idp idp))
+          (\lam s => BasePrim (IfTrueS _ _ idp idp idp {idp}))
           (base_redex_step_det
             (If (Val (LitV (LitBool true))) thenE elseE)
             thenE
@@ -419,7 +419,7 @@
       => wp_pure_step
           after_n
           after_l
-          (\lam s => BasePrim (BetaS "l" _ _ idp idp idp))
+          (\lam s => BasePrim (BetaS "l" _ _ idp idp idp {idp}))
           (base_redex_step_det
             after_n
             after_l
@@ -595,7 +595,7 @@
       => wp_pure_step
           (If (Val (LitV (LitBool false))) thenE elseE)
           elseE
-          (\lam s => BasePrim (IfFalseS _ _ idp idp idp))
+          (\lam s => BasePrim (IfFalseS _ _ idp idp idp {idp}))
           (base_redex_step_det
             (If (Val (LitV (LitBool false))) thenE elseE)
             elseE

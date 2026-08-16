@@ -11,6 +11,7 @@
 \import Order.LinearOrder
 \import Order.PartialOrder
 \import iris.algebra.gmap
+\import iris.algebra.gset
 \import stdpp.pmap
 
 
@@ -40,11 +41,14 @@
 
 \func Loc => Nat
 
+\func ProphId => Pos
+
 \data Lit
   | LitInt (n : Int)
   | LitBool (b : Bool)
   | LitUnit
   | LitLoc (l : Loc)
+  | LitProphecy (p : ProphId)
 
 \data Value : \Set0
   | LitV (l : Lit)
@@ -68,9 +72,15 @@
   | Load (e : Expr)
   | Store (e1 e2 : Expr)
   | Alloc (e : Expr)
+  | Fork (e : Expr)
+  | NewProph
+  | Resolve (e proph resolution : Expr)
 
 \record State (cnt : Countable Loc)
   | heap : Gmap Loc cnt Value
+  | usedProph : Gset
+
+\func Observation : \Set => \Sigma ProphId (\Sigma Value Value)
 
 \func of_val (v : Value) : Expr => Val v
 
@@ -106,6 +116,10 @@
   | Alloc e => Alloc (subst x v e)
   | Load e => Load (subst x v e)
   | Store e1 e2 => Store (subst x v e1) (subst x v e2)
+  | Fork e => Fork (subst x v e)
+  | NewProph => NewProph
+  | Resolve e proph resolution =>
+      Resolve (subst x v e) (subst x v proph) (subst x v resolution)
   \where {
     -- Blocked on a concrete decidable equality proof for Arend String.
     -- Any proof unfolding substitution through binders may have to discharge this.
@@ -114,6 +128,16 @@
 
 \func heap_update {cnt : Countable Loc} (h : Gmap Loc cnt Value) (l : Loc) (v : Value) : Gmap Loc cnt Value =>
   ginsert l v h
+
+\func state_update_heap {cnt : Countable Loc}
+    (s : State cnt) (h : Gmap Loc cnt Value) : State cnt \cowith
+  | heap => h
+  | usedProph => s.usedProph
+
+\func state_update_usedProph {cnt : Countable Loc}
+    (s : State cnt) (used : Gset) : State cnt \cowith
+  | heap => s.heap
+  | usedProph => used
 
 \func nat_max (n m : Nat) : Nat \elim n, m
   | 0, m => m
@@ -196,76 +220,101 @@
         }
     \in (l, fresh)
 
+\func state_fresh_proph {cnt : Countable Loc} (s : State cnt)
+  : \Sigma (p : ProphId) (plookup s.usedProph p = nothing) =>
+  pmap_fresh_key s.usedProph
+
 
 \truncated \data BaseStep {cnt : Countable Loc}
-                          (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt) : \Prop
+    (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt)
+    (efs : List Expr) (observations : List Observation) : \Prop
   | BetaS (x : String) (body : Expr) (v : Value)
           (p1 : e1 = App (Val (LamV x body)) (Val v))
           (p2 : e2 = subst x v body)
-          (p3 : s2 = s1)
+          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | RecBetaS (f x : String) (body : Expr) (v : Value)
              (p1 : e1 = App (Val (RecV f x body)) (Val v))
              (p2 : e2 = subst x v (subst f (RecV f x body) body))
-             (p3 : s2 = s1)
+             (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | LamS (x : String) (body : Expr)
          (p1 : e1 = Lam x body)
          (p2 : e2 = Val (LamV x body))
-         (p3 : s2 = s1)
+         (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | RecS (f x : String) (body : Expr)
          (p1 : e1 = Rec f x body)
          (p2 : e2 = Val (RecV f x body))
-         (p3 : s2 = s1)
+         (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | IfTrueS (t f : Expr)
             (p1 : e1 = If (Val (LitV (LitBool true))) t f)
             (p2 : e2 = t)
-            (p3 : s2 = s1)
+            (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | IfFalseS (t f : Expr)
              (p1 : e1 = If (Val (LitV (LitBool false))) t f)
              (p2 : e2 = f)
-             (p3 : s2 = s1)
+             (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | FstS (v1 v2 : Value)
          (p1 : e1 = Fst (Val (PairV v1 v2)))
          (p2 : e2 = Val v1)
-         (p3 : s2 = s1)
+         (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | SndS (v1 v2 : Value)
          (p1 : e1 = Snd (Val (PairV v1 v2)))
          (p2 : e2 = Val v2)
-         (p3 : s2 = s1)
+         (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | PairS (v1 v2 : Value)
           (p1 : e1 = Pair (Val v1) (Val v2))
           (p2 : e2 = Val (PairV v1 v2))
-          (p3 : s2 = s1)
+          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | AllocS (v : Value) (l : Loc)
            (fresh : glookup s1.heap l = nothing)
            (p1 : e1 = Alloc (Val v))
            (p2 : e2 = Val (LitV (LitLoc l)))
-           (p3 : s2 = \new State cnt { | heap => heap_update s1.heap l v })
+           (p3 : s2 = state_update_heap s1 (heap_update s1.heap l v))
+           {p0 : observations = nil} {p4 : efs = nil}
   | LoadS (l : Loc) (v : Value)
           (lookup : glookup s1.heap l = just v)
           (p1 : e1 = Load (Val (LitV (LitLoc l))))
           (p2 : e2 = Val v)
-          (p3 : s2 = s1)
+          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | StoreS (l : Loc) (v v' : Value)
            (allocated : glookup s1.heap l = just v')
            (p1 : e1 = Store (Val (LitV (LitLoc l))) (Val v))
            (p2 : e2 = Val (LitV LitUnit))
-           (p3 : s2 = \new State cnt { | heap => heap_update s1.heap l v })
+           (p3 : s2 = state_update_heap s1 (heap_update s1.heap l v))
+           {p0 : observations = nil} {p4 : efs = nil}
   | IsZeroZeroS
     (p1 : e1 = IsZero (Val (LitV (LitInt 0))))
     (p2 : e2 = Val (LitV (LitBool true)))
-    (p3 : s2 = s1)
+    (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | IsZeroPosS (n : Nat)
                (p1 : e1 = IsZero (Val (LitV (LitInt (pos (suc n))))))
                (p2 : e2 = Val (LitV (LitBool false)))
-               (p3 : s2 = s1)
+               (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | PredS (n : Nat)
           (p1 : e1 = Pred (Val (LitV (LitInt (pos (suc n))))))
           (p2 : e2 = Val (LitV (LitInt (pos n))))
-          (p3 : s2 = s1)
+          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
   | MulS (a b : Nat)
          (p1 : e1 = Mul (Val (LitV (LitInt (pos a)))) (Val (LitV (LitInt (pos b)))))
          (p2 : e2 = Val (LitV (LitInt (pos (a Nat.* b)))))
-         (p3 : s2 = s1)
+         (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
+  | ForkS (e : Expr)
+          (p1 : e1 = Fork e)
+          (p2 : e2 = Val (LitV LitUnit))
+          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = e :: nil}
+  | NewProphS (p : ProphId)
+      (fresh : plookup s1.usedProph p = nothing)
+      (p1 : e1 = NewProph)
+      (p2 : e2 = Val (LitV (LitProphecy p)))
+      (p3 : s2 = state_update_usedProph s1 (pinsert p () s1.usedProph))
+      {p0 : observations = nil} {p4 : efs = nil}
+  | ResolveS (p : ProphId) (v w : Value) (e : Expr)
+      (innerObservations : List Observation) (innerForks : List Expr)
+      (step : BaseStep e s1 (Val v) s2 innerForks innerObservations)
+      (used : gset_in p s1.usedProph)
+      (p1 : e1 = Resolve e (Val (LitV (LitProphecy p))) (Val w))
+      (p2 : e2 = Val v)
+      {p0 : observations = innerObservations ++ (p, (v, w)) :: nil}
+      {p4 : efs = innerForks}
 
 \data EctxItem
   | AppLCtx (e2 : Expr)
@@ -283,6 +332,12 @@
   | LoadCtx
   | StoreLCtx (e2 : Expr)
   | StoreRCtx (v1 : Value)
+  -- The first Resolve argument deliberately has no plain context item: only
+  -- reductions strictly below one existing item are contextual.  Its final
+  -- base step is performed atomically by ResolveS.
+  | ResolveLCtx (Ki : EctxItem) (vp vt : Value)
+  | ResolveMCtx (e0 : Expr) (vt : Value)
+  | ResolveRCtx (e0 e1 : Expr)
 
 \data Ectx
   | EmptyCtx
@@ -304,6 +359,10 @@
   | LoadCtx => Load e
   | StoreLCtx e2 => Store e e2
   | StoreRCtx v1 => Store (Val v1) e
+  | ResolveLCtx Ki vp vt =>
+      Resolve (fill_item Ki e) (Val vp) (Val vt)
+  | ResolveMCtx e0 vt => Resolve e0 e (Val vt)
+  | ResolveRCtx e0 e1 => Resolve e0 e1 e
 
 \func empty_ectx : Ectx => EmptyCtx
 
@@ -322,22 +381,25 @@
   | ConsCtx Ki K1' => pmap (fill_item Ki) (fill_comp K1' K2 e)
 
 \truncated \data PrimStep {cnt : Countable Loc}
-                          (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt) : \Prop
+    (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt)
+    (efs : List Expr) (observations : List Observation) : \Prop
   | EctxStep (K : Ectx) (e1' e2' : Expr)
              (p1 : e1 = fill K e1')
              (p2 : e2 = fill K e2')
-             (step : BaseStep e1' s1 e2' s2)
+             (step : BaseStep e1' s1 e2' s2 efs observations)
 
 \func base_prim_step {cnt : Countable Loc}
                      {e1 e2 : Expr} {s1 s2 : State cnt}
-                     (step : BaseStep e1 s1 e2 s2)
-  : PrimStep e1 s1 e2 s2 =>
+                     {observations : List Observation} {efs : List Expr}
+                     (step : BaseStep e1 s1 e2 s2 efs observations)
+  : PrimStep e1 s1 e2 s2 efs observations =>
   EctxStep empty_ectx e1 e2 idp idp step
 
 \func BasePrim {cnt : Countable Loc}
                {e1 e2 : Expr} {s1 s2 : State cnt}
-               (step : BaseStep e1 s1 e2 s2)
-  : PrimStep e1 s1 e2 s2 =>
+               {observations : List Observation} {efs : List Expr}
+               (step : BaseStep e1 s1 e2 s2 efs observations)
+  : PrimStep e1 s1 e2 s2 efs observations =>
   base_prim_step step
 
 

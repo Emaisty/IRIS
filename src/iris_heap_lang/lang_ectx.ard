@@ -1,11 +1,14 @@
 \import Arith.Nat
 \import Data.Bool
 \import Data.Maybe
+\import Data.List
 \import Logic
 \import Paths
 \import Paths.Meta
 \import Meta
 \import iris.algebra.gmap
+\import iris.algebra.gset
+\import stdpp.pmap
 \import iris_heap_lang.lang
 
 \func fill_item_not_val (Ki : EctxItem) (e : Expr)
@@ -25,6 +28,30 @@
   | LoadCtx => \lam (_ : to_val e = nothing) => idp
   | StoreLCtx e2 => \lam (_ : to_val e = nothing) => idp
   | StoreRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | ResolveLCtx Ki vp vt => \lam (_ : to_val e = nothing) => idp
+  | ResolveMCtx e0 vt => \lam (_ : to_val e = nothing) => idp
+  | ResolveRCtx e0 e1 => \lam (_ : to_val e = nothing) => idp
+
+\func fill_item_always_not_val (Ki : EctxItem) (e : Expr)
+  : to_val (fill_item Ki e) = nothing \elim Ki
+  | AppLCtx _ => idp
+  | AppRCtx _ => idp
+  | IfCtx _ _ => idp
+  | PairLCtx _ => idp
+  | PairRCtx _ => idp
+  | FstCtx => idp
+  | SndCtx => idp
+  | IsZeroCtx => idp
+  | PredCtx => idp
+  | MulLCtx _ => idp
+  | MulRCtx _ => idp
+  | AllocCtx => idp
+  | LoadCtx => idp
+  | StoreLCtx _ => idp
+  | StoreRCtx _ => idp
+  | ResolveLCtx _ _ _ => idp
+  | ResolveMCtx _ _ => idp
+  | ResolveRCtx _ _ => idp
 
 \func fill_not_val (K : Ectx) (e : Expr)
   : to_val e = nothing -> to_val (fill K e) = nothing \elim K
@@ -33,17 +60,19 @@
 
 \func fill_step_item {cnt : Countable Loc}
                      (Ki : EctxItem)
-                     {e1 e2 : Expr} {s1 s2 : State cnt}
-                     (step : PrimStep e1 s1 e2 s2)
-  : PrimStep (fill_item Ki e1) s1 (fill_item Ki e2) s2 \elim step
+                     {e1 e2 : Expr} {s1 s2 : State cnt} {efs : List Expr}
+                     {observations : List Observation}
+                     (step : PrimStep e1 s1 e2 s2 efs observations)
+  : PrimStep (fill_item Ki e1) s1 (fill_item Ki e2) s2 efs observations \elim step
   | EctxStep K e1' e2' p1 p2 base =>
     EctxStep (ConsCtx Ki K) e1' e2' (pmap (fill_item Ki) p1) (pmap (fill_item Ki) p2) base
 
 \func fill_step {cnt : Countable Loc}
                 (K : Ectx)
-                {e1 e2 : Expr} {s1 s2 : State cnt}
-                (step : PrimStep e1 s1 e2 s2)
-  : PrimStep (fill K e1) s1 (fill K e2) s2 \elim K
+                {e1 e2 : Expr} {s1 s2 : State cnt} {efs : List Expr}
+                {observations : List Observation}
+                (step : PrimStep e1 s1 e2 s2 efs observations)
+  : PrimStep (fill K e1) s1 (fill K e2) s2 efs observations \elim K
   | EmptyCtx => step
   | ConsCtx Ki K' => fill_step_item Ki (fill_step K' step)
 
@@ -54,7 +83,8 @@
 
 \func base_step_not_val {cnt : Countable Loc}
                         (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
-                        (step : BaseStep e s e' s') : to_val e = nothing \elim step
+                        (efs : List Expr) (observations : List Observation)
+                        (step : BaseStep e s e' s' efs observations) : to_val e = nothing \elim step
   | BetaS x body v p1 p2 p3 => rewrite p1 idp
   | RecBetaS f x body v p1 p2 p3 => rewrite p1 idp
   | LamS x body p1 p2 p3 => rewrite p1 idp
@@ -71,17 +101,25 @@
   | IsZeroPosS n p1 p2 p3 => rewrite p1 idp
   | PredS n p1 p2 p3 => rewrite p1 idp
   | MulS a b p1 p2 p3 => rewrite p1 idp
+  | ForkS e p1 p2 p3 => rewrite p1 idp
+  | NewProphS p fresh p1 p2 p3 => rewrite p1 idp
+  | ResolveS p v w e innerObservations innerForks inner used p1 p2 => rewrite p1 idp
 
 \func val_fill_absurd {cnt : Countable Loc}
                        (K : Ectx) (e1 : Expr) (s1 : State cnt)
-                       (e2 : Expr) (s2 : State cnt) (v : Value)
-                       (base : BaseStep e1 s1 e2 s2)
+                       (e2 : Expr) (s2 : State cnt) (efs : List Expr) (observations : List Observation) (v : Value)
+                       (base : BaseStep e1 s1 e2 s2 efs observations)
                        (p : Val v = fill K e1) : Empty =>
-  \case pmap to_val p *> fill_not_val K e1 (base_step_not_val e1 s1 e2 s2 base) \with {}
+  \case pmap to_val p *> fill_not_val K e1
+      (base_step_not_val e1 s1 e2 s2 efs observations base) \with {}
 
 \func maybe_val (d : Value) (m : Maybe Value) : Value \elim m
   | just v => v
   | nothing => d
+
+\func proph_value_id (d : ProphId) (v : Value) : ProphId \elim v
+  | LitV (LitProphecy p) => p
+  | _ => d
 
 \func app_l_arg (d : Expr) (e : Expr) : Expr \elim e
   | App e1 _ => e1
@@ -151,12 +189,25 @@
   | Store _ e2 => e2
   | _ => d
 
+\func resolve_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Resolve e0 _ _ => e0
+  | _ => d
+
+\func resolve_m_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Resolve _ e1 _ => e1
+  | _ => d
+
+\func resolve_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | Resolve _ _ e2 => e2
+  | _ => d
+
 \func base_step_fill_item_absurd {cnt : Countable Loc}
                                  (Ki : EctxItem)
                                  (e1 : Expr) (s1 : State cnt)
                                  (e2 : Expr) (s2 : State cnt)
+                                 (efs : List Expr) (observations : List Observation)
                                  (no_val : to_val e1 = nothing)
-                                 (base : BaseStep (fill_item Ki e1) s1 e2 s2)
+                                 (base : BaseStep (fill_item Ki e1) s1 e2 s2 efs observations)
   : Empty \elim Ki
   | AppLCtx arg => \case base \with {
     | BetaS x body v p1 _ _ =>
@@ -177,6 +228,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | AppRCtx vf => \case base \with {
     | BetaS x body v p1 _ _ =>
@@ -197,6 +251,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | IfCtx t f => \case base \with {
     | IfTrueS _ _ p1 _ _ =>
@@ -217,6 +274,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | PairLCtx arg => \case base \with {
     | PairS v1 v2 p1 _ _ =>
@@ -236,6 +296,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | PairRCtx v1 => \case base \with {
     | PairS w1 w2 p1 _ _ =>
@@ -255,6 +318,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | FstCtx => \case base \with {
     | FstS v1 v2 p1 _ _ =>
@@ -274,6 +340,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | SndCtx => \case base \with {
     | SndS v1 v2 p1 _ _ =>
@@ -293,6 +362,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | IsZeroCtx => \case base \with {
     | IsZeroZeroS p1 _ _ =>
@@ -313,6 +385,9 @@
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | PredCtx => \case base \with {
     | PredS n p1 _ _ =>
@@ -332,6 +407,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | MulLCtx arg => \case base \with {
     | MulS a b p1 _ _ =>
@@ -351,6 +429,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | MulRCtx v1 => \case base \with {
     | MulS a b p1 _ _ =>
@@ -370,6 +451,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | AllocCtx => \case base \with {
     | AllocS v _ _ p1 _ _ =>
@@ -389,6 +473,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | LoadCtx => \case base \with {
     | LoadS l v _ p1 _ _ =>
@@ -408,6 +495,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | StoreLCtx arg => \case base \with {
     | StoreS l v _ _ p1 _ _ =>
@@ -427,6 +517,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
   | StoreRCtx v1 => \case base \with {
     | StoreS l v _ _ p1 _ _ =>
@@ -446,18 +539,96 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | ResolveLCtx Ki vp vt => \case base \with {
+    | ResolveS p v w wrapped innerObservations innerForks step used p1 _ =>
+      \let wrapped_eq : fill_item Ki e1 = wrapped =>
+          pmap (resolve_l_arg (fill_item Ki e1)) p1
+      \in base_step_fill_item_absurd Ki e1 s1 (Val v) s2
+          innerForks innerObservations no_val
+          (transport
+            (\lam ee => BaseStep ee s1 (Val v) s2
+              innerForks innerObservations)
+            (inv wrapped_eq) step)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | ResolveMCtx e0 vt => \case base \with {
+    | ResolveS p v w wrapped innerObservations innerForks step used p1 _ =>
+      no_val_val_absurd e1 (LitV (LitProphecy p)) no_val
+        (pmap (resolve_m_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+  }
+  | ResolveRCtx e0 e1' => \case base \with {
+    | ResolveS p v w wrapped innerObservations innerForks step used p1 _ =>
+      no_val_val_absurd e1 w no_val (pmap (resolve_r_arg e1) p1)
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
   }
 
 \lemma fill_step_inv_item_ctx_cons {cnt : Countable Loc}
                                    (Ki Ki' : EctxItem)
                                    (e1 : Expr) (s1 : State cnt)
                                    (e2 : Expr) (s2 : State cnt)
+                                   (efs : List Expr) (observations : List Observation)
                                    (no_val : to_val e1 = nothing)
                                    (K' : Ectx) (e1' e2' : Expr)
                                    (p1 : fill_item Ki e1 = fill_item Ki' (fill K' e1'))
                                    (p2 : e2 = fill_item Ki' (fill K' e2'))
-                                   (base : BaseStep e1' s1 e2' s2)
-  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2))
+                                   (base : BaseStep e1' s1 e2' s2 efs observations)
+  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2 efs observations))
   \elim Ki, Ki'
   | AppLCtx arg, AppLCtx arg' =>
     \let
@@ -482,7 +653,7 @@
   | AppLCtx _, StoreLCtx _ => \case p1 \with {}
   | AppLCtx _, StoreRCtx _ => \case p1 \with {}
   | AppRCtx vf, AppLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 vf base (pmap (app_l_arg (Val vf)) p1))
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations vf base (pmap (app_l_arg (Val vf)) p1))
   | AppRCtx vf, AppRCtx vf' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (app_r_arg e1) p1
@@ -551,7 +722,7 @@
   | PairLCtx _, StoreLCtx _ => \case p1 \with {}
   | PairLCtx _, StoreRCtx _ => \case p1 \with {}
   | PairRCtx v, PairLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (pair_l_arg (Val v)) p1))
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (pair_l_arg (Val v)) p1))
   | PairRCtx v, PairRCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (pair_r_arg e1) p1
@@ -668,7 +839,7 @@
   | MulLCtx _, StoreLCtx _ => \case p1 \with {}
   | MulLCtx _, StoreRCtx _ => \case p1 \with {}
   | MulRCtx v, MulLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (mul_l_arg (Val v)) p1))
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (mul_l_arg (Val v)) p1))
   | MulRCtx v, MulRCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (mul_r_arg e1) p1
@@ -749,7 +920,7 @@
   | StoreLCtx _, AllocCtx => \case p1 \with {}
   | StoreLCtx _, LoadCtx => \case p1 \with {}
   | StoreRCtx v, StoreLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 v base (pmap (store_l_arg (Val v)) p1))
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (store_l_arg (Val v)) p1))
   | StoreRCtx v, StoreRCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (store_r_arg e1) p1
@@ -771,76 +942,572 @@
   | StoreRCtx _, MulRCtx _ => \case p1 \with {}
   | StoreRCtx _, AllocCtx => \case p1 \with {}
   | StoreRCtx _, LoadCtx => \case p1 \with {}
+  | AppLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | AppLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | AppLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | AppRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | AppRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | AppRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | IfCtx _ _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | IfCtx _ _, ResolveMCtx _ _ => \case p1 \with {}
+  | IfCtx _ _, ResolveRCtx _ _ => \case p1 \with {}
+  | PairLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | PairLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | PairLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | PairRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | PairRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | PairRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | FstCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | FstCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | FstCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | SndCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | SndCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | SndCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | IsZeroCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | IsZeroCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | IsZeroCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | PredCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | PredCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | PredCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | MulLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | MulLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | MulLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | MulRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | MulRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | MulRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | AllocCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | AllocCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | AllocCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | LoadCtx, ResolveLCtx _ _ _ => \case p1 \with {}
+  | LoadCtx, ResolveMCtx _ _ => \case p1 \with {}
+  | LoadCtx, ResolveRCtx _ _ => \case p1 \with {}
+  | StoreLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | StoreLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | StoreLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | StoreRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | StoreRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | StoreRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, AppLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, AppRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, IfCtx _ _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, PairLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, PairRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, FstCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, SndCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, IsZeroCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, PredCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, MulLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, MulRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, AllocCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, LoadCtx => \case p1 \with {}
+  | ResolveLCtx _ _ _, StoreLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, StoreRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, AppLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, AppRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, IfCtx _ _ => \case p1 \with {}
+  | ResolveMCtx _ _, PairLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, PairRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, FstCtx => \case p1 \with {}
+  | ResolveMCtx _ _, SndCtx => \case p1 \with {}
+  | ResolveMCtx _ _, IsZeroCtx => \case p1 \with {}
+  | ResolveMCtx _ _, PredCtx => \case p1 \with {}
+  | ResolveMCtx _ _, MulLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, MulRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, AllocCtx => \case p1 \with {}
+  | ResolveMCtx _ _, LoadCtx => \case p1 \with {}
+  | ResolveMCtx _ _, StoreLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, StoreRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, AppLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, AppRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, IfCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _, PairLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, PairRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, FstCtx => \case p1 \with {}
+  | ResolveRCtx _ _, SndCtx => \case p1 \with {}
+  | ResolveRCtx _ _, IsZeroCtx => \case p1 \with {}
+  | ResolveRCtx _ _, PredCtx => \case p1 \with {}
+  | ResolveRCtx _ _, MulLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, MulRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, AllocCtx => \case p1 \with {}
+  | ResolveRCtx _ _, LoadCtx => \case p1 \with {}
+  | ResolveRCtx _ _, StoreLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx Ki vp vt, ResolveLCtx Ki' vp' vt' =>
+    \let
+      | vp_eq : vp = vp' => pmap (maybe_val vp)
+          (pmap to_val (pmap (resolve_m_arg (Val vp)) p1))
+      | vt_eq : vt = vt' => pmap (maybe_val vt)
+          (pmap to_val (pmap (resolve_r_arg (Val vt)) p1))
+      | inner_p1 : fill_item Ki e1 = fill_item Ki' (fill K' e1') =>
+          pmap (resolve_l_arg (fill_item Ki e1)) p1
+    \in \scase fill_step_inv_item_ctx_cons Ki Ki' e1 s1
+        (fill_item Ki' (fill K' e2')) s2 efs observations no_val
+        K' e1' e2' inner_p1 idp base \with {
+      | inP (inner2, inner_eq, inner_step) =>
+        \let whole_eq : e2 = fill_item (ResolveLCtx Ki vp vt) inner2 =>
+            p2
+            *> pmap (\lam vv => Resolve (fill_item Ki' (fill K' e2'))
+                  (Val vv) (Val vt')) (inv vp_eq)
+            *> pmap (\lam vv => Resolve (fill_item Ki' (fill K' e2'))
+                  (Val vp) (Val vv)) (inv vt_eq)
+            *> pmap (\lam ee => Resolve ee (Val vp) (Val vt)) inner_eq
+        \in inP (inner2, whole_eq, inner_step)
+    }
+  | ResolveLCtx _ vp _, ResolveMCtx _ _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations vp base
+      (pmap (resolve_m_arg (Val vp)) p1))
+  | ResolveLCtx _ _ vt, ResolveRCtx _ _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations vt base
+      (pmap (resolve_r_arg (Val vt)) p1))
+  | ResolveMCtx _ _, ResolveLCtx _ vp' _ =>
+    absurd (no_val_val_absurd e1 vp' no_val
+      (pmap (resolve_m_arg e1) p1))
+  | ResolveMCtx e0 vt, ResolveMCtx e0' vt' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (resolve_m_arg e1) p1
+      | e0_eq : e0 = e0' => pmap (resolve_l_arg e0) p1
+      | vt_eq : vt = vt' => pmap (maybe_val vt)
+          (pmap to_val (pmap (resolve_r_arg (Val vt)) p1))
+      | e2_eq : e2 = fill_item (ResolveMCtx e0 vt) (fill K' e2') =>
+          p2
+          *> pmap (\lam ee => Resolve ee (fill K' e2') (Val vt'))
+              (inv e0_eq)
+          *> pmap (\lam vv => Resolve e0 (fill K' e2') (Val vv))
+              (inv vt_eq)
+    \in inP (fill K' e2', e2_eq,
+      EctxStep K' e1' e2' e1_eq idp base)
+  | ResolveMCtx _ vt, ResolveRCtx _ _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations vt base
+      (pmap (resolve_r_arg (Val vt)) p1))
+  | ResolveRCtx _ _, ResolveLCtx _ _ vt' =>
+    absurd (no_val_val_absurd e1 vt' no_val
+      (pmap (resolve_r_arg e1) p1))
+  | ResolveRCtx _ _, ResolveMCtx _ vt' =>
+    absurd (no_val_val_absurd e1 vt' no_val
+      (pmap (resolve_r_arg e1) p1))
+  | ResolveRCtx e0 e1arg, ResolveRCtx e0' e1arg' =>
+    \let
+      | hole_eq : e1 = fill K' e1' => pmap (resolve_r_arg e1) p1
+      | e0_eq : e0 = e0' => pmap (resolve_l_arg e0) p1
+      | e1arg_eq : e1arg = e1arg' => pmap (resolve_m_arg e1arg) p1
+      | e2_eq : e2 = fill_item (ResolveRCtx e0 e1arg) (fill K' e2') =>
+          p2
+          *> pmap (\lam ee => Resolve ee e1arg' (fill K' e2'))
+              (inv e0_eq)
+          *> pmap (\lam ee => Resolve e0 ee (fill K' e2'))
+              (inv e1arg_eq)
+    \in inP (fill K' e2', e2_eq,
+      EctxStep K' e1' e2' hole_eq idp base)
 
 \lemma fill_step_inv_item_ctx {cnt : Countable Loc}
                               (Ki : EctxItem)
                               (e1 : Expr) (s1 : State cnt)
                               (e2 : Expr) (s2 : State cnt)
+                              (efs : List Expr) (observations : List Observation)
                               (no_val : to_val e1 = nothing)
                               (K : Ectx) (e1' e2' : Expr)
                               (p1 : fill_item Ki e1 = fill K e1')
                               (p2 : e2 = fill K e2')
-                              (base : BaseStep e1' s1 e2' s2)
-  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2))
+                              (base : BaseStep e1' s1 e2' s2 efs observations)
+  : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2 efs observations))
   \elim K
   | EmptyCtx =>
-    absurd (base_step_fill_item_absurd Ki e1 s1 e2' s2 no_val
-      (transportInv (\lam e => BaseStep e s1 e2' s2) p1 base))
+    absurd (base_step_fill_item_absurd Ki e1 s1 e2' s2 efs observations no_val
+      (transportInv (\lam e => BaseStep e s1 e2' s2 efs observations) p1 base))
   | ConsCtx Ki' K' =>
-    fill_step_inv_item_ctx_cons Ki Ki' e1 s1 e2 s2 no_val K' e1' e2' p1 p2 base
+    fill_step_inv_item_ctx_cons Ki Ki' e1 s1 e2 s2 efs observations no_val K' e1' e2' p1 p2 base
 
 
 
 \func BaseReducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
-  TruncP (\Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s'))
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (efs : List Expr) (observations : List Observation)
+    (BaseStep e s e' s' efs observations))
 
 \func Reducible {cnt : Countable Loc} (e : Expr) (s : State cnt) : \Prop =>
-  TruncP (\Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s'))
+  TruncP (\Sigma (e' : Expr) (s' : State cnt) (efs : List Expr) (observations : List Observation)
+    (PrimStep e s e' s' efs observations))
 
 \func base_reducible_prim {cnt : Countable Loc} (e : Expr) (s : State cnt)
   : BaseReducible e s -> Reducible e s =>
   \lam red => TruncP.map red
-    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (BaseStep e s e' s')) =>
-      (p.1, p.2, base_prim_step p.3))
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (efs : List Expr) (observations : List Observation)
+        (BaseStep e s e' s' efs observations)) =>
+      (p.1, p.2, p.3, p.4, base_prim_step p.5))
 
 \func reducible_fill_item {cnt : Countable Loc} (Ki : EctxItem) (e : Expr) (s : State cnt)
   : Reducible e s -> Reducible (fill_item Ki e) s =>
   \lam red => TruncP.map red
-    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
-      (fill_item Ki p.1, p.2, fill_step_item Ki p.3))
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (efs : List Expr) (observations : List Observation)
+        (PrimStep e s e' s' efs observations)) =>
+      (fill_item Ki p.1, p.2, p.3, p.4, fill_step_item Ki p.5))
 
 \func reducible_fill {cnt : Countable Loc} (K : Ectx) (e : Expr) (s : State cnt)
   : Reducible e s -> Reducible (fill K e) s =>
   \lam red => TruncP.map red
-    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (PrimStep e s e' s')) =>
-      (fill K p.1, p.2, fill_step K p.3))
+    (\lam (p : \Sigma (e' : Expr) (s' : State cnt) (efs : List Expr) (observations : List Observation)
+        (PrimStep e s e' s' efs observations)) =>
+      (fill K p.1, p.2, p.3, p.4, fill_step K p.5))
+
+-- Inversion for the context-free NewProph primitive.
+\truncated \data NewProphStepInv
+  {cnt : Countable Loc} (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) : \Prop
+  | NewProphStepInvIntro (p : ProphId)
+      (fresh : plookup sigma.usedProph p = nothing)
+      (e2_eq : e2 = Val (LitV (LitProphecy p)))
+      (sigma2_eq : sigma2 = state_update_usedProph sigma
+        (pinsert p () sigma.usedProph))
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
+
+\func base_new_proph_step_inv
+  {cnt : Countable Loc} (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (step : BaseStep NewProph sigma e2 sigma2 efs observations)
+  : NewProphStepInv sigma e2 sigma2 efs observations =>
+  \case step \with {
+    | NewProphS p fresh p1 p2 p3 {p0} {p4} =>
+      NewProphStepInvIntro p fresh p2 p3 p4 p0
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func new_proph_step_inv_ctx_item
+  {cnt : Countable Loc} (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : NewProph = fill_item Ki (fill K' e1'))
+  : NewProphStepInv sigma e2 sigma2 efs observations \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _ => \case p1 \with {}
+  | ResolveMCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _ => \case p1 \with {}
+
+\func new_proph_step_inv_ctx
+  {cnt : Countable Loc} (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : NewProph = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : NewProphStepInv sigma e2 sigma2 efs observations \elim K
+  | EmptyCtx =>
+      \case base_new_proph_step_inv sigma e2' sigma2 efs observations
+          (transport (\lam ee => BaseStep ee sigma e2' sigma2
+            efs observations) (inv p1) base) \with {
+        | NewProphStepInvIntro p fresh e2eq sigmaeq efseq obseq =>
+          NewProphStepInvIntro p fresh (p2 *> e2eq)
+            sigmaeq efseq obseq
+      }
+  | ConsCtx Ki K' => new_proph_step_inv_ctx_item sigma e2 sigma2
+      efs observations Ki K' e1' e2' p1
+
+\func new_proph_step_inv
+  {cnt : Countable Loc} (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (step : PrimStep NewProph sigma e2 sigma2 efs observations)
+  : NewProphStepInv sigma e2 sigma2 efs observations =>
+  \case step \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      new_proph_step_inv_ctx sigma e2 sigma2 efs observations
+        K e1' e2' p1 p2 base
+  }
+
+\func StronglyAtomic {cnt : Countable Loc} (e : Expr) : \Prop =>
+  \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation) ->
+    PrimStep e sigma e2 sigma2 efs observations ->
+    TruncP (\Sigma (v : Value) (e2 = Val v))
+
+\func strongly_atomic_prim_base_ctx {cnt : Countable Loc} (e : Expr)
+    (atomic : StronglyAtomic {cnt} e)
+    (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (K : Ectx) (e1' e2' : Expr)
+    (p1 : e = fill K e1') (p2 : e2 = fill K e2')
+    (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : BaseStep e sigma e2 sigma2 efs observations \elim K
+  | EmptyCtx => transport2
+      (\lam source target => BaseStep source sigma target sigma2
+        efs observations) (inv p1) (inv p2) base
+  | ConsCtx Ki K' =>
+      \let step : PrimStep e sigma e2 sigma2 efs observations =>
+          EctxStep (ConsCtx Ki K') e1' e2' p1 p2 base
+      \in \scase atomic sigma e2 sigma2 efs observations step \with {
+        | inP (v, returned) =>
+          \let impossible : just v = nothing =>
+              pmap to_val (inv returned) *>
+              pmap to_val p2 *>
+              fill_item_always_not_val Ki (fill K' e2')
+          \in \case impossible \with {}
+      }
+
+\func strongly_atomic_prim_base {cnt : Countable Loc} (e : Expr)
+    (atomic : StronglyAtomic {cnt} e)
+    (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep e sigma e2 sigma2 efs observations)
+  : BaseStep e sigma e2 sigma2 efs observations =>
+  \case step \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      strongly_atomic_prim_base_ctx e atomic sigma e2 sigma2
+        efs observations K e1' e2' p1 p2 base
+  }
+
+\func resolve_reducible {cnt : Countable Loc} (e : Expr)
+    (atomic : StronglyAtomic {cnt} e) (sigma : State cnt)
+    (p : ProphId) (w : Value)
+    (red : Reducible e sigma) (used : gset_in p sigma.usedProph)
+  : Reducible
+      (Resolve e (Val (LitV (LitProphecy p))) (Val w)) sigma =>
+  \scase red \with {
+    | inP (e2, sigma2, efs, observations, step) =>
+      \scase atomic sigma e2 sigma2 efs observations step \with {
+        | inP (v, returned) =>
+          \let inner : BaseStep e sigma (Val v) sigma2 efs observations =>
+              transport (\lam target => BaseStep e sigma target sigma2
+                efs observations) returned
+                (strongly_atomic_prim_base e atomic sigma e2 sigma2
+                  efs observations step)
+          \in inP (Val v, sigma2, efs,
+            observations ++ (p, (v, w)) :: nil,
+            BasePrim (ResolveS p v w e observations efs inner used
+              idp idp {idp} {idp}))
+      }
+  }
+
+\func resolve_strongly_atomic_ctx_item {cnt : Countable Loc}
+    (e : Expr) (atomic : StronglyAtomic {cnt} e)
+    (p : ProphId) (w : Value)
+    (sigma : State cnt) (target : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+    (p1 : Resolve e (Val (LitV (LitProphecy p))) (Val w)
+      = fill_item Ki (fill K' e1'))
+    (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : TruncP (\Sigma (v : Value) (target = Val v)) \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _ => absurd
+      (val_fill_absurd K' e1' sigma e2' sigma2 efs observations
+        (LitV (LitProphecy p)) base
+        (pmap (resolve_m_arg (Val (LitV (LitProphecy p)))) p1))
+  | ResolveRCtx _ _ => absurd
+      (val_fill_absurd K' e1' sigma e2' sigma2 efs observations
+        w base (pmap (resolve_r_arg (Val w)) p1))
+  | ResolveLCtx innerKi _ _ =>
+      \let
+        | sourceEq : e = fill_item innerKi (fill K' e1') =>
+            pmap (resolve_l_arg e) p1
+        | innerStep : PrimStep e sigma
+            (fill_item innerKi (fill K' e2')) sigma2 efs observations =>
+            EctxStep (ConsCtx innerKi K') e1' e2'
+              sourceEq idp base
+      \in \scase atomic sigma (fill_item innerKi (fill K' e2'))
+          sigma2 efs observations innerStep \with {
+        | inP (v, returned) =>
+          \let impossible : just v = nothing =>
+              pmap to_val (inv returned) *>
+              fill_item_always_not_val innerKi (fill K' e2')
+          \in \case impossible \with {}
+      }
+
+\func resolve_strongly_atomic_ctx {cnt : Countable Loc}
+    (e : Expr) (atomic : StronglyAtomic {cnt} e)
+    (p : ProphId) (w : Value)
+    (sigma : State cnt) (target : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (K : Ectx) (e1' e2' : Expr)
+    (p1 : Resolve e (Val (LitV (LitProphecy p))) (Val w)
+      = fill K e1')
+    (p2 : target = fill K e2')
+    (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : TruncP (\Sigma (v : Value) (target = Val v)) \elim K
+  | EmptyCtx => \case transport
+      (\lam source => BaseStep source sigma e2' sigma2 efs observations)
+      (inv p1) base \with {
+    | ResolveS _ v _ _ _ _ _ _ _ resultEq =>
+      inP (v, p2 *> resultEq)
+    | BetaS _ _ _ bad _ _ => \case bad \with {}
+    | RecBetaS _ _ _ _ bad _ _ => \case bad \with {}
+    | LamS _ _ bad _ _ => \case bad \with {}
+    | RecS _ _ _ bad _ _ => \case bad \with {}
+    | IfTrueS _ _ bad _ _ => \case bad \with {}
+    | IfFalseS _ _ bad _ _ => \case bad \with {}
+    | FstS _ _ bad _ _ => \case bad \with {}
+    | SndS _ _ bad _ _ => \case bad \with {}
+    | PairS _ _ bad _ _ => \case bad \with {}
+    | AllocS _ _ _ bad _ _ => \case bad \with {}
+    | LoadS _ _ _ bad _ _ => \case bad \with {}
+    | StoreS _ _ _ _ bad _ _ => \case bad \with {}
+    | IsZeroZeroS bad _ _ => \case bad \with {}
+    | IsZeroPosS _ bad _ _ => \case bad \with {}
+    | PredS _ bad _ _ => \case bad \with {}
+    | MulS _ _ bad _ _ => \case bad \with {}
+    | ForkS _ bad _ _ => \case bad \with {}
+    | NewProphS _ _ bad _ _ => \case bad \with {}
+  }
+  | ConsCtx Ki K' => resolve_strongly_atomic_ctx_item e atomic p w
+      sigma target sigma2 efs observations Ki K' e1' e2' p1 base
+
+\func resolve_strongly_atomic {cnt : Countable Loc} (e : Expr)
+    (atomic : StronglyAtomic {cnt} e) (p : ProphId) (w : Value)
+  : StronglyAtomic {cnt}
+      (Resolve e (Val (LitV (LitProphecy p))) (Val w)) =>
+  \lam sigma target sigma2 efs observations step =>
+    \case step \with {
+      | EctxStep K e1' e2' p1 p2 base =>
+        resolve_strongly_atomic_ctx e atomic p w sigma target sigma2
+          efs observations K e1' e2' p1 p2 base
+    }
+
+\truncated \data ResolveStepInv {cnt : Countable Loc}
+    (e : Expr) (p : ProphId) (w : Value) (sigma : State cnt)
+    (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+    (observations : List Observation) : \Prop
+  | ResolveStepInvIntro (v : Value)
+      (innerObservations : List Observation)
+      (inner : BaseStep e sigma (Val v) sigma2 efs innerObservations)
+      (used : gset_in p sigma.usedProph)
+      (e2_eq : e2 = Val v)
+      (observations_eq : observations =
+        innerObservations ++ (p, (v, w)) :: nil)
+
+\func resolve_step_inv {cnt : Countable Loc} (e : Expr)
+    (atomic : StronglyAtomic {cnt} e) (p : ProphId) (w : Value)
+    (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep
+      (Resolve e (Val (LitV (LitProphecy p))) (Val w))
+      sigma e2 sigma2 efs observations)
+  : ResolveStepInv e p w sigma e2 sigma2 efs observations =>
+  \case strongly_atomic_prim_base
+      (Resolve e (Val (LitV (LitProphecy p))) (Val w))
+      (resolve_strongly_atomic e atomic p w)
+      sigma e2 sigma2 efs observations step \with {
+    | ResolveS p' v w' e' innerObservations innerForks
+        inner used p1 p2 {p0} {p4} =>
+      \let
+        | wrappedEq : e = e' => pmap (resolve_l_arg e) p1
+        | pEq : p = p' => pmap (proph_value_id p)
+            (pmap (maybe_val (LitV (LitProphecy p)))
+              (pmap to_val
+                (pmap (resolve_m_arg (Val (LitV (LitProphecy p)))) p1)))
+        | wEq : w = w' => pmap (maybe_val w)
+            (pmap to_val (pmap (resolve_r_arg (Val w)) p1))
+        | inner' : BaseStep e sigma (Val v) sigma2 efs
+            innerObservations =>
+            transport (\lam source => BaseStep source sigma (Val v)
+              sigma2 efs innerObservations) (inv wrappedEq)
+              (transport (\lam forks => BaseStep e' sigma (Val v)
+                sigma2 forks innerObservations) (inv p4) inner)
+        | used' : gset_in p sigma.usedProph =>
+            transport (\lam q => gset_in q sigma.usedProph)
+              (inv pEq) used
+        | observationsEq : observations =
+            innerObservations ++ (p, (v, w)) :: nil =>
+            p0
+            *> pmap (\lam q => innerObservations ++
+                (q, (v, w')) :: nil) (inv pEq)
+            *> pmap (\lam ww => innerObservations ++
+                (p, (v, ww)) :: nil) (inv wEq)
+      \in ResolveStepInvIntro v innerObservations inner' used'
+          p2 observationsEq
+    | BetaS _ _ _ bad _ _ => \case bad \with {}
+    | RecBetaS _ _ _ _ bad _ _ => \case bad \with {}
+    | LamS _ _ bad _ _ => \case bad \with {}
+    | RecS _ _ _ bad _ _ => \case bad \with {}
+    | IfTrueS _ _ bad _ _ => \case bad \with {}
+    | IfFalseS _ _ bad _ _ => \case bad \with {}
+    | FstS _ _ bad _ _ => \case bad \with {}
+    | SndS _ _ bad _ _ => \case bad \with {}
+    | PairS _ _ bad _ _ => \case bad \with {}
+    | AllocS _ _ _ bad _ _ => \case bad \with {}
+    | LoadS _ _ _ bad _ _ => \case bad \with {}
+    | StoreS _ _ _ _ bad _ _ => \case bad \with {}
+    | IsZeroZeroS bad _ _ => \case bad \with {}
+    | IsZeroPosS _ bad _ _ => \case bad \with {}
+    | PredS _ bad _ _ => \case bad \with {}
+    | MulS _ _ bad _ _ => \case bad \with {}
+    | ForkS _ bad _ _ => \case bad \with {}
+    | NewProphS _ _ bad _ _ => \case bad \with {}
+  }
 
 \lemma fill_step_inv_item {cnt : Countable Loc}
                           (Ki : EctxItem)
                           (e1 : Expr) (s1 : State cnt)
                           (e2 : Expr) (s2 : State cnt)
+                          (efs : List Expr) (observations : List Observation)
                           (no_val : to_val e1 = nothing)
-                          (step : PrimStep (fill_item Ki e1) s1 e2 s2)
-  : TruncP (\Sigma (e2' : Expr) (e2 = fill_item Ki e2') (PrimStep e1 s1 e2' s2))
+                          (step : PrimStep (fill_item Ki e1) s1 e2 s2 efs observations)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill_item Ki e2') (PrimStep e1 s1 e2' s2 efs observations))
   => \case step \with {
     | EctxStep K e1' e2' p1 p2 base =>
-      fill_step_inv_item_ctx Ki e1 s1 e2 s2 no_val K e1' e2' p1 p2 base
+      fill_step_inv_item_ctx Ki e1 s1 e2 s2 efs observations no_val K e1' e2' p1 p2 base
   }
 
 \lemma fill_step_inv {cnt : Countable Loc}
                     (K : Ectx)
                     (e1 : Expr) (s1 : State cnt)
                     (e2 : Expr) (s2 : State cnt)
+                    (efs : List Expr) (observations : List Observation)
                     (no_val : to_val e1 = nothing)
-                    (step : PrimStep (fill K e1) s1 e2 s2)
-  : TruncP (\Sigma (e2' : Expr) (e2 = fill K e2') (PrimStep e1 s1 e2' s2)) \elim K
+                    (step : PrimStep (fill K e1) s1 e2 s2 efs observations)
+  : TruncP (\Sigma (e2' : Expr) (e2 = fill K e2') (PrimStep e1 s1 e2' s2 efs observations)) \elim K
   | EmptyCtx => inP (e2, idp, step)
   | ConsCtx Ki K' =>
-    \case fill_step_inv_item Ki (fill K' e1) s1 e2 s2
+    \case fill_step_inv_item Ki (fill K' e1) s1 e2 s2 efs observations
             (fill_not_val K' e1 no_val) step \with {
       | inP (e2i, e2_eq_item, step_inner) =>
-        TruncP.map (fill_step_inv K' e1 s1 e2i s2 no_val step_inner)
-          (\lam (p : \Sigma (e2' : Expr) (e2i = fill K' e2') (PrimStep e1 s1 e2' s2)) =>
+        TruncP.map (fill_step_inv K' e1 s1 e2i s2 efs observations no_val step_inner)
+          (\lam (p : \Sigma (e2' : Expr) (e2i = fill K' e2') (PrimStep e1 s1 e2' s2 efs observations)) =>
             (p.1, e2_eq_item *> pmap (fill_item Ki) p.2, p.3))
     }
 
@@ -867,35 +1534,41 @@
   | Load _ => \case p \with {}
   | Store _ _ => \case p \with {}
   | Alloc _ => \case p \with {}
+  | Fork _ => \case p \with {}
+  | NewProph => \case p \with {}
+  | Resolve _ _ _ => \case p \with {}
 
 \func base_val_stuck {cnt : Countable Loc}
                      (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
-                     (step : BaseStep e s e' s') : to_val e = nothing =>
-  base_step_not_val e s e' s' step
+                     (efs : List Expr) (observations : List Observation)
+                     (step : BaseStep e s e' s' efs observations) : to_val e = nothing =>
+  base_step_not_val e s e' s' efs observations step
 
 \func val_stuck {cnt : Countable Loc}
                 (e : Expr) (s : State cnt) (e' : Expr) (s' : State cnt)
-                (step : PrimStep e s e' s') : to_val e = nothing \elim step
+                (efs : List Expr) (observations : List Observation)
+                (step : PrimStep e s e' s' efs observations) : to_val e = nothing \elim step
   | EctxStep K e1' e2' p1 p2 base =>
     transport (\lam x => to_val x = nothing) (inv p1)
-      (fill_not_val K e1' (base_val_stuck e1' s e2' s' base))
+      (fill_not_val K e1' (base_val_stuck e1' s e2' s' efs observations base))
 
 \truncated \data AllocStepInv
   {cnt : Countable Loc}
   (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation) : \Prop
   | AllocStepInvIntro
       (l : Loc)
       (fresh : glookup sigma.heap l = nothing)
       (e2_eq : e2 = Val (LitV (LitLoc l)))
-      (sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v })
+      (sigma2_eq : sigma2 = state_update_heap sigma (heap_update sigma.heap l v))
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
 
 \func base_alloc_step_inv
   {cnt : Countable Loc}
   (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
-  (hstep : BaseStep (Alloc (Val v)) sigma e2 sigma2)
-  : AllocStepInv v sigma e2 sigma2
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
+  (hstep : BaseStep (Alloc (Val v)) sigma e2 sigma2 efs observations)
+  : AllocStepInv v sigma e2 sigma2 efs observations
   => \case hstep \with {
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
@@ -906,30 +1579,33 @@
     | FstS _ _ p1 _ _ => \case p1 \with {}
     | SndS _ _ p1 _ _ => \case p1 \with {}
     | PairS _ _ p1 _ _ => \case p1 \with {}
-    | AllocS v' l fresh p1 p2 p3 =>
+    | AllocS v' l fresh p1 p2 p3 {p0} {p4} =>
       \let
         | v_eq : v = v' =>
           pmap (maybe_val v) (pmap to_val (pmap (alloc_arg (Val v)) p1))
-        | sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v } =>
-          p3 *> pmap (\lam vv => \new State cnt { | heap => heap_update sigma.heap l vv }) (inv v_eq)
-      \in AllocStepInvIntro l fresh p2 sigma2_eq
+        | sigma2_eq : sigma2 = state_update_heap sigma (heap_update sigma.heap l v) =>
+          p3 *> pmap (\lam vv => state_update_heap sigma (heap_update sigma.heap l vv)) (inv v_eq)
+      \in AllocStepInvIntro l fresh p2 sigma2_eq p4 p0
     | LoadS _ _ _ p1 _ _ => \case p1 \with {}
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
 
 \func alloc_step_inv_ctx_item
   {cnt : Countable Loc}
   (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
   (p1 : Alloc (Val v) = fill_item Ki (fill K' e1'))
   (p2 : e2 = fill_item Ki (fill K' e2'))
-  (base : BaseStep e1' sigma e2' sigma2)
-  : AllocStepInv v sigma e2 sigma2 \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : AllocStepInv v sigma e2 sigma2 efs observations \elim Ki
   | AppLCtx _ => \case p1 \with {}
   | AppRCtx _ => \case p1 \with {}
   | IfCtx _ _ => \case p1 \with {}
@@ -949,7 +1625,7 @@
           | _ => Val v
         }) p1
       | inner_not_val : to_val (fill K' e1') = nothing =>
-        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 efs observations base)
       | impossible : just v = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -960,50 +1636,51 @@
 \func alloc_step_inv_ctx
   {cnt : Countable Loc}
   (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (K : Ectx) (e1' e2' : Expr)
   (p1 : Alloc (Val v) = fill K e1')
   (p2 : e2 = fill K e2')
-  (base : BaseStep e1' sigma e2' sigma2)
-  : AllocStepInv v sigma e2 sigma2 \elim K
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : AllocStepInv v sigma e2 sigma2 efs observations \elim K
   | EmptyCtx =>
     \let
-      | base' : BaseStep (Alloc (Val v)) sigma e2' sigma2 =>
-        transport (\lam e => BaseStep e sigma e2' sigma2) (inv p1) base
-    \in \case base_alloc_step_inv v sigma e2' sigma2 base' \with {
-      | AllocStepInvIntro l fresh e2'_eq sigma2_eq =>
-        AllocStepInvIntro l fresh (p2 *> e2'_eq) sigma2_eq
+      | base' : BaseStep (Alloc (Val v)) sigma e2' sigma2 efs observations =>
+        transport (\lam e => BaseStep e sigma e2' sigma2 efs observations) (inv p1) base
+    \in \case base_alloc_step_inv v sigma e2' sigma2 efs observations base' \with {
+      | AllocStepInvIntro l fresh e2'_eq sigma2_eq efs_eq observations_eq =>
+        AllocStepInvIntro l fresh (p2 *> e2'_eq) sigma2_eq efs_eq observations_eq
     }
   | ConsCtx Ki K' =>
-    alloc_step_inv_ctx_item v sigma e2 sigma2 Ki K' e1' e2' p1 p2 base
+    alloc_step_inv_ctx_item v sigma e2 sigma2 efs observations Ki K' e1' e2' p1 p2 base
 
 \func alloc_step_inv
   {cnt : Countable Loc}
   (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
-  (hstep : PrimStep (Alloc (Val v)) sigma e2 sigma2)
-  : AllocStepInv v sigma e2 sigma2
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
+  (hstep : PrimStep (Alloc (Val v)) sigma e2 sigma2 efs observations)
+  : AllocStepInv v sigma e2 sigma2 efs observations
   => \case hstep \with {
     | EctxStep K e1' e2' p1 p2 base =>
-      alloc_step_inv_ctx v sigma e2 sigma2 K e1' e2' p1 p2 base
+      alloc_step_inv_ctx v sigma e2 sigma2 efs observations K e1' e2' p1 p2 base
   }
 
 \truncated \data StoreStepInv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation) : \Prop
   | StoreStepInvIntro
       (old : Value)
       (allocated : glookup sigma.heap l = just old)
       (e2_eq : e2 = Val (LitV LitUnit))
-      (sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v })
+      (sigma2_eq : sigma2 = state_update_heap sigma (heap_update sigma.heap l v))
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
 
 \func base_store_step_inv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
-  (hstep : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2)
-  : StoreStepInv l v sigma e2 sigma2
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
+  (hstep : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2 efs observations)
+  : StoreStepInv l v sigma e2 sigma2 efs observations
   => \case hstep \with {
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
@@ -1016,7 +1693,7 @@
     | PairS _ _ p1 _ _ => \case p1 \with {}
     | AllocS _ _ _ p1 _ _ => \case p1 \with {}
     | LoadS _ _ _ p1 _ _ => \case p1 \with {}
-    | StoreS l' v' old allocated p1 p2 p3 =>
+    | StoreS l' v' old allocated p1 p2 p3 {p0} {p4} =>
       \let
         | l_eq : l = l' =>
           pmap (\lam (e : Expr) => \case e \with {
@@ -1027,26 +1704,29 @@
           pmap (maybe_val v) (pmap to_val (pmap (store_r_arg (Val v)) p1))
         | allocated' : glookup sigma.heap l = just old =>
           transport (\lam ll => glookup sigma.heap ll = just old) (inv l_eq) allocated
-        | sigma2_eq : sigma2 = \new State cnt { | heap => heap_update sigma.heap l v } =>
+        | sigma2_eq : sigma2 = state_update_heap sigma (heap_update sigma.heap l v) =>
           p3
-          *> pmap (\lam ll => \new State cnt { | heap => heap_update sigma.heap ll v' }) (inv l_eq)
-          *> pmap (\lam vv => \new State cnt { | heap => heap_update sigma.heap l vv }) (inv v_eq)
-      \in StoreStepInvIntro old allocated' p2 sigma2_eq
+          *> pmap (\lam ll => state_update_heap sigma (heap_update sigma.heap ll v')) (inv l_eq)
+          *> pmap (\lam vv => state_update_heap sigma (heap_update sigma.heap l vv)) (inv v_eq)
+      \in StoreStepInvIntro old allocated' p2 sigma2_eq p4 p0
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
 
 \func store_step_inv_ctx_item
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
   (p1 : Store (Val (LitV (LitLoc l))) (Val v) = fill_item Ki (fill K' e1'))
   (p2 : e2 = fill_item Ki (fill K' e2'))
-  (base : BaseStep e1' sigma e2' sigma2)
-  : StoreStepInv l v sigma e2 sigma2 \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : StoreStepInv l v sigma e2 sigma2 efs observations \elim Ki
   | AppLCtx _ => \case p1 \with {}
   | AppRCtx _ => \case p1 \with {}
   | IfCtx _ _ => \case p1 \with {}
@@ -1068,7 +1748,7 @@
           | _ => Val (LitV (LitLoc l))
         }) p1
       | inner_not_val : to_val (fill K' e1') = nothing =>
-        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 efs observations base)
       | impossible : just (LitV (LitLoc l)) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1080,7 +1760,7 @@
           | _ => Val v
         }) p1
       | inner_not_val : to_val (fill K' e1') = nothing =>
-        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 efs observations base)
       | impossible : just v = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1088,33 +1768,42 @@
 \func store_step_inv_ctx
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (K : Ectx) (e1' e2' : Expr)
   (p1 : Store (Val (LitV (LitLoc l))) (Val v) = fill K e1')
   (p2 : e2 = fill K e2')
-  (base : BaseStep e1' sigma e2' sigma2)
-  : StoreStepInv l v sigma e2 sigma2 \elim K
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : StoreStepInv l v sigma e2 sigma2 efs observations \elim K
   | EmptyCtx =>
     \let
-      | base' : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2' sigma2 =>
-        transport (\lam e => BaseStep e sigma e2' sigma2) (inv p1) base
-    \in \case base_store_step_inv l v sigma e2' sigma2 base' \with {
-      | StoreStepInvIntro old allocated e2'_eq sigma2_eq =>
-        StoreStepInvIntro old allocated (p2 *> e2'_eq) sigma2_eq
+      | base' : BaseStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2' sigma2 efs observations =>
+        transport (\lam e => BaseStep e sigma e2' sigma2 efs observations) (inv p1) base
+    \in \case base_store_step_inv l v sigma e2' sigma2 efs observations base' \with {
+      | StoreStepInvIntro old allocated e2'_eq sigma2_eq efs_eq observations_eq =>
+        StoreStepInvIntro old allocated (p2 *> e2'_eq) sigma2_eq efs_eq observations_eq
     }
   | ConsCtx Ki K' =>
-    store_step_inv_ctx_item l v sigma e2 sigma2 Ki K' e1' e2' p1 p2 base
+    store_step_inv_ctx_item l v sigma e2 sigma2 efs observations Ki K' e1' e2' p1 p2 base
 
 \func store_step_inv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
-  (hstep : PrimStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2)
-  : StoreStepInv l v sigma e2 sigma2
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
+  (hstep : PrimStep (Store (Val (LitV (LitLoc l))) (Val v)) sigma e2 sigma2 efs observations)
+  : StoreStepInv l v sigma e2 sigma2 efs observations
   => \case hstep \with {
     | EctxStep K e1' e2' p1 p2 base =>
-      store_step_inv_ctx l v sigma e2 sigma2 K e1' e2' p1 p2 base
+      store_step_inv_ctx l v sigma e2 sigma2 efs observations K e1' e2' p1 p2 base
   }
+
+\func store_strongly_atomic {cnt : Countable Loc} (l : Loc) (v : Value)
+  : StronglyAtomic {cnt}
+      (Store (Val (LitV (LitLoc l))) (Val v)) =>
+  \lam sigma e2 sigma2 efs observations step =>
+    \case store_step_inv l v sigma e2 sigma2 efs observations step \with {
+      | StoreStepInvIntro _ _ e2_eq _ _ _ =>
+        inP (LitV LitUnit, e2_eq)
+    }
 
 -- Load inversion is parameterized by the lookup fact supplied by the heap
 -- resource.  Keeping it with the other operational inversion lemmas lets both
@@ -1122,10 +1811,10 @@
 \func base_load_step_inv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (lookup : glookup sigma.heap l = just v)
-  (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
-  : \Sigma (e2 = Val v) (sigma2 = sigma) =>
+  (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 efs observations)
+  : \Sigma (e2 = Val v) (sigma2 = sigma) (efs = nil) (observations = nil) =>
   \case hstep \with {
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
@@ -1137,7 +1826,7 @@
     | SndS _ _ p1 _ _ => \case p1 \with {}
     | PairS _ _ p1 _ _ => \case p1 \with {}
     | AllocS _ _ _ p1 _ _ => \case p1 \with {}
-    | LoadS l' v' lookup' p1 p2 p3 =>
+    | LoadS l' v' lookup' p1 p2 p3 {p0} {p4} =>
       \let
         | l_eq : l = l' =>
           pmap (\lam (e : Expr) => \case e \with {
@@ -1151,30 +1840,34 @@
             | just w => w
             | nothing => v
           }) (inv lookup'' *> lookup')
-      \in (p2 *> pmap Val (inv v_eq), p3)
+      \in (p2 *> pmap Val (inv v_eq), p3, p4, p0)
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
 
 \truncated \data LoadStepInv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt) : \Prop
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation) : \Prop
   | LoadStepInvIntro (e2_eq : e2 = Val v) (sigma2_eq : sigma2 = sigma)
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
 
 \func load_step_inv_ctx_item
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (lookup : glookup sigma.heap l = just v)
   (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
   (p1 : Load (Val (LitV (LitLoc l))) = fill_item Ki (fill K' e1'))
   (p2 : e2 = fill_item Ki (fill K' e2'))
-  (base : BaseStep e1' sigma e2' sigma2)
-  : LoadStepInv l v sigma e2 sigma2 \elim Ki
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : LoadStepInv l v sigma e2 sigma2 efs observations \elim Ki
   | AppLCtx _ => \case p1 \with {}
   | AppRCtx _ => \case p1 \with {}
   | IfCtx _ _ => \case p1 \with {}
@@ -1195,7 +1888,7 @@
           | _ => Val (LitV (LitLoc l))
         }) p1
       | inner_not_val : to_val (fill K' e1') = nothing =>
-        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 base)
+        fill_not_val K' e1' (base_val_stuck e1' sigma e2' sigma2 efs observations base)
       | impossible : just (LitV (LitLoc l)) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
@@ -1205,33 +1898,34 @@
 \func load_step_inv_ctx
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (lookup : glookup sigma.heap l = just v)
   (K : Ectx) (e1' e2' : Expr)
   (p1 : Load (Val (LitV (LitLoc l))) = fill K e1')
   (p2 : e2 = fill K e2')
-  (base : BaseStep e1' sigma e2' sigma2)
-  : LoadStepInv l v sigma e2 sigma2 \elim K
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : LoadStepInv l v sigma e2 sigma2 efs observations \elim K
   | EmptyCtx =>
     \let
-      | base' : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 =>
-        transport (\lam ee => BaseStep ee sigma e2' sigma2) (inv p1) base
-      | inv_base : \Sigma (e2' = Val v) (sigma2 = sigma) =>
-        base_load_step_inv l v sigma e2' sigma2 lookup base'
-    \in LoadStepInvIntro (p2 *> inv_base.1) inv_base.2
+      | base' : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 efs observations =>
+        transport (\lam ee => BaseStep ee sigma e2' sigma2 efs observations) (inv p1) base
+      | inv_base : \Sigma (e2' = Val v) (sigma2 = sigma) (efs = nil)
+          (observations = nil) =>
+        base_load_step_inv l v sigma e2' sigma2 efs observations lookup base'
+    \in LoadStepInvIntro (p2 *> inv_base.1) inv_base.2 inv_base.3 inv_base.4
   | ConsCtx Ki K' =>
-    load_step_inv_ctx_item l v sigma e2 sigma2 lookup
+    load_step_inv_ctx_item l v sigma e2 sigma2 efs observations lookup
       Ki K' e1' e2' p1 p2 base
 
 \func load_step_inv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
-  (e2 : Expr) (sigma2 : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) (observations : List Observation)
   (lookup : glookup sigma.heap l = just v)
-  (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2)
-  : LoadStepInv l v sigma e2 sigma2 =>
+  (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 efs observations)
+  : LoadStepInv l v sigma e2 sigma2 efs observations =>
   \case hstep \with {
     | EctxStep K e1' e2' p1 p2 base =>
-      load_step_inv_ctx l v sigma e2 sigma2 lookup
+      load_step_inv_ctx l v sigma e2 sigma2 efs observations lookup
         K e1' e2' p1 p2 base
   }
