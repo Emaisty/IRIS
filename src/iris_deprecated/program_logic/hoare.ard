@@ -1,0 +1,186 @@
+\import Logic
+\import Data.Maybe
+\import Data.List
+\import Arith.Nat
+\import Order.PartialOrder
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.base_logic.lib.iprop
+\import iris_heap_lang.lang
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import stdpp.coPset
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.gmap
+\import iris.algebra.dfrac
+\import iris.base_logic.lib.gen_heap
+
+-- Masked Hoare triples over the generic Iris proposition carrier.
+\func ht {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P : iProp S) (e : Expr) (Phi : Value -> iProp S) : iProp S =>
+  mkProperPersistently (mkProperWand P (wp H E e Phi))
+
+-- Contravariance of the precondition, postcondition covariance, and their
+-- combined consequence rule form the full consequence surface of the masked
+-- generic triple.
+\lemma ht_pre_conseq {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P P' : iProp S) (e : Expr) (Phi : Value -> iProp S)
+    (hP : properUPred_ent P' P)
+  : properUPred_ent (ht H E P e Phi) (ht H E P' e Phi) =>
+  \let M => iResUR S
+  \in \lam n a ha hpers =>
+    \lam k hk frame hcore hP' =>
+      \let
+        | hframe : M.validN k frame =>
+            cmra_validN_op_r {M} k (ucmra_core {M} a) frame hcore
+        | hPframe : P.upred_holds k frame => hP k frame hframe hP'
+      \in hpers k hk frame hcore hPframe
+
+\lemma ht_post_conseq {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P : iProp S) (e : Expr) (Phi Psi : Value -> iProp S)
+    (hPhi : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
+  : properUPred_ent (ht H E P e Phi) (ht H E P e Psi) =>
+  \let M => iResUR S
+  \in \lam n a ha hpers =>
+    \lam k hk frame hcore hP =>
+      wp_mono H E e Phi Psi hPhi
+        k (M.op (ucmra_core {M} a) frame) hcore
+        (hpers k hk frame hcore hP)
+
+\lemma ht_conseq {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P P' : iProp S) (e : Expr) (Phi Psi : Value -> iProp S)
+    (hP : properUPred_ent P' P)
+    (hPhi : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
+  : properUPred_ent (ht H E P e Phi) (ht H E P' e Psi) =>
+  properUPred_ent_trans
+    (ht H E P e Phi)
+    (ht H E P' e Phi)
+    (ht H E P' e Psi)
+    (ht_pre_conseq H E P P' e Phi hP)
+    (ht_post_conseq H E P' e Phi Psi hPhi)
+
+-- Sequencing with an explicit postcondition-to-continuation entailment.  This
+-- is the term-mode core of Rocq Iris' `ht_bind`; a proof-mode Hoare triple for
+-- the continuation can later be converted to this premise by the persistent
+-- framing API.
+\lemma ht_bind_ent {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (K : Ectx)
+    (P : iProp S) (e : Expr) (Phi Psi : Value -> iProp S)
+    (hK : \Pi (v : Value) -> properUPred_ent (Phi v)
+      (wp H E (fill K (Val v)) Psi))
+  : properUPred_ent (ht H E P e Phi)
+      (ht H E P (fill K e) Psi) =>
+  \let M => iResUR S
+  \in \lam n a ha htriple =>
+    \lam k k_le_n frame hcore hP =>
+      wp_bind H E K e Psi k (M.op (ucmra_core {M} a) frame) hcore
+        (wp_mono H E e Phi (wp_bind_post H E K Psi) hK
+          k (M.op (ucmra_core {M} a) frame) hcore
+          (htriple k k_le_n frame hcore hP))
+
+\lemma ht_value {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P : iProp S) (v : Value) (Phi : Value -> iProp S)
+    (hpost : properUPred_ent P (Phi v))
+  : properUPred_ent mkProperEmp (ht H E P (Val v) Phi) =>
+  \let M => iResUR S
+  \in \lam n a ha _ =>
+    \lam k k_le_n frame hcore hP =>
+      \let
+        | hframe : M.validN k frame =>
+            cmra_validN_op_r {M} k (ucmra_core {M} a) frame hcore
+        | frame_in : inclN {M} {\new Op M.E { | op => M.op }}
+            frame k (M.op (ucmra_core {M} a) frame) =>
+            inP (ucmra_core {M} a,
+              cmra_comm_dist {M} k (ucmra_core {M} a) frame)
+        | hPfull : P.upred_holds k (M.op (ucmra_core {M} a) frame) =>
+            P.upred_mono k k frame (M.op (ucmra_core {M} a) frame)
+              hP frame_in <=-refl
+      \in wp_value_intro H E v Phi
+        k (M.op (ucmra_core {M} a) frame) hcore
+        (hpost k (M.op (ucmra_core {M} a) frame) hcore hPfull)
+
+-- Introduce a Hoare triple from a direct semantic WP rule.  This is the
+-- term-mode counterpart of Iris proof mode's triple-introduction step and is
+-- the common bridge used by all primitive heap rules below.
+\lemma ht_intro {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (P : iProp S) (e : Expr) (Phi : Value -> iProp S)
+    (hwp : properUPred_ent P (wp H E e Phi))
+  : properUPred_ent mkProperEmp (ht H E P e Phi) =>
+  \let M => iResUR S
+  \in \lam n a ha _ =>
+    \lam k k_le_n frame hcore hP =>
+      \let
+        | hframe : M.validN k frame =>
+            cmra_validN_op_r {M} k (ucmra_core {M} a) frame hcore
+        | frame_in : inclN {M} {\new Op M.E { | op => M.op }}
+            frame k (M.op (ucmra_core {M} a) frame) =>
+            inP (ucmra_core {M} a,
+              cmra_comm_dist {M} k (ucmra_core {M} a) frame)
+        | hPfull : P.upred_holds k (M.op (ucmra_core {M} a) frame) =>
+            P.upred_mono k k frame (M.op (ucmra_core {M} a) frame)
+              hP frame_in <=-refl
+      \in hwp k (M.op (ucmra_core {M} a) frame) hcore hPfull
+
+\lemma ht_pure_step {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (P : iProp S)
+    (e e' : Expr)
+    (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma nil)
+    (det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+      (efs : List Expr) -> PrimStep e sigma e2 sigma2 efs ->
+      \Sigma (e2 = e') (sigma2 = sigma) (efs = nil))
+    (notVal : to_val e = nothing) (Phi : Value -> iProp S)
+  : properUPred_ent (ht H E P e' Phi) (ht H E P e Phi) =>
+  \let M => iResUR S
+  \in \lam n a ha htriple =>
+    \lam k k_le_n frame hcore hP =>
+      wp_pure_step H E e e' pure det notVal Phi
+        k (M.op (ucmra_core {M} a) frame) hcore
+        (htriple k k_le_n frame hcore hP)
+
+\lemma ht_load {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (l : Loc) (dq : Dfrac) (v : Value)
+  : properUPred_ent mkProperEmp
+      (ht H E (pointsto H.iris_gen_heap l dq v)
+        (Load (Val (LitV (LitLoc l))))
+        (\lam w => mkProperAnd (mkProperPure (w = v))
+          (pointsto H.iris_gen_heap l dq v))) =>
+  ht_intro H E (pointsto H.iris_gen_heap l dq v)
+    (Load (Val (LitV (LitLoc l))))
+    (\lam w => mkProperAnd (mkProperPure (w = v))
+      (pointsto H.iris_gen_heap l dq v))
+    (wp_load H E l dq v)
+
+\lemma ht_store {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (l : Loc) (old new : Value)
+  : properUPred_ent mkProperEmp
+      (ht H E (pointsto_full H.iris_gen_heap l old)
+        (Store (Val (LitV (LitLoc l))) (Val new))
+        (\lam w => mkProperAnd
+          (mkProperPure (w = LitV LitUnit))
+          (pointsto_full H.iris_gen_heap l new))) =>
+  ht_intro H E (pointsto_full H.iris_gen_heap l old)
+    (Store (Val (LitV (LitLoc l))) (Val new))
+    (\lam w => mkProperAnd (mkProperPure (w = LitV LitUnit))
+      (pointsto_full H.iris_gen_heap l new))
+    (wp_store H E l old new)
+
+\lemma ht_alloc {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value)
+  : properUPred_ent mkProperEmp
+      (ht H E mkProperEmp (Alloc (Val v))
+        (\lam w => mkProperExist Loc (\lam l =>
+          mkProperAnd (mkProperPure (w = LitV (LitLoc l)))
+            (pointsto_full H.iris_gen_heap l v)))) =>
+  ht_intro H E mkProperEmp (Alloc (Val v))
+    (\lam w => mkProperExist Loc (\lam l =>
+      mkProperAnd (mkProperPure (w = LitV (LitLoc l)))
+        (pointsto_full H.iris_gen_heap l v)))
+    (wp_alloc H E v)

@@ -1,0 +1,278 @@
+\import Logic
+\import Logic.Meta
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Nat
+\import iris.algebra.cmra
+\import iris.algebra.ofe
+\import iris.algebra.gmap
+
+-- =================================================================================
+-- Gmap singleton lemmas and frame-preserving updates.
+--
+-- Port of the singleton/alloc part of Rocq's `algebra/gmap.v` needed by
+-- `own` (A5): `singleton_op`, `singleton_validN`, `singleton_updateP'`,
+-- `alloc_updateP`.  The allocation lemma is parameterized by a fresh-key
+-- oracle; for `gname = Pos` it is provided by `pmap_fresh_key` (lib/pmap).
+-- =================================================================================
+
+-- `option_op (just a) mz = just (a ⋅? mz)` — bridges gmap frames to the
+-- Maybe-frame update relation `cmra_updatePM`.
+\lemma option_op_just_l {A : CMRA} (a : A.E) (mz : Maybe A.E)
+  : option_op {A} (just a) mz = just (cmra_opM a mz) \elim mz
+  | just z => idp
+  | nothing => idp
+
+-- =================================================================================
+-- Singleton distance / op / validity.
+-- =================================================================================
+
+\lemma gmap_singleton_dist {K : \Set} {cnt : Countable K} {A : CMRA}
+                           (k : K) (n : Nat) (a b : A.E) (h : A.dist n a b)
+  : (GmapCMRA K cnt A).dist n (gsingleton k a) (gsingleton k b)
+  => \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+    | yes p => transport
+        (\lam kk => (OptionOFE A).dist n (glookup (gsingleton {K} {cnt} k a) kk)
+                                         (glookup (gsingleton {K} {cnt} k b) kk))
+        p
+        (transport2 (\lam u v => (OptionOFE A).dist n u v)
+            (inv (glookup_singleton_eq k a))
+            (inv (glookup_singleton_eq k b))
+            h)
+    | no np => transport2 (\lam u v => (OptionOFE A).dist n u v)
+        (inv (glookup_singleton_ne k k' a np))
+        (inv (glookup_singleton_ne k k' b np))
+        ()
+  }
+
+\lemma gmap_singleton_op {K : \Set} {cnt : Countable K} {A : CMRA}
+                         (k : K) (a b : A.E)
+  : (GmapCMRA K cnt A).equiv (gsingleton k (A.op a b))
+      (gmap_op {K} {cnt} {A} (gsingleton k a) (gsingleton k b))
+  => \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+    | yes p => transport
+        (\lam kk => (OptionOFE A).equiv
+            (glookup (gsingleton {K} {cnt} k (A.op a b)) kk)
+            (glookup (gmap_op {K} {cnt} {A} (gsingleton k a) (gsingleton k b)) kk))
+        p
+        (transport2 (\lam u v => (OptionOFE A).equiv u v)
+            (inv (glookup_singleton_eq k (A.op a b)))
+            (inv (glookup_op (gsingleton k a) (gsingleton k b) k *>
+                  pmap2 (option_op {A})
+                      (glookup_singleton_eq k a)
+                      (glookup_singleton_eq k b)))
+            (A.equiv_refl (A.op a b)))
+    | no np => transport2 (\lam u v => (OptionOFE A).equiv u v)
+        (inv (glookup_singleton_ne k k' (A.op a b) np))
+        (inv (glookup_op (gsingleton k a) (gsingleton k b) k' *>
+              pmap2 (option_op {A})
+                  (glookup_singleton_ne k k' a np)
+                  (glookup_singleton_ne k k' b np)))
+        ()
+  }
+
+\lemma gmap_singleton_validN_1 {K : \Set} {cnt : Countable K} {A : CMRA}
+                               (k : K) (n : Nat) (a : A.E)
+                               (hv : GmapValidN {K} {cnt} {A} n (gsingleton k a))
+  : A.validN n a
+  => transport (option_validN {A} n) (glookup_singleton_eq k a) (hv k)
+
+\lemma gmap_singleton_validN_2 {K : \Set} {cnt : Countable K} {A : CMRA}
+                               (k : K) (n : Nat) (a : A.E)
+                               (hv : A.validN n a)
+  : GmapValidN {K} {cnt} {A} n (gsingleton k a)
+  => \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+    | yes p => transport
+        (\lam kk => option_validN {A} n (glookup (gsingleton {K} {cnt} k a) kk))
+        p
+        (transport (option_validN {A} n) (inv (glookup_singleton_eq k a)) hv)
+    | no np => transport (option_validN {A} n)
+        (inv (glookup_singleton_ne k k' a np))
+        ()
+  }
+
+-- =================================================================================
+-- Frame-preserving updates through a singleton (Rocq `singleton_updateP'`).
+-- =================================================================================
+
+\lemma gmap_singleton_updatePM {K : \Set} {cnt : Countable K} {A : CMRA}
+    (k : K) (a : A.E) (P : A.E -> \Prop)
+    (h : cmra_updatePM {A} a P)
+  : cmra_updateP {GmapUCMRA K cnt A} (gsingleton k a)
+      (\lam m => TruncP (\Sigma (b : A.E) (m = gsingleton {K} {cnt} k b) (P b)))
+  => \lam n mf hv =>
+      \let
+        | hvk : A.validN n (cmra_opM a (glookup mf k)) =>
+          transport (option_validN {A} n)
+              (glookup_op (gsingleton k a) mf k *>
+               pmap (option_op {A} __ (glookup mf k)) (glookup_singleton_eq k a) *>
+               option_op_just_l a (glookup mf k))
+              (hv k)
+      \in \case h n (glookup mf k) hvk \with {
+        | inP (b, hp, hvb) => inP
+            ( gsingleton k b
+            , inP (b, idp, hp)
+            , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+                | yes p => transport
+                    (\lam kk => option_validN {A} n
+                        (glookup (gmap_op {K} {cnt} {A} (gsingleton k b) mf) kk))
+                    p
+                    (transport (option_validN {A} n)
+                        (inv (glookup_op (gsingleton k b) mf k *>
+                              pmap (option_op {A} __ (glookup mf k))
+                                  (glookup_singleton_eq k b) *>
+                              option_op_just_l b (glookup mf k)))
+                        hvb)
+                | no np => transport (option_validN {A} n)
+                    (inv (glookup_op (gsingleton k b) mf k' *>
+                          pmap (option_op {A} __ (glookup mf k'))
+                              (glookup_singleton_ne k k' b np) *>
+                          option_op_nothing_l {A} (glookup mf k')))
+                    (transport (option_validN {A} n)
+                        (glookup_op (gsingleton k a) mf k' *>
+                         pmap (option_op {A} __ (glookup mf k'))
+                             (glookup_singleton_ne k k' a np) *>
+                         option_op_nothing_l {A} (glookup mf k'))
+                        (hv k'))
+              }
+            )
+      }
+
+-- =================================================================================
+-- Allocation at a fresh key (Rocq `alloc_updateP`, freshness abstracted).
+-- =================================================================================
+
+\lemma gmap_alloc_updateP {K : \Set} {cnt : Countable K} {A : CMRA}
+    (fresh : \Pi (m : Gmap K cnt A.E) -> \Sigma (k : K) (glookup m k = nothing))
+    (a : A.E) (hva : A.valid a)
+  : cmra_updateP {GmapUCMRA K cnt A} gempty
+      (\lam m => TruncP (\Sigma (k : K) (m = gsingleton {K} {cnt} k a)))
+  => \lam n mf hv =>
+      \let (k, hk) => fresh mf
+      \in inP
+          ( gsingleton k a
+          , inP (k, idp)
+          , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+              | yes p => transport
+                  (\lam kk => option_validN {A} n
+                      (glookup (gmap_op {K} {cnt} {A} (gsingleton k a) mf) kk))
+                  p
+                  (transport (option_validN {A} n)
+                      (inv (glookup_op (gsingleton k a) mf k *>
+                            pmap2 (option_op {A})
+                                (glookup_singleton_eq k a)
+                                hk))
+                      (((A.cmra_valid_validN a).1 hva n)
+                        : option_validN {A} n (option_op {A} (just a) nothing)))
+              | no np => transport (option_validN {A} n)
+                  (inv (glookup_op (gsingleton k a) mf k' *>
+                        pmap (option_op {A} __ (glookup mf k'))
+                            (glookup_singleton_ne k k' a np) *>
+                        option_op_nothing_l {A} (glookup mf k')))
+                  (transport (option_validN {A} n)
+                      (glookup_op gempty mf k' *>
+                       pmap (option_op {A} __ (glookup mf k'))
+                           (glookup_empty {K} {cnt} {A.E} k') *>
+                       option_op_nothing_l {A} (glookup mf k'))
+                      (hv k'))
+            }
+          )
+
+-- =================================================================================
+-- Strong allocation at a fresh key satisfying a predicate `P` (Rocq
+-- `alloc_updateP_strong_dep`).  The oracle now also certifies `P k`; the
+-- produced predicate carries it through.  The validity argument is identical
+-- to `gmap_alloc_updateP`.  Consumed by `own_alloc_strong` (A5).
+-- =================================================================================
+
+\lemma gmap_alloc_strong_updateP {K : \Set} {cnt : Countable K} {A : CMRA}
+    (P : K -> \Prop)
+    (fresh : \Pi (m : Gmap K cnt A.E)
+                 -> TruncP (\Sigma (k : K) (glookup m k = nothing) (P k)))
+    (a : A.E) (hva : A.valid a)
+  : cmra_updateP {GmapUCMRA K cnt A} gempty
+      (\lam m => TruncP (\Sigma (k : K) (m = gsingleton {K} {cnt} k a) (P k)))
+  => \lam n mf hv => \case fresh mf \with {
+    | inP (k, hk, hPk) => inP
+        ( gsingleton k a
+        , inP (k, idp, hPk)
+        , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+            | yes p => transport
+                (\lam kk => option_validN {A} n
+                    (glookup (gmap_op {K} {cnt} {A} (gsingleton k a) mf) kk))
+                p
+                (transport (option_validN {A} n)
+                    (inv (glookup_op (gsingleton k a) mf k *>
+                          pmap2 (option_op {A})
+                              (glookup_singleton_eq k a)
+                              hk))
+                    (((A.cmra_valid_validN a).1 hva n)
+                      : option_validN {A} n (option_op {A} (just a) nothing)))
+            | no np => transport (option_validN {A} n)
+                (inv (glookup_op (gsingleton k a) mf k' *>
+                      pmap (option_op {A} __ (glookup mf k'))
+                          (glookup_singleton_ne k k' a np) *>
+                      option_op_nothing_l {A} (glookup mf k')))
+                (transport (option_validN {A} n)
+                    (glookup_op gempty mf k' *>
+                     pmap (option_op {A} __ (glookup mf k'))
+                         (glookup_empty {K} {cnt} {A.E} k') *>
+                     option_op_nothing_l {A} (glookup mf k'))
+                    (hv k'))
+          }
+        )
+  }
+
+-- =================================================================================
+-- Allocation at a FIXED key of a left-unit-like element (Rocq:
+-- `alloc_unit_singleton_updateP`): ∅ ~~> {[k := u]}, sound because `u`
+-- composes neutrally with whatever the frame already stores at `k`.
+-- Consumed by `own_unit` (A5/A7).
+-- =================================================================================
+
+\lemma gmap_alloc_unit_singleton_updateP {K : \Set} {cnt : Countable K} {A : CMRA}
+    (k : K) (u : A.E)
+    (hu : \Pi (n : Nat) -> A.validN n u)
+    (hid : \Pi (n : Nat) (w : A.E) -> A.dist n (A.op u w) w)
+  : cmra_updateP {GmapUCMRA K cnt A} gempty
+      (\lam m => m = gsingleton {K} {cnt} k u)
+  => \lam n mf hv => inP
+      ( gsingleton k u
+      , idp
+      , \lam k' => \case EqDecision.decideEq {cnt} k k' \with {
+          | yes p => transport
+              (\lam kk => option_validN {A} n
+                  (glookup (gmap_op {K} {cnt} {A} (gsingleton k u) mf) kk))
+              p
+              (transport (option_validN {A} n)
+                  (inv (glookup_op (gsingleton k u) mf k *>
+                        pmap (option_op {A} __ (glookup mf k)) (glookup_singleton_eq k u)))
+                  (\case glookup mf k \as o, idp : glookup mf k = o
+                     \return option_validN {A} n (option_op {A} (just u) o) \with {
+                     | nothing, _ => hu n
+                     | just w, hw =>
+                       \let hvw : A.validN n w =>
+                           transport (option_validN {A} n)
+                               (glookup_op gempty mf k *>
+                                pmap (option_op {A} __ (glookup mf k))
+                                    (glookup_empty {K} {cnt} {A.E} k) *>
+                                option_op_nothing_l {A} (glookup mf k) *> hw)
+                               (hv k)
+                       \in A.cmra_validN_ne n w (A.op u w)
+                             (A.ofe_dist_sym n (A.op u w) w (hid n w))
+                             hvw
+                   }))
+          | no np => transport (option_validN {A} n)
+              (inv (glookup_op (gsingleton k u) mf k' *>
+                    pmap (option_op {A} __ (glookup mf k'))
+                        (glookup_singleton_ne k k' u np) *>
+                    option_op_nothing_l {A} (glookup mf k')))
+              (transport (option_validN {A} n)
+                  (glookup_op gempty mf k' *>
+                   pmap (option_op {A} __ (glookup mf k'))
+                       (glookup_empty {K} {cnt} {A.E} k') *>
+                   option_op_nothing_l {A} (glookup mf k'))
+                  (hv k'))
+        }
+      )

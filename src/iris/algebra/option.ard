@@ -1,0 +1,65 @@
+\import Logic
+\import Paths
+\import Data.Maybe
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.gmap
+
+-- The unital option lifting of an arbitrary CMRA.  The outer partial core is
+-- total; `option_pcore` represents the lifted core element.
+
+\func option_valid_validN_iff (A : CMRA) (o : Maybe A.E) :
+  option_valid {A} o <-> (\Pi (n : Nat) -> option_validN {A} n o) \elim o
+  | nothing => (\lam _ _ => (), \lam _ => ())
+  | just a => A.cmra_valid_validN a
+
+\func OptionCMRA (A : CMRA) : CMRA \cowith
+  | OFE => OptionOFE A
+  | op => option_op
+  | pcore => \lam o => just (option_pcore {A} o)
+  | valid => option_valid
+  | validN => option_validN
+  | cmra_op_ne => \lam o n o1 o2 => option_op_ne n o o1 o2
+  | cmra_op_ne_2 => \lam o n o1 o2 => option_op_ne_2 n o o1 o2
+  | cmra_pcore_ne => \lam n x y cx hxy hcore =>
+      \let cxEq : cx = option_pcore {A} x =>
+        pmap (\case __ \with { | just c => c | nothing => option_pcore {A} x })
+          (inv hcore)
+      \in (option_pcore {A} y, idp,
+           transport (\lam c => (OptionOFE A).dist n c (option_pcore {A} y))
+             (inv cxEq) (option_pcore_ne n x y hxy))
+  | cmra_validN_ne => option_validN_ne
+  | cmra_valid_validN => option_valid_validN_iff A
+  | cmra_validN_le => option_validN_le
+  | cmra_assoc => option_op_assoc
+  | cmra_comm => option_op_comm
+  | cmra_pcore_l => \lam x cx hcore =>
+      transport (\lam c => (OptionOFE A).equiv (option_op {A} c x) x)
+        (pmap (\case __ \with { | just c => c | nothing => option_pcore {A} x }) hcore)
+        (option_pcore_l x)
+  | cmra_pcore_idemp => \lam x cx hcore =>
+      \let cxEq : cx = option_pcore {A} x =>
+        pmap (\case __ \with { | just c => c | nothing => option_pcore {A} x })
+          (inv hcore)
+      \in transport (\lam c => (OptionOFE (OptionOFE A)).equiv
+             (just (option_pcore {A} c)) (just c))
+           (inv cxEq) (option_pcore_idemp x)
+  | cmra_pcore_mono => \lam x y cx hxy hcore =>
+      \let cxEq : cx = option_pcore {A} x =>
+        pmap (\case __ \with { | just c => c | nothing => option_pcore {A} x })
+          (inv hcore)
+      \in \case option_pcore_mono x y hxy \with {
+        | inP (w, ew) => inP (option_pcore {A} y, idp,
+            inP (w, transport (\lam c => (OptionOFE A).equiv
+              (option_pcore {A} y) (option_op {A} c w)) (inv cxEq) ew))
+      }
+  | cmra_validN_op_l => option_validN_op_l
+  | cmra_extend => option_extend
+
+\func OptionUCMRA (A : CMRA) : UCMRA \cowith
+  | CMRA => OptionCMRA A
+  | unit => nothing
+  | ucmra_unit_valid => ()
+  | ucmra_unit_left_id => \lam o => transport (\lam x => (OptionOFE A).equiv x o)
+      (inv (option_op_nothing_l {A} o)) ((OptionOFE A).equiv_refl o)
+  | ucmra_pcore_unit => ()

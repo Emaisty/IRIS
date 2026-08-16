@@ -1,0 +1,272 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Data.Or
+\import Arith.Nat
+\import Arith.Rat
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.base_logic.upred \hiding (own_valid, own_mono, own_unit)
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.own
+\import iris.bi.updates
+\import stdpp.pmap
+\import iris.algebra.gmap
+\import iris.algebra.frac
+\import iris.algebra.dfrac
+\import iris.algebra.agree
+\import iris.base_logic.lib.gfunctors
+\import iris.algebra.lib.gmap_view
+\import iris.algebra.lib.gmap_view_functor
+
+-- =================================================================================
+-- A12: generic heap ghost state (the operational core of Rocq
+-- `base_logic/lib/gen_heap.v`).  The full Rocq library also carries metadata
+-- resources; the sequential language in this repository only needs the heap
+-- map itself, so this module deliberately packages one `gmap_view` resource.
+--
+-- Values are stored under `Agree (Discrete V)`.  The view's discardable
+-- fraction controls ownership of a location, while Agree enforces that all
+-- compatible fragments name the same value.  This is the standard Iris
+-- ghost-map representation and replaces the old fixed `HeapCMRA` in the A12
+-- program logic.
+-- =================================================================================
+
+\func gen_heapV (V : \Set0) : CMRA.{0} => AgreeCMRA (DiscreteOFE V)
+
+\func gen_heapR (L : \Set0) (cnt : Countable L) (V : \Set0) : UCMRA.{0} =>
+  gmap_viewUR L cnt (gen_heapV V)
+
+\func gen_heapRF (L : \Set0) (cnt : Countable L) (V : \Set0) : RFunctor =>
+  constRF (gen_heapR L cnt V)
+
+\func gen_heapRF_contractive (L : \Set0) (cnt : Countable L) (V : \Set0)
+  : RFunctorContractive (gen_heapRF L cnt V) =>
+  constRF_contractive (gen_heapR L cnt V)
+
+\func gen_heap_gFunctor (L : \Set0) (cnt : Countable L) (V : \Set0)
+  : gFunctor =>
+  mkGFunctor (gen_heapRF L cnt V) (gen_heapRF_contractive L cnt V)
+
+\func gen_heapSigma (L : \Set0) (cnt : Countable L) (V : \Set0)
+  : gFunctors => gFunctors_singleton (gen_heap_gFunctor L cnt V)
+
+\record gen_heapGpreS (L : \Set0) (cnt : Countable L) (V : \Set0)
+    (S : gFunctors)
+  | gen_heap_inG : inG S (gen_heapR L cnt V)
+
+\record gen_heapGS \extends gen_heapGpreS
+  | gen_heap_name : gname
+
+\func subG_gen_heapGpreS {L : \Set0} {cnt : Countable L} {V : \Set0}
+    {S : gFunctors} (h : subG (gen_heapSigma L cnt V) S)
+  : gen_heapGpreS L cnt V S \cowith
+  | gen_heap_inG =>
+      transport (\lam Z => inG S Z)
+        (rFunctor_apply_constRF (gen_heapR L cnt V) (iPropCOFE S))
+        (subG_inG h)
+
+\func gen_heap_map {L V : \Set0} {cnt : Countable L}
+    (m : Gmap L cnt V) : Gmap L cnt (gen_heapV V).E =>
+  gmap_to_agree_map m (\lam v => v)
+
+\func gen_heap_auth {L V : \Set0} {cnt : Countable L}
+    (m : Gmap L cnt V) : (gen_heapR L cnt V).E =>
+  gmap_view_auth (DfracOwn qp_one) (gen_heap_map m)
+
+\func gen_heap_frag {L V : \Set0} {cnt : Countable L}
+    (l : L) (dq : Dfrac) (v : V) : (gen_heapR L cnt V).E =>
+  gmap_view_frag l dq (to_agree v)
+
+\func gen_heap_interp {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S) (m : Gmap L cnt V)
+  : iProp S => own H.gen_heap_inG H.gen_heap_name (gen_heap_auth m)
+
+\func pointsto {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (l : L) (dq : Dfrac) (v : V)
+  : iProp S => own H.gen_heap_inG H.gen_heap_name (gen_heap_frag l dq v)
+
+\func pointsto_full {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S) (l : L) (v : V)
+  : iProp S => pointsto H l (DfracOwn qp_one) v
+
+-- A singleton Agree element is valid at every step index.  Keeping this
+-- elementary fact here prevents allocation proofs from unfolding AgreeCMRA.
+\lemma gen_heap_to_agree_valid {V : \Set0} (v : V)
+  : (gen_heapV V).valid (to_agree v) =>
+  \lam n a b ha hb => \case ha \with {
+    | inl ea => \case hb \with {
+      | inl eb => ea *> inv eb
+      | inr impossible => \case impossible \with {}
+    }
+    | inr impossible => \case impossible \with {}
+  }
+
+\lemma gen_heap_auth_valid {L V : \Set0} {cnt : Countable L}
+    (m : Gmap L cnt V) : (gen_heapR L cnt V).valid (gen_heap_auth m) =>
+  \lam n => gmap_view_auth_validN n (DfracOwn qp_one)
+    (gen_heap_map m) RatField.<=-refl
+
+-- The operational ghost-map insertion.  This is the CMRA-level statement
+-- underlying Rocq Iris' `gen_heap_alloc`; the iProp wrapper below merely
+-- transports it through `own`.
+\lemma gen_heap_alloc_cmra {L V : \Set0} {cnt : Countable L}
+    (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V)
+    (fresh : glookup m l = nothing) (hdq : dfrac_valid dq)
+  : cmra_updateP {gen_heapR L cnt V} (gen_heap_auth m)
+      (\lam y => y = (gen_heapR L cnt V).op
+        (gen_heap_auth (ginsert l v m)) (gen_heap_frag l dq v)) =>
+  \let
+    | mappedFresh : glookup (gen_heap_map m) l = nothing =>
+        glookup_map_support_absent m
+          (\lam p => just (to_agree p.2)) l fresh
+    | raw => gmap_view_alloc (gen_heap_map m) l dq (to_agree v)
+        mappedFresh hdq (gen_heap_to_agree_valid v)
+    | inserted => gmap_to_agree_map_ginsert m (\lam x => x) l v
+  \in \lam n mz hv => \scase raw n mz hv \with {
+    | inP (y, ey, hy) => inP (y,
+        ey *> pmap (\lam mm => (gen_heapR L cnt V).op
+          (gmap_view_auth (DfracOwn qp_one) mm)
+          (gen_heap_frag l dq v)) (inv inserted),
+        hy)
+  }
+
+\lemma gen_heap_update_cmra {L V : \Set0} {cnt : Countable L}
+    (m : Gmap L cnt V) (l : L) (v v' : V)
+  : cmra_updateP {gen_heapR L cnt V}
+      ((gen_heapR L cnt V).op
+        (gen_heap_auth m) (gen_heap_frag l (DfracOwn qp_one) v))
+      (\lam y => y = (gen_heapR L cnt V).op
+        (gen_heap_auth (ginsert l v' m))
+        (gen_heap_frag l (DfracOwn qp_one) v')) =>
+  \let
+    | raw => gmap_view_update (gen_heap_map m) l
+        (to_agree v) (to_agree v') (gen_heap_to_agree_valid v')
+    | inserted => gmap_to_agree_map_ginsert m (\lam x => x) l v'
+  \in \lam n frame hv => \scase raw n frame hv \with {
+    | inP (y, ey, hy) => inP (y,
+        ey *> pmap (\lam mm => (gen_heapR L cnt V).op
+          (gmap_view_auth (DfracOwn qp_one) mm)
+          (gen_heap_frag l (DfracOwn qp_one) v')) (inv inserted),
+        hy)
+  }
+
+-- Compatibility of the authoritative heap and a fragment determines the
+-- concrete value stored at that location.  Discreteness turns step-indexed
+-- agreement into ordinary equality, exactly as for Rocq's ghost_map lookup.
+\lemma gen_heap_lookup_validN {L V : \Set0} {cnt : Countable L}
+    (n : Nat) (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V)
+    (h : (gen_heapR L cnt V).validN n
+      ((gen_heapR L cnt V).op
+        (gen_heap_auth m) (gen_heap_frag l dq v)))
+  : TruncP (\Sigma (v0 : V) (glookup m l = just v0) (v = v0)) =>
+  \let raw => gmap_view_both_dfrac_validN n (DfracOwn qp_one)
+      (gen_heap_map m) l dq (to_agree v) h
+  \in \scase raw.2 \with {
+    | inP (stored, mv, hm, hs, hinc, hstored) =>
+      \let
+        | hstoredFrag => gmap_view_agree_option_included_dist
+            n stored dq (to_agree v) hs hinc
+        | hfragMap : (AgreeOFE (DiscreteOFE V)).dist n (to_agree v) mv =>
+            (AgreeOFE (DiscreteOFE V)).ofe_dist_trans n
+              (to_agree v) stored.2 mv
+              ((AgreeOFE (DiscreteOFE V)).ofe_dist_sym n
+                stored.2 (to_agree v) hstoredFrag)
+              hstored
+        | (v0, hlookup, emv) =>
+            gmap_to_agree_lookup_just m (\lam x => x) l mv hm
+        | ev : v = v0 =>
+            agree_dist_eq_to_agree_extract n v mv v0 hfragMap emv
+      \in inP (v0, hlookup, ev)
+  }
+
+-- Iris-facing allocation/update laws.  `own_update_op` performs the standard
+-- update followed by the authoritative/fragment ownership split.
+\lemma gen_heap_alloc {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V)
+    (fresh : glookup m l = nothing) (hdq : dfrac_valid dq)
+  : properUPred_ent (gen_heap_interp H m)
+      (mkProperBUpd (mkProperSep
+        (gen_heap_interp H (ginsert l v m)) (pointsto H l dq v))) =>
+  own_update_op H.gen_heap_inG H.gen_heap_name
+    (gen_heap_auth m)
+    (gen_heap_auth (ginsert l v m))
+    (gen_heap_frag l dq v)
+    (cmra_updateP_update_det
+      (gen_heap_auth m)
+      ((gen_heapR L cnt V).op
+        (gen_heap_auth (ginsert l v m)) (gen_heap_frag l dq v))
+      (gen_heap_alloc_cmra m l dq v fresh hdq))
+
+\lemma gen_heap_update {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (v v' : V)
+  : properUPred_ent
+      (mkProperSep (gen_heap_interp H m) (pointsto_full H l v))
+      (mkProperBUpd (mkProperSep
+        (gen_heap_interp H (ginsert l v' m)) (pointsto_full H l v'))) =>
+  \let
+    | A => gen_heapR L cnt V
+    | a => A.op (gen_heap_auth m)
+        (gen_heap_frag l (DfracOwn qp_one) v)
+    | b => gen_heap_auth (ginsert l v' m)
+    | c => gen_heap_frag l (DfracOwn qp_one) v'
+  \in properUPred_ent_trans
+      (mkProperSep (gen_heap_interp H m) (pointsto_full H l v))
+      (own H.gen_heap_inG H.gen_heap_name a)
+      (mkProperBUpd (mkProperSep
+        (gen_heap_interp H (ginsert l v' m)) (pointsto_full H l v')))
+      (\lam n x hx hsep =>
+        (own_op H.gen_heap_inG H.gen_heap_name
+          (gen_heap_auth m)
+          (gen_heap_frag l (DfracOwn qp_one) v)
+          n x hx).2 hsep)
+      (own_update_op H.gen_heap_inG H.gen_heap_name a b c
+        (cmra_updateP_update_det a (A.op b c)
+          (gen_heap_update_cmra m l v v')))
+
+\lemma gen_heap_valid {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (m : Gmap L cnt V) (l : L) (dq : Dfrac) (v : V)
+  : properUPred_ent
+      (mkProperSep (gen_heap_interp H m) (pointsto H l dq v))
+      (mkProperPure (glookup m l = just v)) =>
+  \lam n x hx hsep =>
+    \let hmodel => own_op_valid H.gen_heap_inG H.gen_heap_name
+        (gen_heap_auth m) (gen_heap_frag l dq v) n x hx hsep
+    \in \scase gen_heap_lookup_validN n m l dq v hmodel \with {
+      | inP (v0, hlookup, ev) => hlookup *> pmap just (inv ev)
+    }
+
+-- Allocate the unique authoritative heap name and expose the resulting
+-- `gen_heapGS` package.  This is the minimal (no metadata resource) analogue
+-- of Rocq Iris' `gen_heap_init`.
+\lemma gen_heap_init {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (Hpre : gen_heapGpreS L cnt V S)
+    (m : Gmap L cnt V)
+  : properUPred_ent mkProperEmp
+      (mkProperBUpd (mkProperExist1 (gen_heapGS L cnt V S)
+        (\lam H => gen_heap_interp H m))) =>
+  properUPred_ent_trans mkProperEmp
+    (mkProperBUpd (mkProperExist gname (\lam gam =>
+      own Hpre.gen_heap_inG gam (gen_heap_auth m))))
+    (mkProperBUpd (mkProperExist1 (gen_heapGS L cnt V S)
+      (\lam H => gen_heap_interp H m)))
+    (own_alloc Hpre.gen_heap_inG (gen_heap_auth m)
+      (gen_heap_auth_valid m))
+    (bupd_mono
+      (mkProperExist gname (\lam gam =>
+        own Hpre.gen_heap_inG gam (gen_heap_auth m)))
+      (mkProperExist1 (gen_heapGS L cnt V S)
+        (\lam H => gen_heap_interp H m))
+      (\lam n x hx hex => \case hex \with {
+        | inP (gam, hown) =>
+          \let H : gen_heapGS L cnt V S => \new gen_heapGS {
+            | gen_heap_inG => Hpre.gen_heap_inG
+            | gen_heap_name => gam
+          }
+          \in inP (H, hown)
+      }))
