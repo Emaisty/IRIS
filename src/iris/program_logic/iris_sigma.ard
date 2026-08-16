@@ -2,25 +2,34 @@
 \import iris.base_logic.lib.wsat
 \import iris.base_logic.lib.wsat_sigma
 \import iris.program_logic.weakestpre
+\import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.gfunctors
 \import iris.algebra.gmap
 \import iris.base_logic.lib.gen_heap
+\import iris.base_logic.lib.proph_map
 
 -- The program-logic signature is the disjoint concatenation used by Rocq
 -- Iris: world satisfaction/invariants plus the generic heap ghost map.
 \func irisSigma (cnt : Countable Loc) : gFunctors =>
-  gFunctors_app wsatSigma (gen_heapSigma Loc cnt Value)
+  gFunctors_app wsatSigma
+    (gFunctors_app (gen_heapSigma Loc cnt Value) proph_mapSigma)
 
 \record irisGpreS (cnt : Countable Loc) (S : gFunctors)
   | iris_wsat_pre : wsatGpreS S
   | iris_heap_pre : gen_heapGpreS Loc cnt Value S
+  | iris_proph_pre : proph_mapGpreS S
 
 \func subG_irisGpreS {cnt : Countable Loc} {S : gFunctors}
     (h : subG (irisSigma cnt) S) : irisGpreS cnt S \cowith
   | iris_wsat_pre => subG_wsatSigma (subG_inv_l h)
-  | iris_heap_pre => subG_gen_heapGpreS (subG_inv_r h)
+  | iris_heap_pre => subG_gen_heapGpreS (subG_inv_l (subG_inv_r h))
+  | iris_proph_pre => subG_proph_mapGpreS (subG_inv_r (subG_inv_r h))
 
 \func mkIrisGS {cnt : Countable Loc} {S : gFunctors}
-    (W : wsatGS S) (G : gen_heapGS Loc cnt Value S) : irisGS cnt S \cowith
+    (W : wsatGS S) (G : gen_heapGS Loc cnt Value S)
+    (P : proph_mapGS S)
+    (forkPost : Value -> iProp S) : irisGS cnt S \cowith
   | iris_wsat => W
   | iris_gen_heap => G
+  | iris_proph_map => P
+  | iris_fork_post => forkPost

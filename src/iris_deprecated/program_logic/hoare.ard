@@ -1,5 +1,6 @@
 \import Logic
 \import Data.Maybe
+\import Data.List
 \import Arith.Nat
 \import Order.PartialOrder
 \import iris.algebra.cmra
@@ -129,9 +130,10 @@
 \lemma ht_pure_step {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (P : iProp S)
     (e e' : Expr)
-    (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma)
-    (det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) ->
-      PrimStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+    (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma nil)
+    (det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+      (efs : List Expr) -> PrimStep e sigma e2 sigma2 efs ->
+      \Sigma (e2 = e') (sigma2 = sigma) (efs = nil))
     (notVal : to_val e = nothing) (Phi : Value -> iProp S)
   : properUPred_ent (ht H E P e' Phi) (ht H E P e Phi) =>
   \let M => iResUR S

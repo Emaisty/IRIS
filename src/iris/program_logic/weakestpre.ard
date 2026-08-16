@@ -1,6 +1,7 @@
 \import Logic
 \import Set
 \import Data.Maybe
+\import Data.List
 \import Arith.Nat
 \import Order.PartialOrder
 \import iris_heap_lang.lang
@@ -16,6 +17,7 @@
 \import iris.base_logic.lib.gfunctors
 \import iris.algebra.gmap
 \import iris.base_logic.lib.gen_heap
+\import iris.base_logic.lib.proph_map
 \import iris.bi.big_op
 
 -- =================================================================================
@@ -32,65 +34,148 @@
 \record irisGS (cnt : Countable Loc) (S : gFunctors)
   | iris_wsat : wsatGS S
   | iris_gen_heap : gen_heapGS Loc cnt Value S
+  | iris_proph_map : proph_mapGS S
+  | iris_fork_post : Value -> iProp S
 
 \func state_interp {cnt : Countable Loc} {S : gFunctors}
-  (H : irisGS cnt S) (sigma : State cnt) : iProp S =>
-  gen_heap_interp {Loc} {Value} {cnt} {S} H.iris_gen_heap sigma.heap
+  (H : irisGS cnt S) (sigma : State cnt)
+  (futureObservations : List Observation) : iProp S =>
+  mkProperSep
+    (gen_heap_interp {Loc} {Value} {cnt} {S} H.iris_gen_heap sigma.heap)
+    (proph_map_interp H.iris_proph_map futureObservations sigma.usedProph)
+
+-- As in Rocq Iris, spawned threads start with the universe mask.
+\func wp_forks {S : gFunctors}
+    (forkPost : Value -> iProp S)
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
+    (efs : List Expr) : iProp S =>
+  big_sepL (\lam ef => wp coPset_universe ef forkPost) efs
 
 \func wp_step {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (wp : Expr -> (Value -> iProp S) -> iProp S)
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
     (e : Expr) (Phi : Value -> iProp S) (sigma : State cnt)
-    (e2 : Expr) (sigma2 : State cnt) : iProp S =>
-  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2))
+    (observations futureObservations : List Observation)
+    (e2 : Expr) (sigma2 : State cnt) (efs : List Expr) : iProp S =>
+  mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 efs observations))
     (mkProperFUpd H.iris_wsat coPset_empty E
-      (mkProperSep (state_interp H sigma2) (wp e2 Phi)))
+      (mkProperSep (state_interp H sigma2 futureObservations)
+        (mkProperSep (wp E e2 Phi)
+          (wp_forks H.iris_fork_post wp efs))))
 
 \func wp_steps {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (wp : Expr -> (Value -> iProp S) -> iProp S)
-    (e : Expr) (Phi : Value -> iProp S) (sigma : State cnt) : iProp S =>
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
+    (e : Expr) (Phi : Value -> iProp S) (sigma : State cnt)
+    (observations futureObservations : List Observation) : iProp S =>
   mkProperForall Expr (\lam e2 =>
     mkProperForall (State cnt) (\lam sigma2 =>
-      wp_step H E wp e Phi sigma e2 sigma2))
+      mkProperForall (List Expr) (\lam efs =>
+        wp_step H E wp e Phi sigma observations futureObservations e2 sigma2 efs)))
 
 \func wp_nonval {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (wp : Expr -> (Value -> iProp S) -> iProp S)
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
     (e : Expr) (Phi : Value -> iProp S) : iProp S =>
   mkProperForall (State cnt) (\lam sigma =>
-    mkProperWand (state_interp H sigma)
-      (mkProperFUpd H.iris_wsat E coPset_empty
-        (mkProperAnd (mkProperPure (Reducible e sigma))
-          (mkProperLater (wp_steps H E wp e Phi sigma)))))
+    mkProperForall (List Observation) (\lam observations =>
+      mkProperForall (List Observation) (\lam futureObservations =>
+        mkProperWand (state_interp H sigma (observations ++ futureObservations))
+          (mkProperFUpd H.iris_wsat E coPset_empty
+            (mkProperAnd (mkProperPure (Reducible e sigma))
+              (mkProperLater
+                (wp_steps H E wp e Phi sigma observations futureObservations)))))))
 
 \func wp_pre_body {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (wp : Expr -> (Value -> iProp S) -> iProp S)
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
     (e : Expr) (Phi : Value -> iProp S) (tv : Maybe Value)
   : iProp S \elim tv
   | just v => mkProperFUpd H.iris_wsat E E (Phi v)
   | nothing => wp_nonval H E wp e Phi
 
 \func wp_pre {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset)
-    (wp : Expr -> (Value -> iProp S) -> iProp S)
+    (H : irisGS cnt S)
+    (wp : coPset -> Expr -> (Value -> iProp S) -> iProp S)
+    (E : coPset)
     (e : Expr) (Phi : Value -> iProp S) : iProp S =>
   wp_pre_body H E wp e Phi (to_val e)
 
 \func WPFun {S : gFunctors} : \Type =>
-  Expr -> (Value -> iProp S) -> iProp S
+  coPset -> Expr -> (Value -> iProp S) -> iProp S
 
 \func WPFunDist {S : gFunctors} (n : Nat)
     (f g : WPFun {S}) : \Prop =>
-  \Pi (e : Expr) (Phi : Value -> iProp S) ->
-    upredDist n (f e Phi) (g e Phi)
+  \Pi (E : coPset) (e : Expr) (Phi : Value -> iProp S) ->
+    upredDist n (f E e Phi) (g E e Phi)
 
 \func WPContractiveFun {S : gFunctors}
     (F : WPFun {S} -> WPFun {S}) : \Prop =>
   \Pi (n : Nat) (f g : WPFun {S}) ->
     (\Pi (k : Nat) -> k NatOrder.< n -> WPFunDist k f g) ->
     WPFunDist n (F f) (F g)
+
+\lemma wp_forks_mono {S : gFunctors}
+    (forkPost : Value -> iProp S) (f g : WPFun {S})
+    (h : \Pi (ef : Expr) -> properUPred_ent
+      (f coPset_universe ef forkPost)
+      (g coPset_universe ef forkPost))
+    (efs : List Expr)
+  : properUPred_ent (wp_forks forkPost f efs) (wp_forks forkPost g efs)
+  \elim efs
+  | nil => properUPred_ent_refl (mkProperEmp {iResUR S})
+  | :: ef efs =>
+      properUPred_ent_trans
+        (mkProperSep (f coPset_universe ef forkPost) (wp_forks forkPost f efs))
+        (mkProperSep (g coPset_universe ef forkPost) (wp_forks forkPost f efs))
+        (mkProperSep (g coPset_universe ef forkPost) (wp_forks forkPost g efs))
+        (sep_mono_l_ent (f coPset_universe ef forkPost)
+          (g coPset_universe ef forkPost)
+          (wp_forks forkPost f efs) (h ef))
+        (sep_mono_r_ent (g coPset_universe ef forkPost)
+          (wp_forks forkPost f efs) (wp_forks forkPost g efs)
+          (wp_forks_mono forkPost f g h efs))
+
+\lemma wp_upredDist_trans {M : UCMRA} (n : Nat) (P Q R : ProperUPred M)
+    (h1 : upredDist n P Q) (h2 : upredDist n Q R) : upredDist n P R =>
+  \lam m a hm hv =>
+    \let | pq => h1 m a hm hv | qr => h2 m a hm hv
+    \in (\lam hp => qr.1 (pq.1 hp), \lam hr => pq.2 (qr.2 hr))
+
+\lemma wp_upredDist_sep_l {M : UCMRA} (n : Nat) (R P Q : ProperUPred M)
+    (h : upredDist n P Q)
+  : upredDist n (mkProperSep P R) (mkProperSep Q R) =>
+  \lam m a hm hv =>
+    ( \lam hsep => \case hsep \with {
+        | inP (a1, a2, dist_a, hp, hr) =>
+          inP (a1, a2, dist_a,
+            (h m a1 hm (validN_sub_l m a a1 a2 hv dist_a)).1 hp, hr)
+      }
+    , \lam hsep => \case hsep \with {
+        | inP (a1, a2, dist_a, hq, hr) =>
+          inP (a1, a2, dist_a,
+            (h m a1 hm (validN_sub_l m a a1 a2 hv dist_a)).2 hq, hr)
+      }
+    )
+
+\lemma wp_forks_dist {S : gFunctors}
+    (forkPost : Value -> iProp S) (f g : WPFun {S}) (n : Nat)
+    (h : WPFunDist n f g) (efs : List Expr)
+  : upredDist n (wp_forks forkPost f efs) (wp_forks forkPost g efs)
+  \elim efs
+  | nil => \lam m a hm hv => (\lam x => x, \lam x => x)
+  | :: ef efs =>
+      wp_upredDist_trans n
+        (mkProperSep (f coPset_universe ef forkPost) (wp_forks forkPost f efs))
+        (mkProperSep (g coPset_universe ef forkPost) (wp_forks forkPost f efs))
+        (mkProperSep (g coPset_universe ef forkPost) (wp_forks forkPost g efs))
+        (wp_upredDist_sep_l n (wp_forks forkPost f efs)
+          (f coPset_universe ef forkPost)
+          (g coPset_universe ef forkPost)
+          (h coPset_universe ef forkPost))
+        (upredDist_sep_r n (g coPset_universe ef forkPost)
+          (wp_forks forkPost f efs) (wp_forks forkPost g efs)
+          (wp_forks_dist forkPost f g n h efs))
 
 -- Monotonicity of one unfolding of WP.  The recursive hypothesis is guarded
 -- by `later` in the non-value branch; full `wp_mono` will discharge it by
@@ -101,61 +186,117 @@
     (f g : WPFun {S}) (e : Expr)
     (Phi Psi : Value -> iProp S)
     (hpost : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
-    (hrec : \Pi (e2 : Expr) -> properUPred_ent (f e2 Phi) (g e2 Psi))
+    (hrec : \Pi (e2 : Expr) -> properUPred_ent
+      (f E e2 Phi) (g E e2 Psi))
+    (hfork : \Pi (ef : Expr) -> properUPred_ent
+      (f coPset_universe ef H.iris_fork_post)
+      (g coPset_universe ef H.iris_fork_post))
   : properUPred_ent
-      (wp_pre H E f e Phi)
-      (wp_pre H E g e Psi) =>
+      (wp_pre H f E e Phi)
+      (wp_pre H g E e Psi) =>
   \let
-    | stepMono (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) =>
+    | stepMono (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+        (efs : List Expr) (observations futureObservations : List Observation) =>
         proper_impl_mono_r
-          (mkProperPure (PrimStep e sigma e2 sigma2))
+          (mkProperPure (PrimStep e sigma e2 sigma2 efs observations))
           (mkProperFUpd H.iris_wsat coPset_empty E
-            (mkProperSep (state_interp H sigma2) (f e2 Phi)))
+            (mkProperSep (state_interp H sigma2 futureObservations)
+              (mkProperSep (f E e2 Phi)
+                (wp_forks H.iris_fork_post f efs))))
           (mkProperFUpd H.iris_wsat coPset_empty E
-            (mkProperSep (state_interp H sigma2) (g e2 Psi)))
+            (mkProperSep (state_interp H sigma2 futureObservations)
+              (mkProperSep (g E e2 Psi)
+                (wp_forks H.iris_fork_post g efs))))
           (fupd_mono H.iris_wsat coPset_empty E
-            (mkProperSep (state_interp H sigma2) (f e2 Phi))
-            (mkProperSep (state_interp H sigma2) (g e2 Psi))
-            (sep_mono_r_ent (state_interp H sigma2)
-              (f e2 Phi) (g e2 Psi) (hrec e2)))
-    | stepsMono (sigma : State cnt) =>
+            (mkProperSep (state_interp H sigma2 futureObservations)
+              (mkProperSep (f E e2 Phi) (wp_forks H.iris_fork_post f efs)))
+            (mkProperSep (state_interp H sigma2 futureObservations)
+              (mkProperSep (g E e2 Psi) (wp_forks H.iris_fork_post g efs)))
+            (sep_mono_r_ent (state_interp H sigma2 futureObservations)
+              (mkProperSep (f E e2 Phi) (wp_forks H.iris_fork_post f efs))
+              (mkProperSep (g E e2 Psi) (wp_forks H.iris_fork_post g efs))
+              (properUPred_ent_trans
+                (mkProperSep (f E e2 Phi) (wp_forks H.iris_fork_post f efs))
+                (mkProperSep (g E e2 Psi) (wp_forks H.iris_fork_post f efs))
+                (mkProperSep (g E e2 Psi) (wp_forks H.iris_fork_post g efs))
+                (sep_mono_l_ent (f E e2 Phi) (g E e2 Psi)
+                  (wp_forks H.iris_fork_post f efs) (hrec e2))
+                (sep_mono_r_ent (g E e2 Psi)
+                  (wp_forks H.iris_fork_post f efs)
+                  (wp_forks H.iris_fork_post g efs)
+                  (wp_forks_mono H.iris_fork_post f g hfork efs)))))
+    | stepsMono (sigma : State cnt)
+        (observations futureObservations : List Observation) =>
         proper_forall_mono
           (\lam e2 => mkProperForall (State cnt) (\lam sigma2 =>
-            wp_step H E f e Phi sigma e2 sigma2))
+            mkProperForall (List Expr) (\lam efs =>
+              wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs)))
           (\lam e2 => mkProperForall (State cnt) (\lam sigma2 =>
-            wp_step H E g e Psi sigma e2 sigma2))
+            mkProperForall (List Expr) (\lam efs =>
+              wp_step H E g e Psi sigma observations futureObservations e2 sigma2 efs)))
           (\lam e2 => proper_forall_mono
-            (\lam sigma2 => wp_step H E f e Phi sigma e2 sigma2)
-            (\lam sigma2 => wp_step H E g e Psi sigma e2 sigma2)
-            (stepMono sigma e2))
+            (\lam sigma2 => mkProperForall (List Expr) (\lam efs =>
+              wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs))
+            (\lam sigma2 => mkProperForall (List Expr) (\lam efs =>
+              wp_step H E g e Psi sigma observations futureObservations e2 sigma2 efs))
+            (\lam sigma2 => proper_forall_mono
+              (\lam efs => wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs)
+              (\lam efs => wp_step H E g e Psi sigma observations futureObservations e2 sigma2 efs)
+              (\lam efs => stepMono sigma e2 sigma2 efs observations futureObservations)))
     | nonvalMono : properUPred_ent
         (wp_nonval H E f e Phi)
         (wp_nonval H E g e Psi) =>
         proper_forall_mono
-          (\lam sigma => mkProperWand (state_interp H sigma)
-            (mkProperFUpd H.iris_wsat E coPset_empty
-              (mkProperAnd (mkProperPure (Reducible e sigma))
-                (mkProperLater (wp_steps H E f e Phi sigma)))))
-          (\lam sigma => mkProperWand (state_interp H sigma)
-            (mkProperFUpd H.iris_wsat E coPset_empty
-              (mkProperAnd (mkProperPure (Reducible e sigma))
-                (mkProperLater (wp_steps H E g e Psi sigma)))))
-          (\lam sigma n a ha hwand m mle frame hop hstate =>
-            fupd_mono H.iris_wsat E coPset_empty
-              (mkProperAnd (mkProperPure (Reducible e sigma))
-                (mkProperLater (wp_steps H E f e Phi sigma)))
-              (mkProperAnd (mkProperPure (Reducible e sigma))
-                (mkProperLater (wp_steps H E g e Psi sigma)))
-              (proper_and_mono_r
-                (mkProperPure (Reducible e sigma))
-                (mkProperLater (wp_steps H E f e Phi sigma))
-                (mkProperLater (wp_steps H E g e Psi sigma))
-                (proper_later_mono
-                  (wp_steps H E f e Phi sigma)
-                  (wp_steps H E g e Psi sigma)
-                  (stepsMono sigma)))
-              m ((iResUR S).op a frame) hop
-              (hwand m mle frame hop hstate))
+          (\lam sigma => mkProperForall (List Observation) (\lam observations =>
+            mkProperForall (List Observation) (\lam futureObservations =>
+              mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                (mkProperFUpd H.iris_wsat E coPset_empty
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E f e Phi sigma observations futureObservations)))))))
+          (\lam sigma => mkProperForall (List Observation) (\lam observations =>
+            mkProperForall (List Observation) (\lam futureObservations =>
+              mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                (mkProperFUpd H.iris_wsat E coPset_empty
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E g e Psi sigma observations futureObservations)))))))
+          (\lam sigma => proper_forall_mono
+            (\lam observations => mkProperForall (List Observation) (\lam futureObservations =>
+              mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                (mkProperFUpd H.iris_wsat E coPset_empty
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E f e Phi sigma observations futureObservations))))))
+            (\lam observations => mkProperForall (List Observation) (\lam futureObservations =>
+              mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                (mkProperFUpd H.iris_wsat E coPset_empty
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E g e Psi sigma observations futureObservations))))))
+            (\lam observations => proper_forall_mono
+              (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (wp_steps H E f e Phi sigma observations futureObservations)))))
+              (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (wp_steps H E g e Psi sigma observations futureObservations)))))
+              (\lam futureObservations n a ha hwand m mle frame hop hstate =>
+                fupd_mono H.iris_wsat E coPset_empty
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E f e Phi sigma observations futureObservations)))
+                  (mkProperAnd (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E g e Psi sigma observations futureObservations)))
+                  (proper_and_mono_r
+                    (mkProperPure (Reducible e sigma))
+                    (mkProperLater (wp_steps H E f e Phi sigma observations futureObservations))
+                    (mkProperLater (wp_steps H E g e Psi sigma observations futureObservations))
+                    (proper_later_mono
+                      (wp_steps H E f e Phi sigma observations futureObservations)
+                      (wp_steps H E g e Psi sigma observations futureObservations)
+                      (stepsMono sigma observations futureObservations)))
+                  m ((iResUR S).op a frame) hop
+                  (hwand m mle frame hop hstate))))
   \in \case to_val e \as tv
     \return properUPred_ent
       (wp_pre_body H E f e Phi tv)
@@ -166,12 +307,14 @@
     }
 
 \lemma wp_pre_contractive {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset)
-  : WPContractiveFun (wp_pre H E) =>
-  \lam n f g hdl e Phi =>
+    (H : irisGS cnt S)
+  : WPContractiveFun (wp_pre H) =>
+  \lam n f g hdl E e Phi =>
     \let
-      | steps_f (sigma : State cnt) => wp_steps H E f e Phi sigma
-      | steps_g (sigma : State cnt) => wp_steps H E g e Phi sigma
+      | steps_f (sigma : State cnt) (observations futureObservations : List Observation) =>
+          wp_steps H E f e Phi sigma observations futureObservations
+      | steps_g (sigma : State cnt) (observations futureObservations : List Observation) =>
+          wp_steps H E g e Phi sigma observations futureObservations
       | nonval_f => wp_nonval H E f e Phi
       | nonval_g => wp_nonval H E g e Phi
     \in \case to_val e \as tv
@@ -183,85 +326,145 @@
             (\lam m a hm hv => (\lam h => h, \lam h => h))
         | nothing =>
           upredDist_forall {iResUR S} (State cnt) n
-            (\lam sigma => mkProperWand (state_interp H sigma)
-              (mkProperFUpd H.iris_wsat E coPset_empty
-                (mkProperAnd (mkProperPure (Reducible e sigma))
-                  (mkProperLater (steps_f sigma)))))
-            (\lam sigma => mkProperWand (state_interp H sigma)
-              (mkProperFUpd H.iris_wsat E coPset_empty
-                (mkProperAnd (mkProperPure (Reducible e sigma))
-                  (mkProperLater (steps_g sigma)))))
-            (\lam sigma =>
-              \let body_dist : \Pi (k : Nat) -> k NatOrder.< n ->
-                  upredDist k (steps_f sigma) (steps_g sigma) =>
+            (\lam sigma => mkProperForall (List Observation) (\lam observations =>
+              mkProperForall (List Observation) (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (steps_f sigma observations futureObservations)))))))
+            (\lam sigma => mkProperForall (List Observation) (\lam observations =>
+              mkProperForall (List Observation) (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (steps_g sigma observations futureObservations)))))))
+            (\lam sigma => upredDist_forall {iResUR S} (List Observation) n
+              (\lam observations => mkProperForall (List Observation) (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (steps_f sigma observations futureObservations))))))
+              (\lam observations => mkProperForall (List Observation) (\lam futureObservations =>
+                mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                  (mkProperFUpd H.iris_wsat E coPset_empty
+                    (mkProperAnd (mkProperPure (Reducible e sigma))
+                      (mkProperLater (steps_g sigma observations futureObservations))))))
+              (\lam observations => upredDist_forall {iResUR S} (List Observation) n
+                (\lam futureObservations =>
+                  mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                    (mkProperFUpd H.iris_wsat E coPset_empty
+                      (mkProperAnd (mkProperPure (Reducible e sigma))
+                        (mkProperLater (steps_f sigma observations futureObservations)))))
+                (\lam futureObservations =>
+                  mkProperWand (state_interp H sigma (observations ++ futureObservations))
+                    (mkProperFUpd H.iris_wsat E coPset_empty
+                      (mkProperAnd (mkProperPure (Reducible e sigma))
+                        (mkProperLater (steps_g sigma observations futureObservations)))))
+                (\lam futureObservations =>
+                  \let body_dist : \Pi (k : Nat) -> k NatOrder.< n ->
+                  upredDist k (steps_f sigma observations futureObservations)
+                    (steps_g sigma observations futureObservations) =>
                 \lam k hk =>
                   upredDist_forall {iResUR S} Expr k
                     (\lam e2 => mkProperForall (State cnt) (\lam sigma2 =>
-                      wp_step H E f e Phi sigma e2 sigma2))
+                      mkProperForall (List Expr) (\lam efs =>
+                        wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs)))
                     (\lam e2 => mkProperForall (State cnt) (\lam sigma2 =>
-                      wp_step H E g e Phi sigma e2 sigma2))
+                      mkProperForall (List Expr) (\lam efs =>
+                        wp_step H E g e Phi sigma observations futureObservations e2 sigma2 efs)))
                     (\lam e2 => upredDist_forall {iResUR S} (State cnt) k
-                      (\lam sigma2 => wp_step H E f e Phi sigma e2 sigma2)
-                      (\lam sigma2 => wp_step H E g e Phi sigma e2 sigma2)
-                      (\lam sigma2 =>
-                        upredDist_impl_r {iResUR S} k
-                          (mkProperPure (PrimStep e sigma e2 sigma2))
-                          (mkProperFUpd H.iris_wsat coPset_empty E
-                            (mkProperSep (state_interp H sigma2) (f e2 Phi)))
-                          (mkProperFUpd H.iris_wsat coPset_empty E
-                            (mkProperSep (state_interp H sigma2) (g e2 Phi)))
-                          (fupd_ne H.iris_wsat k coPset_empty E
-                            (mkProperSep (state_interp H sigma2) (f e2 Phi))
-                            (mkProperSep (state_interp H sigma2) (g e2 Phi))
-                            (upredDist_sep_r {iResUR S} k
-                              (state_interp H sigma2) (f e2 Phi) (g e2 Phi)
-                              (hdl k hk e2 Phi)))))
+                      (\lam sigma2 => mkProperForall (List Expr) (\lam efs =>
+                        wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs))
+                      (\lam sigma2 => mkProperForall (List Expr) (\lam efs =>
+                        wp_step H E g e Phi sigma observations futureObservations e2 sigma2 efs))
+                      (\lam sigma2 => upredDist_forall {iResUR S} (List Expr) k
+                        (\lam efs => wp_step H E f e Phi sigma observations futureObservations e2 sigma2 efs)
+                        (\lam efs => wp_step H E g e Phi sigma observations futureObservations e2 sigma2 efs)
+                        (\lam efs =>
+                          \let
+                            | ForksF => wp_forks H.iris_fork_post f efs
+                            | ForksG => wp_forks H.iris_fork_post g efs
+                            | MainF => f E e2 Phi
+                            | MainG => g E e2 Phi
+                            | mainForkDist : upredDist k
+                                (mkProperSep MainF ForksF)
+                                (mkProperSep MainG ForksG) =>
+                                wp_upredDist_trans k
+                                  (mkProperSep MainF ForksF)
+                                  (mkProperSep MainG ForksF)
+                                  (mkProperSep MainG ForksG)
+                                  (wp_upredDist_sep_l k ForksF MainF MainG
+                                    (hdl k hk E e2 Phi))
+                                  (upredDist_sep_r k MainG ForksF ForksG
+                                    (wp_forks_dist H.iris_fork_post f g k
+                                      (hdl k hk) efs))
+                          \in upredDist_impl_r {iResUR S} k
+                            (mkProperPure (PrimStep e sigma e2 sigma2 efs observations))
+                            (mkProperFUpd H.iris_wsat coPset_empty E
+                              (mkProperSep (state_interp H sigma2 futureObservations)
+                                (mkProperSep MainF ForksF)))
+                            (mkProperFUpd H.iris_wsat coPset_empty E
+                              (mkProperSep (state_interp H sigma2 futureObservations)
+                                (mkProperSep MainG ForksG)))
+                            (fupd_ne H.iris_wsat k coPset_empty E
+                              (mkProperSep (state_interp H sigma2 futureObservations)
+                                (mkProperSep MainF ForksF))
+                              (mkProperSep (state_interp H sigma2 futureObservations)
+                                (mkProperSep MainG ForksG))
+                              (upredDist_sep_r {iResUR S} k
+                                (state_interp H sigma2 futureObservations)
+                                (mkProperSep MainF ForksF)
+                                (mkProperSep MainG ForksG)
+                                mainForkDist)))))
               \in upredDist_wand_r {iResUR S} n
-                (state_interp H sigma)
+                (state_interp H sigma (observations ++ futureObservations))
                 (mkProperFUpd H.iris_wsat E coPset_empty
                   (mkProperAnd (mkProperPure (Reducible e sigma))
-                    (mkProperLater (steps_f sigma))))
+                    (mkProperLater (steps_f sigma observations futureObservations))))
                 (mkProperFUpd H.iris_wsat E coPset_empty
                   (mkProperAnd (mkProperPure (Reducible e sigma))
-                    (mkProperLater (steps_g sigma))))
+                    (mkProperLater (steps_g sigma observations futureObservations))))
                 (fupd_ne H.iris_wsat n E coPset_empty
                   (mkProperAnd (mkProperPure (Reducible e sigma))
-                    (mkProperLater (steps_f sigma)))
+                    (mkProperLater (steps_f sigma observations futureObservations)))
                   (mkProperAnd (mkProperPure (Reducible e sigma))
-                    (mkProperLater (steps_g sigma)))
+                    (mkProperLater (steps_g sigma observations futureObservations)))
                   (upredDist_and_r {iResUR S} n
                     (mkProperPure (Reducible e sigma))
-                    (mkProperLater (steps_f sigma))
-                    (mkProperLater (steps_g sigma))
+                    (mkProperLater (steps_f sigma observations futureObservations))
+                    (mkProperLater (steps_g sigma observations futureObservations))
                     (upredDist_later {iResUR S} n
-                      (steps_f sigma) (steps_g sigma) body_dist))))
+                      (steps_f sigma observations futureObservations)
+                      (steps_g sigma observations futureObservations) body_dist))))))
       }
 
 \func WPFunCOFE (S : gFunctors) : COFE =>
-  FunCOFE Expr (FunCOFE (Value -> iProp S) (UPredCOFE (iResUR S)))
+  FunCOFE coPset
+    (FunCOFE Expr (FunCOFE (Value -> iProp S) (UPredCOFE (iResUR S))))
 
 \instance WPFunInhabited (S : gFunctors)
   : Inhabited (WPFunCOFE S).E
-  | default => \lam _ _ => mkProperPure Empty
+  | default => \lam _ _ _ => mkProperPure Empty
 
 \lemma wp_pre_contractive_ofe {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset)
-  : Contractive {WPFunCOFE S} (wp_pre H E) =>
-  \lam n f g dl e Phi =>
-    wp_pre_contractive H E n f g
-      (\lam k hk e' Phi' => dl.dist_later_lt k hk e' Phi') e Phi
+    (H : irisGS cnt S)
+  : Contractive {WPFunCOFE S} (wp_pre H) =>
+  \lam n f g dl E e Phi =>
+    wp_pre_contractive H n f g
+      (\lam k hk E' e' Phi' => dl.dist_later_lt k hk E' e' Phi')
+      E e Phi
 
 \func wp {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
     (e : Expr) (Phi : Value -> iProp S) : iProp S =>
   fixpoint {WPFunCOFE S} {WPFunInhabited S}
-    (wp_pre H E) (wp_pre_contractive_ofe H E) e Phi
+    (wp_pre H) (wp_pre_contractive_ofe H) E e Phi
 
 \func wp_approx {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (n : Nat)
     (e : Expr) (Phi : Value -> iProp S) : iProp S =>
   fp_approx {WPFunCOFE S} {WPFunInhabited S}
-    (wp_pre H E) (wp_pre_contractive_ofe H E) n e Phi
+    (wp_pre H) (wp_pre_contractive_ofe H) n E e Phi
 
 \lemma wp_approx_mono {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (n : Nat)
@@ -276,13 +479,17 @@
       (WPFunInhabited S).default
       e Phi Psi hpost
       (\lam _ _ _ _ h => h)
+      (\lam _ _ _ _ h => h)
   | suc n => wp_pre_mono H E
       (fp_approx {WPFunCOFE S} {WPFunInhabited S}
-        (wp_pre H E) (wp_pre_contractive_ofe H E) n)
+        (wp_pre H) (wp_pre_contractive_ofe H) n)
       (fp_approx {WPFunCOFE S} {WPFunInhabited S}
-        (wp_pre H E) (wp_pre_contractive_ofe H E) n)
+        (wp_pre H) (wp_pre_contractive_ofe H) n)
       e Phi Psi hpost
       (\lam e2 => wp_approx_mono H E n Phi Psi hpost e2)
+      (\lam ef => wp_approx_mono H coPset_universe n
+        H.iris_fork_post H.iris_fork_post
+        (\lam _ => properUPred_ent_refl _) ef)
 
 \lemma wp_mono {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
@@ -290,8 +497,8 @@
     (hpost : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v))
   : properUPred_ent (wp H E e Phi) (wp H E e Psi) =>
   \let
-    | F => wp_pre H E
-    | hF => wp_pre_contractive_ofe H E
+    | F => wp_pre H
+    | hF => wp_pre_contractive_ofe H
     | c => fp_approx {WPFunCOFE S} {WPFunInhabited S} F hF
     | hc : Chain {WPFunCOFE S} c => \new Chain {
         | chain_cauchy => fp_approx_cauchy F hF
@@ -300,10 +507,10 @@
     \let
       | dPhi : upredDist n
           (wp H E e Phi) (wp_approx H E n e Phi) =>
-          (WPFunCOFE S).cofe_conv_compl c hc n e Phi
+          (WPFunCOFE S).cofe_conv_compl c hc n E e Phi
       | dPsi : upredDist n
           (wp H E e Psi) (wp_approx H E n e Psi) =>
-          (WPFunCOFE S).cofe_conv_compl c hc n e Psi
+          (WPFunCOFE S).cofe_conv_compl c hc n E e Psi
       | hApprox : (wp_approx H E n e Phi).upred_holds n a =>
           (dPhi n a <=-refl ha).1 hPhi
       | hApprox' : (wp_approx H E n e Psi).upred_holds n a =>
@@ -314,9 +521,9 @@
     (H : irisGS cnt S) (E : coPset)
     (e : Expr) (Phi : Value -> iProp S)
   : upredEquiv (wp H E e Phi)
-      (wp_pre H E (wp H E) e Phi) =>
+      (wp_pre H (wp H) E e Phi) =>
   fixpoint_unfold {WPFunCOFE S} {WPFunInhabited S}
-    (wp_pre H E) (wp_pre_contractive_ofe H E) e Phi
+    (wp_pre H) (wp_pre_contractive_ofe H) E e Phi
 
 \func wp_value {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
