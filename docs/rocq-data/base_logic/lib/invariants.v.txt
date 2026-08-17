@@ -1,30 +1,30 @@
-into_acc_inv	
-into_inv_inv	
-inv_proper	
-except_0_inv	
-fresh_inv_name	
-inv	
-inv_acc	
-inv_acc_strong	
-inv_acc_timeless	
-inv_alloc	
-inv_alloc_open	
-inv_alter	
-inv_aux	
-inv_combine	
-inv_combine_dup_l	
-inv_contractive	
-inv_def	
-inv_iff	
-inv_ne	
-inv_persistent	
-inv_split	
-inv_split_l	
-inv_split_r	
-inv_unseal	
-is_except_0_inv	
-own_inv	
-own_inv_acc	
-own_inv_alloc	
-own_inv_alloc_open	
-own_inv_to_inv	
+into_acc_inv		not-needed	qol	Rocq proof-mode registration; Arend proofs invoke inv_acc explicitly.
+into_inv_inv		not-needed	qol	Rocq proof-mode registration; Arend uses inv directly and has no matching registration layer.
+inv_proper	iris.base_logic.lib.invariants:inv_proper	direct	qol
+except_0_inv	iris.base_logic.lib.invariants:except_0_inv	direct	qol
+fresh_inv_name	stdpp.namespaces:fresh_inv_name	direct	qol
+inv	iris.base_logic.lib.invariants:inv	direct	foundational
+inv_acc	iris.base_logic.lib.invariants:inv_acc	direct	foundational
+inv_acc_strong	iris.base_logic.lib.invariants:inv_acc_strong	direct	foundational
+inv_acc_timeless	iris.base_logic.lib.invariants:inv_acc_timeless	direct	foundational
+inv_alloc	iris.base_logic.lib.invariants:inv_alloc	direct	foundational
+inv_alloc_open	iris.base_logic.lib.invariants:inv_alloc_open	direct	foundational
+inv_alter	iris.base_logic.lib.invariants:inv_alter	direct	qol
+inv_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+inv_combine	iris.base_logic.lib.invariants:inv_combine	direct	foundational
+inv_combine_dup_l	iris.base_logic.lib.invariants:inv_combine_dup_l	direct	foundational
+inv_contractive	iris.base_logic.lib.invariants:inv_contractive	direct	qol
+inv_def	iris.base_logic.lib.invariants:inv	analogue	foundational	Arend exposes inv directly; inv_inner and inv_body split the body that Rocq keeps in inv_def.
+inv_iff	iris.base_logic.lib.invariants:inv_iff	direct	qol
+inv_ne	iris.base_logic.lib.invariants:inv_ne	direct	qol
+inv_persistent	iris.base_logic.lib.invariants:inv_persistent	direct	qol
+inv_split	iris.base_logic.lib.invariants:inv_split	direct	qol
+inv_split_l	iris.base_logic.lib.invariants:inv_split_l	direct	qol
+inv_split_r	iris.base_logic.lib.invariants:inv_split_r	direct	qol
+inv_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+is_except_0_inv		not-needed	qol	Rocq proof-mode registration; the Arend theorem except_0_inv is used explicitly.
+own_inv	iris.base_logic.lib.invariants:own_inv	direct	foundational
+own_inv_acc	iris.base_logic.lib.invariants:own_inv_acc	direct	qol
+own_inv_alloc	iris.base_logic.lib.invariants:own_inv_alloc	direct	qol
+own_inv_alloc_open	iris.base_logic.lib.invariants:own_inv_alloc_open	direct	qol
+own_inv_to_inv	iris.base_logic.lib.invariants:own_inv_to_inv	direct	qol

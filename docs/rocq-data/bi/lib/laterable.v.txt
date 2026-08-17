@@ -1,32 +1,32 @@
-IntoLaterable	
-Laterable	
-big_sepL_laterable	
-big_sep_sepL_laterable	
-exist_laterable	
-from_modal_make_laterable	
-into_laterable_fallback	
-into_laterable_laterable	
-intuitionistic_laterable	
-later_laterable	
-laterable_alt	
-laterable_proper	
-make_laterable	
-make_laterable_elim	
-make_laterable_except_0	
-make_laterable_flip_mono'	
-make_laterable_idemp	
-make_laterable_intro	
-make_laterable_intro'	
-make_laterable_intuitionistic_wand	
-make_laterable_laterable	
-make_laterable_mono	
-make_laterable_mono'	
-make_laterable_ne	
-make_laterable_proper	
-make_laterable_sep	
-make_laterable_wand	
-modality_make_laterable	
-modality_make_laterable_mixin	
-persistent_laterable	
-sep_laterable	
-timeless_laterable	
+IntoLaterable		missing	foundational
+Laterable		missing	foundational
+big_sepL_laterable		missing	qol
+big_sep_sepL_laterable		missing	qol
+exist_laterable		missing	qol
+from_modal_make_laterable		missing	qol
+into_laterable_fallback		missing	qol
+into_laterable_laterable		missing	qol
+intuitionistic_laterable		missing	qol
+later_laterable		missing	qol
+laterable_alt		missing	qol
+laterable_proper		missing	qol
+make_laterable		missing	foundational
+make_laterable_elim		missing	qol
+make_laterable_except_0		missing	qol
+make_laterable_flip_mono'		missing	qol
+make_laterable_idemp		missing	qol
+make_laterable_intro		missing	qol
+make_laterable_intro'		missing	qol
+make_laterable_intuitionistic_wand		missing	qol
+make_laterable_laterable		missing	qol
+make_laterable_mono		missing	qol
+make_laterable_mono'		missing	qol
+make_laterable_ne		missing	qol
+make_laterable_proper		missing	qol
+make_laterable_sep		missing	qol
+make_laterable_wand		missing	qol
+modality_make_laterable		missing	foundational
+modality_make_laterable_mixin		missing	qol
+persistent_laterable		missing	qol
+sep_laterable		missing	qol
+timeless_laterable		missing	qol

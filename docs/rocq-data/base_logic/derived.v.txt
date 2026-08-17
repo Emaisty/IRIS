@@ -1,15 +1,15 @@
-uPred.consistency	
-uPred.denote_modalities	
-uPred.denote_modality	
-uPred.modal_soundness	
-uPred.modality	
-uPred.ownM_proper	
-uPred.uPred_ownM_sep_homomorphism	
-uPred.bupd_ownM_update	
-uPred.bupd_soundness	
-uPred.intuitionistically_ownM	
-uPred.ownM_invalid	
-uPred.ownM_mono	
-uPred.ownM_persistent	
-uPred.ownM_timeless	
-uPred.ownM_unit'	
+uPred.consistency		missing	qol
+uPred.denote_modalities		missing	foundational
+uPred.denote_modality		missing	foundational
+uPred.modal_soundness		missing	foundational
+uPred.modality		missing	foundational
+uPred.ownM_proper		missing	qol
+uPred.uPred_ownM_sep_homomorphism		missing	qol
+uPred.bupd_ownM_update		missing	qol
+uPred.bupd_soundness		missing	foundational
+uPred.intuitionistically_ownM		missing	qol
+uPred.ownM_invalid		missing	qol
+uPred.ownM_mono		missing	qol
+uPred.ownM_persistent		missing	qol
+uPred.ownM_timeless		missing	qol
+uPred.ownM_unit'		missing	qol

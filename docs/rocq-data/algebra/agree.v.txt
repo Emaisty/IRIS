@@ -1,62 +1,62 @@
-agree	
-agreeO	
-agreeO_map	
-agreeO_map_ne	
-agreeR	
-agreeRF	
-agreeRF_contractive	
-agree_assoc	
-agree_cancelable	
-agree_cmra_discrete	
-agree_cmra_mixin	
-agree_cmra_total	
-agree_comm	
-agree_core_id	
-agree_dist	
-agree_eq	
-agree_equiv	
-agree_idemp	
-agree_included	
-agree_includedN	
-agree_map	
-agree_map_compose	
-agree_map_ext	
-agree_map_id	
-agree_map_morphism	
-agree_map_ne	
-agree_map_proper	
-agree_map_to_agree	
-agree_ofe_mixin	
-agree_op_instance	
-agree_op_inv	
-agree_op_invN	
-agree_op_ne	
-agree_op_ne'	
-agree_op_proper	
-agree_pcore	
-agree_pcore_instance	
-agree_validN_def	
-agree_validN_instance	
-agree_validN_ne	
-agree_validN_proper	
-agree_valid_included	
-agree_valid_includedN	
-agree_valid_instance	
-elem_of_agree	
-to_agree	
-to_agree_discrete	
-to_agree_included	
-to_agree_includedN	
-to_agree_included_L	
-to_agree_inj	
-to_agree_injN	
-to_agree_ne	
-to_agree_op_inv	
-to_agree_op_invN	
-to_agree_op_inv_L	
-to_agree_op_valid	
-to_agree_op_validN	
-to_agree_op_valid_L	
-to_agree_proper	
-to_agree_uninj	
-to_agree_uninjN	
+agree	iris.algebra.agree:AgreeElem	analogue	foundational	Arend represents Rocq agree values with the AgreeElem record.
+agreeO	iris.algebra.agree:AgreeOFE	analogue	foundational	AgreeOFE supplies the same ordered-family-of-equivalences structure.
+agreeO_map	iris.algebra.lib.gmap_view_functor:agreeO_map	direct	foundational
+agreeO_map_ne		missing	qol
+agreeR	iris.algebra.agree:AgreeCMRA	analogue	foundational	AgreeCMRA packages the Rocq agree resource algebra directly as an Arend CMRA.
+agreeRF	iris.algebra.lib.gmap_view_functor:agreeRF	direct	foundational
+agreeRF_contractive	iris.algebra.lib.gmap_view_functor:agreeRF_contractive	direct	qol
+agree_assoc		missing	qol
+agree_cancelable		missing	qol
+agree_cmra_discrete		missing	qol
+agree_cmra_mixin	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend packages the CMRA laws in AgreeCMRA instead of a separate Rocq mixin.
+agree_cmra_total	iris.algebra.agree:AgreeCMRA	analogue	qol	AgreeCMRA has a total core by construction, so no separate totality instance is required.
+agree_comm		missing	qol
+agree_core_id		missing	qol
+agree_dist	iris.algebra.agree:agree_dist	direct	qol
+agree_eq		missing	qol
+agree_equiv	iris.algebra.agree:agree_equiv	direct	qol
+agree_idemp	iris.algebra.agree:agree_idemp	direct	qol
+agree_included		missing	qol
+agree_includedN		missing	qol
+agree_map	iris.algebra.lib.gmap_view_functor:agree_map	direct	foundational
+agree_map_compose		missing	qol
+agree_map_ext		missing	qol
+agree_map_id		missing	qol
+agree_map_morphism		missing	qol
+agree_map_ne	iris.algebra.lib.gmap_view_functor:agree_map_ne	direct	qol
+agree_map_proper		missing	qol
+agree_map_to_agree		missing	qol
+agree_ofe_mixin	iris.algebra.agree:AgreeOFE	analogue	foundational	Arend packages the OFE laws in AgreeOFE instead of a separate Rocq mixin.
+agree_op_instance	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+agree_op_inv		missing	qol
+agree_op_invN	iris.algebra.agree:agree_op_invN	direct	qol
+agree_op_ne		missing	qol
+agree_op_ne'		missing	qol
+agree_op_proper		missing	qol
+agree_pcore	iris.algebra.agree:agree_pcore	direct	qol
+agree_pcore_instance	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+agree_validN_def	iris.algebra.agree:agree_validN	analogue	qol	agree_validN is the unsealed Arend presentation of the same validity predicate.
+agree_validN_instance	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+agree_validN_ne		missing	qol
+agree_validN_proper		missing	qol
+agree_valid_included		missing	qol
+agree_valid_includedN		missing	qol
+agree_valid_instance	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+elem_of_agree		missing	qol
+to_agree	iris.algebra.agree:to_agree	direct	foundational
+to_agree_discrete		missing	qol
+to_agree_included		missing	qol
+to_agree_includedN		missing	qol
+to_agree_included_L		missing	qol
+to_agree_inj		missing	qol
+to_agree_injN		missing	qol
+to_agree_ne	iris.algebra.agree:to_agree_ne	direct	qol
+to_agree_op_inv	iris.algebra.agree:to_agree_op_inv	direct	qol
+to_agree_op_invN		missing	qol
+to_agree_op_inv_L		missing	qol
+to_agree_op_valid		missing	qol
+to_agree_op_validN		missing	qol
+to_agree_op_valid_L		missing	qol
+to_agree_proper		missing	qol
+to_agree_uninj		missing	qol
+to_agree_uninjN		missing	qol

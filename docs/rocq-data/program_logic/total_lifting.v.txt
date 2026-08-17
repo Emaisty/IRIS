@@ -1,5 +1,5 @@
-twp_lift_atomic_step	
-twp_lift_pure_det_step_no_fork	
-twp_lift_pure_step_no_fork	
-twp_lift_step	
-twp_pure_step	
+twp_lift_atomic_step		missing	qol
+twp_lift_pure_det_step_no_fork		missing	qol
+twp_lift_pure_step_no_fork		missing	qol
+twp_lift_step		missing	qol
+twp_pure_step		missing	qol

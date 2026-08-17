@@ -1,12 +1,12 @@
-modality_embed	
-modality_embed_mixin	
-modality_affinely	
-modality_affinely_mixin	
-modality_intuitionistically	
-modality_intuitionistically_mixin	
-modality_laterN	
-modality_laterN_mixin	
-modality_persistently	
-modality_persistently_mixin	
-modality_plainly	
-modality_plainly_mixin	
+modality_embed		missing	foundational
+modality_embed_mixin		missing	qol
+modality_affinely		missing	foundational
+modality_affinely_mixin		missing	qol
+modality_intuitionistically		missing	foundational
+modality_intuitionistically_mixin		missing	qol
+modality_laterN		missing	foundational
+modality_laterN_mixin		missing	qol
+modality_persistently		missing	foundational
+modality_persistently_mixin		missing	qol
+modality_plainly		missing	foundational
+modality_plainly_mixin		missing	qol

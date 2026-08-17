@@ -1,37 +1,37 @@
-add_modal_bupd	
-add_modal_fupd	
-elim_acc_bupd	
-elim_acc_fupd	
-from_forall_fupd	
-from_forall_step_fupd	
-elim_modal_bupd	
-elim_modal_bupd_fupd	
-elim_modal_bupd_plain	
-elim_modal_bupd_plain_goal	
-elim_modal_fupd_fupd	
-elim_modal_fupd_fupd_wrong_mask	
-from_assumption_bupd	
-from_assumption_fupd	
-from_exist_bupd	
-from_exist_fupd	
-from_modal_bupd	
-from_modal_fupd	
-from_modal_fupd_wrong_mask	
-from_or_bupd	
-from_or_fupd	
-from_pure_bupd	
-from_pure_fupd	
-from_sep_bupd	
-from_sep_fupd	
-into_and_bupd	
-into_and_fupd	
-into_forall_bupd	
-into_forall_fupd	
-into_wand_bupd	
-into_wand_bupd_args	
-into_wand_bupd_persistent	
-into_wand_fupd	
-into_wand_fupd_args	
-into_wand_fupd_persistent	
-is_except_0_bupd	
-is_except_0_fupd	
+add_modal_bupd		missing	qol
+add_modal_fupd		missing	qol
+elim_acc_bupd		missing	qol
+elim_acc_fupd		missing	qol
+from_forall_fupd		missing	qol
+from_forall_step_fupd		missing	qol
+elim_modal_bupd		missing	qol
+elim_modal_bupd_fupd		missing	qol
+elim_modal_bupd_plain		missing	qol
+elim_modal_bupd_plain_goal		missing	qol
+elim_modal_fupd_fupd		missing	qol
+elim_modal_fupd_fupd_wrong_mask		missing	qol
+from_assumption_bupd		missing	qol
+from_assumption_fupd		missing	qol
+from_exist_bupd		missing	qol
+from_exist_fupd		missing	qol
+from_modal_bupd		missing	qol
+from_modal_fupd		missing	qol
+from_modal_fupd_wrong_mask		missing	qol
+from_or_bupd		missing	qol
+from_or_fupd		missing	qol
+from_pure_bupd		missing	qol
+from_pure_fupd		missing	qol
+from_sep_bupd		missing	qol
+from_sep_fupd		missing	qol
+into_and_bupd		missing	qol
+into_and_fupd		missing	qol
+into_forall_bupd		missing	qol
+into_forall_fupd		missing	qol
+into_wand_bupd		missing	qol
+into_wand_bupd_args		missing	qol
+into_wand_bupd_persistent		missing	qol
+into_wand_fupd		missing	qol
+into_wand_fupd_args		missing	qol
+into_wand_fupd_persistent		missing	qol
+is_except_0_bupd		missing	qol
+is_except_0_fupd		missing	qol

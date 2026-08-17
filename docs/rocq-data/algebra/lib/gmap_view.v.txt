@@ -1,62 +1,62 @@
-gmap_viewO	
-gmap_viewR	
-gmap_viewRF	
-gmap_viewRF_contractive	
-gmap_viewUR	
-gmap_viewURF	
-gmap_viewURF_contractive	
-gmap_view_alloc	
-gmap_view_alloc_big	
-gmap_view_auth	
-gmap_view_auth_dfrac_is_op	
-gmap_view_auth_dfrac_op	
-gmap_view_auth_dfrac_op_inv	
-gmap_view_auth_dfrac_op_invN	
-gmap_view_auth_dfrac_op_valid	
-gmap_view_auth_dfrac_op_validN	
-gmap_view_auth_dfrac_valid	
-gmap_view_auth_dfrac_validN	
-gmap_view_auth_ne	
-gmap_view_auth_op_valid	
-gmap_view_auth_op_validN	
-gmap_view_auth_persist	
-gmap_view_auth_proper	
-gmap_view_auth_unpersist	
-gmap_view_auth_valid	
-gmap_view_both_dfrac_validN	
-gmap_view_both_dfrac_validN_total	
-gmap_view_both_dfrac_valid_discrete	
-gmap_view_both_dfrac_valid_discrete_total	
-gmap_view_both_valid	
-gmap_view_both_validN	
-gmap_view_cmra_discrete	
-gmap_view_delete	
-gmap_view_delete_big	
-gmap_view_frag	
-gmap_view_fragUR	
-gmap_view_frag_add	
-gmap_view_frag_core_id	
-gmap_view_frag_dfrac	
-gmap_view_frag_mut_is_op	
-gmap_view_frag_ne	
-gmap_view_frag_op	
-gmap_view_frag_op_valid	
-gmap_view_frag_op_validN	
-gmap_view_frag_persist	
-gmap_view_frag_proper	
-gmap_view_frag_unpersist	
-gmap_view_frag_valid	
-gmap_view_frag_validN	
-gmap_view_rel	
-gmap_view_rel_discrete	
-gmap_view_rel_exists	
-gmap_view_rel_lookup	
-gmap_view_rel_raw	
-gmap_view_rel_raw_mono	
-gmap_view_rel_raw_unit	
-gmap_view_rel_raw_valid	
-gmap_view_rel_unit	
-gmap_view_replace	
-gmap_view_replace_big	
-gmap_view_update	
-gmap_view_update_local	
+gmap_viewO		missing	foundational
+gmap_viewR	iris.algebra.lib.gmap_view:gmap_viewR	direct	foundational
+gmap_viewRF	iris.algebra.lib.gmap_view_functor:gmap_viewRF	direct	foundational
+gmap_viewRF_contractive	iris.algebra.lib.gmap_view_functor:gmap_viewRF_contractive	direct	qol
+gmap_viewUR	iris.algebra.lib.gmap_view:gmap_viewUR	direct	foundational
+gmap_viewURF	iris.algebra.lib.gmap_view_functor:gmap_viewURF	direct	foundational
+gmap_viewURF_contractive	iris.algebra.lib.gmap_view_functor:gmap_viewURF_contractive	direct	qol
+gmap_view_alloc	iris.algebra.lib.gmap_view:gmap_view_alloc	direct	qol
+gmap_view_alloc_big		missing	qol
+gmap_view_auth	iris.algebra.lib.gmap_view:gmap_view_auth	direct	foundational
+gmap_view_auth_dfrac_is_op		missing	qol
+gmap_view_auth_dfrac_op	iris.algebra.lib.gmap_view:gmap_view_auth_dfrac_op	direct	qol
+gmap_view_auth_dfrac_op_inv		missing	qol
+gmap_view_auth_dfrac_op_invN		missing	qol
+gmap_view_auth_dfrac_op_valid		missing	qol
+gmap_view_auth_dfrac_op_validN		missing	qol
+gmap_view_auth_dfrac_valid		missing	qol
+gmap_view_auth_dfrac_validN		missing	qol
+gmap_view_auth_ne		missing	qol
+gmap_view_auth_op_valid		missing	qol
+gmap_view_auth_op_validN		missing	qol
+gmap_view_auth_persist	iris.algebra.lib.gmap_view:gmap_view_auth_persist	direct	qol
+gmap_view_auth_proper		missing	qol
+gmap_view_auth_unpersist	iris.algebra.lib.gmap_view:gmap_view_auth_unpersist	direct	qol
+gmap_view_auth_valid		missing	qol
+gmap_view_both_dfrac_validN	iris.algebra.lib.gmap_view:gmap_view_both_dfrac_validN	direct	qol
+gmap_view_both_dfrac_validN_total		missing	qol
+gmap_view_both_dfrac_valid_discrete		missing	qol
+gmap_view_both_dfrac_valid_discrete_total		missing	qol
+gmap_view_both_valid		missing	qol
+gmap_view_both_validN	iris.algebra.lib.gmap_view:gmap_view_both_validN	direct	qol
+gmap_view_cmra_discrete		missing	qol
+gmap_view_delete	iris.algebra.lib.gmap_view:gmap_view_delete	direct	qol
+gmap_view_delete_big		missing	qol
+gmap_view_frag	iris.algebra.lib.gmap_view:gmap_view_frag	direct	foundational
+gmap_view_fragUR	iris.algebra.lib.gmap_view:gmap_view_fragUR	direct	foundational
+gmap_view_frag_add		missing	qol
+gmap_view_frag_core_id	iris.algebra.lib.gmap_view:gmap_view_frag_core_id	direct	qol
+gmap_view_frag_dfrac		missing	qol
+gmap_view_frag_mut_is_op		missing	qol
+gmap_view_frag_ne		missing	qol
+gmap_view_frag_op	iris.algebra.lib.gmap_view:gmap_view_frag_op	direct	qol
+gmap_view_frag_op_valid		missing	qol
+gmap_view_frag_op_validN		missing	qol
+gmap_view_frag_persist	iris.algebra.lib.gmap_view:gmap_view_frag_persist	direct	qol
+gmap_view_frag_proper		missing	qol
+gmap_view_frag_unpersist	iris.algebra.lib.gmap_view:gmap_view_frag_unpersist	direct	qol
+gmap_view_frag_valid		missing	qol
+gmap_view_frag_validN	iris.algebra.lib.gmap_view:gmap_view_frag_validN	direct	qol
+gmap_view_rel	iris.algebra.lib.gmap_view:gmap_view_rel	direct	foundational
+gmap_view_rel_discrete		missing	qol
+gmap_view_rel_exists		missing	qol
+gmap_view_rel_lookup	iris.algebra.lib.gmap_view:gmap_view_rel_lookup	direct	qol
+gmap_view_rel_raw		missing	foundational
+gmap_view_rel_raw_mono		missing	qol
+gmap_view_rel_raw_unit		missing	qol
+gmap_view_rel_raw_valid		missing	qol
+gmap_view_rel_unit		missing	qol
+gmap_view_replace	iris.algebra.lib.gmap_view:gmap_view_replace	direct	qol
+gmap_view_replace_big		missing	qol
+gmap_view_update	iris.algebra.lib.gmap_view:gmap_view_update	direct	qol
+gmap_view_update_local		missing	qol

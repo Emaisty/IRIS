@@ -1,31 +1,31 @@
-dfrac_countable	
-dfrac_eq_dec	
-DfracBoth_inj	
-DfracOwn_inj	
-dfrac	
-dfracO	
-dfracR	
-dfrac_cancelable	
-dfrac_cmra_discrete	
-dfrac_discard_update	
-dfrac_discarded_core_id	
-dfrac_discarded_included	
-dfrac_full_exclusive	
-dfrac_inhabited	
-dfrac_is_op	
-dfrac_op_discarded	
-dfrac_op_instance	
-dfrac_op_own	
-dfrac_own_id_free	
-dfrac_own_included	
-dfrac_pcore_instance	
-dfrac_ra_mixin	
-dfrac_undiscard_update	
-dfrac_valid	
-dfrac_valid_discarded	
-dfrac_valid_instance	
-dfrac_valid_own	
-dfrac_valid_own_1	
-dfrac_valid_own_discarded	
-dfrac_valid_own_l	
-dfrac_valid_own_r	
+dfrac_countable		missing	qol
+dfrac_eq_dec		missing	qol
+DfracBoth_inj		missing	qol
+DfracOwn_inj		missing	qol
+dfrac	iris.algebra.dfrac:Dfrac	analogue	foundational	Dfrac is the Arend datatype for Rocq discarded fractions.
+dfracO	iris.algebra.dfrac:Dfrac	analogue	foundational	Dfrac is discrete in Arend, so its OFE structure is inherited from the datatype.
+dfracR	iris.algebra.dfrac:DfracCMRA	analogue	foundational	DfracCMRA supplies the discarded-fraction resource algebra.
+dfrac_cancelable		missing	qol
+dfrac_cmra_discrete		missing	qol
+dfrac_discard_update		missing	qol
+dfrac_discarded_core_id	iris.algebra.dfrac:dfrac_discarded_core_id	direct	qol
+dfrac_discarded_included		missing	qol
+dfrac_full_exclusive	iris.algebra.dfrac:dfrac_full_exclusive	direct	qol
+dfrac_inhabited		missing	qol
+dfrac_is_op		missing	qol
+dfrac_op_discarded		missing	qol
+dfrac_op_instance	iris.algebra.dfrac:DfracCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+dfrac_op_own		missing	qol
+dfrac_own_id_free		missing	qol
+dfrac_own_included		missing	qol
+dfrac_pcore_instance	iris.algebra.dfrac:DfracCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+dfrac_ra_mixin		missing	foundational
+dfrac_undiscard_update		missing	qol
+dfrac_valid	iris.algebra.dfrac:dfrac_valid	direct	qol
+dfrac_valid_discarded		missing	qol
+dfrac_valid_instance	iris.algebra.dfrac:DfracCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+dfrac_valid_own		missing	qol
+dfrac_valid_own_1		missing	qol
+dfrac_valid_own_discarded		missing	qol
+dfrac_valid_own_l		missing	qol
+dfrac_valid_own_r		missing	qol

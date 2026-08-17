@@ -1,51 +1,51 @@
-add_modal_fupd_wp	
-elim_acc_wp_atomic	
-elim_acc_wp_nonatomic	
-elim_modal_bupd_wp	
-elim_modal_fupd_wp	
-elim_modal_fupd_wp_atomic	
-elim_modal_fupd_wp_atomic_wrong_mask	
-elim_modal_fupd_wp_wrong_mask	
-frame_wp	
-fupd_wp	
-irisGS_gen	
-is_except_0_wp	
-wp'	
-wp_atomic	
-wp_aux	
-wp_bind	lifting:wp_bind
-wp_bind_inv	
-wp_contractive	
-wp_credit_access	
-wp_def	
-wp_flip_mono'	
-wp_frame_l	
-wp_frame_r	
-wp_frame_step_l	
-wp_frame_step_l'	
-wp_frame_step_r	
-wp_frame_step_r'	
-wp_frame_wand	
-wp_fupd	
-wp_mask_mono	
-wp_mono	weakestpre:wp_mono
-wp_mono'	
-wp_ne	
-wp_pre	weakestpre:wp_pre
-wp_pre_contractive	weakestpre:wp_pre_contractive
-wp_proper	
-wp_step_fupd	
-wp_step_fupdN	
-wp_step_fupdN_strong	
-wp_strong_mono	
-wp_stuck_mono	
-wp_stuck_weaken	
-wp_unfold	weakestpre:wp_unfold
-wp_unseal	
-wp_value	weakestpre:wp_value
-wp_value'	
-wp_value_fupd	
-wp_value_fupd'	
-wp_wand	
-wp_wand_l	
-wp_wand_r	
+add_modal_fupd_wp		missing	qol
+elim_acc_wp_atomic		missing	qol
+elim_acc_wp_nonatomic		missing	qol
+elim_modal_bupd_wp		missing	qol
+elim_modal_fupd_wp		missing	qol
+elim_modal_fupd_wp_atomic		missing	qol
+elim_modal_fupd_wp_atomic_wrong_mask		missing	qol
+elim_modal_fupd_wp_wrong_mask		missing	qol
+frame_wp		missing	qol
+fupd_wp	iris.program_logic.lifting:fupd_wp	direct	qol
+irisGS_gen		missing	foundational
+is_except_0_wp		missing	qol
+wp'	iris.program_logic.weakestpre:wp	analogue	foundational	Arend exposes the generic weakest-precondition function directly rather than through Rocq sealing and notation.
+wp_atomic		missing	qol
+wp_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+wp_bind	iris.program_logic.lifting:wp_bind	direct	foundational
+wp_bind_inv		missing	foundational
+wp_contractive		missing	qol
+wp_credit_access		missing	qol
+wp_def	iris.program_logic.weakestpre:wp	analogue	foundational	The Arend wp/fixed-point construction plays the role of Rocq wp_def without the sealing wrapper.
+wp_flip_mono'		missing	qol
+wp_frame_l		missing	qol
+wp_frame_r		missing	qol
+wp_frame_step_l		missing	qol
+wp_frame_step_l'		missing	qol
+wp_frame_step_r		missing	qol
+wp_frame_step_r'		missing	qol
+wp_frame_wand		missing	qol
+wp_fupd		missing	qol
+wp_mask_mono		missing	qol
+wp_mono	iris.program_logic.weakestpre:wp_mono	direct	foundational
+wp_mono'		missing	foundational
+wp_ne		missing	qol
+wp_pre	iris.program_logic.weakestpre:wp_pre	direct	foundational
+wp_pre_contractive	iris.program_logic.weakestpre:wp_pre_contractive	direct	qol
+wp_proper		missing	qol
+wp_step_fupd		missing	foundational
+wp_step_fupdN		missing	foundational
+wp_step_fupdN_strong		missing	foundational
+wp_strong_mono		missing	foundational
+wp_stuck_mono		missing	qol
+wp_stuck_weaken		missing	qol
+wp_unfold	iris.program_logic.weakestpre:wp_unfold	direct	foundational
+wp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+wp_value	iris.program_logic.weakestpre:wp_value	direct	foundational
+wp_value'		missing	foundational
+wp_value_fupd		missing	foundational
+wp_value_fupd'		missing	foundational
+wp_wand		missing	qol
+wp_wand_l		missing	qol
+wp_wand_r		missing	qol

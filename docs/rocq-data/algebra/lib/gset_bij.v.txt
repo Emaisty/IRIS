@@ -1,32 +1,32 @@
-bij_both_dfrac_valid	
-bij_both_valid	
-bij_view_included	
-gset_bij	
-gset_bijO	
-gset_bijR	
-gset_bijUR	
-gset_bij_auth	
-gset_bij_auth_dfrac_op	
-gset_bij_auth_dfrac_op_valid	
-gset_bij_auth_dfrac_valid	
-gset_bij_auth_empty_dfrac_valid	
-gset_bij_auth_empty_valid	
-gset_bij_auth_extend	
-gset_bij_auth_op_valid	
-gset_bij_auth_valid	
-gset_bij_elem	
-gset_bij_elem_agree	
-gset_bij_elem_core_id	
-gset_bij_view_rel	
-gset_bij_view_rel_discrete	
-gset_bij_view_rel_iff	
-gset_bij_view_rel_raw	
-gset_bij_view_rel_raw_mono	
-gset_bij_view_rel_raw_unit	
-gset_bij_view_rel_raw_valid	
-gset_bijective	
-gset_bijective_empty	
-gset_bijective_eq_iff	
-gset_bijective_extend	
-gset_bijective_pair	
-subseteq_gset_bijective	
+bij_both_dfrac_valid		missing	qol
+bij_both_valid		missing	qol
+bij_view_included		missing	qol
+gset_bij		missing	foundational
+gset_bijO		missing	foundational
+gset_bijR		missing	foundational
+gset_bijUR		missing	foundational
+gset_bij_auth		missing	foundational
+gset_bij_auth_dfrac_op		missing	qol
+gset_bij_auth_dfrac_op_valid		missing	qol
+gset_bij_auth_dfrac_valid		missing	qol
+gset_bij_auth_empty_dfrac_valid		missing	qol
+gset_bij_auth_empty_valid		missing	qol
+gset_bij_auth_extend		missing	qol
+gset_bij_auth_op_valid		missing	qol
+gset_bij_auth_valid		missing	qol
+gset_bij_elem		missing	foundational
+gset_bij_elem_agree		missing	qol
+gset_bij_elem_core_id		missing	qol
+gset_bij_view_rel		missing	foundational
+gset_bij_view_rel_discrete		missing	qol
+gset_bij_view_rel_iff		missing	qol
+gset_bij_view_rel_raw		missing	foundational
+gset_bij_view_rel_raw_mono		missing	qol
+gset_bij_view_rel_raw_unit		missing	qol
+gset_bij_view_rel_raw_valid		missing	qol
+gset_bijective		missing	foundational
+gset_bijective_empty		missing	qol
+gset_bijective_eq_iff		missing	qol
+gset_bijective_extend		missing	qol
+gset_bijective_pair		missing	qol
+subseteq_gset_bijective		missing	qol

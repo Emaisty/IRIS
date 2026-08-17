@@ -1,29 +1,29 @@
-dfrac_agreeRF_contractive	
-dfrac_agreeR	
-dfrac_agreeRF	
-dfrac_agree_included	
-dfrac_agree_includedN	
-dfrac_agree_included_L	
-dfrac_agree_op	
-dfrac_agree_op_valid	
-dfrac_agree_op_validN	
-dfrac_agree_op_valid_L	
-dfrac_agree_persist	
-dfrac_agree_unpersist	
-dfrac_agree_update_2	
-frac_agree_included	
-frac_agree_includedN	
-frac_agree_included_L	
-frac_agree_op	
-frac_agree_op_valid	
-frac_agree_op_validN	
-frac_agree_op_valid_L	
-frac_agree_update_2	
-to_dfrac_agree	
-to_dfrac_agree_discrete	
-to_dfrac_agree_exclusive	
-to_dfrac_agree_inj	
-to_dfrac_agree_injN	
-to_dfrac_agree_ne	
-to_dfrac_agree_proper	
-to_frac_agree	
+dfrac_agreeRF_contractive		missing	qol
+dfrac_agreeR		missing	foundational
+dfrac_agreeRF		missing	foundational
+dfrac_agree_included		missing	qol
+dfrac_agree_includedN		missing	qol
+dfrac_agree_included_L		missing	qol
+dfrac_agree_op		missing	qol
+dfrac_agree_op_valid		missing	qol
+dfrac_agree_op_validN		missing	qol
+dfrac_agree_op_valid_L		missing	qol
+dfrac_agree_persist		missing	qol
+dfrac_agree_unpersist		missing	qol
+dfrac_agree_update_2		missing	qol
+frac_agree_included		missing	qol
+frac_agree_includedN		missing	qol
+frac_agree_included_L		missing	qol
+frac_agree_op		missing	qol
+frac_agree_op_valid		missing	qol
+frac_agree_op_validN		missing	qol
+frac_agree_op_valid_L		missing	qol
+frac_agree_update_2		missing	qol
+to_dfrac_agree		missing	foundational
+to_dfrac_agree_discrete		missing	qol
+to_dfrac_agree_exclusive		missing	qol
+to_dfrac_agree_inj		missing	qol
+to_dfrac_agree_injN		missing	qol
+to_dfrac_agree_ne		missing	qol
+to_dfrac_agree_proper		missing	qol
+to_frac_agree		missing	foundational

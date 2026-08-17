@@ -1,17 +1,17 @@
-fracO	
-fracR	
-frac_cancelable	
-frac_cmra_discrete	
-frac_full_exclusive	
-frac_id_free	
-frac_included	
-frac_included_weak	
-frac_is_op	
-frac_op	
-frac_op_instance	
-frac_pcore_instance	
-frac_ra_mixin	
-frac_valid	
-frac_valid_1	
-frac_valid_instance	
-is_op_frac	
+fracO		missing	foundational
+fracR		missing	foundational
+frac_cancelable		missing	qol
+frac_cmra_discrete		missing	qol
+frac_full_exclusive		missing	qol
+frac_id_free		missing	qol
+frac_included		missing	qol
+frac_included_weak		missing	qol
+frac_is_op		missing	qol
+frac_op		missing	qol
+frac_op_instance		missing	foundational
+frac_pcore_instance		missing	foundational
+frac_ra_mixin		missing	foundational
+frac_valid		missing	qol
+frac_valid_1		missing	qol
+frac_valid_instance		missing	foundational
+is_op_frac		missing	qol

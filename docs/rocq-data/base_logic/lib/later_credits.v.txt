@@ -1,80 +1,80 @@
-le_upd.le_upd_equiv_proper	
-le_upd.le_upd_flip_mono'	
-le_upd.le_upd_mono'	
-combine_sep_lc_S_l	
-combine_sep_lc_add	
-from_sep_lc_S	
-from_sep_lc_add	
-has_lc	
-into_sep_lc_S	
-into_sep_lc_add	
-lc	
-lcGS	
-lcGpreS	
-lc_0_persistent	
-lc_aux	
-lc_decrease_supply	
-lc_def	
-lc_increase_supply	
-lc_no_lc	
-lc_split	
-lc_succ	
-lc_supply	
-lc_supply_aux	
-lc_supply_bound	
-lc_supply_def	
-lc_supply_no_lc	
-lc_supply_unseal	
-lc_timeless	
-lc_unseal	
-lc_weaken	
-lc_zero	
-lcΣ	
-le_upd.bi_bupd_mixin_le_upd	
-le_upd.bupd_le_upd	
-le_upd.elim_bupd_le_upd	
-le_upd.elim_modal_le_upd	
-le_upd.except_0_le_upd	
-le_upd.frame_le_upd	
-le_upd.from_assumption_le_upd	
-le_upd.from_modal_le_upd	
-le_upd.from_pure_le_upd	
-le_upd.is_except_0_le_upd	
-le_upd.lc_alloc	
-le_upd.lc_alloc_no_lc	
-le_upd.lc_le_upd_add_later	
-le_upd.lc_le_upd_elim_later	
-le_upd.lc_soundness	
-le_upd.le_upd	
-le_upd.le_upd_aux	
-le_upd.le_upd_bind	
-le_upd.le_upd_def	
-le_upd.le_upd_finally	
-le_upd.le_upd_finally_add_lc	
-le_upd.le_upd_finally_aux	
-le_upd.le_upd_finally_def	
-le_upd.le_upd_finally_except_0	
-le_upd.le_upd_finally_flip_mono'	
-le_upd.le_upd_finally_forall	
-le_upd.le_upd_finally_intro	
-le_upd.le_upd_finally_later	
-le_upd.le_upd_finally_mono	
-le_upd.le_upd_finally_mono'	
-le_upd.le_upd_finally_ne	
-le_upd.le_upd_finally_proper	
-le_upd.le_upd_finally_soundness	
-le_upd.le_upd_finally_unseal	
-le_upd.le_upd_frame_l	
-le_upd.le_upd_frame_r	
-le_upd.le_upd_intro	
-le_upd.le_upd_keep	
-le_upd.le_upd_le_upd_finally	
-le_upd.le_upd_mono	
-le_upd.le_upd_ne	
-le_upd.le_upd_pre	
-le_upd.le_upd_pre_contractive	
-le_upd.le_upd_trans	
-le_upd.le_upd_unfold	
-le_upd.le_upd_unfold_no_le	
-le_upd.le_upd_unseal	
-subG_lcΣ	
+le_upd.le_upd_equiv_proper		missing	qol
+le_upd.le_upd_flip_mono'		missing	qol
+le_upd.le_upd_mono'		missing	qol
+combine_sep_lc_S_l		missing	qol
+combine_sep_lc_add		missing	qol
+from_sep_lc_S		missing	qol
+from_sep_lc_add		missing	qol
+has_lc		missing	foundational
+into_sep_lc_S		missing	qol
+into_sep_lc_add		missing	qol
+lc		missing	foundational
+lcGS		missing	foundational
+lcGpreS		missing	foundational
+lc_0_persistent		missing	qol
+lc_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+lc_decrease_supply		missing	qol
+lc_def		missing	foundational
+lc_increase_supply		missing	qol
+lc_no_lc		missing	qol
+lc_split		missing	qol
+lc_succ		missing	qol
+lc_supply		missing	foundational
+lc_supply_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+lc_supply_bound		missing	qol
+lc_supply_def		missing	foundational
+lc_supply_no_lc		missing	qol
+lc_supply_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+lc_timeless		missing	qol
+lc_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+lc_weaken		missing	qol
+lc_zero		missing	qol
+lcΣ		missing	foundational
+le_upd.bi_bupd_mixin_le_upd		missing	qol
+le_upd.bupd_le_upd		missing	qol
+le_upd.elim_bupd_le_upd		missing	qol
+le_upd.elim_modal_le_upd		missing	qol
+le_upd.except_0_le_upd		missing	qol
+le_upd.frame_le_upd		missing	qol
+le_upd.from_assumption_le_upd		missing	qol
+le_upd.from_modal_le_upd		missing	qol
+le_upd.from_pure_le_upd		missing	qol
+le_upd.is_except_0_le_upd		missing	qol
+le_upd.lc_alloc		missing	qol
+le_upd.lc_alloc_no_lc		missing	qol
+le_upd.lc_le_upd_add_later		missing	qol
+le_upd.lc_le_upd_elim_later		missing	qol
+le_upd.lc_soundness		missing	foundational
+le_upd.le_upd		missing	foundational
+le_upd.le_upd_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+le_upd.le_upd_bind		missing	qol
+le_upd.le_upd_def		missing	foundational
+le_upd.le_upd_finally		missing	foundational
+le_upd.le_upd_finally_add_lc		missing	qol
+le_upd.le_upd_finally_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+le_upd.le_upd_finally_def		missing	foundational
+le_upd.le_upd_finally_except_0		missing	qol
+le_upd.le_upd_finally_flip_mono'		missing	qol
+le_upd.le_upd_finally_forall		missing	qol
+le_upd.le_upd_finally_intro		missing	qol
+le_upd.le_upd_finally_later		missing	qol
+le_upd.le_upd_finally_mono		missing	qol
+le_upd.le_upd_finally_mono'		missing	qol
+le_upd.le_upd_finally_ne		missing	qol
+le_upd.le_upd_finally_proper		missing	qol
+le_upd.le_upd_finally_soundness		missing	foundational
+le_upd.le_upd_finally_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+le_upd.le_upd_frame_l		missing	qol
+le_upd.le_upd_frame_r		missing	qol
+le_upd.le_upd_intro		missing	qol
+le_upd.le_upd_keep		missing	qol
+le_upd.le_upd_le_upd_finally		missing	qol
+le_upd.le_upd_mono		missing	qol
+le_upd.le_upd_ne		missing	qol
+le_upd.le_upd_pre		missing	foundational
+le_upd.le_upd_pre_contractive		missing	qol
+le_upd.le_upd_trans		missing	qol
+le_upd.le_upd_unfold		missing	qol
+le_upd.le_upd_unfold_no_le		missing	qol
+le_upd.le_upd_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+subG_lcΣ		missing	qol

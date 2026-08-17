@@ -1,11 +1,11 @@
-tokenΣ	
-subG_tokenΣ	
-tokenG	
-token_alloc	
-token_alloc_strong	
-token_aux	
-token_combine_gives	
-token_def	
-token_exclusive	
-token_timeless	
-token_unseal	
+tokenΣ		missing	foundational
+subG_tokenΣ		missing	qol
+tokenG		missing	foundational
+token_alloc		missing	qol
+token_alloc_strong		missing	qol
+token_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+token_combine_gives		missing	qol
+token_def		missing	foundational
+token_exclusive		missing	qol
+token_timeless		missing	qol
+token_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

@@ -1,70 +1,70 @@
-csum_bchain_l	
-csum_bchain_r	
-csum_lbcompl	
-maybe_Cinl	
-maybe_Cinr	
-Cinl_cancelable	
-Cinl_core_id	
-Cinl_discrete	
-Cinl_exclusive	
-Cinl_id_free	
-Cinl_included	
-Cinl_inj	
-Cinl_inj_dist	
-Cinl_ne	
-Cinl_op	
-Cinl_proper	
-Cinl_valid	
-Cinr_cancelable	
-Cinr_core_id	
-Cinr_discrete	
-Cinr_exclusive	
-Cinr_id_free	
-Cinr_included	
-Cinr_inj	
-Cinr_inj_dist	
-Cinr_ne	
-Cinr_op	
-Cinr_proper	
-Cinr_valid	
-CsumInvalid_included	
-Some_csum_included	
-Some_csum_includedN	
-csum	
-csumO	
-csumO_map	
-csumO_map_ne	
-csumR	
-csumRF	
-csumRF_contractive	
-csum_chain_l	
-csum_chain_r	
-csum_cmra_discrete	
-csum_cmra_mixin	
-csum_cofe	
-csum_compl	
-csum_dist	
-csum_equiv	
-csum_included	
-csum_includedN	
-csum_leibniz	
-csum_local_update_l	
-csum_local_update_r	
-csum_map	
-csum_map_cmra_morphism	
-csum_map_cmra_ne	
-csum_map_compose	
-csum_map_ext	
-csum_map_id	
-csum_ofe_discrete	
-csum_ofe_mixin	
-csum_op_instance	
-csum_pcore_instance	
-csum_updateP'_l	
-csum_updateP'_r	
-csum_updateP_l	
-csum_updateP_r	
-csum_update_l	
-csum_update_r	
-csum_validN_instance	
-csum_valid_instance	
+csum_bchain_l		missing	foundational
+csum_bchain_r		missing	foundational
+csum_lbcompl		missing	foundational
+maybe_Cinl		missing	qol
+maybe_Cinr		missing	qol
+Cinl_cancelable		missing	qol
+Cinl_core_id		missing	qol
+Cinl_discrete		missing	qol
+Cinl_exclusive		missing	qol
+Cinl_id_free		missing	qol
+Cinl_included		missing	qol
+Cinl_inj		missing	qol
+Cinl_inj_dist		missing	qol
+Cinl_ne		missing	qol
+Cinl_op		missing	qol
+Cinl_proper		missing	qol
+Cinl_valid		missing	qol
+Cinr_cancelable		missing	qol
+Cinr_core_id		missing	qol
+Cinr_discrete		missing	qol
+Cinr_exclusive		missing	qol
+Cinr_id_free		missing	qol
+Cinr_included		missing	qol
+Cinr_inj		missing	qol
+Cinr_inj_dist		missing	qol
+Cinr_ne		missing	qol
+Cinr_op		missing	qol
+Cinr_proper		missing	qol
+Cinr_valid		missing	qol
+CsumInvalid_included		missing	qol
+Some_csum_included		missing	qol
+Some_csum_includedN		missing	qol
+csum		missing	foundational
+csumO		missing	foundational
+csumO_map		missing	foundational
+csumO_map_ne		missing	qol
+csumR		missing	foundational
+csumRF		missing	foundational
+csumRF_contractive		missing	qol
+csum_chain_l		missing	foundational
+csum_chain_r		missing	foundational
+csum_cmra_discrete		missing	qol
+csum_cmra_mixin		missing	foundational
+csum_cofe		missing	qol
+csum_compl		missing	foundational
+csum_dist		missing	foundational
+csum_equiv		missing	foundational
+csum_included		missing	qol
+csum_includedN		missing	qol
+csum_leibniz		missing	qol
+csum_local_update_l		missing	qol
+csum_local_update_r		missing	qol
+csum_map		missing	foundational
+csum_map_cmra_morphism		missing	qol
+csum_map_cmra_ne		missing	qol
+csum_map_compose		missing	qol
+csum_map_ext		missing	qol
+csum_map_id		missing	qol
+csum_ofe_discrete		missing	qol
+csum_ofe_mixin		missing	foundational
+csum_op_instance		missing	foundational
+csum_pcore_instance		missing	foundational
+csum_updateP'_l		missing	qol
+csum_updateP'_r		missing	qol
+csum_updateP_l		missing	qol
+csum_updateP_r		missing	qol
+csum_update_l		missing	qol
+csum_update_r		missing	qol
+csum_validN_instance		missing	foundational
+csum_valid_instance		missing	foundational

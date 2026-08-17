@@ -1,15 +1,15 @@
-EctxiLanguageMixin	
-ectxiLanguage	
-ectxi_lang	
-ectxi_lang_ectx	
-ectxi_lang_ectx_mixin	
-EctxLanguageOfEctxi	
-base_ctx_step_val	
-ectxi_lang_ctx_item	
-ectxi_language_sub_redexes_are_values	
-fill	lang:fill
-fill_app	
-fill_item_inj	
-fill_item_no_val_inj	
-fill_item_val	
-fill_not_val	lang_ectx:fill_not_val
+EctxiLanguageMixin		missing	foundational
+ectxiLanguage		missing	foundational
+ectxi_lang		missing	foundational
+ectxi_lang_ectx		missing	foundational
+ectxi_lang_ectx_mixin		missing	foundational
+EctxLanguageOfEctxi		missing	foundational
+base_ctx_step_val		missing	qol
+ectxi_lang_ctx_item		missing	qol
+ectxi_language_sub_redexes_are_values		missing	qol
+fill	iris_heap_lang.lang:fill	direct	foundational
+fill_app		missing	qol
+fill_item_inj		missing	qol
+fill_item_no_val_inj		missing	qol
+fill_item_val		missing	qol
+fill_not_val	iris_heap_lang.lang_ectx:fill_not_val	direct	qol

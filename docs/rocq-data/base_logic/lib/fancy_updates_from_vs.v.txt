@@ -1,1 +1,1 @@
-fupd	
+fupd	iris.bi.updates:FUpd.fupd	direct	foundational

@@ -1,28 +1,28 @@
-invariant_lookup	
-invariant_unfold	
-invariant_unfold_contractive	
-ownD	
-ownD_disjoint	
-ownD_empty	
-ownD_op	
-ownD_op'	
-ownD_singleton_twice	
-ownE	
-ownE_disjoint	
-ownE_empty	
-ownE_op	
-ownE_op'	
-ownE_singleton_twice	
-ownI	
-ownI_alloc	
-ownI_alloc_open	
-ownI_close	
-ownI_contractive	
-ownI_open	
-ownI_persistent	
-wsat	
-wsatGS.subG_wsatΣ	
-wsatGS.wsatGS	
-wsatGS.wsatGpreS	
-wsatGS.wsatΣ	
-wsat_alloc	
+invariant_lookup	iris.base_logic.lib.wsat:invariant_lookup	direct	foundational
+invariant_unfold	iris.base_logic.lib.wsat:invariant_unfold	direct	foundational
+invariant_unfold_contractive		missing	qol
+ownD	iris.base_logic.lib.wsat:ownD	direct	foundational
+ownD_disjoint	iris.base_logic.lib.wsat:ownD_disjoint	direct	qol
+ownD_empty		missing	qol
+ownD_op	iris.base_logic.lib.wsat:ownD_op	direct	qol
+ownD_op'	iris.base_logic.lib.wsat:ownD_op'	direct	qol
+ownD_singleton_twice	iris.base_logic.lib.wsat:ownD_singleton_twice	direct	qol
+ownE	iris.base_logic.lib.wsat:ownE	direct	foundational
+ownE_disjoint	iris.base_logic.lib.wsat:ownE_disjoint	direct	qol
+ownE_empty		missing	qol
+ownE_op	iris.base_logic.lib.wsat:ownE_op	direct	qol
+ownE_op'	iris.base_logic.lib.wsat:ownE_op'	direct	qol
+ownE_singleton_twice	iris.base_logic.lib.wsat:ownE_singleton_twice	direct	qol
+ownI	iris.base_logic.lib.wsat:ownI	direct	foundational
+ownI_alloc	iris.base_logic.lib.wsat_alloc:ownI_alloc	direct	foundational
+ownI_alloc_open	iris.base_logic.lib.wsat_alloc:ownI_alloc_open	direct	foundational
+ownI_close	iris.base_logic.lib.wsat:ownI_close	direct	foundational
+ownI_contractive		missing	qol
+ownI_open	iris.base_logic.lib.wsat:ownI_open	direct	foundational
+ownI_persistent		missing	qol
+wsat	iris.base_logic.lib.wsat:wsat	direct	foundational
+wsatGS.subG_wsatΣ	iris.base_logic.lib.wsat_sigma:subG_wsatSigma	analogue	qol	subG_wsatSigma supplies the same signature inclusion after Arend module flattening.
+wsatGS.wsatGS	iris.base_logic.lib.wsat:wsatGS	direct	foundational
+wsatGS.wsatGpreS	iris.base_logic.lib.wsat:wsatGpreS	direct	foundational
+wsatGS.wsatΣ	iris.base_logic.lib.wsat_sigma:wsatSigma	analogue	foundational	wsatSigma is the flattened Arend world-satisfaction signature.
+wsat_alloc	iris.base_logic.lib.wsat_alloc:wsat_alloc	direct	foundational

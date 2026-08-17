@@ -1,31 +1,31 @@
-Private_paco_mono	
-Private_wf_pred_mono	
-greatest_fixpoint_ne	
-greatest_fixpoint_proper	
-least_fixpoint_ne	
-least_fixpoint_proper	
-BiMonoPred	
-bi_greatest_fixpoint	
-bi_least_fixpoint	
-greatest_fixpoint_absorbing	
-greatest_fixpoint_coind	
-greatest_fixpoint_coiter	
-greatest_fixpoint_ne'	
-greatest_fixpoint_ne_outer	
-greatest_fixpoint_paco	
-greatest_fixpoint_strong_mono	
-greatest_fixpoint_unfold	
-greatest_fixpoint_unfold_1	
-greatest_fixpoint_unfold_2	
-least_fixpoint_absorbing	
-least_fixpoint_affine	
-least_fixpoint_ind	
-least_fixpoint_ind_wf	
-least_fixpoint_iter	
-least_fixpoint_ne'	
-least_fixpoint_persistent_absorbing	
-least_fixpoint_persistent_affine	
-least_fixpoint_strong_mono	
-least_fixpoint_unfold	
-least_fixpoint_unfold_1	
-least_fixpoint_unfold_2	
+Private_paco_mono		missing	qol
+Private_wf_pred_mono		missing	qol
+greatest_fixpoint_ne		missing	qol
+greatest_fixpoint_proper		missing	qol
+least_fixpoint_ne		missing	qol
+least_fixpoint_proper		missing	qol
+BiMonoPred		missing	foundational
+bi_greatest_fixpoint		missing	foundational
+bi_least_fixpoint		missing	foundational
+greatest_fixpoint_absorbing		missing	qol
+greatest_fixpoint_coind		missing	qol
+greatest_fixpoint_coiter		missing	qol
+greatest_fixpoint_ne'		missing	qol
+greatest_fixpoint_ne_outer		missing	qol
+greatest_fixpoint_paco		missing	qol
+greatest_fixpoint_strong_mono		missing	qol
+greatest_fixpoint_unfold		missing	qol
+greatest_fixpoint_unfold_1		missing	qol
+greatest_fixpoint_unfold_2		missing	qol
+least_fixpoint_absorbing		missing	qol
+least_fixpoint_affine		missing	qol
+least_fixpoint_ind		missing	qol
+least_fixpoint_ind_wf		missing	qol
+least_fixpoint_iter		missing	qol
+least_fixpoint_ne'		missing	qol
+least_fixpoint_persistent_absorbing		missing	qol
+least_fixpoint_persistent_affine		missing	qol
+least_fixpoint_strong_mono		missing	qol
+least_fixpoint_unfold		missing	qol
+least_fixpoint_unfold_1		missing	qol
+least_fixpoint_unfold_2		missing	qol

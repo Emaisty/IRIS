@@ -1,40 +1,40 @@
-cmra_transport_updateP	
-cmra_transport_updateP'	
-cmra_update_flip_proper_update	
-cmra_update_op_flip_proper	
-cmra_update_op_proper	
-cmra_update_preorder	
-cmra_update_proper_update	
-cmra_discrete_total_update	
-cmra_discrete_total_updateP	
-cmra_discrete_update	
-cmra_discrete_updateP	
-cmra_total_update	
-cmra_total_updateP	
-cmra_update	
-cmra_updateP	
-cmra_updateP_compose	
-cmra_updateP_compose_l	
-cmra_updateP_id	
-cmra_updateP_op	
-cmra_updateP_op'	
-cmra_updateP_proper	
-cmra_updateP_weaken	
-cmra_update_exclusive	
-cmra_update_included	
-cmra_update_lift_updateP	
-cmra_update_op	
-cmra_update_op_l	
-cmra_update_op_r	
-cmra_update_proper	
-cmra_update_rewrite_relation	
-cmra_update_updateP	
-cmra_update_valid0	
-iso_cmra_updateP	
-iso_cmra_updateP'	
-option_update	
-option_updateP	
-option_updateP'	
-prod_update	
-prod_updateP	
-prod_updateP'	
+cmra_transport_updateP		missing	qol
+cmra_transport_updateP'		missing	qol
+cmra_update_flip_proper_update		missing	qol
+cmra_update_op_flip_proper		missing	qol
+cmra_update_op_proper		missing	qol
+cmra_update_preorder		missing	qol
+cmra_update_proper_update		missing	qol
+cmra_discrete_total_update		missing	qol
+cmra_discrete_total_updateP		missing	qol
+cmra_discrete_update		missing	qol
+cmra_discrete_updateP		missing	qol
+cmra_total_update		missing	qol
+cmra_total_updateP		missing	qol
+cmra_update	iris.base_logic.lib.own:cmra_update	direct	foundational
+cmra_updateP	iris.algebra.cmra:cmra_updateP	direct	foundational
+cmra_updateP_compose		missing	qol
+cmra_updateP_compose_l		missing	qol
+cmra_updateP_id	iris.algebra.cmra:cmra_updateP_id	direct	qol
+cmra_updateP_op		missing	qol
+cmra_updateP_op'		missing	qol
+cmra_updateP_proper		missing	qol
+cmra_updateP_weaken		missing	qol
+cmra_update_exclusive		missing	qol
+cmra_update_included		missing	qol
+cmra_update_lift_updateP		missing	qol
+cmra_update_op		missing	qol
+cmra_update_op_l		missing	qol
+cmra_update_op_r		missing	qol
+cmra_update_proper		missing	qol
+cmra_update_rewrite_relation		missing	qol
+cmra_update_updateP		missing	qol
+cmra_update_valid0		missing	qol
+iso_cmra_updateP	iris.algebra.cmra:iso_cmra_updatePM	analogue	qol	iso_cmra_updatePM transports the non-unital CMRA update used by the Arend ownership model.
+iso_cmra_updateP'		missing	qol
+option_update		missing	qol
+option_updateP		missing	qol
+option_updateP'		missing	qol
+prod_update		missing	qol
+prod_updateP		missing	qol
+prod_updateP'		missing	qol

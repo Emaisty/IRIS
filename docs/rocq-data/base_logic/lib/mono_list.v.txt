@@ -1,35 +1,35 @@
-mono_listG	
-mono_list_auth_idx_lookup	
-mono_list_auth_lb_own_valid	
-mono_list_auth_own	
-mono_list_auth_own_agree	
-mono_list_auth_own_as_fractional	
-mono_list_auth_own_aux	
-mono_list_auth_own_def	
-mono_list_auth_own_exclusive	
-mono_list_auth_own_fractional	
-mono_list_auth_own_persist	
-mono_list_auth_own_persistent	
-mono_list_auth_own_timeless	
-mono_list_auth_own_unpersist	
-mono_list_auth_own_unseal	
-mono_list_auth_own_update	
-mono_list_auth_own_update_app	
-mono_list_idx_agree	
-mono_list_idx_own	
-mono_list_idx_own_get	
-mono_list_idx_own_persistent	
-mono_list_idx_own_timeless	
-mono_list_lb_own	
-mono_list_lb_own_aux	
-mono_list_lb_own_def	
-mono_list_lb_own_get	
-mono_list_lb_own_le	
-mono_list_lb_own_nil	
-mono_list_lb_own_persistent	
-mono_list_lb_own_timeless	
-mono_list_lb_own_unseal	
-mono_list_lb_own_valid	
-mono_list_own_alloc	
-mono_listΣ	
-subG_mono_listΣ	
+mono_listG		missing	foundational
+mono_list_auth_idx_lookup		missing	qol
+mono_list_auth_lb_own_valid		missing	qol
+mono_list_auth_own		missing	foundational
+mono_list_auth_own_agree		missing	qol
+mono_list_auth_own_as_fractional		missing	qol
+mono_list_auth_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_list_auth_own_def		missing	foundational
+mono_list_auth_own_exclusive		missing	qol
+mono_list_auth_own_fractional		missing	qol
+mono_list_auth_own_persist		missing	qol
+mono_list_auth_own_persistent		missing	qol
+mono_list_auth_own_timeless		missing	qol
+mono_list_auth_own_unpersist		missing	qol
+mono_list_auth_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_list_auth_own_update		missing	qol
+mono_list_auth_own_update_app		missing	qol
+mono_list_idx_agree		missing	qol
+mono_list_idx_own		missing	foundational
+mono_list_idx_own_get		missing	qol
+mono_list_idx_own_persistent		missing	qol
+mono_list_idx_own_timeless		missing	qol
+mono_list_lb_own		missing	foundational
+mono_list_lb_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_list_lb_own_def		missing	foundational
+mono_list_lb_own_get		missing	qol
+mono_list_lb_own_le		missing	qol
+mono_list_lb_own_nil		missing	qol
+mono_list_lb_own_persistent		missing	qol
+mono_list_lb_own_timeless		missing	qol
+mono_list_lb_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_list_lb_own_valid		missing	qol
+mono_list_own_alloc		missing	qol
+mono_listΣ		missing	foundational
+subG_mono_listΣ		missing	qol

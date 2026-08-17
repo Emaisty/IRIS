@@ -1,10 +1,10 @@
-gallina_ident	
-intro_pat	
-intro_pat.big_conj	
-intro_pat.close	
-intro_pat.close_conj_list	
-intro_pat.close_list	
-intro_pat.parse	
-intro_pat.parse_go	
-intro_pat.stack_item	
-intro_pat_intuitionistic	
+gallina_ident		missing	foundational
+intro_pat		missing	foundational
+intro_pat.big_conj		missing	foundational
+intro_pat.close		missing	foundational
+intro_pat.close_conj_list		missing	foundational
+intro_pat.close_list		missing	foundational
+intro_pat.parse		missing	qol
+intro_pat.parse_go		missing	foundational
+intro_pat.stack_item		missing	foundational
+intro_pat_intuitionistic		missing	qol

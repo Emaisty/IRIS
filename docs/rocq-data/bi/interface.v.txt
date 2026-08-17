@@ -1,60 +1,60 @@
-BiLaterMixin	
-BiMixin	
-BiPersistentlyMixin	
-bi	
-bi.and_elim_l	
-bi.and_elim_r	
-bi.and_intro	
-bi.and_ne	
-bi.emp_sep_1	
-bi.emp_sep_2	
-bi.entails_po	
-bi.equiv_entails	
-bi.impl_elim_l'	
-bi.impl_intro_r	
-bi.impl_ne	
-bi.later_exist_false	
-bi.later_false_em	
-bi.later_forall_2	
-bi.later_intro	
-bi.later_mono	
-bi.later_ne	
-bi.later_persistently_1	
-bi.later_persistently_2	
-bi.later_sep_1	
-bi.later_sep_2	
-bi.or_elim	
-bi.or_intro_l	
-bi.or_intro_r	
-bi.or_ne	
-bi.persistently_and_2	
-bi.persistently_and_sep_elim	
-bi.persistently_emp_2	
-bi.persistently_exist_1	
-bi.persistently_idemp_2	
-bi.persistently_mono	
-bi.persistently_ne	
-bi.pure_elim'	
-bi.pure_intro	
-bi.pure_ne	
-bi.sep_assoc'	
-bi.sep_comm'	
-bi.sep_mono	
-bi.sep_ne	
-bi.wand_elim_l'	
-bi.wand_intro_r	
-bi.wand_ne	
-bi_cofe	
-bi_inhabited	
-bi_later_mixin_id	
-bi_ofeO	
-bi_persistently_mixin_discrete	
-bi_rewrite_relation	
-bi.exist_elim	
-bi.exist_intro	
-bi.exist_ne	
-bi.forall_elim	
-bi.forall_intro	
-bi.forall_ne	
-bi.persistently_absorbing	
-bi_emp_valid	
+BiLaterMixin		missing	foundational
+BiMixin		missing	foundational
+BiPersistentlyMixin		missing	foundational
+bi		missing	foundational
+bi.and_elim_l		missing	qol
+bi.and_elim_r		missing	qol
+bi.and_intro		missing	qol
+bi.and_ne		missing	qol
+bi.emp_sep_1		missing	qol
+bi.emp_sep_2		missing	qol
+bi.entails_po		missing	qol
+bi.equiv_entails		missing	qol
+bi.impl_elim_l'		missing	qol
+bi.impl_intro_r		missing	qol
+bi.impl_ne		missing	qol
+bi.later_exist_false	iris.bi.interface:BILaterMixin.later_exist_false	direct	qol
+bi.later_false_em	iris.bi.interface:BILaterMixin.later_false_em	direct	qol
+bi.later_forall_2	iris.bi.interface:BILaterMixin.later_forall_2	direct	qol
+bi.later_intro	iris.bi.interface:BILaterMixin.later_intro	direct	qol
+bi.later_mono	iris.bi.interface:BILaterMixin.later_mono	direct	qol
+bi.later_ne		missing	qol
+bi.later_persistently_1	iris.bi.interface:BILaterMixin.later_persistently_1	direct	qol
+bi.later_persistently_2	iris.bi.interface:BILaterMixin.later_persistently_2	direct	qol
+bi.later_sep_1	iris.bi.interface:BILaterMixin.later_sep_1	direct	qol
+bi.later_sep_2	iris.bi.interface:BILaterMixin.later_sep_2	direct	qol
+bi.or_elim		missing	qol
+bi.or_intro_l		missing	qol
+bi.or_intro_r		missing	qol
+bi.or_ne		missing	qol
+bi.persistently_and_2	iris.bi.interface:BIPersistentlyMixin.persistently_and_2	direct	qol
+bi.persistently_and_sep_elim	iris.bi.interface:BIPersistentlyMixin.persistently_and_sep_elim	direct	qol
+bi.persistently_emp_2	iris.bi.interface:BIPersistentlyMixin.persistently_emp_2	direct	qol
+bi.persistently_exist_1	iris.bi.interface:BIPersistentlyMixin.persistently_exist_1	direct	qol
+bi.persistently_idemp_2	iris.bi.interface:BIPersistentlyMixin.persistently_idemp_2	direct	qol
+bi.persistently_mono	iris.bi.interface:BIPersistentlyMixin.persistently_mono	direct	qol
+bi.persistently_ne		missing	qol
+bi.pure_elim'		missing	qol
+bi.pure_intro		missing	qol
+bi.pure_ne		missing	qol
+bi.sep_assoc'		missing	qol
+bi.sep_comm'		missing	qol
+bi.sep_mono		missing	qol
+bi.sep_ne		missing	qol
+bi.wand_elim_l'		missing	qol
+bi.wand_intro_r		missing	qol
+bi.wand_ne		missing	qol
+bi_cofe		missing	qol
+bi_inhabited		missing	qol
+bi_later_mixin_id		missing	qol
+bi_ofeO		missing	foundational
+bi_persistently_mixin_discrete		missing	qol
+bi_rewrite_relation		missing	qol
+bi.exist_elim		missing	qol
+bi.exist_intro		missing	qol
+bi.exist_ne		missing	qol
+bi.forall_elim		missing	qol
+bi.forall_intro		missing	qol
+bi.forall_ne		missing	qol
+bi.persistently_absorbing	iris.bi.interface:BIPersistentlyMixin.persistently_absorbing	direct	qol
+bi_emp_valid		missing	foundational

@@ -1,126 +1,126 @@
-alloc_local_update	
-alloc_singleton_local_update	
-alloc_unit_singleton_update	
-alloc_unit_singleton_updateP	
-alloc_unit_singleton_updateP'	
-alloc_updateP	
-alloc_updateP'	
-alloc_updateP_cofinite	
-alloc_updateP_cofinite'	
-alloc_updateP_strong	
-alloc_updateP_strong'	
-alloc_updateP_strong_dep	
-alloc_updateP_strong_dep'	
-alter_ne	
-big_opM_ne_2	
-big_opM_singletons	
-big_opS_gset_to_gmap	
-big_opS_gset_to_gmap_L	
-delete_local_update	
-delete_local_update_cancelable	
-delete_ne	
-delete_singleton_local_update	
-delete_singleton_local_update_cancelable	
-delete_update	
-delete_valid	
-delete_validN	
-dom_included	
-dom_op	
-gmapO	
-gmapOF	
-gmapOF_contractive	
-gmapO_leibniz	
-gmapO_map	
-gmapO_map_ne	
-gmapR	
-gmapRF	
-gmapRF_contractive	
-gmapUR	
-gmapURF	
-gmapURF_contractive	
-gmap_bchain	
-gmap_cancelable	
-gmap_chain	
-gmap_cmra_discrete	
-gmap_cmra_mixin	
-gmap_cofe	
-gmap_compl	
-gmap_core_id	
-gmap_core_id'	
-gmap_disjoint_ne	
-gmap_dist	
-gmap_dom_ne	
-gmap_empty_discrete	
-gmap_fmap_cmra_morphism	
-gmap_fmap_mono	
-gmap_fmap_ne	
-gmap_fmap_ne_ext	
-gmap_insert_discrete	
-gmap_lbcompl	
-gmap_local_update	
-gmap_lookup_discrete	
-gmap_ofe_discrete	
-gmap_ofe_mixin	
-gmap_op	lib.gmap_cmra:gmap_op
-gmap_op_empty_l_L	
-gmap_op_empty_r	
-gmap_op_instance	
-gmap_op_union	
-gmap_op_valid0_disjoint	
-gmap_op_valid_disjoint	
-gmap_pcore_instance	
-gmap_singleton_core_id	
-gmap_singleton_discrete	
-gmap_ucmra_mixin	
-gmap_union_dist_eq	
-gmap_union_ne	
-gmap_unit_instance	
-gmap_validN_instance	
-gmap_valid_instance	
-insert_alloc_local_update	
-insert_idN	
-insert_local_update	
-insert_ne	
-insert_op	
-insert_singleton_op	
-insert_update	
-insert_updateP	
-insert_updateP'	
-insert_valid	
-insert_validN	
-lookup_core	
-lookup_included	
-lookup_includedN	
-lookup_ne	
-lookup_op	
-lookup_opM	
-lookup_op_homomorphism	
-lookup_total_ne	
-lookup_validN_Some	
-lookup_valid_Some	
-map_fmap_ne	
-map_seq_ne	
-map_zip_with_ne	
-merge_ne	
-partial_alter_ne	
-singleton_cancelable	
-singleton_core	
-singleton_core'	
-singleton_core_total	
-singleton_included	
-singleton_includedN_l	lib.heap:singleton_includedN_l
-singleton_included_exclusive_l	
-singleton_included_l	
-singleton_included_mono	
-singleton_included_total	
-singleton_is_op	
-singleton_local_update	
-singleton_local_update_any	
-singleton_ne	
-singleton_op	
-singleton_update	
-singleton_updateP	
-singleton_updateP'	
-singleton_valid	
-singleton_validN	
-union_with_ne	
+alloc_local_update		missing	qol
+alloc_singleton_local_update		missing	qol
+alloc_unit_singleton_update		missing	qol
+alloc_unit_singleton_updateP		missing	qol
+alloc_unit_singleton_updateP'		missing	qol
+alloc_updateP	iris.algebra.gmap_updates:gmap_alloc_updateP	analogue	qol	gmap_alloc_updateP is the Arend allocation rule with freshness supplied explicitly.
+alloc_updateP'		missing	qol
+alloc_updateP_cofinite		missing	qol
+alloc_updateP_cofinite'		missing	qol
+alloc_updateP_strong		missing	qol
+alloc_updateP_strong'	iris.algebra.gmap_updates:gmap_alloc_strong_updateP	analogue	qol	Arend expresses strong fresh allocation through an explicit freshness oracle.
+alloc_updateP_strong_dep		missing	qol
+alloc_updateP_strong_dep'		missing	qol
+alter_ne		missing	qol
+big_opM_ne_2		missing	qol
+big_opM_singletons		missing	qol
+big_opS_gset_to_gmap		missing	qol
+big_opS_gset_to_gmap_L		missing	qol
+delete_local_update		missing	qol
+delete_local_update_cancelable		missing	qol
+delete_ne		missing	qol
+delete_singleton_local_update		missing	qol
+delete_singleton_local_update_cancelable		missing	qol
+delete_update		missing	qol
+delete_valid		missing	qol
+delete_validN		missing	qol
+dom_included		missing	qol
+dom_op		missing	qol
+gmapO	iris.algebra.gmap:GmapOFE	analogue	foundational	GmapOFE is the Arend pointwise OFE on finite maps.
+gmapOF		missing	foundational
+gmapOF_contractive		missing	qol
+gmapO_leibniz		missing	qol
+gmapO_map	iris.algebra.gmap_functor:gmapO_map	direct	foundational
+gmapO_map_ne	iris.algebra.gmap_functor:gmapO_map_ne	direct	qol
+gmapR	iris.algebra.gmap:GmapCMRA	analogue	foundational	GmapCMRA is the Arend finite-map CMRA.
+gmapRF		missing	foundational
+gmapRF_contractive		missing	qol
+gmapUR	iris.algebra.gmap:GmapUCMRA	analogue	foundational	GmapUCMRA is the unital Arend finite-map CMRA.
+gmapURF	iris.algebra.gmap_functor:gmapURF	direct	foundational
+gmapURF_contractive	iris.algebra.gmap_functor:gmapURF_contractive	direct	qol
+gmap_bchain		missing	foundational
+gmap_cancelable		missing	qol
+gmap_chain		missing	foundational
+gmap_cmra_discrete		missing	qol
+gmap_cmra_mixin	iris.algebra.gmap:GmapCMRA	analogue	foundational	The CMRA laws are fields of GmapCMRA rather than a separate Rocq mixin.
+gmap_cofe		missing	qol
+gmap_compl		missing	foundational
+gmap_core_id	iris.algebra.gmap:gmap_core_id	direct	qol
+gmap_core_id'		missing	qol
+gmap_disjoint_ne		missing	qol
+gmap_dist		missing	qol
+gmap_dom_ne		missing	qol
+gmap_empty_discrete		missing	qol
+gmap_fmap_cmra_morphism	iris.algebra.gmap_functor:gmap_fmap_cmra_morphism	direct	qol
+gmap_fmap_mono		missing	qol
+gmap_fmap_ne		missing	qol
+gmap_fmap_ne_ext		missing	qol
+gmap_insert_discrete		missing	qol
+gmap_lbcompl		missing	foundational
+gmap_local_update		missing	qol
+gmap_lookup_discrete		missing	qol
+gmap_ofe_discrete		missing	qol
+gmap_ofe_mixin	iris.algebra.gmap:GmapOFE	analogue	foundational	The OFE laws are fields of GmapOFE rather than a separate Rocq mixin.
+gmap_op	iris.algebra.gmap:gmap_op	direct	qol
+gmap_op_empty_l_L		missing	qol
+gmap_op_empty_r		missing	qol
+gmap_op_instance	iris.algebra.gmap:GmapCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+gmap_op_union		missing	qol
+gmap_op_valid0_disjoint		missing	qol
+gmap_op_valid_disjoint		missing	qol
+gmap_pcore_instance	iris.algebra.gmap:GmapCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+gmap_singleton_core_id	iris.algebra.gmap:gmap_singleton_core_id	direct	qol
+gmap_singleton_discrete		missing	qol
+gmap_ucmra_mixin	iris.algebra.gmap:GmapUCMRA	analogue	foundational	The unital laws are fields of GmapUCMRA rather than a separate Rocq mixin.
+gmap_union_dist_eq		missing	qol
+gmap_union_ne		missing	qol
+gmap_unit_instance	iris.algebra.gmap:GmapUCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+gmap_validN_instance	iris.algebra.gmap:GmapCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+gmap_valid_instance	iris.algebra.gmap:GmapCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+insert_alloc_local_update		missing	qol
+insert_idN		missing	qol
+insert_local_update		missing	qol
+insert_ne		missing	qol
+insert_op		missing	qol
+insert_singleton_op		missing	qol
+insert_update		missing	qol
+insert_updateP		missing	qol
+insert_updateP'		missing	qol
+insert_valid		missing	qol
+insert_validN		missing	qol
+lookup_core		missing	qol
+lookup_included		missing	qol
+lookup_includedN		missing	qol
+lookup_ne		missing	qol
+lookup_op		missing	qol
+lookup_opM		missing	qol
+lookup_op_homomorphism		missing	qol
+lookup_total_ne		missing	qol
+lookup_validN_Some		missing	qol
+lookup_valid_Some		missing	qol
+map_fmap_ne		missing	qol
+map_seq_ne		missing	qol
+map_zip_with_ne		missing	qol
+merge_ne		missing	qol
+partial_alter_ne		missing	qol
+singleton_cancelable		missing	qol
+singleton_core		missing	qol
+singleton_core'		missing	qol
+singleton_core_total		missing	qol
+singleton_included		missing	qol
+singleton_includedN_l	tests.fact.heap:singleton_includedN_l	direct	qol
+singleton_included_exclusive_l		missing	qol
+singleton_included_l		missing	qol
+singleton_included_mono		missing	qol
+singleton_included_total		missing	qol
+singleton_is_op		missing	qol
+singleton_local_update		missing	qol
+singleton_local_update_any		missing	qol
+singleton_ne		missing	qol
+singleton_op		missing	qol
+singleton_update		missing	qol
+singleton_updateP		missing	qol
+singleton_updateP'	iris.algebra.gmap_updates:gmap_singleton_updatePM	analogue	qol	Arend proves the same singleton frame-preserving update for the non-unital CMRA update relation used by own.
+singleton_valid		missing	qol
+singleton_validN		missing	qol
+union_with_ne		missing	qol

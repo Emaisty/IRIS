@@ -1,28 +1,28 @@
-max_prefix_list	
-max_prefix_listR	
-max_prefix_listRF	
-max_prefix_listRF_contractive	
-max_prefix_listUR	
-max_prefix_listURF	
-max_prefix_listURF_contractive	
-max_prefix_list_included_includedN	
-max_prefix_list_local_update	
-mono_list_lb_core_id	
-to_max_prefix_list	
-to_max_prefix_list_app	
-to_max_prefix_list_dist_inj	
-to_max_prefix_list_included	
-to_max_prefix_list_includedN	
-to_max_prefix_list_includedN_aux	
-to_max_prefix_list_included_L	
-to_max_prefix_list_inj	
-to_max_prefix_list_ne	
-to_max_prefix_list_op_l	
-to_max_prefix_list_op_r	
-to_max_prefix_list_op_valid	
-to_max_prefix_list_op_validN	
-to_max_prefix_list_op_validN_aux	
-to_max_prefix_list_op_valid_L	
-to_max_prefix_list_proper	
-to_max_prefix_list_valid	
-to_max_prefix_list_validN	
+max_prefix_list		missing	foundational
+max_prefix_listR		missing	foundational
+max_prefix_listRF		missing	foundational
+max_prefix_listRF_contractive		missing	qol
+max_prefix_listUR		missing	foundational
+max_prefix_listURF		missing	foundational
+max_prefix_listURF_contractive		missing	qol
+max_prefix_list_included_includedN		missing	qol
+max_prefix_list_local_update		missing	qol
+mono_list_lb_core_id		missing	qol
+to_max_prefix_list		missing	foundational
+to_max_prefix_list_app		missing	qol
+to_max_prefix_list_dist_inj		missing	qol
+to_max_prefix_list_included		missing	qol
+to_max_prefix_list_includedN		missing	qol
+to_max_prefix_list_includedN_aux		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+to_max_prefix_list_included_L		missing	qol
+to_max_prefix_list_inj		missing	qol
+to_max_prefix_list_ne		missing	qol
+to_max_prefix_list_op_l		missing	qol
+to_max_prefix_list_op_r		missing	qol
+to_max_prefix_list_op_valid		missing	qol
+to_max_prefix_list_op_validN		missing	qol
+to_max_prefix_list_op_validN_aux		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+to_max_prefix_list_op_valid_L		missing	qol
+to_max_prefix_list_proper		missing	qol
+to_max_prefix_list_valid		missing	qol
+to_max_prefix_list_validN		missing	qol

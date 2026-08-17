@@ -1,15 +1,15 @@
-adequate	
-adequate_alt	
-adequate_tp_safe	
-steps_sum	
-wp_adequacy	adequacy:wp_adequacy
-wp_adequacy_gen	
-wp_invariance	
-wp_invariance_gen	
-wp_not_stuck	adequacy:wp_not_stuck
-wp_step	adequacy:wp_step
-wp_strong_adequacy	
-wp_strong_adequacy_gen	
-wptp_postconditions	
-wptp_preservation	
-wptp_step	
+adequate	iris.program_logic.adequacy:Adequate	analogue	foundational	Adequate is the Arend record containing result correctness and thread-pool safety.
+adequate_alt		missing	qol
+adequate_tp_safe		missing	qol
+steps_sum		missing	foundational
+wp_adequacy	iris.program_logic.adequacy:wp_adequacy	direct	foundational
+wp_adequacy_gen		missing	foundational
+wp_invariance		missing	foundational
+wp_invariance_gen		missing	foundational
+wp_not_stuck	iris.program_logic.adequacy:Adequate.adequate_not_stuck	analogue	qol	The Arend adequacy result stores not-stuckness as a record field rather than a separate projection theorem.
+wp_step	iris.program_logic.weakestpre:wp_step	direct	foundational
+wp_strong_adequacy		missing	foundational
+wp_strong_adequacy_gen		missing	foundational
+wptp_postconditions		missing	qol
+wptp_preservation		missing	qol
+wptp_step		missing	qol

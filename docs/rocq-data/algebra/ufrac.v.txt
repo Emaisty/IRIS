@@ -1,14 +1,14 @@
-is_op_ufrac	
-ufrac	
-ufracO	
-ufracR	
-ufrac_cancelable	
-ufrac_cmra_discrete	
-ufrac_id_free	
-ufrac_included	
-ufrac_included_weak	
-ufrac_op	
-ufrac_op_instance	
-ufrac_pcore_instance	
-ufrac_ra_mixin	
-ufrac_valid_instance	
+is_op_ufrac		missing	qol
+ufrac		missing	foundational
+ufracO		missing	foundational
+ufracR		missing	foundational
+ufrac_cancelable		missing	qol
+ufrac_cmra_discrete		missing	qol
+ufrac_id_free		missing	qol
+ufrac_included		missing	qol
+ufrac_included_weak		missing	qol
+ufrac_op		missing	qol
+ufrac_op_instance		missing	foundational
+ufrac_pcore_instance		missing	foundational
+ufrac_ra_mixin		missing	foundational
+ufrac_valid_instance		missing	foundational

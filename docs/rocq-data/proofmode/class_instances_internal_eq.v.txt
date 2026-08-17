@@ -1,10 +1,10 @@
-from_modal_Next	
-from_pure_internal_eq	
-into_internal_eq_absorbingly	
-into_internal_eq_affinely	
-into_internal_eq_internal_eq	
-into_internal_eq_intuitionistically	
-into_internal_eq_persistently	
-into_internal_eq_plainly	
-into_laterN_Next	
-into_pure_eq	
+from_modal_Next		missing	qol
+from_pure_internal_eq		missing	qol
+into_internal_eq_absorbingly		missing	qol
+into_internal_eq_affinely		missing	qol
+into_internal_eq_internal_eq		missing	qol
+into_internal_eq_intuitionistically		missing	qol
+into_internal_eq_persistently		missing	qol
+into_internal_eq_plainly		missing	qol
+into_laterN_Next		missing	qol
+into_pure_eq		missing	qol

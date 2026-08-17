@@ -1,54 +1,54 @@
-savedAnythingG	
-savedAnythingΣ	
-saved_anything_agree	
-saved_anything_alloc	
-saved_anything_alloc_cofinite	
-saved_anything_alloc_strong	
-saved_anything_as_fractional	
-saved_anything_combine_as	
-saved_anything_combine_gives	
-saved_anything_discarded_persistent	
-saved_anything_fractional	
-saved_anything_ne	
-saved_anything_own	
-saved_anything_persist	
-saved_anything_proper	
-saved_anything_unpersist	
-saved_anything_update	
-saved_anything_update_2	
-saved_anything_update_halves	
-saved_anything_valid	
-saved_anything_valid_2	
-saved_pred_agree	
-saved_pred_alloc	
-saved_pred_alloc_cofinite	
-saved_pred_alloc_strong	
-saved_pred_as_fractional	
-saved_pred_discarded_persistent	
-saved_pred_fractional	
-saved_pred_own	
-saved_pred_own_contractive	
-saved_pred_persist	
-saved_pred_unpersist	
-saved_pred_update	
-saved_pred_update_2	
-saved_pred_update_halves	
-saved_pred_valid	
-saved_pred_valid_2	
-saved_prop_agree	
-saved_prop_alloc	
-saved_prop_alloc_cofinite	
-saved_prop_alloc_strong	
-saved_prop_as_fractional	
-saved_prop_discarded_persistent	
-saved_prop_fractional	
-saved_prop_own	
-saved_prop_own_contractive	
-saved_prop_persist	
-saved_prop_unpersist	
-saved_prop_update	
-saved_prop_update_2	
-saved_prop_update_halves	
-saved_prop_valid	
-saved_prop_valid_2	
-subG_savedAnythingΣ	
+savedAnythingG		missing	foundational
+savedAnythingΣ		missing	foundational
+saved_anything_agree		missing	qol
+saved_anything_alloc		missing	qol
+saved_anything_alloc_cofinite		missing	qol
+saved_anything_alloc_strong		missing	qol
+saved_anything_as_fractional		missing	qol
+saved_anything_combine_as		missing	qol
+saved_anything_combine_gives		missing	qol
+saved_anything_discarded_persistent		missing	qol
+saved_anything_fractional		missing	qol
+saved_anything_ne		missing	qol
+saved_anything_own		missing	foundational
+saved_anything_persist		missing	qol
+saved_anything_proper		missing	qol
+saved_anything_unpersist		missing	qol
+saved_anything_update		missing	qol
+saved_anything_update_2		missing	qol
+saved_anything_update_halves		missing	qol
+saved_anything_valid		missing	qol
+saved_anything_valid_2		missing	qol
+saved_pred_agree		missing	qol
+saved_pred_alloc		missing	qol
+saved_pred_alloc_cofinite		missing	qol
+saved_pred_alloc_strong		missing	qol
+saved_pred_as_fractional		missing	qol
+saved_pred_discarded_persistent		missing	qol
+saved_pred_fractional		missing	qol
+saved_pred_own		missing	foundational
+saved_pred_own_contractive		missing	qol
+saved_pred_persist		missing	qol
+saved_pred_unpersist		missing	qol
+saved_pred_update		missing	qol
+saved_pred_update_2		missing	qol
+saved_pred_update_halves		missing	qol
+saved_pred_valid		missing	qol
+saved_pred_valid_2		missing	qol
+saved_prop_agree		missing	qol
+saved_prop_alloc		missing	qol
+saved_prop_alloc_cofinite		missing	qol
+saved_prop_alloc_strong		missing	qol
+saved_prop_as_fractional		missing	qol
+saved_prop_discarded_persistent		missing	qol
+saved_prop_fractional		missing	qol
+saved_prop_own		missing	foundational
+saved_prop_own_contractive		missing	qol
+saved_prop_persist		missing	qol
+saved_prop_unpersist		missing	qol
+saved_prop_update		missing	qol
+saved_prop_update_2		missing	qol
+saved_prop_update_halves		missing	qol
+saved_prop_valid		missing	qol
+saved_prop_valid_2		missing	qol
+subG_savedAnythingΣ		missing	qol

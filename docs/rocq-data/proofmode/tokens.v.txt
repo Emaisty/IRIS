@@ -1,5 +1,5 @@
-cons_state	
-state	
-token	
-tokenize	
-tokenize_go	
+cons_state		missing	foundational
+state		missing	foundational
+token		missing	foundational
+tokenize		missing	foundational
+tokenize_go		missing	foundational

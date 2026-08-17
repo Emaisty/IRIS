@@ -1,28 +1,28 @@
-mono_nat_auth_own_as_fractional	
-mono_nat_auth_own_aux	
-mono_nat_auth_own_def	
-mono_nat_auth_own_unseal	
-mono_nat_lb_own_aux	
-mono_nat_lb_own_def	
-mono_nat_lb_own_unseal	
-mono_natΣ	
-subG_mono_natΣ	
-mono_natG	
-mono_nat_auth_lb_own_valid	
-mono_nat_auth_own	
-mono_nat_auth_own_agree	
-mono_nat_auth_own_exclusive	
-mono_nat_auth_own_fractional	
-mono_nat_auth_own_persistent	
-mono_nat_auth_own_timeless	
-mono_nat_lb_own	
-mono_nat_lb_own_0	
-mono_nat_lb_own_get	
-mono_nat_lb_own_le	
-mono_nat_lb_own_persistent	
-mono_nat_lb_own_timeless	
-mono_nat_own_alloc	
-mono_nat_own_alloc_strong	
-mono_nat_own_persist	
-mono_nat_own_unpersist	
-mono_nat_own_update	
+mono_nat_auth_own_as_fractional		missing	qol
+mono_nat_auth_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_nat_auth_own_def		missing	foundational
+mono_nat_auth_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_nat_lb_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_nat_lb_own_def		missing	foundational
+mono_nat_lb_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+mono_natΣ		missing	foundational
+subG_mono_natΣ		missing	qol
+mono_natG		missing	foundational
+mono_nat_auth_lb_own_valid		missing	qol
+mono_nat_auth_own		missing	foundational
+mono_nat_auth_own_agree		missing	qol
+mono_nat_auth_own_exclusive		missing	qol
+mono_nat_auth_own_fractional		missing	qol
+mono_nat_auth_own_persistent		missing	qol
+mono_nat_auth_own_timeless		missing	qol
+mono_nat_lb_own		missing	foundational
+mono_nat_lb_own_0		missing	qol
+mono_nat_lb_own_get		missing	qol
+mono_nat_lb_own_le		missing	qol
+mono_nat_lb_own_persistent		missing	qol
+mono_nat_lb_own_timeless		missing	qol
+mono_nat_own_alloc		missing	qol
+mono_nat_own_alloc_strong		missing	qol
+mono_nat_own_persist		missing	qol
+mono_nat_own_unpersist		missing	qol
+mono_nat_own_update		missing	qol

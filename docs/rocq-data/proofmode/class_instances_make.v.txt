@@ -1,49 +1,49 @@
-make_embed_default	
-make_embed_emp	
-make_embed_pure	
-False_quick_affine	
-absorbingly_quick_absorbing	
-affinely_quick_affine	
-bi_affine_quick_absorbing	
-bi_affine_quick_affine	
-emp_quick_affine	
-intuitionistically_quick_affine	
-make_absorbingly_absorbing	
-make_absorbingly_default	
-make_absorbingly_emp	
-make_affinely_True	
-make_affinely_affine	
-make_affinely_default	
-make_and_default	
-make_and_emp_l	
-make_and_emp_r	
-make_and_false_l	
-make_and_false_r	
-make_and_true_l	
-make_and_true_r	
-make_except_0_True	
-make_except_0_default	
-make_intuitionistically_True	
-make_intuitionistically_True_affine	
-make_intuitionistically_default	
-make_intuitionistically_emp	
-make_laterN_default	
-make_laterN_emp	
-make_laterN_true	
-make_or_default	
-make_or_emp_l	
-make_or_emp_r	
-make_or_false_l	
-make_or_false_r	
-make_or_true_l	
-make_or_true_r	
-make_persistently_True	
-make_persistently_default	
-make_persistently_emp	
-make_sep_default	
-make_sep_emp_l	
-make_sep_emp_r	
-make_sep_true_l	
-make_sep_true_r	
-persistently_quick_absorbing	
-pure_quick_absorbing	
+make_embed_default		missing	qol
+make_embed_emp		missing	qol
+make_embed_pure		missing	qol
+False_quick_affine		missing	qol
+absorbingly_quick_absorbing		missing	qol
+affinely_quick_affine		missing	qol
+bi_affine_quick_absorbing		missing	qol
+bi_affine_quick_affine		missing	qol
+emp_quick_affine		missing	qol
+intuitionistically_quick_affine		missing	qol
+make_absorbingly_absorbing		missing	qol
+make_absorbingly_default		missing	qol
+make_absorbingly_emp		missing	qol
+make_affinely_True		missing	qol
+make_affinely_affine		missing	qol
+make_affinely_default		missing	qol
+make_and_default		missing	qol
+make_and_emp_l		missing	qol
+make_and_emp_r		missing	qol
+make_and_false_l		missing	qol
+make_and_false_r		missing	qol
+make_and_true_l		missing	qol
+make_and_true_r		missing	qol
+make_except_0_True		missing	qol
+make_except_0_default		missing	qol
+make_intuitionistically_True		missing	qol
+make_intuitionistically_True_affine		missing	qol
+make_intuitionistically_default		missing	qol
+make_intuitionistically_emp		missing	qol
+make_laterN_default		missing	qol
+make_laterN_emp		missing	qol
+make_laterN_true		missing	qol
+make_or_default		missing	qol
+make_or_emp_l		missing	qol
+make_or_emp_r		missing	qol
+make_or_false_l		missing	qol
+make_or_false_r		missing	qol
+make_or_true_l		missing	qol
+make_or_true_r		missing	qol
+make_persistently_True		missing	qol
+make_persistently_default		missing	qol
+make_persistently_emp		missing	qol
+make_sep_default		missing	qol
+make_sep_emp_l		missing	qol
+make_sep_emp_r		missing	qol
+make_sep_true_l		missing	qol
+make_sep_true_r		missing	qol
+persistently_quick_absorbing		missing	qol
+pure_quick_absorbing		missing	qol

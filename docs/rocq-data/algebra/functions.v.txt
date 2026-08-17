@@ -1,32 +1,32 @@
-discrete_funO_ofe_discrete	
-discrete_funR_cmra_discrete	
-discrete_fun_insert	
-discrete_fun_insert_discrete	
-discrete_fun_insert_ne	
-discrete_fun_insert_proper	
-discrete_fun_insert_update	
-discrete_fun_insert_updateP	
-discrete_fun_insert_updateP'	
-discrete_fun_lookup_insert	
-discrete_fun_lookup_insert_ne	
-discrete_fun_lookup_singleton	
-discrete_fun_lookup_singleton_ne	
-discrete_fun_singleton	
-discrete_fun_singleton_core	
-discrete_fun_singleton_core_id	
-discrete_fun_singleton_discrete	
-discrete_fun_singleton_ne	
-discrete_fun_singleton_op	
-discrete_fun_singleton_proper	
-discrete_fun_singleton_unit	
-discrete_fun_singleton_update	
-discrete_fun_singleton_updateP	
-discrete_fun_singleton_updateP'	
-discrete_fun_singleton_updateP_empty	
-discrete_fun_singleton_updateP_empty'	
-discrete_fun_singleton_update_empty	
-discrete_fun_singleton_valid	
-discrete_fun_singleton_validN	
-discrete_fun_update	
-discrete_fun_updateP	
-discrete_fun_updateP'	
+discrete_funO_ofe_discrete		missing	qol
+discrete_funR_cmra_discrete		missing	qol
+discrete_fun_insert	iris.algebra.functions:discrete_fun_insert	direct	foundational
+discrete_fun_insert_discrete		missing	qol
+discrete_fun_insert_ne		missing	qol
+discrete_fun_insert_proper		missing	qol
+discrete_fun_insert_update		missing	qol
+discrete_fun_insert_updateP		missing	qol
+discrete_fun_insert_updateP'		missing	qol
+discrete_fun_lookup_insert	iris.algebra.functions:discrete_fun_lookup_insert	direct	qol
+discrete_fun_lookup_insert_ne	iris.algebra.functions:discrete_fun_lookup_insert_ne	direct	qol
+discrete_fun_lookup_singleton	iris.algebra.functions:discrete_fun_lookup_singleton	direct	qol
+discrete_fun_lookup_singleton_ne	iris.algebra.functions:discrete_fun_lookup_singleton_ne	direct	qol
+discrete_fun_singleton	iris.algebra.functions:discrete_fun_singleton	direct	foundational
+discrete_fun_singleton_core		missing	qol
+discrete_fun_singleton_core_id	iris.algebra.functions:discrete_fun_singleton_core_id	direct	qol
+discrete_fun_singleton_discrete		missing	qol
+discrete_fun_singleton_ne	iris.algebra.functions:discrete_fun_singleton_ne	direct	qol
+discrete_fun_singleton_op	iris.algebra.functions:discrete_fun_singleton_op	direct	qol
+discrete_fun_singleton_proper	iris.base_logic.lib.own:discrete_fun_singleton_proper	direct	qol
+discrete_fun_singleton_unit		missing	qol
+discrete_fun_singleton_update		missing	qol
+discrete_fun_singleton_updateP	iris.algebra.functions:discrete_fun_singleton_updateP	direct	qol
+discrete_fun_singleton_updateP'		missing	qol
+discrete_fun_singleton_updateP_empty	iris.algebra.functions:discrete_fun_singleton_updateP_empty	direct	qol
+discrete_fun_singleton_updateP_empty'		missing	qol
+discrete_fun_singleton_update_empty		missing	qol
+discrete_fun_singleton_valid		missing	qol
+discrete_fun_singleton_validN		missing	qol
+discrete_fun_update		missing	qol
+discrete_fun_updateP		missing	qol
+discrete_fun_updateP'		missing	qol

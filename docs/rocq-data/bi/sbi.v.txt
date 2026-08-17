@@ -1,72 +1,72 @@
-Sbi	
-SbiEmpValidExist	
-SbiMixin	
-SbiPropExtMixin	
-SiEmpValid	
-SiPure	
-absorbingly_si_pure	
-affinely_si_pure_si_emp_valid	
-laterN_soundness	
-later_soundness	
-persistently_impl_si_pure	
-persistently_si_pure	
-pure_soundness	
-si_emp_valid_affinely	
-si_emp_valid_affinely_2	
-si_emp_valid_and	
-si_emp_valid_emp	
-si_emp_valid_emp_valid	
-si_emp_valid_except_0	
-si_emp_valid_exist	
-si_emp_valid_exist_2	
-si_emp_valid_flip_mono'	
-si_emp_valid_forall	
-si_emp_valid_impl_si_pure	
-si_emp_valid_intuitionistically	
-si_emp_valid_later	
-si_emp_valid_laterN	
-si_emp_valid_later_1	
-si_emp_valid_mono	
-si_emp_valid_mono'	
-si_emp_valid_ne	
-si_emp_valid_or	
-si_emp_valid_or_2	
-si_emp_valid_persistently	
-si_emp_valid_proper	
-si_emp_valid_pure	
-si_emp_valid_sep	
-si_emp_valid_si_pure	
-si_emp_valid_timeless	
-si_emp_valid_wand_si_pure	
-si_pure_absorbing	
-si_pure_and	
-si_pure_and_sep	
-si_pure_emp_valid	
-si_pure_entails	
-si_pure_except_0	
-si_pure_exist	
-si_pure_flip_mono'	
-si_pure_forall	
-si_pure_forall_2	
-si_pure_iff	
-si_pure_impl	
-si_pure_impl_2	
-si_pure_impl_iff_wand	
-si_pure_impl_wand	
-si_pure_inj	
-si_pure_later	
-si_pure_laterN	
-si_pure_mono	
-si_pure_mono'	
-si_pure_ne	
-si_pure_or	
-si_pure_persistent	
-si_pure_proper	
-si_pure_pure	
-si_pure_si_emp_valid	
-si_pure_si_emp_valid_elim	
-si_pure_timeless	
-siprop_sbi	
-siprop_sbi_emp_valid_exist	
-siprop_sbi_mixin	
-siprop_sbi_prop_ext_mixin	
+Sbi		missing	foundational
+SbiEmpValidExist		missing	foundational
+SbiMixin		missing	foundational
+SbiPropExtMixin		missing	foundational
+SiEmpValid		missing	foundational
+SiPure		missing	foundational
+absorbingly_si_pure		missing	qol
+affinely_si_pure_si_emp_valid		missing	qol
+laterN_soundness		missing	foundational
+later_soundness		missing	foundational
+persistently_impl_si_pure		missing	qol
+persistently_si_pure		missing	qol
+pure_soundness		missing	foundational
+si_emp_valid_affinely		missing	qol
+si_emp_valid_affinely_2		missing	qol
+si_emp_valid_and		missing	qol
+si_emp_valid_emp		missing	qol
+si_emp_valid_emp_valid		missing	qol
+si_emp_valid_except_0		missing	qol
+si_emp_valid_exist		missing	qol
+si_emp_valid_exist_2		missing	qol
+si_emp_valid_flip_mono'		missing	qol
+si_emp_valid_forall		missing	qol
+si_emp_valid_impl_si_pure		missing	qol
+si_emp_valid_intuitionistically		missing	qol
+si_emp_valid_later		missing	qol
+si_emp_valid_laterN		missing	qol
+si_emp_valid_later_1		missing	qol
+si_emp_valid_mono		missing	qol
+si_emp_valid_mono'		missing	qol
+si_emp_valid_ne		missing	qol
+si_emp_valid_or		missing	qol
+si_emp_valid_or_2		missing	qol
+si_emp_valid_persistently		missing	qol
+si_emp_valid_proper		missing	qol
+si_emp_valid_pure		missing	qol
+si_emp_valid_sep		missing	qol
+si_emp_valid_si_pure		missing	qol
+si_emp_valid_timeless		missing	qol
+si_emp_valid_wand_si_pure		missing	qol
+si_pure_absorbing		missing	qol
+si_pure_and		missing	qol
+si_pure_and_sep		missing	qol
+si_pure_emp_valid		missing	qol
+si_pure_entails		missing	qol
+si_pure_except_0		missing	qol
+si_pure_exist		missing	qol
+si_pure_flip_mono'		missing	qol
+si_pure_forall		missing	qol
+si_pure_forall_2		missing	qol
+si_pure_iff		missing	qol
+si_pure_impl		missing	qol
+si_pure_impl_2		missing	qol
+si_pure_impl_iff_wand		missing	qol
+si_pure_impl_wand		missing	qol
+si_pure_inj		missing	qol
+si_pure_later		missing	qol
+si_pure_laterN		missing	qol
+si_pure_mono		missing	qol
+si_pure_mono'		missing	qol
+si_pure_ne		missing	qol
+si_pure_or		missing	qol
+si_pure_persistent		missing	qol
+si_pure_proper		missing	qol
+si_pure_pure		missing	qol
+si_pure_si_emp_valid		missing	qol
+si_pure_si_emp_valid_elim		missing	qol
+si_pure_timeless		missing	qol
+siprop_sbi		missing	qol
+siprop_sbi_emp_valid_exist		missing	qol
+siprop_sbi_mixin		missing	qol
+siprop_sbi_prop_ext_mixin		missing	qol

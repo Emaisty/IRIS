@@ -1,24 +1,24 @@
-excl_authRF_contractive	
-excl_authURF_contractive	
-excl_authR	
-excl_authRF	
-excl_authUR	
-excl_authURF	
-excl_auth_agree	
-excl_auth_agreeN	
-excl_auth_agree_L	
-excl_auth_auth	
-excl_auth_auth_discrete	
-excl_auth_auth_ne	
-excl_auth_auth_op_valid	
-excl_auth_auth_op_validN	
-excl_auth_auth_proper	
-excl_auth_frag	
-excl_auth_frag_discrete	
-excl_auth_frag_ne	
-excl_auth_frag_op_valid	
-excl_auth_frag_op_validN	
-excl_auth_frag_proper	
-excl_auth_update	
-excl_auth_valid	
-excl_auth_validN	
+excl_authRF_contractive		missing	qol
+excl_authURF_contractive		missing	qol
+excl_authR		missing	foundational
+excl_authRF		missing	foundational
+excl_authUR		missing	foundational
+excl_authURF		missing	foundational
+excl_auth_agree		missing	qol
+excl_auth_agreeN		missing	qol
+excl_auth_agree_L		missing	qol
+excl_auth_auth		missing	foundational
+excl_auth_auth_discrete		missing	qol
+excl_auth_auth_ne		missing	qol
+excl_auth_auth_op_valid		missing	qol
+excl_auth_auth_op_validN		missing	qol
+excl_auth_auth_proper		missing	qol
+excl_auth_frag		missing	foundational
+excl_auth_frag_discrete		missing	qol
+excl_auth_frag_ne		missing	qol
+excl_auth_frag_op_valid		missing	qol
+excl_auth_frag_op_validN		missing	qol
+excl_auth_frag_proper		missing	qol
+excl_auth_update		missing	qol
+excl_auth_valid		missing	qol
+excl_auth_validN		missing	qol

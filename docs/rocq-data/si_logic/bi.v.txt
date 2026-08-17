@@ -1,27 +1,27 @@
-siProp_plainly	
-siProp.siProp_and_unseal	
-siProp.siProp_cmra_valid_unseal	
-siProp.siProp_emp_unseal	
-siProp.siProp_exist_unseal	
-siProp.siProp_forall_unseal	
-siProp.siProp_impl_unseal	
-siProp.siProp_internal_eq_unseal	
-siProp.siProp_later_unseal	
-siProp.siProp_or_unseal	
-siProp.siProp_persistently_unseal	
-siProp.siProp_pure_unseal	
-siProp.siProp_sep_unseal	
-siProp.siProp_unseal	
-siProp.siProp_wand_unseal	
-siPropI	
-siProp_affine	
-siProp_bi_later_mixin	
-siProp_bi_mixin	
-siProp_bi_persistently_mixin	
-siProp_emp	
-siProp_later_contractive	
-siProp_persistent	
-siProp_persistently	
-siProp_pure_forall	
-siProp_sep	
-siProp_wand	
+siProp_plainly		missing	foundational
+siProp.siProp_and_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_cmra_valid_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_emp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_exist_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_forall_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_impl_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_internal_eq_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_later_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_or_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_persistently_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_sep_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp.siProp_wand_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siPropI		missing	foundational
+siProp_affine		missing	qol
+siProp_bi_later_mixin		missing	qol
+siProp_bi_mixin		missing	qol
+siProp_bi_persistently_mixin		missing	qol
+siProp_emp		missing	foundational
+siProp_later_contractive		missing	qol
+siProp_persistent		missing	qol
+siProp_persistently		missing	foundational
+siProp_pure_forall		missing	qol
+siProp_sep		missing	foundational
+siProp_wand		missing	foundational

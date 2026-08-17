@@ -1,88 +1,88 @@
-Z_is_op	
-Z_local_update	
-max_Z_cmra_total	
-max_Z_included	
-max_Z_is_op	
-max_Z_local_update	
-max_nat_included	
-max_nat_is_op	
-max_nat_local_update	
-min_nat_included	
-min_nat_is_op	
-min_nat_local_update	
-nat_included	
-nat_is_op	
-nat_local_update	
-pos_included	
-pos_is_op	
-ZR	
-ZUR	
-Z_cancelable	
-Z_cmra_discrete	
-Z_op	
-Z_op_instance	
-Z_pcore_instance	
-Z_ra_mixin	
-Z_ucmra_mixin	
-Z_unit_instance	
-Z_validN_instance	
-Z_valid_instance	
-max_Z	
-max_ZO	
-max_ZR	
-max_Z_cmra_discrete	
-max_Z_core_id	
-max_Z_op	
-max_Z_op_instance	
-max_Z_pcore_instance	
-max_Z_ra_mixin	
-max_Z_unit_instance	
-max_Z_validN_instance	
-max_Z_valid_instance	
-max_nat	
-max_natO	
-max_natR	
-max_natUR	
-max_nat_cmra_discrete	
-max_nat_core_id	
-max_nat_op	
-max_nat_op_instance	
-max_nat_pcore_instance	
-max_nat_ra_mixin	
-max_nat_ucmra_mixin	
-max_nat_unit_instance	
-max_nat_validN_instance	
-max_nat_valid_instance	
-min_nat	
-min_natO	
-min_natR	
-min_nat_cmra_discrete	
-min_nat_core_id	
-min_nat_op_instance	
-min_nat_op_min	
-min_nat_pcore_instance	
-min_nat_ra_mixin	
-min_nat_validN_instance	
-min_nat_valid_instance	
-natR	
-natUR	
-nat_cancelable	
-nat_cmra_discrete	
-nat_op	
-nat_op_instance	
-nat_pcore_instance	
-nat_ra_mixin	
-nat_ucmra_mixin	
-nat_unit_instance	
-nat_validN_instance	
-nat_valid_instance	
-pos_cancelable	
-pos_cmra_discrete	
-pos_id_free	
-pos_op_add	
-pos_op_instance	
-pos_pcore_instance	
-pos_ra_mixin	
-pos_validN_instance	
-pos_valid_instance	
-positiveR	
+Z_is_op		missing	qol
+Z_local_update		missing	qol
+max_Z_cmra_total		missing	qol
+max_Z_included		missing	qol
+max_Z_is_op		missing	qol
+max_Z_local_update		missing	qol
+max_nat_included		missing	qol
+max_nat_is_op		missing	qol
+max_nat_local_update		missing	qol
+min_nat_included		missing	qol
+min_nat_is_op		missing	qol
+min_nat_local_update		missing	qol
+nat_included		missing	qol
+nat_is_op		missing	qol
+nat_local_update		missing	qol
+pos_included		missing	qol
+pos_is_op		missing	qol
+ZR		missing	foundational
+ZUR		missing	foundational
+Z_cancelable		missing	qol
+Z_cmra_discrete		missing	qol
+Z_op		missing	foundational
+Z_op_instance		missing	foundational
+Z_pcore_instance		missing	foundational
+Z_ra_mixin		missing	foundational
+Z_ucmra_mixin		missing	foundational
+Z_unit_instance		missing	foundational
+Z_validN_instance		missing	foundational
+Z_valid_instance		missing	foundational
+max_Z		missing	foundational
+max_ZO		missing	foundational
+max_ZR		missing	foundational
+max_Z_cmra_discrete		missing	qol
+max_Z_core_id		missing	qol
+max_Z_op		missing	foundational
+max_Z_op_instance		missing	foundational
+max_Z_pcore_instance		missing	foundational
+max_Z_ra_mixin		missing	foundational
+max_Z_unit_instance		missing	foundational
+max_Z_validN_instance		missing	foundational
+max_Z_valid_instance		missing	foundational
+max_nat		missing	foundational
+max_natO		missing	foundational
+max_natR		missing	foundational
+max_natUR		missing	foundational
+max_nat_cmra_discrete		missing	qol
+max_nat_core_id		missing	qol
+max_nat_op		missing	foundational
+max_nat_op_instance		missing	foundational
+max_nat_pcore_instance		missing	foundational
+max_nat_ra_mixin		missing	foundational
+max_nat_ucmra_mixin		missing	foundational
+max_nat_unit_instance		missing	foundational
+max_nat_validN_instance		missing	foundational
+max_nat_valid_instance		missing	foundational
+min_nat		missing	foundational
+min_natO		missing	foundational
+min_natR		missing	foundational
+min_nat_cmra_discrete		missing	qol
+min_nat_core_id		missing	qol
+min_nat_op_instance		missing	foundational
+min_nat_op_min		missing	foundational
+min_nat_pcore_instance		missing	foundational
+min_nat_ra_mixin		missing	foundational
+min_nat_validN_instance		missing	foundational
+min_nat_valid_instance		missing	foundational
+natR		missing	foundational
+natUR		missing	foundational
+nat_cancelable		missing	qol
+nat_cmra_discrete		missing	qol
+nat_op		missing	foundational
+nat_op_instance		missing	foundational
+nat_pcore_instance		missing	foundational
+nat_ra_mixin		missing	foundational
+nat_ucmra_mixin		missing	foundational
+nat_unit_instance		missing	foundational
+nat_validN_instance		missing	foundational
+nat_valid_instance		missing	foundational
+pos_cancelable		missing	qol
+pos_cmra_discrete		missing	qol
+pos_id_free		missing	qol
+pos_op_add		missing	foundational
+pos_op_instance		missing	foundational
+pos_pcore_instance		missing	foundational
+pos_ra_mixin		missing	foundational
+pos_validN_instance		missing	foundational
+pos_valid_instance		missing	foundational
+positiveR		missing	foundational

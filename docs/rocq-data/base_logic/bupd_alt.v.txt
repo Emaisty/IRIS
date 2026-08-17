@@ -1,14 +1,14 @@
-bupd_alt_bupd	
-bupd_alt_bupd_iff	
-bupd_alt_flip_mono'	
-bupd_alt_mono'	
-bupd_alt_proper	
-ownM_updateP	
-bupd_alt	
-bupd_alt_frame_r	
-bupd_alt_intro	
-bupd_alt_mono	
-bupd_alt_ne	
-bupd_alt_plainly	
-bupd_alt_trans	
-bupd_bupd_alt	
+bupd_alt_bupd		missing	qol
+bupd_alt_bupd_iff		missing	qol
+bupd_alt_flip_mono'		missing	qol
+bupd_alt_mono'		missing	qol
+bupd_alt_proper		missing	qol
+ownM_updateP		missing	qol
+bupd_alt		missing	foundational
+bupd_alt_frame_r		missing	qol
+bupd_alt_intro		missing	qol
+bupd_alt_mono		missing	qol
+bupd_alt_ne		missing	qol
+bupd_alt_plainly		missing	qol
+bupd_alt_trans		missing	qol
+bupd_bupd_alt		missing	qol

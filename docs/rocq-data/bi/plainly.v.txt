@@ -1,155 +1,155 @@
-big_sepM2_empty_plain	
-big_sepM2_plain	
-big_sepM2_plainly	
-big_sepMS_empty_plain	
-big_sepMS_plain	
-big_sepMS_plainly	
-Plain	
-Plain_proper	
-absorbingly_elim_plainly	
-absorbingly_plain	
-affinely_plain	
-affinely_plainly_elim	
-and_plain	
-and_sep_plainly	
-big_andL_nil_plain	
-big_andL_plain	
-big_andL_plainly	
-big_orL_nil_plain	
-big_orL_plain	
-big_orL_plainly	
-big_sepL2_nil_plain	
-big_sepL2_plain	
-big_sepL2_plainly	
-big_sepL_nil_plain	
-big_sepL_plain	
-big_sepL_plainly	
-big_sepM_empty_plain	
-big_sepM_plain	
-big_sepM_plainly	
-big_sepS_empty_plain	
-big_sepS_plain	
-big_sepS_plainly	
-emp_plain	
-except_0_plain	
-except_0_plainly	
-except_0_plainly_1	
-exist_plain	
-forall_plain	
-from_option_plain	
-impl_persistent	
-impl_plain	
-impl_wand_affinely_plainly	
-impl_wand_plainly	
-impl_wand_plainly_2	
-internal_eq_plain	
-internal_eq_timeless	
-intuitionistically_plain	
-intuitionistically_plainly	
-intuitionistically_plainly_elim	
-laterN_plain	
-laterN_plainly	
-laterN_plainly_if	
-later_plain	
-later_plainly	
-later_plainly_1	
-later_plainly_2	
-later_plainly_if	
-limit_preserving_Plain	
-or_plain	
-persistently_elim_plainly	
-persistently_if_elim_plainly	
-persistently_impl_plainly	
-persistently_plain	
-persistently_wand_affinely_plainly	
-plain_persistent	
-plain_plainly	
-plain_plainly_2	
-plainly	
-plainly_True_alt	
-plainly_True_emp	
-plainly_absorb	
-plainly_absorbing	
-plainly_affinely_elim	
-plainly_alt	
-plainly_alt_absorbing	
-plainly_and	
-plainly_and_emp_elim	
-plainly_and_homomorphism	
-plainly_and_sep	
-plainly_and_sep_assoc	
-plainly_and_sep_elim	
-plainly_and_sep_l	
-plainly_and_sep_l_1	
-plainly_and_sep_r	
-plainly_and_sep_r_1	
-plainly_elim	
-plainly_elim_persistently	
-plainly_emp	
-plainly_emp_2	
-plainly_emp_intro	
-plainly_entails_l	
-plainly_entails_r	
-plainly_exist	
-plainly_exist_1	
-plainly_exist_2	
-plainly_flip_mono'	
-plainly_forall	
-plainly_forall_2	
-plainly_idemp	
-plainly_idemp_1	
-plainly_idemp_2	
-plainly_if	
-plainly_if_absorbing	
-plainly_if_and	
-plainly_if_exist	
-plainly_if_exist_2	
-plainly_if_flip_mono'	
-plainly_if_idemp	
-plainly_if_mono	
-plainly_if_mono'	
-plainly_if_ne	
-plainly_if_or	
-plainly_if_or_2	
-plainly_if_proper	
-plainly_if_pure	
-plainly_if_sep_2	
-plainly_impl	
-plainly_impl_plainly	
-plainly_impl_wand	
-plainly_impl_wand_2	
-plainly_internal_eq	
-plainly_into_absorbingly	
-plainly_intro	
-plainly_intro'	
-plainly_mono	
-plainly_mono'	
-plainly_ne	
-plainly_or	
-plainly_or_2	
-plainly_or_homomorphism	
-plainly_persistent	
-plainly_persistently_elim	
-plainly_plain	
-plainly_proper	
-plainly_pure	
-plainly_sep	
-plainly_sep_2	
-plainly_sep_dup	
-plainly_sep_entails_homomorphism	
-plainly_sep_entails_weak_homomorphism	
-plainly_sep_homomorphism	
-plainly_sep_weak_homomorphism	
-plainly_si_pure	
-plainly_timeless	
-plainly_wand	
-plainly_wand_affinely_plainly	
-prop_ext	
-prop_ext_2	
-pure_plain	
-sep_plain	
-siProp_plain	
-si_emp_valid_plain	
-si_pure_plain	
-wand_persistent	
-wand_plain	
+big_sepM2_empty_plain		missing	qol
+big_sepM2_plain		missing	qol
+big_sepM2_plainly		missing	qol
+big_sepMS_empty_plain		missing	qol
+big_sepMS_plain		missing	qol
+big_sepMS_plainly		missing	qol
+Plain		missing	foundational
+Plain_proper		missing	qol
+absorbingly_elim_plainly		missing	qol
+absorbingly_plain		missing	qol
+affinely_plain		missing	qol
+affinely_plainly_elim		missing	qol
+and_plain		missing	qol
+and_sep_plainly		missing	qol
+big_andL_nil_plain		missing	qol
+big_andL_plain		missing	qol
+big_andL_plainly		missing	qol
+big_orL_nil_plain		missing	qol
+big_orL_plain		missing	qol
+big_orL_plainly		missing	qol
+big_sepL2_nil_plain		missing	qol
+big_sepL2_plain		missing	qol
+big_sepL2_plainly		missing	qol
+big_sepL_nil_plain		missing	qol
+big_sepL_plain		missing	qol
+big_sepL_plainly		missing	qol
+big_sepM_empty_plain		missing	qol
+big_sepM_plain		missing	qol
+big_sepM_plainly		missing	qol
+big_sepS_empty_plain		missing	qol
+big_sepS_plain		missing	qol
+big_sepS_plainly		missing	qol
+emp_plain		missing	qol
+except_0_plain		missing	qol
+except_0_plainly		missing	qol
+except_0_plainly_1		missing	qol
+exist_plain		missing	qol
+forall_plain		missing	qol
+from_option_plain		missing	qol
+impl_persistent		missing	qol
+impl_plain		missing	qol
+impl_wand_affinely_plainly		missing	qol
+impl_wand_plainly		missing	qol
+impl_wand_plainly_2		missing	qol
+internal_eq_plain		missing	qol
+internal_eq_timeless		missing	qol
+intuitionistically_plain		missing	qol
+intuitionistically_plainly		missing	qol
+intuitionistically_plainly_elim		missing	qol
+laterN_plain		missing	qol
+laterN_plainly		missing	qol
+laterN_plainly_if		missing	qol
+later_plain		missing	qol
+later_plainly		missing	qol
+later_plainly_1		missing	qol
+later_plainly_2		missing	qol
+later_plainly_if		missing	qol
+limit_preserving_Plain		missing	qol
+or_plain		missing	qol
+persistently_elim_plainly		missing	qol
+persistently_if_elim_plainly		missing	qol
+persistently_impl_plainly		missing	qol
+persistently_plain		missing	qol
+persistently_wand_affinely_plainly		missing	qol
+plain_persistent		missing	qol
+plain_plainly		missing	qol
+plain_plainly_2		missing	qol
+plainly		missing	foundational
+plainly_True_alt		missing	qol
+plainly_True_emp		missing	qol
+plainly_absorb		missing	qol
+plainly_absorbing		missing	qol
+plainly_affinely_elim		missing	qol
+plainly_alt		missing	qol
+plainly_alt_absorbing		missing	qol
+plainly_and		missing	qol
+plainly_and_emp_elim		missing	qol
+plainly_and_homomorphism		missing	qol
+plainly_and_sep		missing	qol
+plainly_and_sep_assoc		missing	qol
+plainly_and_sep_elim		missing	qol
+plainly_and_sep_l		missing	qol
+plainly_and_sep_l_1		missing	qol
+plainly_and_sep_r		missing	qol
+plainly_and_sep_r_1		missing	qol
+plainly_elim		missing	qol
+plainly_elim_persistently		missing	qol
+plainly_emp		missing	qol
+plainly_emp_2		missing	qol
+plainly_emp_intro		missing	qol
+plainly_entails_l		missing	qol
+plainly_entails_r		missing	qol
+plainly_exist		missing	qol
+plainly_exist_1		missing	qol
+plainly_exist_2		missing	qol
+plainly_flip_mono'		missing	qol
+plainly_forall		missing	qol
+plainly_forall_2		missing	qol
+plainly_idemp		missing	qol
+plainly_idemp_1		missing	qol
+plainly_idemp_2		missing	qol
+plainly_if		missing	foundational
+plainly_if_absorbing		missing	qol
+plainly_if_and		missing	qol
+plainly_if_exist		missing	qol
+plainly_if_exist_2		missing	qol
+plainly_if_flip_mono'		missing	qol
+plainly_if_idemp		missing	qol
+plainly_if_mono		missing	qol
+plainly_if_mono'		missing	qol
+plainly_if_ne		missing	qol
+plainly_if_or		missing	qol
+plainly_if_or_2		missing	qol
+plainly_if_proper		missing	qol
+plainly_if_pure		missing	qol
+plainly_if_sep_2		missing	qol
+plainly_impl		missing	qol
+plainly_impl_plainly		missing	qol
+plainly_impl_wand		missing	qol
+plainly_impl_wand_2		missing	qol
+plainly_internal_eq		missing	qol
+plainly_into_absorbingly		missing	qol
+plainly_intro		missing	qol
+plainly_intro'		missing	qol
+plainly_mono		missing	qol
+plainly_mono'		missing	qol
+plainly_ne		missing	qol
+plainly_or		missing	qol
+plainly_or_2		missing	qol
+plainly_or_homomorphism		missing	qol
+plainly_persistent		missing	qol
+plainly_persistently_elim		missing	qol
+plainly_plain		missing	qol
+plainly_proper		missing	qol
+plainly_pure		missing	qol
+plainly_sep		missing	qol
+plainly_sep_2		missing	qol
+plainly_sep_dup		missing	qol
+plainly_sep_entails_homomorphism		missing	qol
+plainly_sep_entails_weak_homomorphism		missing	qol
+plainly_sep_homomorphism		missing	qol
+plainly_sep_weak_homomorphism		missing	qol
+plainly_si_pure		missing	qol
+plainly_timeless		missing	qol
+plainly_wand		missing	qol
+plainly_wand_affinely_plainly		missing	qol
+prop_ext		missing	qol
+prop_ext_2		missing	qol
+pure_plain		missing	qol
+sep_plain		missing	qol
+siProp_plain		missing	qol
+si_emp_valid_plain		missing	qol
+si_pure_plain		missing	qol
+wand_persistent		missing	qol
+wand_plain		missing	qol

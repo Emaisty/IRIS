@@ -1,22 +1,22 @@
-into_acc_na	
-into_inv_na	
-na_inv_proper	
-na_alloc	
-na_inv	
-na_invG	
-na_inv_acc	
-na_inv_alloc	
-na_inv_contractive	
-na_inv_iff	
-na_inv_ne	
-na_inv_persistent	
-na_inv_pool_name	
-na_invΣ	
-na_own	
-na_own_acc	
-na_own_disjoint	
-na_own_empty	
-na_own_empty_persistent	
-na_own_timeless	
-na_own_union	
-subG_na_invG	
+into_acc_na		missing	qol
+into_inv_na		missing	qol
+na_inv_proper		missing	qol
+na_alloc		missing	qol
+na_inv		missing	foundational
+na_invG		missing	foundational
+na_inv_acc		missing	qol
+na_inv_alloc		missing	qol
+na_inv_contractive		missing	qol
+na_inv_iff		missing	qol
+na_inv_ne		missing	qol
+na_inv_persistent		missing	qol
+na_inv_pool_name		missing	foundational
+na_invΣ		missing	foundational
+na_own		missing	foundational
+na_own_acc		missing	qol
+na_own_disjoint		missing	qol
+na_own_empty		missing	qol
+na_own_empty_persistent		missing	qol
+na_own_timeless		missing	qol
+na_own_union		missing	qol
+subG_na_invG		missing	qol

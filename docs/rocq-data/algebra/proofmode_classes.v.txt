@@ -1,9 +1,9 @@
-IsOp	
-IsOp'	
-IsOp'LR	
-is_op_Some	
-is_op_lr_op	
-is_op_op	
-is_op_pair	
-is_op_pair_core_id_l	
-is_op_pair_core_id_r	
+IsOp		missing	foundational
+IsOp'		missing	foundational
+IsOp'LR		missing	foundational
+is_op_Some		missing	qol
+is_op_lr_op		missing	qol
+is_op_op		missing	qol
+is_op_pair		missing	qol
+is_op_pair_core_id_l		missing	qol
+is_op_pair_core_id_r		missing	qol

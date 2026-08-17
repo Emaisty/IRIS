@@ -1,43 +1,43 @@
-pure_ne	
-pure_elim'	
-pure_intro	
-uPred.bupd_ownM_updateP	
-uPred.later_ownM	
-uPred.ownM_forall	
-uPred.ownM_ne	
-uPred.ownM_op	
-uPred.ownM_unit	
-uPred.ownM_valid	
-uPred.persistently_ownM_core	
-uPred.uPred_and_unseal	
-uPred.uPred_bupd_unseal	
-uPred.uPred_emp_unseal	
-uPred.uPred_exist_unseal	
-uPred.uPred_forall_unseal	
-uPred.uPred_impl_unseal	
-uPred.uPred_later_unseal	
-uPred.uPred_or_unseal	
-uPred.uPred_persistently_unseal	
-uPred.uPred_pure_unseal	
-uPred.uPred_sep_unseal	
-uPred.uPred_si_emp_valid_unseal	
-uPred.uPred_si_pure_unseal	
-uPred.uPred_unseal	
-uPred.uPred_wand_unseal	
-uPredI	
-uPred_affine	
-uPred_bi_bupd	
-uPred_bi_bupd_sbi	
-uPred_bi_later_mixin	
-uPred_bi_mixin	
-uPred_bi_persistently_mixin	
-uPred_bupd_mixin	
-uPred_emp	
-uPred_later_contractive	
-uPred_persistently_forall	
-uPred_pure	
-uPred_pure_forall	
-uPred_sbi	
-uPred_sbi_emp_valid_exist	
-uPred_sbi_mixin	
-uPred_sbi_prop_ext_mixin	
+pure_ne		missing	qol
+pure_elim'		missing	qol
+pure_intro		missing	qol
+uPred.bupd_ownM_updateP		missing	qol
+uPred.later_ownM		missing	qol
+uPred.ownM_forall		missing	qol
+uPred.ownM_ne		missing	qol
+uPred.ownM_op		missing	qol
+uPred.ownM_unit		missing	qol
+uPred.ownM_valid		missing	qol
+uPred.persistently_ownM_core		missing	qol
+uPred.uPred_and_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_bupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_emp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_exist_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_forall_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_impl_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_later_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_or_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_persistently_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_sep_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_si_emp_valid_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_si_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred.uPred_wand_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPredI		missing	foundational
+uPred_affine		missing	qol
+uPred_bi_bupd		missing	qol
+uPred_bi_bupd_sbi		missing	qol
+uPred_bi_later_mixin		missing	qol
+uPred_bi_mixin		missing	qol
+uPred_bi_persistently_mixin		missing	qol
+uPred_bupd_mixin		missing	qol
+uPred_emp		missing	foundational
+uPred_later_contractive		missing	qol
+uPred_persistently_forall		missing	qol
+uPred_pure		missing	foundational
+uPred_pure_forall		missing	qol
+uPred_sbi		missing	qol
+uPred_sbi_emp_valid_exist		missing	qol
+uPred_sbi_mixin		missing	qol
+uPred_sbi_prop_ext_mixin		missing	qol

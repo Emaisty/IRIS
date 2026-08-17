@@ -1,72 +1,72 @@
-big_opMS_own	
-big_opMS_own_1	
-iRes_project	
-iRes_project_above	
-iRes_project_below	
-iRes_project_ne	
-iRes_project_op	
-iRes_project_singleton	
-iRes_singleton_validI	
-later_internal_eq_iRes_singleton	
-later_own	
-own_and	
-own_and_discrete_total	
-own_and_discrete_total_False	
-own_and_total	
-own_eq	
-own_forall	
-own_forall_pred	
-own_forall_pred_total	
-own_forall_total	
-own_mono'	
-own_proper	
-big_opL_own	
-big_opL_own_1	
-big_opM_own	
-big_opM_own_1	
-big_opS_own	
-big_opS_own_1	
-combine_sep_as_own	
-combine_sep_gives_own	
-from_and_own_persistent	
-from_sep_own	
-iRes_singleton	
-iRes_singleton_core_id	
-iRes_singleton_discrete	
-iRes_singleton_ne	
-iRes_singleton_op	
-inG	
-inG_fold	
-inG_fold_unfold	
-inG_unfold	
-inG_unfold_fold	
-inG_unfold_validN	
-into_and_own	
-into_sep_own	
-own	
-own_alloc	
-own_alloc_cofinite	
-own_alloc_cofinite_dep	
-own_alloc_dep	
-own_alloc_strong	
-own_alloc_strong_dep	
-own_aux	
-own_cmra_sep_entails_homomorphism	
-own_cmra_sep_homomorphism	
-own_core_persistent	
-own_def	
-own_mono	
-own_ne	
-own_op	
-own_timeless	
-own_unit	
-own_update	
-own_updateP	
-own_update_2	
-own_update_3	
-own_valid	
-own_valid_2	
-own_valid_3	
-own_valid_l	
-own_valid_r	
-subG_inG	
+big_opMS_own		missing	qol
+big_opMS_own_1		missing	qol
+iRes_project		missing	foundational
+iRes_project_above		missing	qol
+iRes_project_below		missing	qol
+iRes_project_ne		missing	qol
+iRes_project_op		missing	qol
+iRes_project_singleton		missing	qol
+iRes_singleton_validI		missing	qol
+later_internal_eq_iRes_singleton		missing	qol
+later_own		missing	qol
+own_and		missing	qol
+own_and_discrete_total		missing	qol
+own_and_discrete_total_False		missing	qol
+own_and_total		missing	qol
+own_eq		missing	foundational
+own_forall		missing	qol
+own_forall_pred		missing	qol
+own_forall_pred_total		missing	qol
+own_forall_total		missing	qol
+own_mono'		missing	foundational
+own_proper	iris.base_logic.lib.own:own_proper	direct	qol
+big_opL_own		missing	qol
+big_opL_own_1		missing	qol
+big_opM_own		missing	qol
+big_opM_own_1		missing	qol
+big_opS_own		missing	qol
+big_opS_own_1		missing	qol
+combine_sep_as_own		missing	qol
+combine_sep_gives_own		missing	qol
+from_and_own_persistent		missing	qol
+from_sep_own		missing	qol
+iRes_singleton	iris.base_logic.lib.own:iRes_singleton	direct	foundational
+iRes_singleton_core_id	iris.base_logic.lib.own:iRes_singleton_core_id	direct	qol
+iRes_singleton_discrete		missing	qol
+iRes_singleton_ne		missing	qol
+iRes_singleton_op	iris.base_logic.lib.own:iRes_singleton_op	direct	qol
+inG	iris.base_logic.lib.own:inG	direct	foundational
+inG_fold	iris.base_logic.lib.own:inG_fold	direct	foundational
+inG_fold_unfold	iris.base_logic.lib.own:inG_fold_unfold	direct	qol
+inG_unfold	iris.base_logic.lib.own:inG_unfold	direct	foundational
+inG_unfold_fold	iris.base_logic.lib.own:inG_unfold_fold	direct	qol
+inG_unfold_validN	iris.base_logic.lib.own:inG_unfold_validN	direct	qol
+into_and_own		missing	qol
+into_sep_own		missing	qol
+own	iris.base_logic.lib.own:own	direct	foundational
+own_alloc	iris.base_logic.lib.own:own_alloc	direct	foundational
+own_alloc_cofinite		missing	foundational
+own_alloc_cofinite_dep		missing	foundational
+own_alloc_dep		missing	foundational
+own_alloc_strong	iris.base_logic.lib.own:own_alloc_strong	direct	foundational
+own_alloc_strong_dep		missing	foundational
+own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+own_cmra_sep_entails_homomorphism		missing	qol
+own_cmra_sep_homomorphism		missing	qol
+own_core_persistent	iris.base_logic.lib.own:own_core_persistent	direct	qol
+own_def	iris.base_logic.lib.own:own	analogue	foundational	Arend exposes own directly instead of defining and then sealing own_def.
+own_mono	iris.base_logic.lib.own:own_mono	direct	foundational
+own_ne		missing	qol
+own_op	iris.base_logic.lib.own:own_op	direct	foundational
+own_timeless		missing	qol
+own_unit	iris.base_logic.lib.own:own_unit	direct	qol
+own_update	iris.base_logic.lib.own:own_update	direct	foundational
+own_updateP	iris.base_logic.lib.own:own_updateP	direct	foundational
+own_update_2		missing	foundational
+own_update_3		missing	foundational
+own_valid	iris.base_logic.lib.own:own_valid	direct	foundational
+own_valid_2		missing	foundational
+own_valid_3		missing	foundational
+own_valid_l		missing	foundational
+own_valid_r		missing	foundational
+subG_inG	iris.base_logic.lib.own:subG_inG	direct	qol

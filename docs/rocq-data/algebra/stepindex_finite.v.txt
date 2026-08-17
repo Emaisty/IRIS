@@ -1,14 +1,14 @@
-cmra_validN_S	
-cofe_finite	
-conv_compl_S	
-dist_later_fin	
-dist_later_fin_iff	
-natSI	
-nat_sidx_finite	
-nat_sidx_mixin	
-ofe_mixin_finite	
-cmra_includedN_S	
-contractive_S	
-dist_S	ofe:dist_S
-dist_later_S	
-dist_le	
+cmra_validN_S		missing	foundational
+cofe_finite		missing	foundational
+conv_compl_S		missing	qol
+dist_later_fin		missing	foundational
+dist_later_fin_iff		missing	qol
+natSI		missing	foundational
+nat_sidx_finite		missing	qol
+nat_sidx_mixin		missing	qol
+ofe_mixin_finite		missing	qol
+cmra_includedN_S		missing	foundational
+contractive_S		missing	qol
+dist_S	iris.algebra.ofe:dist_S	direct	qol
+dist_later_S		missing	qol
+dist_le		missing	qol

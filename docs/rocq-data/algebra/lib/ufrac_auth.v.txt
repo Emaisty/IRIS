@@ -1,35 +1,35 @@
-ufrac_authR	
-ufrac_authRF	
-ufrac_authRF_contractive	
-ufrac_authUR	
-ufrac_authURF	
-ufrac_authURF_contractive	
-ufrac_auth_agree	
-ufrac_auth_agreeN	
-ufrac_auth_agree_L	
-ufrac_auth_auth	
-ufrac_auth_auth_discrete	
-ufrac_auth_auth_ne	
-ufrac_auth_auth_proper	
-ufrac_auth_auth_valid	
-ufrac_auth_auth_validN	
-ufrac_auth_frag	
-ufrac_auth_frag_discrete	
-ufrac_auth_frag_ne	
-ufrac_auth_frag_op	
-ufrac_auth_frag_op_valid	
-ufrac_auth_frag_op_validN	
-ufrac_auth_frag_proper	
-ufrac_auth_frag_valid	
-ufrac_auth_frag_validN	
-ufrac_auth_included	
-ufrac_auth_includedN	
-ufrac_auth_includedN_total	
-ufrac_auth_included_total	
-ufrac_auth_is_op	
-ufrac_auth_is_op_core_id	
-ufrac_auth_update	
-ufrac_auth_update_surplus	
-ufrac_auth_update_surplus_cancel	
-ufrac_auth_valid	
-ufrac_auth_validN	
+ufrac_authR		missing	foundational
+ufrac_authRF		missing	foundational
+ufrac_authRF_contractive		missing	qol
+ufrac_authUR		missing	foundational
+ufrac_authURF		missing	foundational
+ufrac_authURF_contractive		missing	qol
+ufrac_auth_agree		missing	qol
+ufrac_auth_agreeN		missing	qol
+ufrac_auth_agree_L		missing	qol
+ufrac_auth_auth		missing	foundational
+ufrac_auth_auth_discrete		missing	qol
+ufrac_auth_auth_ne		missing	qol
+ufrac_auth_auth_proper		missing	qol
+ufrac_auth_auth_valid		missing	qol
+ufrac_auth_auth_validN		missing	qol
+ufrac_auth_frag		missing	foundational
+ufrac_auth_frag_discrete		missing	qol
+ufrac_auth_frag_ne		missing	qol
+ufrac_auth_frag_op		missing	qol
+ufrac_auth_frag_op_valid		missing	qol
+ufrac_auth_frag_op_validN		missing	qol
+ufrac_auth_frag_proper		missing	qol
+ufrac_auth_frag_valid		missing	qol
+ufrac_auth_frag_validN		missing	qol
+ufrac_auth_included		missing	qol
+ufrac_auth_includedN		missing	qol
+ufrac_auth_includedN_total		missing	qol
+ufrac_auth_included_total		missing	qol
+ufrac_auth_is_op		missing	qol
+ufrac_auth_is_op_core_id		missing	qol
+ufrac_auth_update		missing	qol
+ufrac_auth_update_surplus		missing	qol
+ufrac_auth_update_surplus_cancel		missing	qol
+ufrac_auth_valid		missing	qol
+ufrac_auth_validN		missing	qol

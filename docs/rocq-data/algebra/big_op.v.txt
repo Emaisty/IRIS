@@ -1,141 +1,141 @@
-big_opL_commute1_L	
-big_opL_commute_L	
-big_opL_consZ_l	
-big_opL_consZ_r	
-big_opL_opL	
-big_opL_opM	
-big_opL_opMS	
-big_opL_opS	
-big_opL_zip_seq	
-big_opL_zip_seqZ	
-big_opMS	
-big_opMS_aux	
-big_opMS_closed	
-big_opMS_commute	
-big_opMS_commute1	
-big_opMS_commute1_L	
-big_opMS_commute_L	
-big_opMS_def	
-big_opMS_delete	
-big_opMS_disj_union	
-big_opMS_elements	
-big_opMS_empty	
-big_opMS_ext	
-big_opMS_gen_proper	
-big_opMS_insert	
-big_opMS_ne	
-big_opMS_ne'	
-big_opMS_op	
-big_opMS_opL	
-big_opMS_opM	
-big_opMS_opMS	
-big_opMS_opS	
-big_opMS_proper	
-big_opMS_proper'	
-big_opMS_singleton	
-big_opMS_unit	
-big_opMS_unseal	
-big_opM_commute1_L	
-big_opM_commute_L	
-big_opM_dom	
-big_opM_gset_to_gmap	
-big_opM_kmap	
-big_opM_map_seq	
-big_opM_map_seqZ	
-big_opM_opL	
-big_opM_opM	
-big_opM_opMS	
-big_opM_opS	
-big_opM_set_to_map	
-big_opS_commute1_L	
-big_opS_commute_L	
-big_opS_delete	
-big_opS_filter'	
-big_opS_fn_insert	
-big_opS_fn_insert'	
-big_opS_list_to_set	
-big_opS_opL	
-big_opS_opM	
-big_opS_opMS	
-big_opS_opS	
-big_opS_set_map	
-big_opL	
-big_opL_app	
-big_opL_bind	
-big_opL_closed	
-big_opL_commute	
-big_opL_commute1	
-big_opL_cons	
-big_opL_ext	
-big_opL_fmap	
-big_opL_gen_proper	
-big_opL_gen_proper_2	
-big_opL_ne	
-big_opL_ne'	
-big_opL_nil	
-big_opL_omap	
-big_opL_op	
-big_opL_permutation	
-big_opL_permutation'	
-big_opL_proper	
-big_opL_proper'	
-big_opL_proper_2	
-big_opL_sep_zip	
-big_opL_sep_zip_with	
-big_opL_singleton	
-big_opL_snoc	
-big_opL_take_drop	
-big_opL_unit	
-big_opM	
-big_opM_aux	
-big_opM_closed	
-big_opM_commute	
-big_opM_commute1	
-big_opM_def	
-big_opM_delete	
-big_opM_empty	
-big_opM_ext	
-big_opM_filter'	
-big_opM_fmap	
-big_opM_fn_insert	
-big_opM_fn_insert'	
-big_opM_gen_proper	
-big_opM_gen_proper_2	
-big_opM_insert	
-big_opM_insert_delete	
-big_opM_insert_override	
-big_opM_list_to_map	
-big_opM_map_to_list	
-big_opM_ne	
-big_opM_ne'	
-big_opM_omap	
-big_opM_op	
-big_opM_proper	
-big_opM_proper'	
-big_opM_proper_2	
-big_opM_sep_zip	
-big_opM_sep_zip_with	
-big_opM_singleton	
-big_opM_union	
-big_opM_unit	
-big_opM_unseal	
-big_opS	
-big_opS_aux	
-big_opS_closed	
-big_opS_commute	
-big_opS_commute1	
-big_opS_def	
-big_opS_elements	
-big_opS_empty	
-big_opS_ext	
-big_opS_gen_proper	
-big_opS_insert	
-big_opS_ne	
-big_opS_ne'	
-big_opS_op	
-big_opS_proper	
-big_opS_proper'	
-big_opS_singleton	
-big_opS_union	
-big_opS_unit	
-big_opS_unseal	
+big_opL_commute1_L		missing	qol
+big_opL_commute_L		missing	qol
+big_opL_consZ_l		missing	qol
+big_opL_consZ_r		missing	qol
+big_opL_opL		missing	qol
+big_opL_opM		missing	qol
+big_opL_opMS		missing	qol
+big_opL_opS		missing	qol
+big_opL_zip_seq		missing	qol
+big_opL_zip_seqZ		missing	qol
+big_opMS		missing	foundational
+big_opMS_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+big_opMS_closed		missing	qol
+big_opMS_commute		missing	qol
+big_opMS_commute1		missing	qol
+big_opMS_commute1_L		missing	qol
+big_opMS_commute_L		missing	qol
+big_opMS_def		missing	foundational
+big_opMS_delete		missing	qol
+big_opMS_disj_union		missing	qol
+big_opMS_elements		missing	qol
+big_opMS_empty		missing	qol
+big_opMS_ext		missing	qol
+big_opMS_gen_proper		missing	qol
+big_opMS_insert		missing	qol
+big_opMS_ne		missing	qol
+big_opMS_ne'		missing	qol
+big_opMS_op		missing	qol
+big_opMS_opL		missing	qol
+big_opMS_opM		missing	qol
+big_opMS_opMS		missing	qol
+big_opMS_opS		missing	qol
+big_opMS_proper		missing	qol
+big_opMS_proper'		missing	qol
+big_opMS_singleton		missing	qol
+big_opMS_unit		missing	qol
+big_opMS_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+big_opM_commute1_L		missing	qol
+big_opM_commute_L		missing	qol
+big_opM_dom		missing	qol
+big_opM_gset_to_gmap		missing	qol
+big_opM_kmap		missing	qol
+big_opM_map_seq		missing	qol
+big_opM_map_seqZ		missing	qol
+big_opM_opL		missing	qol
+big_opM_opM		missing	qol
+big_opM_opMS		missing	qol
+big_opM_opS		missing	qol
+big_opM_set_to_map		missing	qol
+big_opS_commute1_L		missing	qol
+big_opS_commute_L		missing	qol
+big_opS_delete		missing	qol
+big_opS_filter'		missing	qol
+big_opS_fn_insert		missing	qol
+big_opS_fn_insert'		missing	qol
+big_opS_list_to_set		missing	qol
+big_opS_opL		missing	qol
+big_opS_opM		missing	qol
+big_opS_opMS		missing	qol
+big_opS_opS		missing	qol
+big_opS_set_map		missing	qol
+big_opL		missing	foundational
+big_opL_app		missing	qol
+big_opL_bind		missing	qol
+big_opL_closed		missing	qol
+big_opL_commute		missing	qol
+big_opL_commute1		missing	qol
+big_opL_cons		missing	qol
+big_opL_ext		missing	qol
+big_opL_fmap		missing	qol
+big_opL_gen_proper		missing	qol
+big_opL_gen_proper_2		missing	qol
+big_opL_ne		missing	qol
+big_opL_ne'		missing	qol
+big_opL_nil		missing	qol
+big_opL_omap		missing	qol
+big_opL_op		missing	qol
+big_opL_permutation		missing	qol
+big_opL_permutation'		missing	qol
+big_opL_proper		missing	qol
+big_opL_proper'		missing	qol
+big_opL_proper_2		missing	qol
+big_opL_sep_zip		missing	qol
+big_opL_sep_zip_with		missing	qol
+big_opL_singleton		missing	qol
+big_opL_snoc		missing	qol
+big_opL_take_drop		missing	qol
+big_opL_unit		missing	qol
+big_opM		missing	foundational
+big_opM_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+big_opM_closed		missing	qol
+big_opM_commute		missing	qol
+big_opM_commute1		missing	qol
+big_opM_def		missing	foundational
+big_opM_delete		missing	qol
+big_opM_empty		missing	qol
+big_opM_ext		missing	qol
+big_opM_filter'		missing	qol
+big_opM_fmap		missing	qol
+big_opM_fn_insert		missing	qol
+big_opM_fn_insert'		missing	qol
+big_opM_gen_proper		missing	qol
+big_opM_gen_proper_2		missing	qol
+big_opM_insert		missing	qol
+big_opM_insert_delete		missing	qol
+big_opM_insert_override		missing	qol
+big_opM_list_to_map		missing	qol
+big_opM_map_to_list		missing	qol
+big_opM_ne		missing	qol
+big_opM_ne'		missing	qol
+big_opM_omap		missing	qol
+big_opM_op		missing	qol
+big_opM_proper		missing	qol
+big_opM_proper'		missing	qol
+big_opM_proper_2		missing	qol
+big_opM_sep_zip		missing	qol
+big_opM_sep_zip_with		missing	qol
+big_opM_singleton		missing	qol
+big_opM_union		missing	qol
+big_opM_unit		missing	qol
+big_opM_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+big_opS		missing	foundational
+big_opS_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+big_opS_closed		missing	qol
+big_opS_commute		missing	qol
+big_opS_commute1		missing	qol
+big_opS_def		missing	foundational
+big_opS_elements		missing	qol
+big_opS_empty		missing	qol
+big_opS_ext		missing	qol
+big_opS_gen_proper		missing	qol
+big_opS_insert		missing	qol
+big_opS_ne		missing	qol
+big_opS_ne'		missing	qol
+big_opS_op		missing	qol
+big_opS_proper		missing	qol
+big_opS_proper'		missing	qol
+big_opS_singleton		missing	qol
+big_opS_union		missing	qol
+big_opS_unit		missing	qol
+big_opS_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

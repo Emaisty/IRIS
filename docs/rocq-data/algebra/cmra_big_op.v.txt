@@ -1,4 +1,4 @@
-big_opL_None	
-big_opMS_None	
-big_opM_None	
-big_opS_None	
+big_opL_None		missing	qol
+big_opMS_None		missing	qol
+big_opM_None		missing	qol
+big_opS_None		missing	qol

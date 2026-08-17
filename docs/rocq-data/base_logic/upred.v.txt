@@ -1,150 +1,150 @@
-uPredO_map_ne	
-uPred_alt	
-uPred_map_compose	
-uPred_map_ext	
-uPred_map_id	
-uPred_map_ne	
-uPred_primitive.entails_anti_sym	
-uPred_primitive.equiv_entails	
-uPred_primitive.persistently_elim	
-uPred	uPred:uPred
-uPredO	
-uPredOF	
-uPredOF_contractive	
-uPredO_map	
-uPred_and	
-uPred_and_aux	
-uPred_and_def	
-uPred_and_unseal	
-uPred_bupd	
-uPred_bupd_aux	
-uPred_bupd_def	
-uPred_bupd_unseal	
-uPred_cofe	
-uPred_compl	
-uPred_dist	
-uPred_dist'	
-uPred_entails	
-uPred_equiv	
-uPred_equiv'	
-uPred_exist	
-uPred_exist_aux	
-uPred_exist_def	
-uPred_exist_unseal	
-uPred_forall	
-uPred_forall_aux	
-uPred_forall_def	
-uPred_forall_unseal	
-uPred_holds_ne	
-uPred_impl	
-uPred_impl_aux	
-uPred_impl_def	
-uPred_impl_unseal	
-uPred_later	
-uPred_later_aux	
-uPred_later_def	
-uPred_later_unseal	
-uPred_map	
-uPred_ne	
-uPred_ofe_mixin	
-uPred_or	
-uPred_or_aux	
-uPred_or_def	
-uPred_or_unseal	
-uPred_ownM	
-uPred_ownM_aux	
-uPred_ownM_def	
-uPred_ownM_unseal	
-uPred_persistently	
-uPred_persistently_aux	
-uPred_persistently_def	
-uPred_persistently_unseal	
-uPred_primitive.True_sep_1	
-uPred_primitive.True_sep_2	
-uPred_primitive.and_elim_l	
-uPred_primitive.and_elim_r	
-uPred_primitive.and_intro	
-uPred_primitive.and_ne	
-uPred_primitive.bupd_frame_r	
-uPred_primitive.bupd_intro	
-uPred_primitive.bupd_mono	
-uPred_primitive.bupd_ne	
-uPred_primitive.bupd_ownM_updateP	
-uPred_primitive.bupd_si_pure	
-uPred_primitive.bupd_trans	
-uPred_primitive.entails_lim	
-uPred_primitive.entails_po	
-uPred_primitive.exist_elim	
-uPred_primitive.exist_intro	
-uPred_primitive.exist_ne	
-uPred_primitive.forall_elim	
-uPred_primitive.forall_intro	
-uPred_primitive.forall_ne	
-uPred_primitive.impl_elim_l'	
-uPred_primitive.impl_intro_r	
-uPred_primitive.impl_ne	
-uPred_primitive.later_contractive	
-uPred_primitive.later_exist_false	
-uPred_primitive.later_false_em	
-uPred_primitive.later_forall_2	
-uPred_primitive.later_intro	
-uPred_primitive.later_mono	
-uPred_primitive.later_ownM	
-uPred_primitive.later_persistently_1	
-uPred_primitive.later_persistently_2	
-uPred_primitive.later_sep_1	
-uPred_primitive.later_sep_2	
-uPred_primitive.or_elim	
-uPred_primitive.or_intro_l	
-uPred_primitive.or_intro_r	
-uPred_primitive.or_ne	
-uPred_primitive.ownM_forall	
-uPred_primitive.ownM_ne	
-uPred_primitive.ownM_op	
-uPred_primitive.ownM_unit	
-uPred_primitive.ownM_valid	
-uPred_primitive.persistently_and_sep_l_1	
-uPred_primitive.persistently_exist_1	
-uPred_primitive.persistently_forall_2	
-uPred_primitive.persistently_idemp_2	
-uPred_primitive.persistently_impl_si_pure	
-uPred_primitive.persistently_mono	
-uPred_primitive.persistently_ne	
-uPred_primitive.persistently_ownM_core	
-uPred_primitive.prop_ext_2	
-uPred_primitive.sep_assoc'	
-uPred_primitive.sep_comm'	
-uPred_primitive.sep_mono	
-uPred_primitive.sep_ne	
-uPred_primitive.si_emp_valid_exist_1	
-uPred_primitive.si_emp_valid_later_1	
-uPred_primitive.si_emp_valid_mono	
-uPred_primitive.si_emp_valid_ne	
-uPred_primitive.si_emp_valid_si_pure	
-uPred_primitive.si_pure_forall_2	
-uPred_primitive.si_pure_impl_2	
-uPred_primitive.si_pure_later	
-uPred_primitive.si_pure_mono	
-uPred_primitive.si_pure_ne	
-uPred_primitive.si_pure_si_emp_valid	
-uPred_primitive.uPred_unseal	
-uPred_primitive.wand_elim_l'	
-uPred_primitive.wand_intro_r	
-uPred_primitive.wand_ne	
-uPred_proper	
-uPred_sep	
-uPred_sep_aux	
-uPred_sep_def	
-uPred_sep_unseal	
-uPred_si_emp_valid	
-uPred_si_emp_valid_aux	
-uPred_si_emp_valid_def	
-uPred_si_emp_valid_unseal	
-uPred_si_pure	
-uPred_si_pure_aux	
-uPred_si_pure_def	
-uPred_si_pure_unseal	
-uPred_wand	
-uPred_wand_aux	
-uPred_wand_def	
-uPred_wand_unseal	
+uPredO_map_ne		missing	qol
+uPred_alt		missing	qol
+uPred_map_compose	iris.base_logic.upred:uPred_map_compose	direct	qol
+uPred_map_ext	iris.base_logic.upred:uPred_map_ext	direct	qol
+uPred_map_id	iris.base_logic.upred:uPred_map_id	direct	qol
+uPred_map_ne	iris.base_logic.upred:uPred_map_ne	direct	qol
+uPred_primitive.entails_anti_sym		missing	qol
+uPred_primitive.equiv_entails		missing	qol
+uPred_primitive.persistently_elim		missing	qol
+uPred	iris.base_logic.upred:uPred	direct	foundational
+uPredO	iris.base_logic.upred:UPredOFE	analogue	foundational	UPredOFE is the Arend OFE of uniform predicates.
+uPredOF	iris.base_logic.upred:uPredOF	direct	foundational
+uPredOF_contractive	iris.base_logic.upred:uPredOF_contractive	direct	qol
+uPredO_map		missing	foundational
+uPred_and		missing	foundational
+uPred_and_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_and_def		missing	foundational
+uPred_and_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_bupd		missing	foundational
+uPred_bupd_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_bupd_def		missing	foundational
+uPred_bupd_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_cofe	iris.base_logic.upred:UPredCOFE	analogue	qol	UPredCOFE provides the same completion operation and laws.
+uPred_compl		missing	foundational
+uPred_dist		missing	qol
+uPred_dist'		missing	foundational
+uPred_entails		missing	foundational
+uPred_equiv		missing	qol
+uPred_equiv'		missing	foundational
+uPred_exist		missing	foundational
+uPred_exist_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_exist_def		missing	foundational
+uPred_exist_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_forall		missing	foundational
+uPred_forall_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_forall_def		missing	foundational
+uPred_forall_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_holds_ne		missing	qol
+uPred_impl		missing	foundational
+uPred_impl_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_impl_def		missing	foundational
+uPred_impl_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_later		missing	foundational
+uPred_later_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_later_def		missing	foundational
+uPred_later_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_map	iris.base_logic.upred:uPred_map	direct	foundational
+uPred_ne		missing	qol
+uPred_ofe_mixin	iris.base_logic.upred:UPredOFE	analogue	foundational	Arend stores the OFE laws directly in UPredOFE.
+uPred_or		missing	foundational
+uPred_or_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_or_def		missing	foundational
+uPred_or_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_ownM		missing	foundational
+uPred_ownM_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_ownM_def		missing	foundational
+uPred_ownM_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_persistently		missing	foundational
+uPred_persistently_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_persistently_def		missing	foundational
+uPred_persistently_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_primitive.True_sep_1		missing	qol
+uPred_primitive.True_sep_2		missing	qol
+uPred_primitive.and_elim_l		missing	qol
+uPred_primitive.and_elim_r		missing	qol
+uPred_primitive.and_intro		missing	qol
+uPred_primitive.and_ne		missing	qol
+uPred_primitive.bupd_frame_r		missing	foundational
+uPred_primitive.bupd_intro		missing	foundational
+uPred_primitive.bupd_mono		missing	foundational
+uPred_primitive.bupd_ne		missing	qol
+uPred_primitive.bupd_ownM_updateP	iris.base_logic.upred:bupd_ownM_updateP	direct	qol
+uPred_primitive.bupd_si_pure		missing	qol
+uPred_primitive.bupd_trans		missing	foundational
+uPred_primitive.entails_lim		missing	qol
+uPred_primitive.entails_po		missing	qol
+uPred_primitive.exist_elim		missing	qol
+uPred_primitive.exist_intro		missing	qol
+uPred_primitive.exist_ne		missing	qol
+uPred_primitive.forall_elim		missing	qol
+uPred_primitive.forall_intro		missing	qol
+uPred_primitive.forall_ne		missing	qol
+uPred_primitive.impl_elim_l'		missing	qol
+uPred_primitive.impl_intro_r		missing	qol
+uPred_primitive.impl_ne		missing	qol
+uPred_primitive.later_contractive		missing	qol
+uPred_primitive.later_exist_false		missing	qol
+uPred_primitive.later_false_em		missing	qol
+uPred_primitive.later_forall_2		missing	qol
+uPred_primitive.later_intro		missing	qol
+uPred_primitive.later_mono		missing	qol
+uPred_primitive.later_ownM		missing	qol
+uPred_primitive.later_persistently_1		missing	qol
+uPred_primitive.later_persistently_2		missing	qol
+uPred_primitive.later_sep_1		missing	qol
+uPred_primitive.later_sep_2		missing	qol
+uPred_primitive.or_elim		missing	qol
+uPred_primitive.or_intro_l		missing	qol
+uPred_primitive.or_intro_r		missing	qol
+uPred_primitive.or_ne		missing	qol
+uPred_primitive.ownM_forall		missing	qol
+uPred_primitive.ownM_ne		missing	qol
+uPred_primitive.ownM_op		missing	qol
+uPred_primitive.ownM_unit		missing	qol
+uPred_primitive.ownM_valid		missing	qol
+uPred_primitive.persistently_and_sep_l_1		missing	qol
+uPred_primitive.persistently_exist_1		missing	qol
+uPred_primitive.persistently_forall_2		missing	qol
+uPred_primitive.persistently_idemp_2		missing	qol
+uPred_primitive.persistently_impl_si_pure		missing	qol
+uPred_primitive.persistently_mono		missing	qol
+uPred_primitive.persistently_ne		missing	qol
+uPred_primitive.persistently_ownM_core		missing	qol
+uPred_primitive.prop_ext_2		missing	qol
+uPred_primitive.sep_assoc'		missing	qol
+uPred_primitive.sep_comm'		missing	qol
+uPred_primitive.sep_mono		missing	qol
+uPred_primitive.sep_ne		missing	qol
+uPred_primitive.si_emp_valid_exist_1		missing	qol
+uPred_primitive.si_emp_valid_later_1		missing	qol
+uPred_primitive.si_emp_valid_mono		missing	qol
+uPred_primitive.si_emp_valid_ne		missing	qol
+uPred_primitive.si_emp_valid_si_pure		missing	qol
+uPred_primitive.si_pure_forall_2		missing	qol
+uPred_primitive.si_pure_impl_2		missing	qol
+uPred_primitive.si_pure_later		missing	qol
+uPred_primitive.si_pure_mono		missing	qol
+uPred_primitive.si_pure_ne		missing	qol
+uPred_primitive.si_pure_si_emp_valid		missing	qol
+uPred_primitive.uPred_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_primitive.wand_elim_l'		missing	qol
+uPred_primitive.wand_intro_r		missing	qol
+uPred_primitive.wand_ne		missing	qol
+uPred_proper		missing	qol
+uPred_sep		missing	foundational
+uPred_sep_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_sep_def		missing	foundational
+uPred_sep_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_si_emp_valid		missing	foundational
+uPred_si_emp_valid_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_si_emp_valid_def		missing	foundational
+uPred_si_emp_valid_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_si_pure		missing	foundational
+uPred_si_pure_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_si_pure_def		missing	foundational
+uPred_si_pure_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_wand		missing	foundational
+uPred_wand_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_wand_def		missing	foundational
+uPred_wand_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

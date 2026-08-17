@@ -1,45 +1,45 @@
-solver.embed'	
-solver.ff_ff	
-solver.g_embed_coerce	
-solver.gg_gg	
-solution	
-solver.A'	
-solver.A_cofe	
-solver.T	
-solver.coerce	
-solver.coerce_f	
-solver.coerce_id	
-solver.coerce_proper	
-solver.embed	
-solver.embed_coerce	
-solver.embed_f	
-solver.embed_ne	
-solver.embed_tower	
-solver.f	
-solver.f_S	
-solver.f_tower	
-solver.ff	
-solver.ff_tower	
-solver.fg	
-solver.fold	
-solver.fold_ne	
-solver.g_S	
-solver.g_coerce	
-solver.gf	
-solver.gg	
-solver.gg_tower	
-solver.ggff	
-solver.project	
-solver.result	
-solver.tower	
-solver.tower_car_ne	
-solver.tower_chain	
-solver.tower_cofe	
-solver.tower_compl	
-solver.tower_dist	
-solver.tower_equiv	
-solver.tower_inhabited	
-solver.tower_ofe_mixin	
-solver.unfold	
-solver.unfold_chain	
-solver.unfold_ne	
+solver.embed'		missing	foundational
+solver.ff_ff		missing	qol
+solver.g_embed_coerce	iris.algebra.cofe_solver:SolverEmbedCoerceLaws.g_embed_coerce	direct	qol
+solver.gg_gg		missing	qol
+solution		missing	foundational
+solver.A'		missing	foundational
+solver.A_cofe		missing	qol
+solver.T		missing	foundational
+solver.coerce	iris.algebra.cofe_solver:solver_coerce	direct	foundational
+solver.coerce_f	iris.algebra.cofe_solver:solver_coerce_f	direct	qol
+solver.coerce_id		missing	qol
+solver.coerce_proper		missing	qol
+solver.embed	iris.algebra.cofe_solver:solver_embed	direct	foundational
+solver.embed_coerce	iris.algebra.cofe_solver:solver_embed_coerce	direct	foundational
+solver.embed_f	iris.algebra.cofe_solver:solver_embed_f	direct	qol
+solver.embed_ne		missing	qol
+solver.embed_tower	iris.algebra.cofe_solver:solver_embed_tower	direct	qol
+solver.f	iris.algebra.cofe_solver:solver_f	direct	foundational
+solver.f_S	iris.algebra.cofe_solver:solver_f_S	direct	foundational
+solver.f_tower	iris.algebra.cofe_solver:solver_f_tower	direct	qol
+solver.ff	iris.algebra.cofe_solver:solver_ff	direct	foundational
+solver.ff_tower	iris.algebra.cofe_solver:solver_ff_tower	direct	qol
+solver.fg	iris.algebra.cofe_solver:solver_fg	direct	qol
+solver.fold	iris.algebra.cofe_solver:solver_fold	direct	foundational
+solver.fold_ne		missing	qol
+solver.g_S	iris.algebra.cofe_solver:solver_g_S	direct	foundational
+solver.g_coerce	iris.algebra.cofe_solver:solver_g_coerce	direct	qol
+solver.gf	iris.algebra.cofe_solver:solver_gf	direct	qol
+solver.gg	iris.algebra.cofe_solver:solver_gg	direct	foundational
+solver.gg_tower	iris.algebra.cofe_solver:solver_gg_tower	direct	qol
+solver.ggff	iris.algebra.cofe_solver:solver_ggff	direct	qol
+solver.project	iris.algebra.cofe_solver:solver_project	direct	foundational
+solver.result	iris.algebra.cofe_solver:solver_result	direct	qol
+solver.tower		missing	foundational
+solver.tower_car_ne		missing	qol
+solver.tower_chain	iris.algebra.cofe_solver:tower_chain	direct	foundational
+solver.tower_cofe		missing	qol
+solver.tower_compl		missing	foundational
+solver.tower_dist		missing	qol
+solver.tower_equiv		missing	qol
+solver.tower_inhabited		missing	qol
+solver.tower_ofe_mixin		missing	foundational
+solver.unfold	iris.algebra.cofe_solver:solver_unfold	direct	foundational
+solver.unfold_chain	iris.algebra.cofe_solver:solver_unfold_chain	direct	foundational
+solver.unfold_ne		missing	qol

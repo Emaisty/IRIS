@@ -1,40 +1,40 @@
-GatherEvarsEq	
-TCCbnTele	
-frame_big_sepL2_app	
-frame_big_sepL2_cons	
-frame_big_sepL_app	
-frame_big_sepL_cons	
-frame_big_sepMS_disj_union	
-frame_embed	
-frame_eq_embed	
-frame_exist	
-frame_exist_helper	
-frame_exist_no_instantiate	
-frame_pure_embed	
-frame_texist	
-frame_tforall	
-frame_absorbingly	
-frame_affinely	
-frame_affinely_here	
-frame_affinely_here_absorbing	
-frame_and	
-frame_bupd	
-frame_except_0	
-frame_forall	
-frame_fupd	
-frame_here	
-frame_here_absorbing	
-frame_here_pure	
-frame_here_pure_persistent	
-frame_impl	
-frame_impl_persistent	
-frame_intuitionistically	
-frame_later	
-frame_laterN	
-frame_or_persistent	
-frame_or_spatial	
-frame_persistently	
-frame_sep_l	
-frame_sep_persistent_l	
-frame_sep_r	
-frame_wand	
+GatherEvarsEq		missing	foundational
+TCCbnTele		missing	foundational
+frame_big_sepL2_app		missing	qol
+frame_big_sepL2_cons		missing	qol
+frame_big_sepL_app		missing	qol
+frame_big_sepL_cons		missing	qol
+frame_big_sepMS_disj_union		missing	qol
+frame_embed		missing	qol
+frame_eq_embed		missing	qol
+frame_exist		missing	qol
+frame_exist_helper		missing	qol
+frame_exist_no_instantiate		missing	qol
+frame_pure_embed		missing	qol
+frame_texist		missing	qol
+frame_tforall		missing	qol
+frame_absorbingly		missing	qol
+frame_affinely		missing	qol
+frame_affinely_here		missing	qol
+frame_affinely_here_absorbing		missing	qol
+frame_and		missing	qol
+frame_bupd		missing	qol
+frame_except_0		missing	qol
+frame_forall		missing	qol
+frame_fupd		missing	qol
+frame_here		missing	qol
+frame_here_absorbing		missing	qol
+frame_here_pure		missing	qol
+frame_here_pure_persistent		missing	qol
+frame_impl		missing	qol
+frame_impl_persistent		missing	qol
+frame_intuitionistically		missing	qol
+frame_later		missing	qol
+frame_laterN		missing	qol
+frame_or_persistent		missing	qol
+frame_or_spatial		missing	qol
+frame_persistently		missing	qol
+frame_sep_l		missing	qol
+frame_sep_persistent_l		missing	qol
+frame_sep_r		missing	qol
+frame_wand		missing	qol

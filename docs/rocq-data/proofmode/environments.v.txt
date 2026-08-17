@@ -1,132 +1,132 @@
-Envs_proper	
-Esnoc_proper	
-env	
-env_Forall2	
-env_Forall2_antisymm	
-env_Forall2_fresh	
-env_Forall2_impl	
-env_Forall2_refl	
-env_Forall2_sym	
-env_Forall2_trans	
-env_Forall2_wf	
-env_app	
-env_app_disjoint	
-env_app_fresh	
-env_app_fresh_1	
-env_app_perm	
-env_app_wf	
-env_delete	
-env_delete_fresh	
-env_delete_wf	
-env_dom	
-env_intuitionistic_flip_mono	
-env_intuitionistic_mono	
-env_intuitionistic_proper	
-env_lookup	
-env_lookup_delete	
-env_lookup_delete_Some	
-env_lookup_delete_correct	
-env_lookup_env_delete	
-env_lookup_env_delete_ne	
-env_lookup_perm	
-env_lookup_snoc	
-env_lookup_snoc_ne	
-env_replace	
-env_replace_fresh	
-env_replace_lookup	
-env_replace_perm	
-env_replace_wf	
-env_spatial_flip_mono	
-env_spatial_is_nil	
-env_spatial_is_nil_intuitionistically	
-env_spatial_mono	
-env_spatial_proper	
-env_subenv	
-env_subenv_fresh	
-env_subenv_wf	
-env_to_list	
-env_to_list_proper	
-env_to_list_subenv_proper	
-env_to_prop	
-env_to_prop_and	
-env_to_prop_and_go	
-env_to_prop_and_pers_sound	
-env_to_prop_go	
-env_to_prop_sound	
-env_wf	
-envs	
-envs_Forall2	
-envs_Forall2_antisymm	
-envs_Forall2_impl	
-envs_Forall2_refl	
-envs_Forall2_sym	
-envs_Forall2_trans	
-envs_app	
-envs_app_singleton_sound	
-envs_app_sound	
-envs_clear_intuitionistic	
-envs_clear_intuitionistic_sound	
-envs_clear_spatial	
-envs_clear_spatial_sound	
-envs_delete	
-envs_delete_intuitionistic	
-envs_delete_spatial	
-envs_dom	
-envs_entails	
-envs_entails_flip_mono	
-envs_entails_mono	
-envs_entails_proper	
-envs_entails_unseal	
-envs_incr_counter	
-envs_incr_counter_equiv	
-envs_incr_counter_sound	
-envs_lookup	
-envs_lookup_delete	
-envs_lookup_delete_Some	
-envs_lookup_delete_list	
-envs_lookup_delete_list_cons	
-envs_lookup_delete_list_nil	
-envs_lookup_delete_list_sound	
-envs_lookup_delete_sound	
-envs_lookup_envs_clear_spatial	
-envs_lookup_envs_delete	
-envs_lookup_envs_delete_ne	
-envs_lookup_intuitionistic_sound	
-envs_lookup_snoc	
-envs_lookup_snoc_ne	
-envs_lookup_sound	
-envs_lookup_sound'	
-envs_lookup_sound_2	
-envs_lookup_split	
-envs_replace	
-envs_replace_singleton_sound	
-envs_replace_singleton_sound'	
-envs_replace_sound	
-envs_replace_sound'	
-envs_simple_replace	
-envs_simple_replace_maybe_sound	
-envs_simple_replace_singleton_sound	
-envs_simple_replace_singleton_sound'	
-envs_simple_replace_sound	
-envs_simple_replace_sound'	
-envs_snoc	
-envs_snoc_sound	
-envs_split	
-envs_split_go	
-envs_split_go_sound	
-envs_split_sound	
-envs_wf	
-envs_wf'	
-of_envs	
-of_envs'	
-of_envs'_alt	
-of_envs_alt	
-of_envs_eq	
-of_envs_mono	
-of_envs_mono'	
-of_envs_proper	
-of_envs_proper'	
-pre_envs_entails	
-pre_envs_entails_aux	
-pre_envs_entails_def	
-pre_envs_entails_unseal	
+Envs_proper		missing	qol
+Esnoc_proper		missing	qol
+env		missing	foundational
+env_Forall2		missing	foundational
+env_Forall2_antisymm		missing	qol
+env_Forall2_fresh		missing	qol
+env_Forall2_impl		missing	qol
+env_Forall2_refl		missing	qol
+env_Forall2_sym		missing	qol
+env_Forall2_trans		missing	qol
+env_Forall2_wf		missing	qol
+env_app		missing	foundational
+env_app_disjoint		missing	qol
+env_app_fresh		missing	qol
+env_app_fresh_1		missing	qol
+env_app_perm		missing	qol
+env_app_wf		missing	qol
+env_delete		missing	foundational
+env_delete_fresh		missing	qol
+env_delete_wf		missing	qol
+env_dom		missing	foundational
+env_intuitionistic_flip_mono		missing	qol
+env_intuitionistic_mono		missing	qol
+env_intuitionistic_proper		missing	qol
+env_lookup		missing	foundational
+env_lookup_delete		missing	foundational
+env_lookup_delete_Some		missing	qol
+env_lookup_delete_correct		missing	qol
+env_lookup_env_delete		missing	qol
+env_lookup_env_delete_ne		missing	qol
+env_lookup_perm		missing	qol
+env_lookup_snoc		missing	qol
+env_lookup_snoc_ne		missing	qol
+env_replace		missing	foundational
+env_replace_fresh		missing	qol
+env_replace_lookup		missing	qol
+env_replace_perm		missing	qol
+env_replace_wf		missing	qol
+env_spatial_flip_mono		missing	qol
+env_spatial_is_nil		missing	foundational
+env_spatial_is_nil_intuitionistically		missing	qol
+env_spatial_mono		missing	qol
+env_spatial_proper		missing	qol
+env_subenv		missing	foundational
+env_subenv_fresh		missing	qol
+env_subenv_wf		missing	qol
+env_to_list		missing	foundational
+env_to_list_proper		missing	qol
+env_to_list_subenv_proper		missing	qol
+env_to_prop		missing	foundational
+env_to_prop_and		missing	foundational
+env_to_prop_and_go		missing	foundational
+env_to_prop_and_pers_sound		missing	qol
+env_to_prop_go		missing	foundational
+env_to_prop_sound		missing	qol
+env_wf		missing	foundational
+envs		missing	foundational
+envs_Forall2		missing	foundational
+envs_Forall2_antisymm		missing	qol
+envs_Forall2_impl		missing	qol
+envs_Forall2_refl		missing	qol
+envs_Forall2_sym		missing	qol
+envs_Forall2_trans		missing	qol
+envs_app		missing	foundational
+envs_app_singleton_sound		missing	qol
+envs_app_sound		missing	qol
+envs_clear_intuitionistic		missing	foundational
+envs_clear_intuitionistic_sound		missing	qol
+envs_clear_spatial		missing	foundational
+envs_clear_spatial_sound		missing	qol
+envs_delete		missing	foundational
+envs_delete_intuitionistic		missing	qol
+envs_delete_spatial		missing	qol
+envs_dom		missing	foundational
+envs_entails		missing	foundational
+envs_entails_flip_mono		missing	qol
+envs_entails_mono		missing	qol
+envs_entails_proper		missing	qol
+envs_entails_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+envs_incr_counter		missing	foundational
+envs_incr_counter_equiv		missing	qol
+envs_incr_counter_sound		missing	qol
+envs_lookup		missing	foundational
+envs_lookup_delete		missing	foundational
+envs_lookup_delete_Some		missing	qol
+envs_lookup_delete_list		missing	foundational
+envs_lookup_delete_list_cons		missing	qol
+envs_lookup_delete_list_nil		missing	qol
+envs_lookup_delete_list_sound		missing	qol
+envs_lookup_delete_sound		missing	qol
+envs_lookup_envs_clear_spatial		missing	qol
+envs_lookup_envs_delete		missing	qol
+envs_lookup_envs_delete_ne		missing	qol
+envs_lookup_intuitionistic_sound		missing	qol
+envs_lookup_snoc		missing	qol
+envs_lookup_snoc_ne		missing	qol
+envs_lookup_sound		missing	qol
+envs_lookup_sound'		missing	qol
+envs_lookup_sound_2		missing	qol
+envs_lookup_split		missing	qol
+envs_replace		missing	foundational
+envs_replace_singleton_sound		missing	qol
+envs_replace_singleton_sound'		missing	qol
+envs_replace_sound		missing	qol
+envs_replace_sound'		missing	qol
+envs_simple_replace		missing	foundational
+envs_simple_replace_maybe_sound		missing	qol
+envs_simple_replace_singleton_sound		missing	qol
+envs_simple_replace_singleton_sound'		missing	qol
+envs_simple_replace_sound		missing	qol
+envs_simple_replace_sound'		missing	qol
+envs_snoc		missing	foundational
+envs_snoc_sound		missing	qol
+envs_split		missing	foundational
+envs_split_go		missing	foundational
+envs_split_go_sound		missing	qol
+envs_split_sound		missing	qol
+envs_wf		missing	foundational
+envs_wf'		missing	foundational
+of_envs		missing	foundational
+of_envs'		missing	foundational
+of_envs'_alt		missing	qol
+of_envs_alt		missing	qol
+of_envs_eq		missing	qol
+of_envs_mono		missing	qol
+of_envs_mono'		missing	qol
+of_envs_proper		missing	qol
+of_envs_proper'		missing	qol
+pre_envs_entails		missing	foundational
+pre_envs_entails_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+pre_envs_entails_def		missing	foundational
+pre_envs_entails_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

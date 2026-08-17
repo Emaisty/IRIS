@@ -1,42 +1,42 @@
-EctxLanguageMixin	
-ectxLanguage	
-ectx_lang	
-ectx_lang_mixin	
-Ectx_step'	
-LanguageOfEctx	
-base_atomic	
-base_irreducible	
-base_prim_fill_reducible	
-base_prim_fill_reducible_no_obs	
-base_prim_irreducible	
-base_prim_reducible	
-base_prim_reducible_no_obs	
-base_prim_step	lang:base_prim_step
-base_redex_unique	
-base_reducible	
-base_reducible_no_obs	
-base_reducible_no_obs_reducible	
-base_reducible_prim_step	
-base_reducible_prim_step_ctx	
-base_step_not_stuck	
-base_stuck	
-base_stuck_stuck	
-ectx_lang_ctx	
-ectx_language_atomic	
-fill_comp	lang:fill_comp
-fill_empty	lang:fill_empty
-fill_inj	
-fill_prim_step	
-fill_reducible	
-fill_reducible_no_obs	
-fill_val	
-not_base_reducible	
-prim_base_irreducible	
-prim_base_reducible	
-prim_step	
-pure_base_step	
-pure_base_step_pure_step	
-pure_exec_fill	
-step_by_val	
-sub_redexes_are_values	
-val_base_stuck	
+EctxLanguageMixin		missing	foundational
+ectxLanguage		missing	foundational
+ectx_lang		missing	foundational
+ectx_lang_mixin		missing	foundational
+Ectx_step'		missing	qol
+LanguageOfEctx		missing	foundational
+base_atomic		missing	foundational
+base_irreducible		missing	foundational
+base_prim_fill_reducible		missing	qol
+base_prim_fill_reducible_no_obs		missing	qol
+base_prim_irreducible		missing	qol
+base_prim_reducible		missing	qol
+base_prim_reducible_no_obs		missing	qol
+base_prim_step	iris_heap_lang.lang:base_prim_step	direct	qol
+base_redex_unique		missing	qol
+base_reducible		missing	foundational
+base_reducible_no_obs		missing	foundational
+base_reducible_no_obs_reducible		missing	qol
+base_reducible_prim_step		missing	qol
+base_reducible_prim_step_ctx		missing	qol
+base_step_not_stuck		missing	qol
+base_stuck		missing	foundational
+base_stuck_stuck		missing	qol
+ectx_lang_ctx		missing	qol
+ectx_language_atomic		missing	qol
+fill_comp	iris_heap_lang.lang:fill_comp	direct	qol
+fill_empty	iris_heap_lang.lang:fill_empty	direct	qol
+fill_inj		missing	qol
+fill_prim_step		missing	qol
+fill_reducible		missing	qol
+fill_reducible_no_obs		missing	qol
+fill_val		missing	qol
+not_base_reducible		missing	qol
+prim_base_irreducible		missing	qol
+prim_base_reducible		missing	qol
+prim_step		missing	foundational
+pure_base_step		missing	foundational
+pure_base_step_pure_step		missing	qol
+pure_exec_fill		missing	qol
+step_by_val		missing	qol
+sub_redexes_are_values		missing	foundational
+val_base_stuck		missing	qol

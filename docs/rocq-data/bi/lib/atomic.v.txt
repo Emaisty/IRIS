@@ -1,25 +1,25 @@
-aacc_aacc	
-aacc_aupd	
-aacc_aupd_abort	
-aacc_aupd_commit	
-aacc_intro	
-atomic_acc	
-atomic_acc_mask	
-atomic_acc_mask_weaken	
-atomic_acc_ne	
-atomic_acc_wand	
-atomic_update	
-atomic_update_aux	
-atomic_update_def	
-atomic_update_mask_weaken	
-atomic_update_ne	
-atomic_update_pre	
-atomic_update_pre_mono	
-atomic_update_unseal	
-aupd_aacc	
-aupd_intro	
-aupd_unfold	
-elim_acc_aacc	
-elim_mod_aupd	
-elim_modal_acc	
-tac_aupd_intro	
+aacc_aacc		missing	qol
+aacc_aupd		missing	qol
+aacc_aupd_abort		missing	qol
+aacc_aupd_commit		missing	qol
+aacc_intro		missing	qol
+atomic_acc		missing	foundational
+atomic_acc_mask		missing	qol
+atomic_acc_mask_weaken		missing	qol
+atomic_acc_ne		missing	qol
+atomic_acc_wand		missing	qol
+atomic_update		missing	foundational
+atomic_update_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+atomic_update_def		missing	foundational
+atomic_update_mask_weaken		missing	qol
+atomic_update_ne		missing	qol
+atomic_update_pre		missing	foundational
+atomic_update_pre_mono		missing	qol
+atomic_update_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+aupd_aacc		missing	qol
+aupd_intro		missing	qol
+aupd_unfold		missing	qol
+elim_acc_aacc		missing	qol
+elim_mod_aupd		missing	qol
+elim_modal_acc		missing	qol
+tac_aupd_intro		missing	qol

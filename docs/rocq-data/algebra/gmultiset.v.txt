@@ -1,21 +1,21 @@
-big_opMS_singletons	
-gmultisetO	
-gmultisetR	
-gmultisetUR	
-gmultiset_cancelable	
-gmultiset_cmra_discrete	
-gmultiset_core	
-gmultiset_included	
-gmultiset_local_update	
-gmultiset_local_update_alloc	
-gmultiset_local_update_dealloc	
-gmultiset_op	
-gmultiset_opM	
-gmultiset_op_instance	
-gmultiset_pcore_instance	
-gmultiset_ra_mixin	
-gmultiset_ucmra_mixin	
-gmultiset_unit_instance	
-gmultiset_update	
-gmultiset_validN_instance	
-gmultiset_valid_instance	
+big_opMS_singletons		missing	qol
+gmultisetO		missing	foundational
+gmultisetR		missing	foundational
+gmultisetUR		missing	foundational
+gmultiset_cancelable		missing	qol
+gmultiset_cmra_discrete		missing	qol
+gmultiset_core		missing	qol
+gmultiset_included		missing	qol
+gmultiset_local_update		missing	qol
+gmultiset_local_update_alloc		missing	qol
+gmultiset_local_update_dealloc		missing	qol
+gmultiset_op		missing	qol
+gmultiset_opM		missing	qol
+gmultiset_op_instance		missing	foundational
+gmultiset_pcore_instance		missing	foundational
+gmultiset_ra_mixin		missing	foundational
+gmultiset_ucmra_mixin		missing	foundational
+gmultiset_unit_instance		missing	foundational
+gmultiset_update		missing	qol
+gmultiset_validN_instance		missing	foundational
+gmultiset_valid_instance		missing	foundational

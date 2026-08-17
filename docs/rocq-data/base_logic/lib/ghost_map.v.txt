@@ -1,51 +1,51 @@
-ghost_mapG	
-ghost_map_alloc	
-ghost_map_alloc_empty	
-ghost_map_alloc_strong	
-ghost_map_alloc_strong_empty	
-ghost_map_auth	
-ghost_map_auth_agree	
-ghost_map_auth_as_fractional	
-ghost_map_auth_aux	
-ghost_map_auth_def	
-ghost_map_auth_fractional	
-ghost_map_auth_persist	
-ghost_map_auth_timeless	
-ghost_map_auth_unpersist	
-ghost_map_auth_unseal	
-ghost_map_auth_valid	
-ghost_map_auth_valid_2	
-ghost_map_delete	
-ghost_map_delete_big	
-ghost_map_elem	
-ghost_map_elem_agree	
-ghost_map_elem_as_fractional	
-ghost_map_elem_aux	
-ghost_map_elem_combine	
-ghost_map_elem_combine_as	
-ghost_map_elem_combine_gives	
-ghost_map_elem_def	
-ghost_map_elem_frac_ne	
-ghost_map_elem_fractional	
-ghost_map_elem_ne	
-ghost_map_elem_persist	
-ghost_map_elem_persistent	
-ghost_map_elem_timeless	
-ghost_map_elem_unpersist	
-ghost_map_elem_unseal	
-ghost_map_elem_valid	
-ghost_map_elem_valid_2	
-ghost_map_elems_unseal	
-ghost_map_insert	
-ghost_map_insert_big	
-ghost_map_insert_persist	
-ghost_map_insert_persist_big	
-ghost_map_lookup	
-ghost_map_lookup_big	
-ghost_map_lookup_combine_gives_1	
-ghost_map_lookup_combine_gives_2	
-ghost_map_persistent	
-ghost_map_update	
-ghost_map_update_big	
-ghost_mapΣ	
-subG_ghost_mapΣ	
+ghost_mapG		missing	foundational
+ghost_map_alloc		missing	qol
+ghost_map_alloc_empty		missing	qol
+ghost_map_alloc_strong		missing	qol
+ghost_map_alloc_strong_empty		missing	qol
+ghost_map_auth		missing	foundational
+ghost_map_auth_agree		missing	qol
+ghost_map_auth_as_fractional		missing	qol
+ghost_map_auth_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_map_auth_def		missing	foundational
+ghost_map_auth_fractional		missing	qol
+ghost_map_auth_persist		missing	qol
+ghost_map_auth_timeless		missing	qol
+ghost_map_auth_unpersist		missing	qol
+ghost_map_auth_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_map_auth_valid		missing	qol
+ghost_map_auth_valid_2		missing	qol
+ghost_map_delete		missing	qol
+ghost_map_delete_big		missing	qol
+ghost_map_elem		missing	foundational
+ghost_map_elem_agree		missing	qol
+ghost_map_elem_as_fractional		missing	qol
+ghost_map_elem_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_map_elem_combine		missing	qol
+ghost_map_elem_combine_as		missing	qol
+ghost_map_elem_combine_gives		missing	qol
+ghost_map_elem_def		missing	foundational
+ghost_map_elem_frac_ne		missing	qol
+ghost_map_elem_fractional		missing	qol
+ghost_map_elem_ne		missing	qol
+ghost_map_elem_persist		missing	qol
+ghost_map_elem_persistent		missing	qol
+ghost_map_elem_timeless		missing	qol
+ghost_map_elem_unpersist		missing	qol
+ghost_map_elem_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_map_elem_valid		missing	qol
+ghost_map_elem_valid_2		missing	qol
+ghost_map_elems_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_map_insert		missing	qol
+ghost_map_insert_big		missing	qol
+ghost_map_insert_persist		missing	qol
+ghost_map_insert_persist_big		missing	qol
+ghost_map_lookup		missing	qol
+ghost_map_lookup_big		missing	qol
+ghost_map_lookup_combine_gives_1		missing	qol
+ghost_map_lookup_combine_gives_2		missing	qol
+ghost_map_persistent		missing	qol
+ghost_map_update		missing	qol
+ghost_map_update_big		missing	qol
+ghost_mapΣ		missing	foundational
+subG_ghost_mapΣ		missing	qol

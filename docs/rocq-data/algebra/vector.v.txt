@@ -1,21 +1,21 @@
-list_cofe	
-vcons_discrete	
-vcons_ne	
-vcons_proper	
-vecO	
-vecOF	
-vecOF_contractive	
-vecO_map	
-vecO_map_ne	
-vec_dist	
-vec_equiv	
-vec_map	
-vec_map_ext_ne	
-vec_map_ne	
-vec_ofe_discrete	
-vec_ofe_mixin	
-vec_to_list_ne	
-vec_to_list_proper	
-vlookup_ne	
-vlookup_proper	
-vnil_discrete	
+list_cofe		missing	qol
+vcons_discrete		missing	qol
+vcons_ne		missing	qol
+vcons_proper		missing	qol
+vecO		missing	foundational
+vecOF		missing	foundational
+vecOF_contractive		missing	qol
+vecO_map		missing	foundational
+vecO_map_ne		missing	qol
+vec_dist		missing	qol
+vec_equiv		missing	qol
+vec_map		missing	foundational
+vec_map_ext_ne		missing	qol
+vec_map_ne		missing	qol
+vec_ofe_discrete		missing	qol
+vec_ofe_mixin		missing	foundational
+vec_to_list_ne		missing	qol
+vec_to_list_proper		missing	qol
+vlookup_ne		missing	qol
+vlookup_proper		missing	qol
+vnil_discrete		missing	qol

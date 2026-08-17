@@ -1,24 +1,24 @@
-iProp_solution.iProp_fold_unfold	
-iProp_solution.iProp_unfold_fold	
-iProp_unfold_equivI	
-gFunctor	
-gFunctors	
-gFunctors.app	
-gFunctors.nil	
-gFunctors.singleton	
-gid	
-gname	
-gnameO	
-iProp_solution.iPrePropO	
-iProp_solution.iPreProp_cofe	
-iProp_solution.iProp_fold	
-iProp_solution.iProp_result	
-iProp_solution.iProp_unfold	
-iProp_solution.iResUR	
-iResF	
-iResUR	
-subG	
-subG_app_l	
-subG_app_r	
-subG_inv	
-subG_refl	
+iProp_solution.iProp_fold_unfold	iris.base_logic.lib.iprop:iProp_fold_unfold	direct	qol
+iProp_solution.iProp_unfold_fold	iris.base_logic.lib.iprop:iProp_unfold_fold	direct	qol
+iProp_unfold_equivI		missing	qol
+gFunctor	iris.base_logic.lib.gfunctors:gFunctor	direct	foundational
+gFunctors	iris.base_logic.lib.gfunctors:gFunctors	direct	foundational
+gFunctors.app		missing	foundational
+gFunctors.nil		missing	foundational
+gFunctors.singleton		missing	foundational
+gid	iris.base_logic.lib.gfunctors:gid	direct	foundational
+gname	iris.base_logic.lib.gfunctors:gname	direct	foundational
+gnameO	iris.base_logic.lib.gfunctors:gnameO	direct	foundational
+iProp_solution.iPrePropO	iris.base_logic.lib.iprop:iPrePropO	direct	foundational
+iProp_solution.iPreProp_cofe	iris.base_logic.lib.iprop:iPropCOFE	analogue	qol	iPropCOFE is the Arend completion structure produced by the recursive-domain solution.
+iProp_solution.iProp_fold	iris.base_logic.lib.iprop:iProp_fold	direct	foundational
+iProp_solution.iProp_result	iris.base_logic.lib.iprop:iProp_result	direct	foundational
+iProp_solution.iProp_unfold	iris.base_logic.lib.iprop:iProp_unfold	direct	foundational
+iProp_solution.iResUR	iris.base_logic.lib.iprop:iResUR	direct	foundational
+iResF	iris.base_logic.lib.iprop:iResF	direct	foundational
+iResUR	iris.base_logic.lib.iprop:iResUR	direct	foundational
+subG	iris.base_logic.lib.gfunctors:subG	direct	foundational
+subG_app_l	iris.base_logic.lib.gfunctors:subG_app_l	direct	qol
+subG_app_r	iris.base_logic.lib.gfunctors:subG_app_r	direct	qol
+subG_inv	iris.base_logic.lib.gfunctors:subG_inv	direct	qol
+subG_refl	iris.base_logic.lib.gfunctors:subG_refl	direct	qol

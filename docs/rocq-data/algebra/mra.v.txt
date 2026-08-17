@@ -1,30 +1,30 @@
-auth_ucmra_mixin	
-mra	
-mraO	
-mraR	
-mraUR	
-mra_below	
-mra_below_to_mra	
-mra_cmra_discrete	
-mra_cmra_mixin	
-mra_cmra_total	
-mra_core_id	
-mra_equiv	
-mra_equiv_equiv	
-mra_idemp	
-mra_included	
-mra_local_update_get_frag	
-mra_local_update_grow	
-mra_op	
-mra_pcore	
-mra_unit	
-mra_valid	
-mra_validN	
-to_mra	
-to_mra_R_op	
-to_mra_equiv_inj	
-to_mra_included	
-to_mra_inj	
-to_mra_proper	
-to_mra_rel_inj	
-to_mra_rel_proper	
+auth_ucmra_mixin		missing	foundational
+mra		missing	foundational
+mraO		missing	foundational
+mraR		missing	foundational
+mraUR		missing	foundational
+mra_below		missing	foundational
+mra_below_to_mra		missing	qol
+mra_cmra_discrete		missing	qol
+mra_cmra_mixin		missing	foundational
+mra_cmra_total		missing	qol
+mra_core_id		missing	qol
+mra_equiv		missing	qol
+mra_equiv_equiv		missing	qol
+mra_idemp		missing	qol
+mra_included		missing	qol
+mra_local_update_get_frag		missing	qol
+mra_local_update_grow		missing	qol
+mra_op		missing	qol
+mra_pcore		missing	qol
+mra_unit		missing	qol
+mra_valid		missing	qol
+mra_validN		missing	qol
+to_mra		missing	foundational
+to_mra_R_op		missing	qol
+to_mra_equiv_inj		missing	qol
+to_mra_included		missing	qol
+to_mra_inj		missing	qol
+to_mra_proper		missing	qol
+to_mra_rel_inj		missing	qol
+to_mra_rel_proper		missing	qol

@@ -1,15 +1,15 @@
-bi_texist	
-bi_texist_absorbing	
-bi_texist_affine	
-bi_texist_exist	
-bi_texist_ne	
-bi_texist_persistent	
-bi_texist_proper	
-bi_texist_timeless	
-bi_tforall	
-bi_tforall_absorbing	
-bi_tforall_forall	
-bi_tforall_ne	
-bi_tforall_persistent	
-bi_tforall_proper	
-bi_tforall_timeless	
+bi_texist		missing	foundational
+bi_texist_absorbing		missing	qol
+bi_texist_affine		missing	qol
+bi_texist_exist		missing	qol
+bi_texist_ne		missing	qol
+bi_texist_persistent		missing	qol
+bi_texist_proper		missing	qol
+bi_texist_timeless		missing	qol
+bi_tforall		missing	foundational
+bi_tforall_absorbing		missing	qol
+bi_tforall_forall		missing	qol
+bi_tforall_ne		missing	qol
+bi_tforall_persistent		missing	qol
+bi_tforall_proper		missing	qol
+bi_tforall_timeless		missing	qol

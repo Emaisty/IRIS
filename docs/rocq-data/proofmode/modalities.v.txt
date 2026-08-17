@@ -1,25 +1,25 @@
-modality_flip_mono'	
-modality_mono'	
-modality_proper	
-modality	
-modality_action	
-modality_and_forall	
-modality_and_transform	
-modality_emp	
-modality_id	
-modality_id_mixin	
-modality_intuitionistic_action_spec	
-modality_intuitionistic_forall	
-modality_intuitionistic_forall_big_and	
-modality_intuitionistic_id	
-modality_intuitionistic_id_big_and	
-modality_intuitionistic_transform	
-modality_mixin	
-modality_mono	
-modality_sep	
-modality_spatial_action_spec	
-modality_spatial_clear	
-modality_spatial_forall	
-modality_spatial_forall_big_sep	
-modality_spatial_id	
-modality_spatial_transform	
+modality_flip_mono'		missing	qol
+modality_mono'		missing	qol
+modality_proper		missing	qol
+modality		missing	foundational
+modality_action		missing	foundational
+modality_and_forall		missing	qol
+modality_and_transform		missing	qol
+modality_emp		missing	qol
+modality_id		missing	foundational
+modality_id_mixin		missing	qol
+modality_intuitionistic_action_spec		missing	foundational
+modality_intuitionistic_forall		missing	qol
+modality_intuitionistic_forall_big_and		missing	qol
+modality_intuitionistic_id		missing	qol
+modality_intuitionistic_id_big_and		missing	qol
+modality_intuitionistic_transform		missing	qol
+modality_mixin		missing	foundational
+modality_mono		missing	qol
+modality_sep		missing	qol
+modality_spatial_action_spec		missing	foundational
+modality_spatial_clear		missing	qol
+modality_spatial_forall		missing	qol
+modality_spatial_forall_big_sep		missing	qol
+modality_spatial_id		missing	qol
+modality_spatial_transform		missing	qol

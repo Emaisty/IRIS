@@ -1,56 +1,56 @@
-Some_included_totalI	
-cmra_later_opI	
-cmra_morphism_validI	
-cmra_validI_op_l	
-cmra_validI_op_r	
-csum_includedI	
-csum_validI	
-dfrac_agree_validI	
-dfrac_agree_validI_2	
-discrete_fun_validI	
-excl_auth_agreeI	
-excl_includedI	
-excl_validI	
-f_homom_includedI	
-frac_agree_validI	
-frac_agree_validI_2	
-gmap_equivI	
-gmap_union_equiv_eqI	
-gmap_validI	
-id_freeI_l	
-id_freeI_r	
-list_equivI	
-option_includedI	
-option_included_totalI	
-option_validI	
-prod_includedI	
-prod_validI	
-singleton_validI	
-ucmra_unit_validI	
-view_auth_dfrac_validI	
-view_auth_validI	
-view_both_dfrac_validI	
-view_both_dfrac_validI_1	
-view_both_dfrac_validI_2	
-view_both_validI	
-view_both_validI_1	
-view_both_validI_2	
-view_frag_validI	
-agree_equivI	
-agree_includedI	
-agree_op_equiv_to_agreeI	
-agree_op_invI	
-auth_auth_dfrac_op_validI	
-auth_auth_dfrac_validI	
-auth_auth_validI	
-auth_both_dfrac_validI	
-auth_both_validI	
-auth_frag_validI	
-gmap_view_both_dfrac_validI	
-gmap_view_both_validI	
-gmap_view_both_validI_total	
-gmap_view_frag_op_validI	
-to_agree_includedI	
-to_agree_op_validI	
-to_agree_uninjI	
-to_agree_validI	
+Some_included_totalI		missing	qol
+cmra_later_opI		missing	qol
+cmra_morphism_validI		missing	foundational
+cmra_validI_op_l		missing	foundational
+cmra_validI_op_r		missing	foundational
+csum_includedI		missing	qol
+csum_validI		missing	qol
+dfrac_agree_validI		missing	qol
+dfrac_agree_validI_2		missing	qol
+discrete_fun_validI		missing	qol
+excl_auth_agreeI		missing	qol
+excl_includedI		missing	qol
+excl_validI		missing	qol
+f_homom_includedI		missing	qol
+frac_agree_validI		missing	qol
+frac_agree_validI_2		missing	qol
+gmap_equivI		missing	qol
+gmap_union_equiv_eqI		missing	qol
+gmap_validI		missing	qol
+id_freeI_l		missing	qol
+id_freeI_r		missing	qol
+list_equivI		missing	qol
+option_includedI		missing	qol
+option_included_totalI		missing	qol
+option_validI		missing	qol
+prod_includedI		missing	qol
+prod_validI		missing	qol
+singleton_validI		missing	qol
+ucmra_unit_validI		missing	qol
+view_auth_dfrac_validI		missing	qol
+view_auth_validI		missing	qol
+view_both_dfrac_validI		missing	qol
+view_both_dfrac_validI_1		missing	qol
+view_both_dfrac_validI_2		missing	qol
+view_both_validI		missing	qol
+view_both_validI_1		missing	qol
+view_both_validI_2		missing	qol
+view_frag_validI		missing	qol
+agree_equivI		missing	qol
+agree_includedI		missing	qol
+agree_op_equiv_to_agreeI		missing	qol
+agree_op_invI		missing	qol
+auth_auth_dfrac_op_validI		missing	qol
+auth_auth_dfrac_validI		missing	qol
+auth_auth_validI		missing	qol
+auth_both_dfrac_validI		missing	qol
+auth_both_validI		missing	qol
+auth_frag_validI		missing	qol
+gmap_view_both_dfrac_validI		missing	qol
+gmap_view_both_validI		missing	qol
+gmap_view_both_validI_total		missing	qol
+gmap_view_frag_op_validI		missing	qol
+to_agree_includedI		missing	qol
+to_agree_op_validI		missing	qol
+to_agree_uninjI		missing	qol
+to_agree_validI		missing	qol

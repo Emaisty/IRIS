@@ -1,25 +1,25 @@
-Pos_succ	
-ascii_beq	
-ascii_beq_true	
-beq	
-beq_eq_dec	
-beq_true	
-direction	
-ident.ident	
-ident_beq	
-ident_beq_reflect	
-ident_beq_true	
-lazy_andb_true	
-maybe_IAnon	
-maybe_INamed	
-negb	
-negb_true	
-pm_app	
-pm_from_option	
-pm_option_bind	
-pm_option_fun	
-positive_beq	
-positive_beq_true	
-string_beq	
-string_beq_reflect	
-string_beq_true	
+Pos_succ		missing	foundational
+ascii_beq		missing	foundational
+ascii_beq_true		missing	qol
+beq		missing	foundational
+beq_eq_dec		missing	qol
+beq_true		missing	qol
+direction		missing	foundational
+ident.ident		missing	foundational
+ident_beq		missing	foundational
+ident_beq_reflect		missing	qol
+ident_beq_true		missing	qol
+lazy_andb_true		missing	qol
+maybe_IAnon		missing	qol
+maybe_INamed		missing	qol
+negb		missing	foundational
+negb_true		missing	qol
+pm_app		missing	foundational
+pm_from_option		missing	foundational
+pm_option_bind		missing	foundational
+pm_option_fun		missing	foundational
+positive_beq		missing	foundational
+positive_beq_true		missing	qol
+string_beq		missing	foundational
+string_beq_reflect		missing	qol
+string_beq_true		missing	qol

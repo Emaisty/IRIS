@@ -1,364 +1,364 @@
-Empty_setR	
-Empty_set_cancelable	
-Empty_set_cmra_discrete	
-Empty_set_cmra_mixin	
-Empty_set_core_id	
-Empty_set_op_instance	
-Empty_set_pcore_instance	
-Empty_set_validN_instance	
-Empty_set_valid_instance	
-RAMixin	
-Some_includedN_1	
-Some_includedN_2	
-Some_includedN_is_Some	
-Some_includedN_mono	
-Some_includedN_refl	
-Some_included_1	
-Some_included_2	
-Some_included_is_Some	
-Some_included_mono	
-Some_included_refl	
-Some_pair_included	
-Some_pair_includedN	
-Some_pair_includedN_l	
-Some_pair_includedN_r	
-Some_pair_includedN_total_1	
-Some_pair_includedN_total_2	
-Some_pair_included_l	
-Some_pair_included_r	
-Some_pair_included_total_1	
-Some_pair_included_total_2	
-cmra_includedN_preorder	
-cmra_included_preorder	
-cmra_morphism_compose	
-cmra_opM_fmap_Some	
-cmra_opM_opM_assoc_L	
-cmra_opM_opM_swap	
-cmra_opM_opM_swap_L	
-cmra_transport	
-cmra_transport_core	
-cmra_transport_core_id	
-cmra_transport_discrete	
-cmra_transport_ne	
-cmra_transport_op	
-cmra_transport_proper	
-cmra_transport_trans	
-cmra_transport_valid	
-cmra_transport_validN	
-constURF	
-constURF_contractive	
-discrete_fun_included_spec	
-discrete_fun_included_spec_1	
-discrete_fun_lookup_core	
-discrete_fun_lookup_empty	
-discrete_fun_lookup_op	
-discrete_fun_map_cmra_morphism	
-discrete_fun_unit_discrete	
-id_free_ne	
-inj_cmra_mixin_restrict_validity	
-is_Some_included	
-is_Some_includedN	
-iso_cmra_mixin	
-iso_cmra_mixin_restrict_validity	
-optionRF	
-optionRF_contractive	
-option_fmap_cmra_morphism	
-option_fmap_mono	
-pair_cancelable	
-pair_core	
-pair_core_id	
-pair_exclusive_l	
-pair_exclusive_r	
-pair_id_free_l	
-pair_id_free_r	
-pair_included	
-pair_op	
-pair_op_1	
-pair_op_1_L	
-pair_op_2	
-pair_op_2_L	
-pair_pcore	
-pair_split	
-pair_split_L	
-pair_valid	
-pair_validN	
-prodUR	
-prodURF	
-prodURF_contractive	
-prod_cmra_total	
-prod_included	
-prod_includedN	
-prod_pcore_Some	
-prod_pcore_Some'	
-prod_ucmra_mixin	
-prod_unit_instance	
-rFunctor_apply	
-rFunctor_oFunctor_compose	
-rFunctor_oFunctor_compose_contractive_1	
-rFunctor_oFunctor_compose_contractive_2	
-ra_total_mixin	
-unitUR	
-unit_cmra_discrete	
-unit_ucmra_mixin	
-unit_unit_instance	
-urFunctor_apply	
-urFunctor_oFunctor_compose	
-urFunctor_oFunctor_compose_contractive_1	
-urFunctor_oFunctor_compose_contractive_2	
-Cancelable	cmra:Cancelable
-Cancelable_proper	
-CmraDiscrete	
-CmraMixin	
-CmraMorphism	
-CmraTotal	
-CoreId	cmra:CoreId
-CoreId_proper	
-Exclusive	cmra:Exclusive
-Exclusive_proper	
-IdFree	
-IdFree_proper	
-Op	cmra:Op
-PCore	cmra:PCore
-Some_core	
-Some_core_id	
-Some_included	
-Some_includedN	
-Some_includedN_exclusive	
-Some_includedN_opM	
-Some_includedN_total	
-Some_included_exclusive	
-Some_included_opM	
-Some_included_total	
-Some_op	
-Some_op_opM	
-Some_valid	
-Some_validN	
-UcmraMixin	
-Unit	cmra:Unit
-Valid	cmra:Valid
-ValidN	cmra:ValidN
-cancelable	
-cancelable_Some	
-cancelable_op	
-cancelable_proper	
-cmra	
-cmra_assoc	
-cmra_assoc_L	
-cmra_comm	
-cmra_comm_L	
-cmra_core_core_id	
-cmra_core_dup	
-cmra_core_dup_L	
-cmra_core_idemp	
-cmra_core_idemp_L	
-cmra_core_l	
-cmra_core_l_L	
-cmra_core_mono	
-cmra_core_monoN	
-cmra_core_ne	
-cmra_core_proper	
-cmra_core_r	
-cmra_core_r_L	
-cmra_core_valid	
-cmra_core_validN	
-cmra_discrete_included_iff	
-cmra_discrete_included_iff_0	
-cmra_discrete_included_l	
-cmra_discrete_included_r	
-cmra_discrete_valid_iff	
-cmra_discrete_valid_iff_0	
-cmra_extend	
-cmra_includedN_l	cmra:cmra_includedN_l
-cmra_includedN_le	
-cmra_includedN_ne	
-cmra_includedN_proper	
-cmra_includedN_r	
-cmra_includedN_trans	
-cmra_included_core	
-cmra_included_dist_l	
-cmra_included_includedN	
-cmra_included_l	
-cmra_included_pcore	
-cmra_included_proper	
-cmra_included_r	
-cmra_included_trans	
-cmra_mixin_of'	
-cmra_mono	
-cmra_mono'	
-cmra_monoN	
-cmra_monoN'	
-cmra_monoN_l	
-cmra_monoN_r	
-cmra_mono_l	
-cmra_mono_r	
-cmra_monoid	
-cmra_morphism_core	
-cmra_morphism_id	
-cmra_morphism_mono	
-cmra_morphism_monoN	
-cmra_morphism_proper	
-cmra_morphism_valid	
-cmra_ofeO	
-cmra_opM_ne	
-cmra_opM_opM_assoc	
-cmra_opM_proper	
-cmra_op_discrete	
-cmra_op_ne	
-cmra_op_ne'	
-cmra_op_opM_assoc	
-cmra_op_opM_assoc_L	
-cmra_op_proper'	
-cmra_pcore_core	
-cmra_pcore_core_id	
-cmra_pcore_dup	
-cmra_pcore_dup'	
-cmra_pcore_dup_L	
-cmra_pcore_idemp	
-cmra_pcore_idemp'	
-cmra_pcore_idemp_L	
-cmra_pcore_l	
-cmra_pcore_l'	
-cmra_pcore_l_L	
-cmra_pcore_mono	
-cmra_pcore_mono'	
-cmra_pcore_monoN'	
-cmra_pcore_ne	
-cmra_pcore_ne'	
-cmra_pcore_proper	
-cmra_pcore_proper'	
-cmra_pcore_r	cmra:cmra_pcore_r
-cmra_pcore_r'	
-cmra_pcore_r_L	
-cmra_pcore_valid	
-cmra_pcore_validN	
-cmra_total_mixin	
-cmra_unit_cmra_total	
-cmra_validN_Some_includedN	
-cmra_validN_included	
-cmra_validN_includedN	cmra:cmra_validN_includedN
-cmra_validN_le	
-cmra_validN_lt	
-cmra_validN_ne	
-cmra_validN_ne'	
-cmra_validN_op_l	
-cmra_validN_op_r	cmra:cmra_validN_op_r
-cmra_validN_proper	
-cmra_valid_Some_included	
-cmra_valid_included	
-cmra_valid_op_l	
-cmra_valid_op_r	
-cmra_valid_proper	
-cmra_valid_validN	
-constRF	
-constRF_contractive	
-core	
-core_id_core	
-core_id_core_L	
-core_id_dup	
-core_id_dup_L	
-core_id_extract	
-core_id_total	
-core_id_total_L	
-discrete_cancelable	
-discrete_cmra_discrete	
-discrete_cmra_mixin	
-discrete_funR	
-discrete_funUR	
-discrete_funURF	
-discrete_funURF_contractive	
-discrete_fun_cmra_mixin	
-discrete_fun_op_instance	
-discrete_fun_pcore_instance	
-discrete_fun_ucmra_mixin	
-discrete_fun_unit_instance	
-discrete_fun_validN_instance	
-discrete_fun_valid_instance	
-discrete_id_free	
-discrete_validN_instance	
-empty_cancelable	
-exclusiveN_Some_l	
-exclusiveN_Some_r	
-exclusiveN_l	
-exclusiveN_opM	
-exclusiveN_r	
-exclusive_Some_l	
-exclusive_Some_r	
-exclusive_cancelable	
-exclusive_id_free	
-exclusive_included	
-exclusive_includedN	
-exclusive_l	
-exclusive_r	
-id_freeN_l	
-id_freeN_r	
-id_free_l	
-id_free_op_l	
-id_free_op_r	
-id_free_proper	
-id_free_r	
-included	
-includedN	
-opM	cmra:opM
-op_None	
-op_None_left_id	
-op_None_right_id	
-op_is_Some	
-optionR	
-optionUR	
-optionURF	
-optionURF_contractive	
-option_cancelable	
-option_cmra_discrete	
-option_cmra_mixin	
-option_core_id	
-option_included	
-option_includedN	
-option_includedN_total	
-option_included_total	
-option_op_instance	
-option_pcore_instance	
-option_ucmra_mixin	
-option_unit_instance	
-option_validN_instance	
-option_valid_instance	
-pair_includedN	
-pcore_Some	
-prodR	
-prodRF	
-prodRF_contractive	
-prod_cmra_discrete	
-prod_cmra_mixin	
-prod_map_cmra_morphism	
-prod_op_instance	
-prod_pcore_instance	
-prod_validN_instance	
-prod_valid_instance	
-rFunctor	
-rFunctorContractive	
-rFunctor_to_oFunctor	
-rFunctor_to_oFunctor_contractive	
-ucmra	
-ucmra_cmraR	
-ucmra_ofeO	
-ucmra_pcore_unit	
-ucmra_unit_core_id	
-ucmra_unit_least	cmra:ucmra_unit_least
-ucmra_unit_leastN	
-ucmra_unit_left_id	
-ucmra_unit_left_id_L	
-ucmra_unit_right_id	cmra:ucmra_unit_right_id
-ucmra_unit_right_id_L	
-ucmra_unit_valid	
-ucmra_unit_validN	
-unitR	
-unit_cancelable	
-unit_cmra_mixin	
-unit_core_id	
-unit_op_instance	
-unit_pcore_instance	
-unit_validN_instance	
-unit_valid_instance	
-urFunctor	
-urFunctorContractive	
-urFunctor_to_rFunctor	
-urFunctor_to_rFunctor_contractive	
+Empty_setR		missing	foundational
+Empty_set_cancelable		missing	qol
+Empty_set_cmra_discrete		missing	qol
+Empty_set_cmra_mixin		missing	foundational
+Empty_set_core_id		missing	qol
+Empty_set_op_instance		missing	foundational
+Empty_set_pcore_instance		missing	foundational
+Empty_set_validN_instance		missing	foundational
+Empty_set_valid_instance		missing	foundational
+RAMixin		missing	foundational
+Some_includedN_1		missing	qol
+Some_includedN_2		missing	qol
+Some_includedN_is_Some		missing	qol
+Some_includedN_mono		missing	qol
+Some_includedN_refl		missing	qol
+Some_included_1		missing	qol
+Some_included_2		missing	qol
+Some_included_is_Some		missing	qol
+Some_included_mono		missing	qol
+Some_included_refl		missing	qol
+Some_pair_included		missing	qol
+Some_pair_includedN		missing	qol
+Some_pair_includedN_l		missing	qol
+Some_pair_includedN_r		missing	qol
+Some_pair_includedN_total_1		missing	qol
+Some_pair_includedN_total_2		missing	qol
+Some_pair_included_l		missing	qol
+Some_pair_included_r		missing	qol
+Some_pair_included_total_1		missing	qol
+Some_pair_included_total_2		missing	qol
+cmra_includedN_preorder		missing	foundational
+cmra_included_preorder		missing	foundational
+cmra_morphism_compose		missing	foundational
+cmra_opM_fmap_Some		missing	qol
+cmra_opM_opM_assoc_L		missing	qol
+cmra_opM_opM_swap		missing	qol
+cmra_opM_opM_swap_L		missing	qol
+cmra_transport	iris.algebra.cmra:cmra_transport	direct	foundational
+cmra_transport_core		missing	qol
+cmra_transport_core_id	iris.algebra.cmra:cmra_transport_core_id	direct	qol
+cmra_transport_discrete		missing	qol
+cmra_transport_ne	iris.algebra.cmra:cmra_transport_ne	direct	qol
+cmra_transport_op	iris.algebra.cmra:cmra_transport_op	direct	qol
+cmra_transport_proper	iris.algebra.cmra:cmra_transport_proper	direct	qol
+cmra_transport_trans		missing	qol
+cmra_transport_valid	iris.algebra.cmra:cmra_transport_valid	direct	qol
+cmra_transport_validN	iris.algebra.cmra:cmra_transport_validN	direct	qol
+constURF		missing	foundational
+constURF_contractive		missing	qol
+discrete_fun_included_spec		missing	qol
+discrete_fun_included_spec_1		missing	qol
+discrete_fun_lookup_core		missing	foundational
+discrete_fun_lookup_empty		missing	foundational
+discrete_fun_lookup_op		missing	foundational
+discrete_fun_map_cmra_morphism		missing	qol
+discrete_fun_unit_discrete		missing	qol
+id_free_ne		missing	qol
+inj_cmra_mixin_restrict_validity		missing	qol
+is_Some_included		missing	qol
+is_Some_includedN		missing	qol
+iso_cmra_mixin		missing	foundational
+iso_cmra_mixin_restrict_validity		missing	qol
+optionRF		missing	foundational
+optionRF_contractive		missing	qol
+option_fmap_cmra_morphism		missing	qol
+option_fmap_mono		missing	qol
+pair_cancelable		missing	qol
+pair_core		missing	qol
+pair_core_id		missing	qol
+pair_exclusive_l		missing	qol
+pair_exclusive_r		missing	qol
+pair_id_free_l		missing	qol
+pair_id_free_r		missing	qol
+pair_included		missing	qol
+pair_op		missing	qol
+pair_op_1		missing	qol
+pair_op_1_L		missing	qol
+pair_op_2		missing	qol
+pair_op_2_L		missing	qol
+pair_pcore		missing	qol
+pair_split		missing	qol
+pair_split_L		missing	qol
+pair_valid		missing	qol
+pair_validN		missing	qol
+prodUR		missing	foundational
+prodURF		missing	foundational
+prodURF_contractive		missing	qol
+prod_cmra_total		missing	qol
+prod_included		missing	qol
+prod_includedN		missing	qol
+prod_pcore_Some		missing	qol
+prod_pcore_Some'		missing	qol
+prod_ucmra_mixin		missing	foundational
+prod_unit_instance		missing	foundational
+rFunctor_apply	iris.base_logic.lib.gfunctors:rFunctor_apply	direct	foundational
+rFunctor_oFunctor_compose		missing	foundational
+rFunctor_oFunctor_compose_contractive_1		missing	qol
+rFunctor_oFunctor_compose_contractive_2		missing	qol
+ra_total_mixin		missing	qol
+unitUR		missing	foundational
+unit_cmra_discrete		missing	qol
+unit_ucmra_mixin		missing	foundational
+unit_unit_instance		missing	foundational
+urFunctor_apply	iris.base_logic.lib.gfunctors:urFunctor_apply	direct	foundational
+urFunctor_oFunctor_compose		missing	foundational
+urFunctor_oFunctor_compose_contractive_1		missing	qol
+urFunctor_oFunctor_compose_contractive_2		missing	qol
+Cancelable	iris.algebra.cmra:Cancelable	direct	foundational
+Cancelable_proper		missing	qol
+CmraDiscrete		missing	foundational
+CmraMixin		missing	foundational
+CmraMorphism	iris.algebra.cmra:CmraMorphism	direct	foundational
+CmraTotal		missing	foundational
+CoreId	iris.algebra.cmra:CoreId	direct	foundational
+CoreId_proper		missing	qol
+Exclusive	iris.algebra.cmra:Exclusive	direct	foundational
+Exclusive_proper		missing	qol
+IdFree		missing	foundational
+IdFree_proper		missing	qol
+Op	iris.algebra.cmra:Op	direct	foundational
+PCore	iris.algebra.cmra:PCore	direct	foundational
+Some_core		missing	qol
+Some_core_id		missing	qol
+Some_included		missing	qol
+Some_includedN		missing	qol
+Some_includedN_exclusive		missing	qol
+Some_includedN_opM		missing	qol
+Some_includedN_total		missing	qol
+Some_included_exclusive		missing	qol
+Some_included_opM		missing	qol
+Some_included_total		missing	qol
+Some_op		missing	foundational
+Some_op_opM		missing	qol
+Some_valid		missing	foundational
+Some_validN		missing	foundational
+UcmraMixin		missing	foundational
+Unit	iris.algebra.cmra:Unit	direct	foundational
+Valid	iris.algebra.cmra:Valid	direct	foundational
+ValidN	iris.algebra.cmra:ValidN	direct	foundational
+cancelable		missing	qol
+cancelable_Some		missing	qol
+cancelable_op		missing	qol
+cancelable_proper		missing	qol
+cmra		missing	foundational
+cmra_assoc	iris.algebra.cmra:CMRA.cmra_assoc	direct	qol
+cmra_assoc_L		missing	qol
+cmra_comm	iris.algebra.cmra:CMRA.cmra_comm	direct	qol
+cmra_comm_L		missing	qol
+cmra_core_core_id		missing	foundational
+cmra_core_dup	iris.algebra.cmra:ucmra_core_dup	analogue	foundational	Arend’s total core is exposed on UCMRA, where ucmra_core_dup proves the same idempotence law.
+cmra_core_dup_L		missing	foundational
+cmra_core_idemp		missing	foundational
+cmra_core_idemp_L		missing	foundational
+cmra_core_l		missing	foundational
+cmra_core_l_L		missing	foundational
+cmra_core_mono		missing	foundational
+cmra_core_monoN		missing	foundational
+cmra_core_ne		missing	foundational
+cmra_core_proper		missing	foundational
+cmra_core_r		missing	foundational
+cmra_core_r_L		missing	foundational
+cmra_core_valid		missing	foundational
+cmra_core_validN		missing	foundational
+cmra_discrete_included_iff		missing	qol
+cmra_discrete_included_iff_0		missing	qol
+cmra_discrete_included_l		missing	qol
+cmra_discrete_included_r		missing	qol
+cmra_discrete_valid_iff		missing	qol
+cmra_discrete_valid_iff_0		missing	qol
+cmra_extend	iris.algebra.cmra:CMRA.cmra_extend	direct	foundational
+cmra_includedN_l	iris.algebra.cmra:cmra_includedN_l	direct	foundational
+cmra_includedN_le		missing	foundational
+cmra_includedN_ne		missing	foundational
+cmra_includedN_proper		missing	foundational
+cmra_includedN_r		missing	foundational
+cmra_includedN_trans		missing	foundational
+cmra_included_core		missing	foundational
+cmra_included_dist_l		missing	foundational
+cmra_included_includedN		missing	foundational
+cmra_included_l		missing	foundational
+cmra_included_pcore		missing	foundational
+cmra_included_proper		missing	foundational
+cmra_included_r		missing	foundational
+cmra_included_trans		missing	foundational
+cmra_mixin_of'		missing	foundational
+cmra_mono		missing	qol
+cmra_mono'		missing	qol
+cmra_monoN		missing	qol
+cmra_monoN'		missing	qol
+cmra_monoN_l		missing	qol
+cmra_monoN_r		missing	qol
+cmra_mono_l		missing	qol
+cmra_mono_r		missing	qol
+cmra_monoid		missing	qol
+cmra_morphism_core	iris.algebra.cmra:cmra_morphism_core	direct	foundational
+cmra_morphism_id	iris.algebra.cmra:cmra_morphism_id	direct	foundational
+cmra_morphism_mono		missing	foundational
+cmra_morphism_monoN	iris.algebra.cmra:cmra_morphism_monoN	direct	foundational
+cmra_morphism_proper		missing	foundational
+cmra_morphism_valid		missing	foundational
+cmra_ofeO		missing	foundational
+cmra_opM_ne		missing	qol
+cmra_opM_opM_assoc		missing	qol
+cmra_opM_proper		missing	qol
+cmra_op_discrete		missing	qol
+cmra_op_ne	iris.algebra.cmra:CMRA.cmra_op_ne	direct	qol
+cmra_op_ne'		missing	qol
+cmra_op_opM_assoc		missing	qol
+cmra_op_opM_assoc_L		missing	qol
+cmra_op_proper'		missing	qol
+cmra_pcore_core		missing	foundational
+cmra_pcore_core_id		missing	foundational
+cmra_pcore_dup		missing	foundational
+cmra_pcore_dup'		missing	foundational
+cmra_pcore_dup_L		missing	foundational
+cmra_pcore_idemp	iris.algebra.cmra:CMRA.cmra_pcore_idemp	direct	foundational
+cmra_pcore_idemp'		missing	foundational
+cmra_pcore_idemp_L		missing	foundational
+cmra_pcore_l	iris.algebra.cmra:CMRA.cmra_pcore_l	direct	foundational
+cmra_pcore_l'		missing	foundational
+cmra_pcore_l_L		missing	foundational
+cmra_pcore_mono	iris.algebra.cmra:CMRA.cmra_pcore_mono	direct	foundational
+cmra_pcore_mono'		missing	foundational
+cmra_pcore_monoN'		missing	foundational
+cmra_pcore_ne	iris.algebra.cmra:CMRA.cmra_pcore_ne	direct	foundational
+cmra_pcore_ne'		missing	foundational
+cmra_pcore_proper		missing	foundational
+cmra_pcore_proper'		missing	foundational
+cmra_pcore_r	iris.algebra.cmra:cmra_pcore_r	direct	foundational
+cmra_pcore_r'		missing	foundational
+cmra_pcore_r_L		missing	foundational
+cmra_pcore_valid		missing	foundational
+cmra_pcore_validN		missing	foundational
+cmra_total_mixin		missing	qol
+cmra_unit_cmra_total		missing	qol
+cmra_validN_Some_includedN		missing	foundational
+cmra_validN_included		missing	foundational
+cmra_validN_includedN	iris.algebra.cmra:cmra_validN_includedN	direct	foundational
+cmra_validN_le	iris.algebra.cmra:CMRA.cmra_validN_le	direct	foundational
+cmra_validN_lt		missing	foundational
+cmra_validN_ne	iris.algebra.cmra:CMRA.cmra_validN_ne	direct	foundational
+cmra_validN_ne'		missing	foundational
+cmra_validN_op_l	iris.algebra.cmra:CMRA.cmra_validN_op_l	direct	foundational
+cmra_validN_op_r	iris.algebra.cmra:cmra_validN_op_r	direct	foundational
+cmra_validN_proper	iris.algebra.cmra:cmra_validN_proper	direct	foundational
+cmra_valid_Some_included		missing	foundational
+cmra_valid_included		missing	foundational
+cmra_valid_op_l		missing	foundational
+cmra_valid_op_r		missing	foundational
+cmra_valid_proper		missing	foundational
+cmra_valid_validN	iris.algebra.cmra:CMRA.cmra_valid_validN	direct	foundational
+constRF	iris.base_logic.lib.gfunctors:constRF	direct	foundational
+constRF_contractive	iris.base_logic.lib.gfunctors:constRF_contractive	direct	qol
+core		missing	foundational
+core_id_core		missing	qol
+core_id_core_L		missing	qol
+core_id_dup	iris.algebra.cmra:core_id_dup	direct	qol
+core_id_dup_L		missing	qol
+core_id_extract		missing	qol
+core_id_total		missing	qol
+core_id_total_L		missing	qol
+discrete_cancelable		missing	qol
+discrete_cmra_discrete		missing	qol
+discrete_cmra_mixin		missing	foundational
+discrete_funR		missing	foundational
+discrete_funUR		missing	foundational
+discrete_funURF	iris.algebra.functions:discrete_funURF	direct	foundational
+discrete_funURF_contractive	iris.algebra.functions:discrete_funURF_contractive	direct	qol
+discrete_fun_cmra_mixin		missing	foundational
+discrete_fun_op_instance		missing	foundational
+discrete_fun_pcore_instance		missing	foundational
+discrete_fun_ucmra_mixin		missing	foundational
+discrete_fun_unit_instance		missing	foundational
+discrete_fun_validN_instance		missing	foundational
+discrete_fun_valid_instance		missing	foundational
+discrete_id_free		missing	qol
+discrete_validN_instance		missing	foundational
+empty_cancelable		missing	qol
+exclusiveN_Some_l		missing	qol
+exclusiveN_Some_r		missing	qol
+exclusiveN_l		missing	qol
+exclusiveN_opM		missing	qol
+exclusiveN_r		missing	qol
+exclusive_Some_l		missing	qol
+exclusive_Some_r		missing	qol
+exclusive_cancelable		missing	qol
+exclusive_id_free		missing	qol
+exclusive_included		missing	qol
+exclusive_includedN		missing	qol
+exclusive_l		missing	qol
+exclusive_r		missing	qol
+id_freeN_l		missing	qol
+id_freeN_r		missing	qol
+id_free_l		missing	qol
+id_free_op_l		missing	qol
+id_free_op_r		missing	qol
+id_free_proper		missing	qol
+id_free_r		missing	qol
+included		missing	foundational
+includedN		missing	foundational
+opM	iris.algebra.cmra:opM	direct	foundational
+op_None		missing	qol
+op_None_left_id		missing	qol
+op_None_right_id		missing	qol
+op_is_Some		missing	qol
+optionR		missing	foundational
+optionUR		missing	foundational
+optionURF		missing	foundational
+optionURF_contractive		missing	qol
+option_cancelable		missing	qol
+option_cmra_discrete		missing	qol
+option_cmra_mixin		missing	foundational
+option_core_id		missing	qol
+option_included		missing	qol
+option_includedN		missing	qol
+option_includedN_total		missing	qol
+option_included_total		missing	qol
+option_op_instance		missing	foundational
+option_pcore_instance		missing	foundational
+option_ucmra_mixin		missing	foundational
+option_unit_instance		missing	foundational
+option_validN_instance		missing	foundational
+option_valid_instance		missing	foundational
+pair_includedN		missing	qol
+pcore_Some		missing	qol
+prodR		missing	foundational
+prodRF		missing	foundational
+prodRF_contractive		missing	qol
+prod_cmra_discrete		missing	qol
+prod_cmra_mixin		missing	foundational
+prod_map_cmra_morphism		missing	qol
+prod_op_instance		missing	foundational
+prod_pcore_instance		missing	foundational
+prod_validN_instance		missing	foundational
+prod_valid_instance		missing	foundational
+rFunctor		missing	foundational
+rFunctorContractive		missing	foundational
+rFunctor_to_oFunctor		missing	foundational
+rFunctor_to_oFunctor_contractive		missing	qol
+ucmra		missing	foundational
+ucmra_cmraR		missing	foundational
+ucmra_ofeO		missing	foundational
+ucmra_pcore_unit	iris.algebra.cmra:UCMRA.ucmra_pcore_unit	direct	qol
+ucmra_unit_core_id		missing	qol
+ucmra_unit_least	iris.algebra.cmra:ucmra_unit_least	direct	qol
+ucmra_unit_leastN		missing	qol
+ucmra_unit_left_id	iris.algebra.cmra:UCMRA.ucmra_unit_left_id	direct	qol
+ucmra_unit_left_id_L		missing	qol
+ucmra_unit_right_id	iris.algebra.cmra:ucmra_unit_right_id	direct	qol
+ucmra_unit_right_id_L		missing	qol
+ucmra_unit_valid	iris.algebra.cmra:UCMRA.ucmra_unit_valid	direct	qol
+ucmra_unit_validN		missing	qol
+unitR		missing	foundational
+unit_cancelable		missing	qol
+unit_cmra_mixin		missing	foundational
+unit_core_id		missing	qol
+unit_op_instance		missing	foundational
+unit_pcore_instance		missing	foundational
+unit_validN_instance		missing	foundational
+unit_valid_instance		missing	foundational
+urFunctor		missing	foundational
+urFunctorContractive		missing	foundational
+urFunctor_to_rFunctor		missing	foundational
+urFunctor_to_rFunctor_contractive		missing	qol

@@ -1,108 +1,108 @@
-big_opL_view_frag	
-big_opMS_view_frag	
-big_opM_view_frag	
-big_opS_view_frag	
-viewO_map_ne	
-view_frag_sep_homomorphism	
-ViewRelDiscrete	
-View_discrete	
-View_ne	
-View_proper	
-view	
-viewO	
-viewO_map	
-viewR	
-viewUR	
-view_auth	
-view_auth_core_id	
-view_auth_dfrac_included	
-view_auth_dfrac_includedN	
-view_auth_dfrac_is_op	
-view_auth_dfrac_op	
-view_auth_dfrac_op_inv	
-view_auth_dfrac_op_invN	
-view_auth_dfrac_op_inv_L	
-view_auth_dfrac_op_valid	
-view_auth_dfrac_op_validN	
-view_auth_dfrac_valid	
-view_auth_dfrac_validN	
-view_auth_discrete	
-view_auth_dist_inj	
-view_auth_included	
-view_auth_includedN	
-view_auth_inj	
-view_auth_ne	
-view_auth_op_valid	
-view_auth_op_validN	
-view_auth_proj_ne	
-view_auth_proj_proper	
-view_auth_proper	
-view_auth_valid	
-view_auth_validN	
-view_both_core_discarded	
-view_both_core_frac	
-view_both_core_id	
-view_both_dfrac_included	
-view_both_dfrac_includedN	
-view_both_dfrac_valid	
-view_both_dfrac_validN	
-view_both_included	
-view_both_includedN	
-view_both_valid	
-view_both_validN	
-view_cmra_discrete	
-view_cmra_mixin	
-view_core_eq	
-view_dist	
-view_empty_instance	
-view_equiv	
-view_frag	
-view_frag_core	
-view_frag_core_id	
-view_frag_discrete	
-view_frag_dist_inj	
-view_frag_included	
-view_frag_includedN	
-view_frag_inj	
-view_frag_is_op	
-view_frag_mono	
-view_frag_ne	
-view_frag_op	
-view_frag_proj_ne	
-view_frag_proj_proper	
-view_frag_proper	
-view_frag_valid	
-view_frag_validN	
-view_local_update	
-view_map	
-view_map_cmra_morphism	
-view_map_compose	
-view_map_ext	
-view_map_id	
-view_map_ne	
-view_ofe_discrete	
-view_ofe_mixin	
-view_op_eq	
-view_op_instance	
-view_pcore_eq	
-view_pcore_instance	
-view_rel	
-view_rel_ne	
-view_rel_proper	
-view_ucmra_mixin	
-view_update	
-view_updateP	
-view_updateP_auth_dfrac	
-view_updateP_auth_unpersist	
-view_updateP_both_unpersist	
-view_updateP_frag	
-view_update_alloc	
-view_update_auth	
-view_update_auth_persist	
-view_update_dealloc	
-view_update_dfrac_alloc	
-view_update_frag	
-view_validN_eq	
-view_validN_instance	
-view_valid_eq	
-view_valid_instance	
+big_opL_view_frag		missing	qol
+big_opMS_view_frag		missing	qol
+big_opM_view_frag		missing	qol
+big_opS_view_frag		missing	qol
+viewO_map_ne		missing	qol
+view_frag_sep_homomorphism		missing	qol
+ViewRelDiscrete		missing	foundational
+View_discrete		missing	qol
+View_ne		missing	qol
+View_proper		missing	qol
+view		missing	foundational
+viewO	iris.algebra.view:ViewOFE	analogue	foundational	ViewOFE is the corresponding OFE of authoritative and fragment views.
+viewO_map		missing	foundational
+viewR	iris.algebra.view:ViewCMRA	analogue	foundational	ViewCMRA packages the same view resource algebra.
+viewUR	iris.algebra.view:ViewUCMRA	analogue	foundational	ViewUCMRA packages the unital view resource algebra.
+view_auth	iris.algebra.view:view_auth	direct	foundational
+view_auth_core_id		missing	qol
+view_auth_dfrac_included		missing	qol
+view_auth_dfrac_includedN		missing	qol
+view_auth_dfrac_is_op		missing	qol
+view_auth_dfrac_op		missing	qol
+view_auth_dfrac_op_inv		missing	qol
+view_auth_dfrac_op_invN		missing	qol
+view_auth_dfrac_op_inv_L		missing	qol
+view_auth_dfrac_op_valid		missing	qol
+view_auth_dfrac_op_validN		missing	qol
+view_auth_dfrac_valid		missing	qol
+view_auth_dfrac_validN		missing	qol
+view_auth_discrete		missing	qol
+view_auth_dist_inj		missing	qol
+view_auth_included		missing	qol
+view_auth_includedN		missing	qol
+view_auth_inj		missing	qol
+view_auth_ne		missing	qol
+view_auth_op_valid		missing	qol
+view_auth_op_validN		missing	qol
+view_auth_proj_ne		missing	qol
+view_auth_proj_proper		missing	qol
+view_auth_proper		missing	qol
+view_auth_valid		missing	qol
+view_auth_validN		missing	qol
+view_both_core_discarded		missing	qol
+view_both_core_frac		missing	qol
+view_both_core_id		missing	qol
+view_both_dfrac_included		missing	qol
+view_both_dfrac_includedN		missing	qol
+view_both_dfrac_valid		missing	qol
+view_both_dfrac_validN		missing	qol
+view_both_included		missing	qol
+view_both_includedN		missing	qol
+view_both_valid		missing	qol
+view_both_validN		missing	qol
+view_cmra_discrete		missing	qol
+view_cmra_mixin		missing	foundational
+view_core_eq		missing	foundational
+view_dist		missing	qol
+view_empty_instance		missing	qol
+view_equiv		missing	qol
+view_frag	iris.algebra.view:view_frag	direct	foundational
+view_frag_core		missing	qol
+view_frag_core_id	iris.algebra.view:view_frag_core_id	direct	qol
+view_frag_discrete		missing	qol
+view_frag_dist_inj		missing	qol
+view_frag_included		missing	qol
+view_frag_includedN		missing	qol
+view_frag_inj		missing	qol
+view_frag_is_op		missing	qol
+view_frag_mono		missing	qol
+view_frag_ne		missing	qol
+view_frag_op		missing	qol
+view_frag_proj_ne		missing	qol
+view_frag_proj_proper		missing	qol
+view_frag_proper		missing	qol
+view_frag_valid		missing	qol
+view_frag_validN		missing	qol
+view_local_update		missing	qol
+view_map		missing	foundational
+view_map_cmra_morphism		missing	qol
+view_map_compose		missing	qol
+view_map_ext		missing	qol
+view_map_id		missing	qol
+view_map_ne		missing	qol
+view_ofe_discrete		missing	qol
+view_ofe_mixin		missing	foundational
+view_op_eq		missing	foundational
+view_op_instance	iris.algebra.view:ViewCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+view_pcore_eq		missing	foundational
+view_pcore_instance	iris.algebra.view:ViewCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+view_rel		missing	foundational
+view_rel_ne		missing	qol
+view_rel_proper		missing	qol
+view_ucmra_mixin		missing	foundational
+view_update		missing	qol
+view_updateP		missing	qol
+view_updateP_auth_dfrac		missing	qol
+view_updateP_auth_unpersist		missing	qol
+view_updateP_both_unpersist		missing	qol
+view_updateP_frag	iris.algebra.view:view_updateP_frag	direct	qol
+view_update_alloc	iris.algebra.view:view_update_alloc	direct	qol
+view_update_auth		missing	qol
+view_update_auth_persist		missing	qol
+view_update_dealloc	iris.algebra.view:view_update_dealloc	direct	qol
+view_update_dfrac_alloc		missing	qol
+view_update_frag	iris.algebra.view:view_update_frag	direct	qol
+view_validN_eq		missing	foundational
+view_validN_instance	iris.algebra.view:ViewCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+view_valid_eq		missing	foundational
+view_valid_instance	iris.algebra.view:ViewCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.

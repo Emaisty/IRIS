@@ -1,26 +1,26 @@
-SbiUnfold	
-SbiUnfold_closed	
-SbiUnfold_downclose	
-sbi_unfold_and	
-sbi_unfold_closed_weaken	
-sbi_unfold_closure_indicator.sbi_unfold_closure_indicator	
-sbi_unfold_emp_valid	
-sbi_unfold_entails	
-sbi_unfold_equiv	
-sbi_unfold_exist	
-sbi_unfold_forall	
-sbi_unfold_iff	
-sbi_unfold_iff_wand	
-sbi_unfold_impl	
-sbi_unfold_internal_cmra_valid	
-sbi_unfold_internal_eq	
-sbi_unfold_internal_included	
-sbi_unfold_later	
-sbi_unfold_maybe_downclose	
-sbi_unfold_or	
-sbi_unfold_pure	
-sbi_unfold_sep	
-sbi_unfold_si_pure	
-sbi_unfold_siprop	
-sbi_unfold_tceq	
-sbi_unfold_wand	
+SbiUnfold		missing	foundational
+SbiUnfold_closed		missing	qol
+SbiUnfold_downclose		missing	qol
+sbi_unfold_and		missing	qol
+sbi_unfold_closed_weaken		missing	qol
+sbi_unfold_closure_indicator.sbi_unfold_closure_indicator		missing	foundational
+sbi_unfold_emp_valid		missing	qol
+sbi_unfold_entails		missing	qol
+sbi_unfold_equiv		missing	qol
+sbi_unfold_exist		missing	qol
+sbi_unfold_forall		missing	qol
+sbi_unfold_iff		missing	qol
+sbi_unfold_iff_wand		missing	qol
+sbi_unfold_impl		missing	qol
+sbi_unfold_internal_cmra_valid		missing	qol
+sbi_unfold_internal_eq		missing	qol
+sbi_unfold_internal_included		missing	qol
+sbi_unfold_later		missing	qol
+sbi_unfold_maybe_downclose		missing	foundational
+sbi_unfold_or		missing	qol
+sbi_unfold_pure		missing	qol
+sbi_unfold_sep		missing	qol
+sbi_unfold_si_pure		missing	qol
+sbi_unfold_siprop		missing	qol
+sbi_unfold_tceq		missing	qol
+sbi_unfold_wand		missing	qol

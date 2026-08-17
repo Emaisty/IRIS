@@ -1,297 +1,297 @@
-big_sepMS_objective	
-monPred_at_big_sepMS	
-monPred_objectively_big_sepMS	
-monPred_objectively_big_sepMS_entails	
-BiIndexBottom	
-Objective	
-absorbingly_if_objective	
-absorbingly_objective	
-affinely_if_objective	
-affinely_objective	
-and_objective	
-biIndex	
-big_sepL_objective	
-big_sepM_objective	
-big_sepS_objective	
-bupd_objective	
-embed_objective	
-emp_objective	
-except0_objective	
-exists_objective	
-forall_objective	
-fupd_objective	
-impl_objective	
-internal_eq_objective	
-intuitionistically_if_objective	
-intuitionistically_objective	
-laterN_objective	
-later_objective	
-monPred	
-monPredI	
-monPredO	
-monPred_absorbing	
-monPred_affine	
-monPred_and_unseal	
-monPred_at_absorbing	
-monPred_at_absorbingly	
-monPred_at_absorbingly_if	
-monPred_at_affine	
-monPred_at_affinely	
-monPred_at_affinely_if	
-monPred_at_and	
-monPred_at_big_sepL	
-monPred_at_big_sepM	
-monPred_at_big_sepS	
-monPred_at_bupd	
-monPred_at_dist	
-monPred_at_embed	
-monPred_at_emp	
-monPred_at_emp_valid	
-monPred_at_entails	
-monPred_at_equiv	
-monPred_at_except_0	
-monPred_at_exist	
-monPred_at_flip_mono	
-monPred_at_forall	
-monPred_at_fupd	
-monPred_at_impl	
-monPred_at_in	
-monPred_at_internal_eq	
-monPred_at_intuitionistically	
-monPred_at_intuitionistically_if	
-monPred_at_later	
-monPred_at_laterN	
-monPred_at_mono	
-monPred_at_monoid_and_homomorphism	
-monPred_at_monoid_or_homomorphism	
-monPred_at_monoid_sep_homomorphism	
-monPred_at_ne	
-monPred_at_objectively	
-monPred_at_or	
-monPred_at_persistent	
-monPred_at_persistently	
-monPred_at_persistently_if	
-monPred_at_plain	
-monPred_at_plainly	
-monPred_at_proper	
-monPred_at_pure	
-monPred_at_sep	
-monPred_at_subjectively	
-monPred_at_timeless	
-monPred_at_wand	
-monPred_bi_affine	
-monPred_bi_bupd	
-monPred_bi_bupd_fupd	
-monPred_bi_bupd_sbi	
-monPred_bi_embed	
-monPred_bi_embed_bupd	
-monPred_bi_embed_emp	
-monPred_bi_embed_fupd	
-monPred_bi_embed_later	
-monPred_bi_embed_sbi	
-monPred_bi_fupd	
-monPred_bi_fupd_sbi	
-monPred_bi_later_contractive	
-monPred_bi_later_mixin	
-monPred_bi_löb	
-monPred_bi_mixin	
-monPred_bi_persistently_forall	
-monPred_bi_persistently_mixin	
-monPred_bi_positive	
-monPred_bi_pure_forall	
-monPred_bupd_mixin	
-monPred_bupd_unseal	
-monPred_cofe	
-monPred_defs.monPred_and	
-monPred_defs.monPred_and_aux	
-monPred_defs.monPred_and_def	
-monPred_defs.monPred_and_unseal	
-monPred_defs.monPred_bupd	
-monPred_defs.monPred_bupd_aux	
-monPred_defs.monPred_bupd_def	
-monPred_defs.monPred_bupd_unseal	
-monPred_defs.monPred_embed	
-monPred_defs.monPred_embed_aux	
-monPred_defs.monPred_embed_def	
-monPred_defs.monPred_embed_unseal	
-monPred_defs.monPred_emp	
-monPred_defs.monPred_emp_aux	
-monPred_defs.monPred_emp_def	
-monPred_defs.monPred_emp_unseal	
-monPred_defs.monPred_entails	
-monPred_defs.monPred_exist	
-monPred_defs.monPred_exist_aux	
-monPred_defs.monPred_exist_def	
-monPred_defs.monPred_exist_unseal	
-monPred_defs.monPred_forall	
-monPred_defs.monPred_forall_aux	
-monPred_defs.monPred_forall_def	
-monPred_defs.monPred_forall_unseal	
-monPred_defs.monPred_fupd	
-monPred_defs.monPred_fupd_aux	
-monPred_defs.monPred_fupd_def	
-monPred_defs.monPred_fupd_unseal	
-monPred_defs.monPred_impl	
-monPred_defs.monPred_impl_aux	
-monPred_defs.monPred_impl_def	
-monPred_defs.monPred_impl_unseal	
-monPred_defs.monPred_in	
-monPred_defs.monPred_in_aux	
-monPred_defs.monPred_in_def	
-monPred_defs.monPred_in_unseal	
-monPred_defs.monPred_later	
-monPred_defs.monPred_later_aux	
-monPred_defs.monPred_later_def	
-monPred_defs.monPred_later_unseal	
-monPred_defs.monPred_objectively	
-monPred_defs.monPred_objectively_aux	
-monPred_defs.monPred_objectively_def	
-monPred_defs.monPred_objectively_unseal	
-monPred_defs.monPred_or	
-monPred_defs.monPred_or_aux	
-monPred_defs.monPred_or_def	
-monPred_defs.monPred_or_unseal	
-monPred_defs.monPred_persistently	
-monPred_defs.monPred_persistently_aux	
-monPred_defs.monPred_persistently_def	
-monPred_defs.monPred_persistently_unseal	
-monPred_defs.monPred_pure	
-monPred_defs.monPred_pure_aux	
-monPred_defs.monPred_pure_def	
-monPred_defs.monPred_pure_unseal	
-monPred_defs.monPred_sep	
-monPred_defs.monPred_sep_aux	
-monPred_defs.monPred_sep_def	
-monPred_defs.monPred_sep_unseal	
-monPred_defs.monPred_si_emp_valid	
-monPred_defs.monPred_si_emp_valid_aux	
-monPred_defs.monPred_si_emp_valid_def	
-monPred_defs.monPred_si_emp_valid_unseal	
-monPred_defs.monPred_si_pure	
-monPred_defs.monPred_si_pure_aux	
-monPred_defs.monPred_si_pure_def	
-monPred_defs.monPred_si_pure_unseal	
-monPred_defs.monPred_subjectively	
-monPred_defs.monPred_subjectively_aux	
-monPred_defs.monPred_subjectively_def	
-monPred_defs.monPred_subjectively_unseal	
-monPred_defs.monPred_unseal	
-monPred_defs.monPred_upclosed	
-monPred_defs.monPred_wand	
-monPred_defs.monPred_wand_aux	
-monPred_defs.monPred_wand_def	
-monPred_defs.monPred_wand_unseal	
-monPred_dist	
-monPred_dist'	
-monPred_embed_unseal	
-monPred_embedding_mixin	
-monPred_emp_unfold	
-monPred_emp_unseal	
-monPred_equiv	
-monPred_equiv'	
-monPred_equivI	
-monPred_exist_unseal	
-monPred_forall_unseal	
-monPred_fupd_mixin	
-monPred_fupd_unseal	
-monPred_impl_force	
-monPred_impl_unseal	
-monPred_in_absorbing	
-monPred_in_elim	
-monPred_in_flip_mono	
-monPred_in_intro	
-monPred_in_mono	
-monPred_in_persistent	
-monPred_in_proper	
-monPred_in_timeless	
-monPred_internal_eq_unfold	
-monPred_later_unseal	
-monPred_objectively_absorbing	
-monPred_objectively_affine	
-monPred_objectively_and	
-monPred_objectively_big_sepL	
-monPred_objectively_big_sepL_entails	
-monPred_objectively_big_sepM	
-monPred_objectively_big_sepM_entails	
-monPred_objectively_big_sepS	
-monPred_objectively_big_sepS_entails	
-monPred_objectively_elim	
-monPred_objectively_embed	
-monPred_objectively_emp	
-monPred_objectively_exist	
-monPred_objectively_flip_mono'	
-monPred_objectively_forall	
-monPred_objectively_idemp	
-monPred_objectively_mono	
-monPred_objectively_mono'	
-monPred_objectively_monoid_and_homomorphism	
-monPred_objectively_monoid_sep_entails_homomorphism	
-monPred_objectively_monoid_sep_homomorphism	
-monPred_objectively_ne	
-monPred_objectively_or	
-monPred_objectively_persistent	
-monPred_objectively_plain	
-monPred_objectively_proper	
-monPred_objectively_pure	
-monPred_objectively_sep	
-monPred_objectively_sep_2	
-monPred_objectively_timeless	
-monPred_objectively_unfold	
-monPred_ofe_mixin	
-monPred_or_unseal	
-monPred_persistent	
-monPred_persistently_unseal	
-monPred_pure_unfold	
-monPred_pure_unseal	
-monPred_sbi	
-monPred_sbi_emp_valid_exist	
-monPred_sbi_mixin	
-monPred_sbi_prop_ext_mixin	
-monPred_sep_unseal	
-monPred_si_emp_valid_unfold	
-monPred_si_emp_valid_unseal	
-monPred_si_pure_unfold	
-monPred_si_pure_unseal	
-monPred_sig	
-monPred_sig_monPred	
-monPred_sig_ne	
-monPred_sig_proper	
-monPred_subjectively_absorbing	
-monPred_subjectively_affine	
-monPred_subjectively_and	
-monPred_subjectively_exist	
-monPred_subjectively_flip_mono'	
-monPred_subjectively_forall	
-monPred_subjectively_idemp	
-monPred_subjectively_intro	
-monPred_subjectively_mono	
-monPred_subjectively_mono'	
-monPred_subjectively_ne	
-monPred_subjectively_or	
-monPred_subjectively_persistent	
-monPred_subjectively_plain	
-monPred_subjectively_proper	
-monPred_subjectively_sep	
-monPred_subjectively_timeless	
-monPred_subjectively_unfold	
-monPred_unseal	
-monPred_unseal_bi	
-monPred_wand_force	
-monPred_wand_unseal	
-objective_objectively	
-objective_subjectively	
-objectively_objective	
-or_objective	
-persistently_if_objective	
-persistently_objective	
-plainly_if_objective	
-plainly_objective	
-pure_objective	
-sep_objective	
-si_pure_objective	
-sig_monPred	
-sig_monPred_ne	
-sig_monPred_proper	
-sig_monPred_sig	
-subjectively_objective	
-wand_objective	
+big_sepMS_objective		missing	qol
+monPred_at_big_sepMS		missing	qol
+monPred_objectively_big_sepMS		missing	qol
+monPred_objectively_big_sepMS_entails		missing	qol
+BiIndexBottom		missing	foundational
+Objective		missing	foundational
+absorbingly_if_objective		missing	qol
+absorbingly_objective		missing	qol
+affinely_if_objective		missing	qol
+affinely_objective		missing	qol
+and_objective		missing	qol
+biIndex		missing	foundational
+big_sepL_objective		missing	qol
+big_sepM_objective		missing	qol
+big_sepS_objective		missing	qol
+bupd_objective		missing	qol
+embed_objective		missing	qol
+emp_objective		missing	qol
+except0_objective		missing	qol
+exists_objective		missing	qol
+forall_objective		missing	qol
+fupd_objective		missing	qol
+impl_objective		missing	qol
+internal_eq_objective		missing	qol
+intuitionistically_if_objective		missing	qol
+intuitionistically_objective		missing	qol
+laterN_objective		missing	qol
+later_objective		missing	qol
+monPred		missing	foundational
+monPredI		missing	foundational
+monPredO		missing	foundational
+monPred_absorbing		missing	qol
+monPred_affine		missing	qol
+monPred_and_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_at_absorbing		missing	qol
+monPred_at_absorbingly		missing	qol
+monPred_at_absorbingly_if		missing	qol
+monPred_at_affine		missing	qol
+monPred_at_affinely		missing	qol
+monPred_at_affinely_if		missing	qol
+monPred_at_and		missing	qol
+monPred_at_big_sepL		missing	qol
+monPred_at_big_sepM		missing	qol
+monPred_at_big_sepS		missing	qol
+monPred_at_bupd		missing	qol
+monPred_at_dist		missing	qol
+monPred_at_embed		missing	qol
+monPred_at_emp		missing	qol
+monPred_at_emp_valid		missing	qol
+monPred_at_entails		missing	qol
+monPred_at_equiv		missing	qol
+monPred_at_except_0		missing	qol
+monPred_at_exist		missing	qol
+monPred_at_flip_mono		missing	qol
+monPred_at_forall		missing	qol
+monPred_at_fupd		missing	qol
+monPred_at_impl		missing	qol
+monPred_at_in		missing	qol
+monPred_at_internal_eq		missing	qol
+monPred_at_intuitionistically		missing	qol
+monPred_at_intuitionistically_if		missing	qol
+monPred_at_later		missing	qol
+monPred_at_laterN		missing	qol
+monPred_at_mono		missing	qol
+monPred_at_monoid_and_homomorphism		missing	qol
+monPred_at_monoid_or_homomorphism		missing	qol
+monPred_at_monoid_sep_homomorphism		missing	qol
+monPred_at_ne		missing	qol
+monPred_at_objectively		missing	qol
+monPred_at_or		missing	qol
+monPred_at_persistent		missing	qol
+monPred_at_persistently		missing	qol
+monPred_at_persistently_if		missing	qol
+monPred_at_plain		missing	qol
+monPred_at_plainly		missing	qol
+monPred_at_proper		missing	qol
+monPred_at_pure		missing	qol
+monPred_at_sep		missing	qol
+monPred_at_subjectively		missing	qol
+monPred_at_timeless		missing	qol
+monPred_at_wand		missing	qol
+monPred_bi_affine		missing	qol
+monPred_bi_bupd		missing	qol
+monPred_bi_bupd_fupd		missing	qol
+monPred_bi_bupd_sbi		missing	qol
+monPred_bi_embed		missing	qol
+monPred_bi_embed_bupd		missing	qol
+monPred_bi_embed_emp		missing	qol
+monPred_bi_embed_fupd		missing	qol
+monPred_bi_embed_later		missing	qol
+monPred_bi_embed_sbi		missing	qol
+monPred_bi_fupd		missing	qol
+monPred_bi_fupd_sbi		missing	qol
+monPred_bi_later_contractive		missing	qol
+monPred_bi_later_mixin		missing	qol
+monPred_bi_löb		missing	qol
+monPred_bi_mixin		missing	qol
+monPred_bi_persistently_forall		missing	qol
+monPred_bi_persistently_mixin		missing	qol
+monPred_bi_positive		missing	qol
+monPred_bi_pure_forall		missing	qol
+monPred_bupd_mixin		missing	qol
+monPred_bupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_cofe		missing	qol
+monPred_defs.monPred_and		missing	foundational
+monPred_defs.monPred_and_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_and_def		missing	foundational
+monPred_defs.monPred_and_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_bupd		missing	foundational
+monPred_defs.monPred_bupd_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_bupd_def		missing	foundational
+monPred_defs.monPred_bupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_embed		missing	foundational
+monPred_defs.monPred_embed_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_embed_def		missing	foundational
+monPred_defs.monPred_embed_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_emp		missing	foundational
+monPred_defs.monPred_emp_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_emp_def		missing	foundational
+monPred_defs.monPred_emp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_entails		missing	foundational
+monPred_defs.monPred_exist		missing	foundational
+monPred_defs.monPred_exist_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_exist_def		missing	foundational
+monPred_defs.monPred_exist_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_forall		missing	foundational
+monPred_defs.monPred_forall_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_forall_def		missing	foundational
+monPred_defs.monPred_forall_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_fupd		missing	foundational
+monPred_defs.monPred_fupd_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_fupd_def		missing	foundational
+monPred_defs.monPred_fupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_impl		missing	foundational
+monPred_defs.monPred_impl_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_impl_def		missing	foundational
+monPred_defs.monPred_impl_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_in		missing	foundational
+monPred_defs.monPred_in_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_in_def		missing	foundational
+monPred_defs.monPred_in_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_later		missing	foundational
+monPred_defs.monPred_later_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_later_def		missing	foundational
+monPred_defs.monPred_later_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_objectively		missing	foundational
+monPred_defs.monPred_objectively_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_objectively_def		missing	foundational
+monPred_defs.monPred_objectively_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_or		missing	foundational
+monPred_defs.monPred_or_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_or_def		missing	foundational
+monPred_defs.monPred_or_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_persistently		missing	foundational
+monPred_defs.monPred_persistently_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_persistently_def		missing	foundational
+monPred_defs.monPred_persistently_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_pure		missing	foundational
+monPred_defs.monPred_pure_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_pure_def		missing	foundational
+monPred_defs.monPred_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_sep		missing	foundational
+monPred_defs.monPred_sep_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_sep_def		missing	foundational
+monPred_defs.monPred_sep_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_si_emp_valid		missing	foundational
+monPred_defs.monPred_si_emp_valid_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_si_emp_valid_def		missing	foundational
+monPred_defs.monPred_si_emp_valid_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_si_pure		missing	foundational
+monPred_defs.monPred_si_pure_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_si_pure_def		missing	foundational
+monPred_defs.monPred_si_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_subjectively		missing	foundational
+monPred_defs.monPred_subjectively_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_subjectively_def		missing	foundational
+monPred_defs.monPred_subjectively_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_upclosed		missing	foundational
+monPred_defs.monPred_wand		missing	foundational
+monPred_defs.monPred_wand_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_defs.monPred_wand_def		missing	foundational
+monPred_defs.monPred_wand_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_dist		missing	qol
+monPred_dist'		missing	foundational
+monPred_embed_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_embedding_mixin		missing	foundational
+monPred_emp_unfold		missing	qol
+monPred_emp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_equiv		missing	qol
+monPred_equiv'		missing	foundational
+monPred_equivI		missing	qol
+monPred_exist_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_forall_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_fupd_mixin		missing	qol
+monPred_fupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_impl_force		missing	qol
+monPred_impl_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_in_absorbing		missing	qol
+monPred_in_elim		missing	qol
+monPred_in_flip_mono		missing	qol
+monPred_in_intro		missing	qol
+monPred_in_mono		missing	qol
+monPred_in_persistent		missing	qol
+monPred_in_proper		missing	qol
+monPred_in_timeless		missing	qol
+monPred_internal_eq_unfold		missing	qol
+monPred_later_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_objectively_absorbing		missing	qol
+monPred_objectively_affine		missing	qol
+monPred_objectively_and		missing	qol
+monPred_objectively_big_sepL		missing	qol
+monPred_objectively_big_sepL_entails		missing	qol
+monPred_objectively_big_sepM		missing	qol
+monPred_objectively_big_sepM_entails		missing	qol
+monPred_objectively_big_sepS		missing	qol
+monPred_objectively_big_sepS_entails		missing	qol
+monPred_objectively_elim		missing	qol
+monPred_objectively_embed		missing	qol
+monPred_objectively_emp		missing	qol
+monPred_objectively_exist		missing	qol
+monPred_objectively_flip_mono'		missing	qol
+monPred_objectively_forall		missing	qol
+monPred_objectively_idemp		missing	qol
+monPred_objectively_mono		missing	qol
+monPred_objectively_mono'		missing	qol
+monPred_objectively_monoid_and_homomorphism		missing	qol
+monPred_objectively_monoid_sep_entails_homomorphism		missing	qol
+monPred_objectively_monoid_sep_homomorphism		missing	qol
+monPred_objectively_ne		missing	qol
+monPred_objectively_or		missing	qol
+monPred_objectively_persistent		missing	qol
+monPred_objectively_plain		missing	qol
+monPred_objectively_proper		missing	qol
+monPred_objectively_pure		missing	qol
+monPred_objectively_sep		missing	qol
+monPred_objectively_sep_2		missing	qol
+monPred_objectively_timeless		missing	qol
+monPred_objectively_unfold		missing	qol
+monPred_ofe_mixin		missing	foundational
+monPred_or_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_persistent		missing	qol
+monPred_persistently_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_pure_unfold		missing	qol
+monPred_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_sbi		missing	qol
+monPred_sbi_emp_valid_exist		missing	qol
+monPred_sbi_mixin		missing	qol
+monPred_sbi_prop_ext_mixin		missing	qol
+monPred_sep_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_si_emp_valid_unfold		missing	qol
+monPred_si_emp_valid_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_si_pure_unfold		missing	qol
+monPred_si_pure_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_sig		missing	foundational
+monPred_sig_monPred		missing	qol
+monPred_sig_ne		missing	qol
+monPred_sig_proper		missing	qol
+monPred_subjectively_absorbing		missing	qol
+monPred_subjectively_affine		missing	qol
+monPred_subjectively_and		missing	qol
+monPred_subjectively_exist		missing	qol
+monPred_subjectively_flip_mono'		missing	qol
+monPred_subjectively_forall		missing	qol
+monPred_subjectively_idemp		missing	qol
+monPred_subjectively_intro		missing	qol
+monPred_subjectively_mono		missing	qol
+monPred_subjectively_mono'		missing	qol
+monPred_subjectively_ne		missing	qol
+monPred_subjectively_or		missing	qol
+monPred_subjectively_persistent		missing	qol
+monPred_subjectively_plain		missing	qol
+monPred_subjectively_proper		missing	qol
+monPred_subjectively_sep		missing	qol
+monPred_subjectively_timeless		missing	qol
+monPred_subjectively_unfold		missing	qol
+monPred_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+monPred_unseal_bi		missing	foundational
+monPred_wand_force		missing	qol
+monPred_wand_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+objective_objectively		missing	qol
+objective_subjectively		missing	qol
+objectively_objective		missing	qol
+or_objective		missing	qol
+persistently_if_objective		missing	qol
+persistently_objective		missing	qol
+plainly_if_objective		missing	qol
+plainly_objective		missing	qol
+pure_objective		missing	qol
+sep_objective		missing	qol
+si_pure_objective		missing	qol
+sig_monPred		missing	foundational
+sig_monPred_ne		missing	qol
+sig_monPred_proper		missing	qol
+sig_monPred_sig		missing	qol
+subjectively_objective		missing	qol
+wand_objective		missing	qol

@@ -1,28 +1,28 @@
-gset_bijG	
-gset_bij_elem_of	
-gset_bij_own_alloc	
-gset_bij_own_alloc_empty	
-gset_bij_own_auth	
-gset_bij_own_auth_agree	
-gset_bij_own_auth_as_fractional	
-gset_bij_own_auth_aux	
-gset_bij_own_auth_def	
-gset_bij_own_auth_eq	
-gset_bij_own_auth_exclusive	
-gset_bij_own_auth_fractional	
-gset_bij_own_auth_persistent	
-gset_bij_own_auth_timeless	
-gset_bij_own_elem	
-gset_bij_own_elem_agree	
-gset_bij_own_elem_aux	
-gset_bij_own_elem_def	
-gset_bij_own_elem_eq	
-gset_bij_own_elem_get	
-gset_bij_own_elem_get_big	
-gset_bij_own_elem_persistent	
-gset_bij_own_elem_timeless	
-gset_bij_own_extend	
-gset_bij_own_extend_internal	
-gset_bij_own_valid	
-gset_bijΣ	
-subG_gset_bijΣ	
+gset_bijG		missing	foundational
+gset_bij_elem_of		missing	qol
+gset_bij_own_alloc		missing	qol
+gset_bij_own_alloc_empty		missing	qol
+gset_bij_own_auth		missing	foundational
+gset_bij_own_auth_agree		missing	qol
+gset_bij_own_auth_as_fractional		missing	qol
+gset_bij_own_auth_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+gset_bij_own_auth_def		missing	foundational
+gset_bij_own_auth_eq		missing	foundational
+gset_bij_own_auth_exclusive		missing	qol
+gset_bij_own_auth_fractional		missing	qol
+gset_bij_own_auth_persistent		missing	qol
+gset_bij_own_auth_timeless		missing	qol
+gset_bij_own_elem		missing	foundational
+gset_bij_own_elem_agree		missing	qol
+gset_bij_own_elem_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+gset_bij_own_elem_def		missing	foundational
+gset_bij_own_elem_eq		missing	foundational
+gset_bij_own_elem_get		missing	qol
+gset_bij_own_elem_get_big		missing	qol
+gset_bij_own_elem_persistent		missing	qol
+gset_bij_own_elem_timeless		missing	qol
+gset_bij_own_extend		missing	qol
+gset_bij_own_extend_internal		missing	qol
+gset_bij_own_valid		missing	qol
+gset_bijΣ		missing	foundational
+subG_gset_bijΣ		missing	qol

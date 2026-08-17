@@ -1,44 +1,44 @@
-affine_em.and_sep	
-affine_em.sep_dup	
-inv.A	
-inv.A_alloc	
-inv.A_persistent	
-inv.B	
-inv.I	
-inv.P	
-inv.contradiction	
-inv.contradiction'	
-inv.elim_fupd0_fupd1	
-inv.elim_fupd_fupd	
-inv.exists_split_fupd0	
-inv.finished_contradiction	
-inv.fupd_frame_r	
-inv.fupd_mono'	
-inv.fupd_proper	
-inv.inv_fupd'	
-inv.invariant_contradiction	
-inv.mask	
-inv.saved	
-inv.saved_A	
-inv.saved_NA	
-inv.saved_alloc	
-inv.saved_cast	
-inv.saved_persistent	
-later_credits_plain.contradiction	
-later_credits_plain.laterN_False	
-later_credits_plain.lc_fupd_elim_later_keep	
-linear.elim_fupd_fupd	
-linear.fupd_frame_r	
-linear.fupd_mono'	
-linear.fupd_proper	
-linear.leak	
-linear.mask	
-löb_em.later_anything	
-löb_em.later_inconsistent	
-savedprop.A	
-savedprop.A_alloc	
-savedprop.bupd_mono'	
-savedprop.contradiction	
-savedprop.elim_modal_bupd	
-savedprop.saved_A	
-savedprop.saved_NA	
+affine_em.and_sep		missing	qol
+affine_em.sep_dup		missing	qol
+inv.A		missing	foundational
+inv.A_alloc		missing	qol
+inv.A_persistent		missing	qol
+inv.B		missing	foundational
+inv.I		missing	foundational
+inv.P		missing	foundational
+inv.contradiction		missing	qol
+inv.contradiction'		missing	qol
+inv.elim_fupd0_fupd1		missing	qol
+inv.elim_fupd_fupd		missing	qol
+inv.exists_split_fupd0		missing	qol
+inv.finished_contradiction		missing	qol
+inv.fupd_frame_r		missing	foundational
+inv.fupd_mono'		missing	foundational
+inv.fupd_proper		missing	qol
+inv.inv_fupd'		missing	qol
+inv.invariant_contradiction		missing	qol
+inv.mask		missing	foundational
+inv.saved		missing	foundational
+inv.saved_A		missing	qol
+inv.saved_NA		missing	qol
+inv.saved_alloc		missing	qol
+inv.saved_cast		missing	qol
+inv.saved_persistent		missing	qol
+later_credits_plain.contradiction		missing	qol
+later_credits_plain.laterN_False		missing	qol
+later_credits_plain.lc_fupd_elim_later_keep		missing	qol
+linear.elim_fupd_fupd		missing	qol
+linear.fupd_frame_r		missing	foundational
+linear.fupd_mono'		missing	foundational
+linear.fupd_proper		missing	qol
+linear.leak		missing	qol
+linear.mask		missing	foundational
+löb_em.later_anything		missing	qol
+löb_em.later_inconsistent		missing	qol
+savedprop.A		missing	foundational
+savedprop.A_alloc		missing	qol
+savedprop.bupd_mono'		missing	foundational
+savedprop.contradiction		missing	qol
+savedprop.elim_modal_bupd		missing	qol
+savedprop.saved_A		missing	qol
+savedprop.saved_NA		missing	qol

@@ -1,31 +1,31 @@
-coPsetO	
-coPsetR	
-coPsetUR	
-coPset_cmra_discrete	
-coPset_core	
-coPset_disj	
-coPset_disjO	
-coPset_disjR	
-coPset_disjUR	
-coPset_disj_cmra_discrete	
-coPset_disj_included	
-coPset_disj_op_instance	
-coPset_disj_pcore_instance	
-coPset_disj_ra_mixin	
-coPset_disj_ucmra_mixin	
-coPset_disj_union	
-coPset_disj_unit_instance	
-coPset_disj_valid_instance	
-coPset_disj_valid_inv_l	
-coPset_disj_valid_op	
-coPset_included	
-coPset_local_update	
-coPset_op	
-coPset_opM	
-coPset_op_instance	
-coPset_pcore_instance	
-coPset_ra_mixin	
-coPset_ucmra_mixin	
-coPset_unit_instance	
-coPset_update	
-coPset_valid_instance	
+coPsetO		missing	foundational
+coPsetR		missing	foundational
+coPsetUR		missing	foundational
+coPset_cmra_discrete		missing	qol
+coPset_core		missing	qol
+coPset_disj	iris.algebra.coPset:coPset_disj	direct	foundational
+coPset_disjO	iris.algebra.coPset:coPset_disj_OFE	analogue	foundational	coPset_disj_OFE is the Arend OFE for disjoint coPsets.
+coPset_disjR	iris.algebra.coPset:coPset_disj_CMRA	analogue	foundational	coPset_disj_CMRA is the Arend CMRA for disjoint coPsets.
+coPset_disjUR	iris.algebra.coPset:coPset_disj_UCMRA	analogue	foundational	coPset_disj_UCMRA is the Arend unital CMRA for disjoint coPsets.
+coPset_disj_cmra_discrete		missing	qol
+coPset_disj_included		missing	qol
+coPset_disj_op_instance	iris.algebra.coPset:coPset_disj_CMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+coPset_disj_pcore_instance	iris.algebra.coPset:coPset_disj_CMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+coPset_disj_ra_mixin		missing	foundational
+coPset_disj_ucmra_mixin		missing	foundational
+coPset_disj_union		missing	qol
+coPset_disj_unit_instance	iris.algebra.coPset:coPset_disj_UCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+coPset_disj_valid_instance	iris.algebra.coPset:coPset_disj_CMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+coPset_disj_valid_inv_l		missing	qol
+coPset_disj_valid_op		missing	qol
+coPset_included		missing	qol
+coPset_local_update		missing	qol
+coPset_op		missing	qol
+coPset_opM		missing	qol
+coPset_op_instance		missing	foundational
+coPset_pcore_instance		missing	foundational
+coPset_ra_mixin		missing	foundational
+coPset_ucmra_mixin		missing	foundational
+coPset_unit_instance		missing	foundational
+coPset_update		missing	qol
+coPset_valid_instance		missing	foundational

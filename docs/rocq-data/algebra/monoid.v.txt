@@ -1,8 +1,8 @@
-Monoid	
-MonoidHomomorphism	
-MonoidOps	
-WeakMonoidHomomorphism	
-monoid_ops	
-monoid_proper	
-monoid_right_id	
-weak_monoid_homomorphism_proper	
+Monoid		missing	foundational
+MonoidHomomorphism		missing	foundational
+MonoidOps		missing	foundational
+WeakMonoidHomomorphism		missing	foundational
+monoid_ops		missing	qol
+monoid_proper		missing	qol
+monoid_right_id		missing	qol
+weak_monoid_homomorphism_proper		missing	qol

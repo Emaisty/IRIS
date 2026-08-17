@@ -1,24 +1,24 @@
-mono_nat	
-mono_natR	
-mono_natUR	
-mono_nat_auth	
-mono_nat_auth_core_id	
-mono_nat_auth_dfrac_is_op	
-mono_nat_auth_dfrac_op	
-mono_nat_auth_dfrac_op_valid	
-mono_nat_auth_dfrac_valid	
-mono_nat_auth_lb_op	
-mono_nat_auth_op_valid	
-mono_nat_auth_persist	
-mono_nat_auth_unpersist	
-mono_nat_auth_valid	
-mono_nat_both_dfrac_valid	
-mono_nat_both_valid	
-mono_nat_included	
-mono_nat_lb	
-mono_nat_lb_core_id	
-mono_nat_lb_max_is_op	
-mono_nat_lb_mono	
-mono_nat_lb_op	
-mono_nat_lb_op_le_l	
-mono_nat_update	
+mono_nat		missing	foundational
+mono_natR		missing	foundational
+mono_natUR		missing	foundational
+mono_nat_auth		missing	foundational
+mono_nat_auth_core_id		missing	qol
+mono_nat_auth_dfrac_is_op		missing	qol
+mono_nat_auth_dfrac_op		missing	qol
+mono_nat_auth_dfrac_op_valid		missing	qol
+mono_nat_auth_dfrac_valid		missing	qol
+mono_nat_auth_lb_op		missing	qol
+mono_nat_auth_op_valid		missing	qol
+mono_nat_auth_persist		missing	qol
+mono_nat_auth_unpersist		missing	qol
+mono_nat_auth_valid		missing	qol
+mono_nat_both_dfrac_valid		missing	qol
+mono_nat_both_valid		missing	qol
+mono_nat_included		missing	qol
+mono_nat_lb		missing	foundational
+mono_nat_lb_core_id		missing	qol
+mono_nat_lb_max_is_op		missing	qol
+mono_nat_lb_mono		missing	qol
+mono_nat_lb_op		missing	qol
+mono_nat_lb_op_le_l		missing	qol
+mono_nat_update		missing	qol

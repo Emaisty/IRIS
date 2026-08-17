@@ -1,24 +1,24 @@
-mono_Z	
-mono_ZR	
-mono_ZUR	
-mono_Z_auth	
-mono_Z_auth_core_id	
-mono_Z_auth_dfrac_is_op	
-mono_Z_auth_dfrac_op	
-mono_Z_auth_dfrac_op_valid	
-mono_Z_auth_dfrac_valid	
-mono_Z_auth_lb_op	
-mono_Z_auth_op_valid	
-mono_Z_auth_persist	
-mono_Z_auth_unpersist	
-mono_Z_auth_valid	
-mono_Z_both_dfrac_valid	
-mono_Z_both_valid	
-mono_Z_included	
-mono_Z_lb	
-mono_Z_lb_core_id	
-mono_Z_lb_max_is_op	
-mono_Z_lb_mono	
-mono_Z_lb_op	
-mono_Z_lb_op_le_l	
-mono_Z_update	
+mono_Z		missing	foundational
+mono_ZR		missing	foundational
+mono_ZUR		missing	foundational
+mono_Z_auth		missing	foundational
+mono_Z_auth_core_id		missing	qol
+mono_Z_auth_dfrac_is_op		missing	qol
+mono_Z_auth_dfrac_op		missing	qol
+mono_Z_auth_dfrac_op_valid		missing	qol
+mono_Z_auth_dfrac_valid		missing	qol
+mono_Z_auth_lb_op		missing	qol
+mono_Z_auth_op_valid		missing	qol
+mono_Z_auth_persist		missing	qol
+mono_Z_auth_unpersist		missing	qol
+mono_Z_auth_valid		missing	qol
+mono_Z_both_dfrac_valid		missing	qol
+mono_Z_both_valid		missing	qol
+mono_Z_included		missing	qol
+mono_Z_lb		missing	foundational
+mono_Z_lb_core_id		missing	qol
+mono_Z_lb_max_is_op		missing	qol
+mono_Z_lb_mono		missing	qol
+mono_Z_lb_op		missing	qol
+mono_Z_lb_op_le_l		missing	qol
+mono_Z_update		missing	qol

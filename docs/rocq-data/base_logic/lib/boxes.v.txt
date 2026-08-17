@@ -1,34 +1,34 @@
-box	
-boxG	
-box_alloc	
-box_contractive	
-box_empty	
-box_fill	
-box_inv_ne	
-box_ne	
-box_own_agree	
-box_own_auth	
-box_own_auth_agree	
-box_own_auth_update	
-box_own_prop	
-box_own_prop_contractive	
-box_own_prop_ne	
-box_proper	
-boxΣ	
-slice	
-slice_combine	
-slice_contractive	
-slice_delete_empty	
-slice_delete_full	
-slice_empty	
-slice_fill	
-slice_iff	
-slice_insert_empty	
-slice_insert_full	
-slice_inv	
-slice_name	
-slice_ne	
-slice_persistent	
-slice_proper	
-slice_split	
-subG_boxΣ	
+box		missing	foundational
+boxG		missing	foundational
+box_alloc		missing	qol
+box_contractive		missing	qol
+box_empty		missing	qol
+box_fill		missing	qol
+box_inv_ne		missing	qol
+box_ne		missing	qol
+box_own_agree		missing	qol
+box_own_auth		missing	foundational
+box_own_auth_agree		missing	qol
+box_own_auth_update		missing	qol
+box_own_prop		missing	foundational
+box_own_prop_contractive		missing	qol
+box_own_prop_ne		missing	qol
+box_proper		missing	qol
+boxΣ		missing	foundational
+slice		missing	foundational
+slice_combine		missing	qol
+slice_contractive		missing	qol
+slice_delete_empty		missing	qol
+slice_delete_full		missing	qol
+slice_empty		missing	qol
+slice_fill		missing	qol
+slice_iff		missing	qol
+slice_insert_empty		missing	qol
+slice_insert_full		missing	qol
+slice_inv		missing	foundational
+slice_name		missing	foundational
+slice_ne		missing	qol
+slice_persistent		missing	qol
+slice_proper		missing	qol
+slice_split		missing	qol
+subG_boxΣ		missing	qol

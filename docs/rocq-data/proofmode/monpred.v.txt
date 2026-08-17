@@ -1,111 +1,111 @@
-FrameMonPredAt	
-IsBiIndexRel	
-MakeMonPredAt	
-add_modal_at_bupd_goal	
-add_modal_at_fupd_goal	
-as_emp_valid_monPred_at	
-as_emp_valid_monPred_at_equiv	
-as_emp_valid_monPred_at_wand	
-elim_acc_at_None	
-elim_acc_at_Some	
-elim_inv_embed_with_close	
-elim_inv_embed_without_close	
-elim_modal_at	
-elim_modal_at_bupd_goal	
-elim_modal_at_bupd_hyp	
-elim_modal_at_fupd_goal	
-elim_modal_at_fupd_hyp	
-frame_monPred_at_absorbingly	
-frame_monPred_at_affinely	
-frame_monPred_at_and	
-frame_monPred_at_bupd	
-frame_monPred_at_embed	
-frame_monPred_at_enter	
-frame_monPred_at_exist	
-frame_monPred_at_forall	
-frame_monPred_at_fupd	
-frame_monPred_at_here	
-frame_monPred_at_impl	
-frame_monPred_at_intuitionistically	
-frame_monPred_at_later	
-frame_monPred_at_laterN	
-frame_monPred_at_objectively	
-frame_monPred_at_or	
-frame_monPred_at_persistently	
-frame_monPred_at_sep	
-frame_monPred_at_subjectively	
-frame_monPred_at_wand	
-from_and_monPred_at	
-from_assumption_make_monPred_at_l	
-from_assumption_make_monPred_at_r	
-from_assumption_make_monPred_objectively	
-from_assumption_make_monPred_subjectively	
-from_exist_monPred_at	
-from_exist_monPred_at_ex	
-from_forall_monPred_at	
-from_forall_monPred_at_impl	
-from_forall_monPred_at_objectively	
-from_forall_monPred_at_plainly	
-from_forall_monPred_at_wand	
-from_later_monPred_at	
-from_modal_affinely_monPred_at	
-from_modal_id_monPred_at	
-from_modal_intuitionistically_monPred_at	
-from_modal_objectively	
-from_modal_persistently_monPred_at	
-from_modal_subjectively	
-from_or_monPred_at	
-from_pure_monPred_at	
-from_pure_monPred_in	
-from_sep_monPred_at	
-into_and_monPred_at	
-into_embed_objective	
-into_except_0_monPred_at_bwd	
-into_except_0_monPred_at_fwd	
-into_exist_monPred_at	
-into_exist_monPred_at_ex	
-into_forall_monPred_at	
-into_forall_monPred_at_index	
-into_forall_monPred_at_objectively	
-into_forall_monPred_at_plainly	
-into_internal_eq_monPred_at	
-into_or_monPred_at	
-into_persistent_monPred_at	
-into_pure_monPred_at	
-into_pure_monPred_in	
-into_sep_monPred_at	
-into_wand_impl'_monPred	
-into_wand_monPred_at_known_unknown_ge	
-into_wand_monPred_at_known_unknown_le	
-into_wand_monPred_at_unknown_known	
-into_wand_monPred_at_unknown_unknown	
-into_wand_wand'_monPred	
-is_bi_index_rel_refl	
-is_except_0_monPred_at	
-make_monPred_at_absorbingly	
-make_monPred_at_absorbingly_if	
-make_monPred_at_affinely	
-make_monPred_at_affinely_if	
-make_monPred_at_and	
-make_monPred_at_bupd	
-make_monPred_at_default	
-make_monPred_at_embed	
-make_monPred_at_emp	
-make_monPred_at_except_0	
-make_monPred_at_exists	
-make_monPred_at_forall	
-make_monPred_at_fupd	
-make_monPred_at_in	
-make_monPred_at_internal_eq	
-make_monPred_at_intuitionistically	
-make_monPred_at_intuitionistically_if	
-make_monPred_at_later	
-make_monPred_at_laterN	
-make_monPred_at_or	
-make_monPred_at_persistently	
-make_monPred_at_persistently_if	
-make_monPred_at_pure	
-make_monPred_at_sep	
-maybe_into_later_monPred_at	
-modality_objectively	
-modality_objectively_mixin	
+FrameMonPredAt		missing	foundational
+IsBiIndexRel		missing	foundational
+MakeMonPredAt		missing	foundational
+add_modal_at_bupd_goal		missing	qol
+add_modal_at_fupd_goal		missing	qol
+as_emp_valid_monPred_at		missing	qol
+as_emp_valid_monPred_at_equiv		missing	qol
+as_emp_valid_monPred_at_wand		missing	qol
+elim_acc_at_None		missing	qol
+elim_acc_at_Some		missing	qol
+elim_inv_embed_with_close		missing	qol
+elim_inv_embed_without_close		missing	qol
+elim_modal_at		missing	qol
+elim_modal_at_bupd_goal		missing	qol
+elim_modal_at_bupd_hyp		missing	qol
+elim_modal_at_fupd_goal		missing	qol
+elim_modal_at_fupd_hyp		missing	qol
+frame_monPred_at_absorbingly		missing	qol
+frame_monPred_at_affinely		missing	qol
+frame_monPred_at_and		missing	qol
+frame_monPred_at_bupd		missing	qol
+frame_monPred_at_embed		missing	qol
+frame_monPred_at_enter		missing	qol
+frame_monPred_at_exist		missing	qol
+frame_monPred_at_forall		missing	qol
+frame_monPred_at_fupd		missing	qol
+frame_monPred_at_here		missing	qol
+frame_monPred_at_impl		missing	qol
+frame_monPred_at_intuitionistically		missing	qol
+frame_monPred_at_later		missing	qol
+frame_monPred_at_laterN		missing	qol
+frame_monPred_at_objectively		missing	qol
+frame_monPred_at_or		missing	qol
+frame_monPred_at_persistently		missing	qol
+frame_monPred_at_sep		missing	qol
+frame_monPred_at_subjectively		missing	qol
+frame_monPred_at_wand		missing	qol
+from_and_monPred_at		missing	qol
+from_assumption_make_monPred_at_l		missing	qol
+from_assumption_make_monPred_at_r		missing	qol
+from_assumption_make_monPred_objectively		missing	qol
+from_assumption_make_monPred_subjectively		missing	qol
+from_exist_monPred_at		missing	qol
+from_exist_monPred_at_ex		missing	qol
+from_forall_monPred_at		missing	qol
+from_forall_monPred_at_impl		missing	qol
+from_forall_monPred_at_objectively		missing	qol
+from_forall_monPred_at_plainly		missing	qol
+from_forall_monPred_at_wand		missing	qol
+from_later_monPred_at		missing	qol
+from_modal_affinely_monPred_at		missing	qol
+from_modal_id_monPred_at		missing	qol
+from_modal_intuitionistically_monPred_at		missing	qol
+from_modal_objectively		missing	qol
+from_modal_persistently_monPred_at		missing	qol
+from_modal_subjectively		missing	qol
+from_or_monPred_at		missing	qol
+from_pure_monPred_at		missing	qol
+from_pure_monPred_in		missing	qol
+from_sep_monPred_at		missing	qol
+into_and_monPred_at		missing	qol
+into_embed_objective		missing	qol
+into_except_0_monPred_at_bwd		missing	qol
+into_except_0_monPred_at_fwd		missing	qol
+into_exist_monPred_at		missing	qol
+into_exist_monPred_at_ex		missing	qol
+into_forall_monPred_at		missing	qol
+into_forall_monPred_at_index		missing	qol
+into_forall_monPred_at_objectively		missing	qol
+into_forall_monPred_at_plainly		missing	qol
+into_internal_eq_monPred_at		missing	qol
+into_or_monPred_at		missing	qol
+into_persistent_monPred_at		missing	qol
+into_pure_monPred_at		missing	qol
+into_pure_monPred_in		missing	qol
+into_sep_monPred_at		missing	qol
+into_wand_impl'_monPred		missing	qol
+into_wand_monPred_at_known_unknown_ge		missing	qol
+into_wand_monPred_at_known_unknown_le		missing	qol
+into_wand_monPred_at_unknown_known		missing	qol
+into_wand_monPred_at_unknown_unknown		missing	qol
+into_wand_wand'_monPred		missing	qol
+is_bi_index_rel_refl		missing	qol
+is_except_0_monPred_at		missing	qol
+make_monPred_at_absorbingly		missing	qol
+make_monPred_at_absorbingly_if		missing	qol
+make_monPred_at_affinely		missing	qol
+make_monPred_at_affinely_if		missing	qol
+make_monPred_at_and		missing	qol
+make_monPred_at_bupd		missing	qol
+make_monPred_at_default		missing	qol
+make_monPred_at_embed		missing	qol
+make_monPred_at_emp		missing	qol
+make_monPred_at_except_0		missing	qol
+make_monPred_at_exists		missing	qol
+make_monPred_at_forall		missing	qol
+make_monPred_at_fupd		missing	qol
+make_monPred_at_in		missing	qol
+make_monPred_at_internal_eq		missing	qol
+make_monPred_at_intuitionistically		missing	qol
+make_monPred_at_intuitionistically_if		missing	qol
+make_monPred_at_later		missing	qol
+make_monPred_at_laterN		missing	qol
+make_monPred_at_or		missing	qol
+make_monPred_at_persistently		missing	qol
+make_monPred_at_persistently_if		missing	qol
+make_monPred_at_pure		missing	qol
+make_monPred_at_sep		missing	qol
+maybe_into_later_monPred_at		missing	qol
+modality_objectively		missing	foundational
+modality_objectively_mixin		missing	qol

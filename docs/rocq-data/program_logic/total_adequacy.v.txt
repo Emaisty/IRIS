@@ -1,11 +1,11 @@
-twp_total	
-twp_twptp	
-twptp	
-twptp_Permutation	
-twptp_app	
-twptp_ind	
-twptp_pre	
-twptp_pre_mono	
-twptp_pre_mono'	
-twptp_total	
-twptp_unfold	
+twp_total		missing	qol
+twp_twptp		missing	qol
+twptp		missing	foundational
+twptp_Permutation		missing	qol
+twptp_app		missing	qol
+twptp_ind		missing	qol
+twptp_pre		missing	foundational
+twptp_pre_mono		missing	qol
+twptp_pre_mono'		missing	qol
+twptp_total		missing	qol
+twptp_unfold		missing	qol

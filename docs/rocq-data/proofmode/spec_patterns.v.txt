@@ -1,10 +1,10 @@
-goal_kind	
-goal_kind_modal	
-spec_goal	
-spec_pat	
-spec_pat.close	
-spec_pat.close_ident	
-spec_pat.parse	
-spec_pat.parse_go	
-spec_pat.stack_item	
-spec_pat_modal	
+goal_kind		missing	foundational
+goal_kind_modal		missing	foundational
+spec_goal		missing	foundational
+spec_pat		missing	foundational
+spec_pat.close		missing	foundational
+spec_pat.close_ident		missing	foundational
+spec_pat.parse		missing	qol
+spec_pat.parse_go		missing	foundational
+spec_pat.stack_item		missing	foundational
+spec_pat_modal		missing	foundational

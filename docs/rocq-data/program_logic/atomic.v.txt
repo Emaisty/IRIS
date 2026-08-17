@@ -1,7 +1,7 @@
-atomic_seq_wp_atomic	
-atomic_wp	
-atomic_wp_inv	
-atomic_wp_mask_weaken	
-atomic_wp_seq	
-atomic_wp_seq_step	
-persistent_seq_wp_atomic	
+atomic_seq_wp_atomic		missing	qol
+atomic_wp		missing	foundational
+atomic_wp_inv		missing	qol
+atomic_wp_mask_weaken		missing	qol
+atomic_wp_seq		missing	qol
+atomic_wp_seq_step		missing	qol
+persistent_seq_wp_atomic		missing	qol

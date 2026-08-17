@@ -1,12 +1,12 @@
-coreP	
-coreP_affine	
-coreP_elim	
-coreP_entails	
-coreP_entails'	
-coreP_flip_mono	
-coreP_intro	
-coreP_mono	
-coreP_ne	
-coreP_persistent	
-coreP_proper	
-coreP_wand	
+coreP		missing	foundational
+coreP_affine		missing	qol
+coreP_elim		missing	qol
+coreP_entails		missing	qol
+coreP_entails'		missing	qol
+coreP_flip_mono		missing	qol
+coreP_intro		missing	qol
+coreP_mono		missing	qol
+coreP_ne		missing	qol
+coreP_persistent		missing	qol
+coreP_proper		missing	qol
+coreP_wand		missing	qol

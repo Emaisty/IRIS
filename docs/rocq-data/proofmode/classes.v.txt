@@ -1,85 +1,85 @@
-AddModal	
-AsEmpValid0	
-ElimAcc	
-ElimInv	
-FrameInstantiateExistDisabled	
-IntoAcc	
-IntoEmbed	
-IntoInv	
-IsApp	
-IsCons	
-IsDisjUnion	
-accessor	
-add_modal_id	
-is_app_app	
-is_cons_cons	
-is_disj_union_disj_union	
-AsEmpValid	
-CombineSepAs	
-CombineSepGives	
-ElimModal	
-Frame	
-FromAffinely	
-FromAnd	
-FromAssumption	
-FromExist	
-FromForall	
-FromImpl	
-FromModal	
-FromOr	
-FromPure	
-FromPureT	
-FromSep	
-FromWand	
-IntoAbsorbingly	
-IntoAnd	
-IntoExcept0	
-IntoExist	
-IntoForall	
-IntoInternalEq	
-IntoLaterN	
-IntoOr	
-IntoPersistent	
-IntoPure	
-IntoPureT	
-IntoSep	
-IntoWand	
-IntoWand'	
-IsExcept0	
-KnownLFromAssumption	
-KnownRFromAssumption	
-MaybeCombineSepAs	
-MaybeFrame'	
-MaybeIntoLaterN	
-as_emp_valid_1	
-as_emp_valid_2	
-as_emp_valid_direction	
-elim_inv_tc_opaque	
-elim_modal_tc_opaque	
-from_and_tc_opaque	
-from_exist_tc_opaque	
-from_forall_tc_opaque	
-from_modal_tc_opaque	
-from_or_tc_opaque	
-from_pureT_hint	
-from_pure_tc_opaque	
-from_sep_tc_opaque	
-from_wand_tc_opaque	
-into_and_tc_opaque	
-into_exist_tc_opaque	
-into_forall_tc_opaque	
-into_inv_tc_opaque	
-into_or_tc_opaque	
-into_pureT_hint	
-into_pure_tc_opaque	
-into_sep_tc_opaque	
-into_wand_tc_opaque	
-maybe_combine_sep_as_combine_sep_as	
-maybe_combine_sep_as_default	
-maybe_frame_default	
-maybe_frame_default_persistent	
-maybe_frame_frame	
-maybe_into_laterN_default	
-maybe_into_laterN_default_0	
-pm_error	
-progress_indicator	
+AddModal		missing	foundational
+AsEmpValid0		missing	foundational
+ElimAcc		missing	foundational
+ElimInv		missing	foundational
+FrameInstantiateExistDisabled		missing	foundational
+IntoAcc		missing	foundational
+IntoEmbed		missing	foundational
+IntoInv		missing	foundational
+IsApp		missing	foundational
+IsCons		missing	foundational
+IsDisjUnion		missing	foundational
+accessor		missing	foundational
+add_modal_id		missing	qol
+is_app_app		missing	qol
+is_cons_cons		missing	qol
+is_disj_union_disj_union		missing	qol
+AsEmpValid		missing	foundational
+CombineSepAs		missing	foundational
+CombineSepGives		missing	foundational
+ElimModal		missing	foundational
+Frame		missing	foundational
+FromAffinely		missing	foundational
+FromAnd		missing	foundational
+FromAssumption		missing	foundational
+FromExist		missing	foundational
+FromForall		missing	foundational
+FromImpl		missing	foundational
+FromModal		missing	foundational
+FromOr		missing	foundational
+FromPure		missing	foundational
+FromPureT		missing	foundational
+FromSep		missing	foundational
+FromWand		missing	foundational
+IntoAbsorbingly		missing	foundational
+IntoAnd		missing	foundational
+IntoExcept0		missing	foundational
+IntoExist		missing	foundational
+IntoForall		missing	foundational
+IntoInternalEq		missing	foundational
+IntoLaterN		missing	foundational
+IntoOr		missing	foundational
+IntoPersistent		missing	foundational
+IntoPure		missing	foundational
+IntoPureT		missing	foundational
+IntoSep		missing	foundational
+IntoWand		missing	foundational
+IntoWand'		missing	foundational
+IsExcept0		missing	foundational
+KnownLFromAssumption		missing	foundational
+KnownRFromAssumption		missing	foundational
+MaybeCombineSepAs		missing	foundational
+MaybeFrame'		missing	foundational
+MaybeIntoLaterN		missing	foundational
+as_emp_valid_1		missing	qol
+as_emp_valid_2		missing	qol
+as_emp_valid_direction		missing	foundational
+elim_inv_tc_opaque		missing	qol
+elim_modal_tc_opaque		missing	qol
+from_and_tc_opaque		missing	qol
+from_exist_tc_opaque		missing	qol
+from_forall_tc_opaque		missing	qol
+from_modal_tc_opaque		missing	qol
+from_or_tc_opaque		missing	qol
+from_pureT_hint		missing	qol
+from_pure_tc_opaque		missing	qol
+from_sep_tc_opaque		missing	qol
+from_wand_tc_opaque		missing	qol
+into_and_tc_opaque		missing	qol
+into_exist_tc_opaque		missing	qol
+into_forall_tc_opaque		missing	qol
+into_inv_tc_opaque		missing	qol
+into_or_tc_opaque		missing	qol
+into_pureT_hint		missing	qol
+into_pure_tc_opaque		missing	qol
+into_sep_tc_opaque		missing	qol
+into_wand_tc_opaque		missing	qol
+maybe_combine_sep_as_combine_sep_as		missing	qol
+maybe_combine_sep_as_default		missing	qol
+maybe_frame_default		missing	qol
+maybe_frame_default_persistent		missing	qol
+maybe_frame_frame		missing	qol
+maybe_into_laterN_default		missing	qol
+maybe_into_laterN_default_0		missing	qol
+pm_error		missing	foundational
+progress_indicator		missing	foundational

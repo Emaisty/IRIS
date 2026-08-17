@@ -1,20 +1,20 @@
-from_and_plainly	
-from_assumption_plainly_l_false	
-from_assumption_plainly_l_true	
-from_exist_plainly	
-from_forall_plainly	
-from_modal_plainly	
-from_or_plainly	
-from_pure_plainly	
-from_sep_plainly	
-into_and_plainly	
-into_except_0_plainly	
-into_exist_plainly	
-into_forall_plainly	
-into_later_plainly	
-into_or_plainly	
-into_pure_plainly	
-into_sep_plainly	
-into_sep_plainly_affine	
-into_wand_plainly_false	
-into_wand_plainly_true	
+from_and_plainly		missing	qol
+from_assumption_plainly_l_false		missing	qol
+from_assumption_plainly_l_true		missing	qol
+from_exist_plainly		missing	qol
+from_forall_plainly		missing	qol
+from_modal_plainly		missing	qol
+from_or_plainly		missing	qol
+from_pure_plainly		missing	qol
+from_sep_plainly		missing	qol
+into_and_plainly		missing	qol
+into_except_0_plainly		missing	qol
+into_exist_plainly		missing	qol
+into_forall_plainly		missing	qol
+into_later_plainly		missing	qol
+into_or_plainly		missing	qol
+into_pure_plainly		missing	qol
+into_sep_plainly		missing	qol
+into_sep_plainly_affine		missing	qol
+into_wand_plainly_false		missing	qol
+into_wand_plainly_true		missing	qol

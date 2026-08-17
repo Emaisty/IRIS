@@ -1,8 +1,8 @@
-fixpoint_absorbing	
-fixpoint_affine	
-fixpoint_persistent	
-fixpoint_persistent_absoring	
-fixpoint_persistent_affine	
-fixpoint_plain	
-fixpoint_plain_absoring	
-fixpoint_plain_affine	
+fixpoint_absorbing		missing	qol
+fixpoint_affine		missing	qol
+fixpoint_persistent		missing	qol
+fixpoint_persistent_absoring		missing	qol
+fixpoint_persistent_affine		missing	qol
+fixpoint_plain		missing	qol
+fixpoint_plain_absoring		missing	qol
+fixpoint_plain_affine		missing	qol

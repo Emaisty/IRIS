@@ -1,40 +1,40 @@
-maybe_Excl	
-ExclInvalid_discrete	
-ExclInvalid_included	
-Excl_discrete	
-Excl_dist_inj	
-Excl_included	
-Excl_includedN	
-Excl_inj	
-Excl_ne	
-Excl_proper	
-excl	
-exclO	
-exclO_map	
-exclO_map_ne	
-exclR	
-exclRF	
-exclRF_contractive	
-excl_cmra_discrete	
-excl_cmra_mixin	
-excl_cofe	
-excl_dist	
-excl_equiv	
-excl_exclusive	lib.excl_cmra:excl_exclusive
-excl_included	
-excl_includedN	
-excl_leibniz	
-excl_map	lib.excl_cmra:excl_map
-excl_map_cmra_morphism	
-excl_map_compose	lib.excl_cmra:excl_map_compose
-excl_map_ext	
-excl_map_id	lib.excl_cmra:excl_map_id
-excl_map_ne	lib.excl_cmra:excl_map_ne
-excl_ofe_discrete	
-excl_ofe_mixin	
-excl_op_instance	
-excl_pcore_instance	
-excl_validN_instance	
-excl_validN_inv_l	
-excl_validN_inv_r	
-excl_valid_instance	
+maybe_Excl		missing	qol
+ExclInvalid_discrete		missing	qol
+ExclInvalid_included		missing	qol
+Excl_discrete		missing	qol
+Excl_dist_inj		missing	qol
+Excl_included		missing	qol
+Excl_includedN		missing	qol
+Excl_inj		missing	qol
+Excl_ne		missing	qol
+Excl_proper		missing	qol
+excl	iris.algebra.excl:Excl	analogue	foundational	Excl is the Arend exclusive-resource datatype.
+exclO	iris.algebra.excl:ExclOFE	analogue	foundational	ExclOFE is the corresponding Arend OFE.
+exclO_map		missing	foundational
+exclO_map_ne		missing	qol
+exclR	iris.algebra.excl:ExclCMRA	analogue	foundational	ExclCMRA is the corresponding Arend CMRA.
+exclRF		missing	foundational
+exclRF_contractive		missing	qol
+excl_cmra_discrete		missing	qol
+excl_cmra_mixin		missing	foundational
+excl_cofe		missing	qol
+excl_dist		missing	foundational
+excl_equiv		missing	foundational
+excl_exclusive	iris.algebra.excl:excl_exclusive	direct	qol
+excl_included		missing	qol
+excl_includedN		missing	qol
+excl_leibniz		missing	qol
+excl_map	iris.algebra.excl:excl_map	direct	foundational
+excl_map_cmra_morphism		missing	qol
+excl_map_compose	iris.algebra.excl:excl_map_compose	direct	qol
+excl_map_ext		missing	qol
+excl_map_id	iris.algebra.excl:excl_map_id	direct	qol
+excl_map_ne	iris.algebra.excl:excl_map_ne	direct	qol
+excl_ofe_discrete		missing	qol
+excl_ofe_mixin		missing	foundational
+excl_op_instance	iris.algebra.excl:ExclCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+excl_pcore_instance	iris.algebra.excl:ExclCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+excl_validN_instance	iris.algebra.excl:ExclCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
+excl_validN_inv_l		missing	qol
+excl_validN_inv_r		missing	qol
+excl_valid_instance	iris.algebra.excl:ExclCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.

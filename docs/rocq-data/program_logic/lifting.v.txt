@@ -1,11 +1,11 @@
-wp_lift_atomic_step	
-wp_lift_atomic_step_fupd	
-wp_lift_pure_det_step_no_fork	
-wp_lift_pure_step_no_fork	
-wp_lift_pure_stuck	
-wp_lift_step	
-wp_lift_step_fupd	
-wp_lift_step_fupdN	
-wp_lift_stuck	
-wp_pure_step_fupd	
-wp_pure_step_later	
+wp_lift_atomic_step	iris.program_logic.lifting:wp_lift_atomic	analogue	foundational	wp_lift_atomic specializes the Arend semantic lifting argument to atomic expressions.
+wp_lift_atomic_step_fupd		missing	foundational
+wp_lift_pure_det_step_no_fork		missing	foundational
+wp_lift_pure_step_no_fork		missing	foundational
+wp_lift_pure_stuck		missing	foundational
+wp_lift_step	iris.program_logic.lifting:wp_nonval_ready	analogue	foundational	Arend uses the semantic elimination form: wp_nonval_ready exposes reducibility and every successor obligation from WP and the state interpretation.
+wp_lift_step_fupd		missing	foundational
+wp_lift_step_fupdN		missing	foundational
+wp_lift_stuck		missing	foundational
+wp_pure_step_fupd		missing	qol
+wp_pure_step_later	iris.program_logic.lifting:wp_pure_step	analogue	qol	wp_pure_step is the Arend pure-step lifting rule; later credits are represented directly by step indices.

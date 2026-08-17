@@ -1,31 +1,31 @@
-inv_heapGS	
-inv_heapGpreS	
-inv_heapN	
-inv_heap_init	
-inv_heap_inv	
-inv_heap_inv_P	
-inv_heap_inv_persistent	
-inv_heap_mapUR	
-inv_heapΣ	
-inv_pointsto	
-inv_pointsto_acc	
-inv_pointsto_lookup_Some	
-inv_pointsto_own	
-inv_pointsto_own_acc	
-inv_pointsto_own_acc_strong	
-inv_pointsto_own_inv	
-inv_pointsto_own_lookup_Some	
-inv_pointsto_own_proper	
-inv_pointsto_own_timeless	
-inv_pointsto_persistent	
-inv_pointsto_proper	
-inv_pointsto_timeless	
-lookup_to_inv_heap_None	
-lookup_to_inv_heap_Some	
-lookup_to_inv_heap_Some_2	
-make_inv_pointsto	
-subG_inv_heapGpreS	
-to_inv_heap	
-to_inv_heap_insert	
-to_inv_heap_singleton	
-to_inv_heap_valid	
+inv_heapGS		missing	foundational
+inv_heapGpreS		missing	foundational
+inv_heapN		missing	foundational
+inv_heap_init		missing	qol
+inv_heap_inv		missing	foundational
+inv_heap_inv_P		missing	foundational
+inv_heap_inv_persistent		missing	qol
+inv_heap_mapUR		missing	foundational
+inv_heapΣ		missing	foundational
+inv_pointsto		missing	foundational
+inv_pointsto_acc		missing	qol
+inv_pointsto_lookup_Some		missing	qol
+inv_pointsto_own		missing	foundational
+inv_pointsto_own_acc		missing	qol
+inv_pointsto_own_acc_strong		missing	qol
+inv_pointsto_own_inv		missing	qol
+inv_pointsto_own_lookup_Some		missing	qol
+inv_pointsto_own_proper		missing	qol
+inv_pointsto_own_timeless		missing	qol
+inv_pointsto_persistent		missing	qol
+inv_pointsto_proper		missing	qol
+inv_pointsto_timeless		missing	qol
+lookup_to_inv_heap_None		missing	qol
+lookup_to_inv_heap_Some		missing	qol
+lookup_to_inv_heap_Some_2		missing	qol
+make_inv_pointsto		missing	qol
+subG_inv_heapGpreS		missing	qol
+to_inv_heap		missing	foundational
+to_inv_heap_insert		missing	qol
+to_inv_heap_singleton		missing	qol
+to_inv_heap_valid		missing	qol

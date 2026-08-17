@@ -1,25 +1,25 @@
-KnownMakeEmbed	
-MakeEmbed	
-KnownLMakeAnd	
-KnownLMakeOr	
-KnownLMakeSep	
-KnownMakeAbsorbingly	
-KnownMakeAffinely	
-KnownMakeExcept0	
-KnownMakeIntuitionistically	
-KnownMakeLaterN	
-KnownMakePersistently	
-KnownRMakeAnd	
-KnownRMakeOr	
-KnownRMakeSep	
-MakeAbsorbingly	
-MakeAffinely	
-MakeAnd	
-MakeExcept0	
-MakeIntuitionistically	
-MakeLaterN	
-MakeOr	
-MakePersistently	
-MakeSep	
-QuickAbsorbing	
-QuickAffine	
+KnownMakeEmbed		missing	foundational
+MakeEmbed		missing	foundational
+KnownLMakeAnd		missing	foundational
+KnownLMakeOr		missing	foundational
+KnownLMakeSep		missing	foundational
+KnownMakeAbsorbingly		missing	foundational
+KnownMakeAffinely		missing	foundational
+KnownMakeExcept0		missing	foundational
+KnownMakeIntuitionistically		missing	foundational
+KnownMakeLaterN		missing	foundational
+KnownMakePersistently		missing	foundational
+KnownRMakeAnd		missing	foundational
+KnownRMakeOr		missing	foundational
+KnownRMakeSep		missing	foundational
+MakeAbsorbingly		missing	foundational
+MakeAffinely		missing	foundational
+MakeAnd		missing	foundational
+MakeExcept0		missing	foundational
+MakeIntuitionistically		missing	foundational
+MakeLaterN		missing	foundational
+MakeOr		missing	foundational
+MakePersistently		missing	foundational
+MakeSep		missing	foundational
+QuickAbsorbing		missing	foundational
+QuickAffine		missing	foundational

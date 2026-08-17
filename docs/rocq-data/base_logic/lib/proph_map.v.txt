@@ -1,19 +1,19 @@
-proph	
-proph_aux	
-proph_def	
-proph_exclusive	
-proph_list_resolves	
-proph_mapGS	
-proph_mapGpreS	
-proph_map_agree	
-proph_map_init	
-proph_map_interp	
-proph_map_new_proph	
-proph_map_resolve_proph	
-proph_mapΣ	
-proph_resolves_in_list	
-proph_timeless	
-proph_unseal	
-proph_val_list	
-resolves_insert	
-subG_proph_mapGpreS	
+proph	iris.base_logic.lib.proph_map:proph	direct	foundational
+proph_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+proph_def		missing	foundational
+proph_exclusive	iris.base_logic.lib.proph_map:proph_exclusive	direct	qol
+proph_list_resolves	iris.base_logic.lib.proph_map:proph_list_resolves	direct	foundational
+proph_mapGS	iris.base_logic.lib.proph_map:proph_mapGS	direct	foundational
+proph_mapGpreS	iris.base_logic.lib.proph_map:proph_mapGpreS	direct	foundational
+proph_map_agree	iris.base_logic.lib.proph_map:proph_map_agree	direct	qol
+proph_map_init	iris.base_logic.lib.proph_map:proph_map_init	direct	foundational
+proph_map_interp	iris.base_logic.lib.proph_map:proph_map_interp	direct	foundational
+proph_map_new_proph	iris.base_logic.lib.proph_map:proph_map_new_proph	direct	qol
+proph_map_resolve_proph	iris.base_logic.lib.proph_map:proph_map_resolve_proph	direct	foundational
+proph_mapΣ	iris.base_logic.lib.proph_map:proph_mapSigma	analogue	foundational	proph_mapSigma is the same ghost signature, using an ASCII suffix in Arend.
+proph_resolves_in_list		missing	foundational
+proph_timeless		missing	qol
+proph_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+proph_val_list		missing	foundational
+resolves_insert		missing	qol
+subG_proph_mapGpreS	iris.base_logic.lib.proph_map:subG_proph_mapGpreS	direct	qol

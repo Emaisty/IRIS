@@ -1,16 +1,16 @@
-bi_wandM	
-Absorbing	
-Affine	
-Persistent	
-Timeless	
-bi_absorbingly	
-bi_absorbingly_if	
-bi_affinely	
-bi_affinely_if	
-bi_except_0	
-bi_iff	
-bi_intuitionistically	
-bi_intuitionistically_if	
-bi_laterN	
-bi_persistently_if	
-bi_wand_iff	
+bi_wandM		missing	foundational
+Absorbing		missing	foundational
+Affine		missing	foundational
+Persistent		missing	foundational
+Timeless	iris.bi.derived_laws_later:Timeless	direct	foundational
+bi_absorbingly		missing	foundational
+bi_absorbingly_if		missing	foundational
+bi_affinely		missing	foundational
+bi_affinely_if		missing	foundational
+bi_except_0		missing	foundational
+bi_iff		missing	foundational
+bi_intuitionistically		missing	foundational
+bi_intuitionistically_if		missing	foundational
+bi_laterN		missing	foundational
+bi_persistently_if		missing	foundational
+bi_wand_iff		missing	foundational

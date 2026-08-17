@@ -1,54 +1,54 @@
-frame_pointsto	
-meta_aux	
-meta_def	
-meta_token_aux	
-meta_token_def	
-meta_token_unseal	
-meta_unseal	
-pointsto_aux	
-pointsto_combine_as	
-pointsto_combine_sep_gives	
-pointsto_def	
-pointsto_persistent	
-pointsto_unseal	
-combine_sep_gives_meta_meta_token_1	
-combine_sep_gives_meta_meta_token_2	
-gen_heapGS	
-gen_heapGpreS	
-gen_heap_alloc	
-gen_heap_alloc_big	
-gen_heap_init	
-gen_heap_init_names	
-gen_heap_interp	
-gen_heap_update	
-gen_heap_valid	
-gen_heapΣ	
-meta	
-meta_agree	
-meta_meta_token_valid	
-meta_meta_token_valid'	
-meta_persistent	
-meta_set	
-meta_timeless	
-meta_token	
-meta_token_combine_as	
-meta_token_difference	
-meta_token_ne	
-meta_token_timeless	
-meta_token_union	
-meta_token_union_1	
-meta_token_union_2	
-meta_token_valid_2	
-pointsto	
-pointsto_agree	
-pointsto_as_fractional	
-pointsto_combine	
-pointsto_frac_ne	
-pointsto_fractional	
-pointsto_ne	
-pointsto_persist	
-pointsto_timeless	
-pointsto_unpersist	
-pointsto_valid	
-pointsto_valid_2	
-subG_gen_heapGpreS	
+frame_pointsto		missing	qol
+meta_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+meta_def		missing	foundational
+meta_token_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+meta_token_def		missing	foundational
+meta_token_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+meta_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+pointsto_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+pointsto_combine_as		missing	qol
+pointsto_combine_sep_gives		missing	qol
+pointsto_def		missing	foundational
+pointsto_persistent		missing	qol
+pointsto_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+combine_sep_gives_meta_meta_token_1		missing	qol
+combine_sep_gives_meta_meta_token_2		missing	qol
+gen_heapGS	iris.base_logic.lib.gen_heap:gen_heapGS	direct	foundational
+gen_heapGpreS	iris.base_logic.lib.gen_heap:gen_heapGpreS	direct	foundational
+gen_heap_alloc	iris.base_logic.lib.gen_heap:gen_heap_alloc	direct	foundational
+gen_heap_alloc_big		missing	foundational
+gen_heap_init	iris.base_logic.lib.gen_heap:gen_heap_init	direct	qol
+gen_heap_init_names		missing	qol
+gen_heap_interp	iris.base_logic.lib.gen_heap:gen_heap_interp	direct	foundational
+gen_heap_update	iris.base_logic.lib.gen_heap:gen_heap_update	direct	foundational
+gen_heap_valid	iris.base_logic.lib.gen_heap:gen_heap_valid	direct	foundational
+gen_heapΣ	iris.base_logic.lib.gen_heap:gen_heapSigma	analogue	foundational	gen_heapSigma is the same ghost signature, using an ASCII suffix in Arend.
+meta		missing	foundational
+meta_agree		missing	qol
+meta_meta_token_valid		missing	qol
+meta_meta_token_valid'		missing	qol
+meta_persistent		missing	qol
+meta_set		missing	qol
+meta_timeless		missing	qol
+meta_token		missing	foundational
+meta_token_combine_as		missing	qol
+meta_token_difference		missing	qol
+meta_token_ne		missing	qol
+meta_token_timeless		missing	qol
+meta_token_union		missing	qol
+meta_token_union_1		missing	qol
+meta_token_union_2		missing	qol
+meta_token_valid_2		missing	qol
+pointsto	iris.base_logic.lib.gen_heap:pointsto	direct	foundational
+pointsto_agree		missing	qol
+pointsto_as_fractional		missing	qol
+pointsto_combine		missing	qol
+pointsto_frac_ne		missing	qol
+pointsto_fractional		missing	qol
+pointsto_ne		missing	qol
+pointsto_persist		missing	qol
+pointsto_timeless		missing	qol
+pointsto_unpersist		missing	qol
+pointsto_valid		missing	qol
+pointsto_valid_2		missing	qol
+subG_gen_heapGpreS	iris.base_logic.lib.gen_heap:subG_gen_heapGpreS	direct	qol

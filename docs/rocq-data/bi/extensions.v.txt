@@ -1,6 +1,6 @@
-BiAffine	
-BiLaterContractive	
-BiLöb	
-BiPersistentlyForall	
-BiPositive	
-BiPureForall	
+BiAffine		missing	foundational
+BiLaterContractive		missing	foundational
+BiLöb		missing	foundational
+BiPersistentlyForall		missing	foundational
+BiPositive		missing	foundational
+BiPureForall		missing	foundational

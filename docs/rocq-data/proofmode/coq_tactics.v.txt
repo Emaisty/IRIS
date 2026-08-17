@@ -1,99 +1,99 @@
-AffineEnv	
-CombineSepsAs	
-CombineSepsAsGives	
-IntoEmpValid	
-IntoIH	
-IntoModalIntuitionisticEnv	
-IntoModalSpatialEnv	
-MaybeIntoLaterNEnvs	
-TransformIntuitionisticEnv	
-TransformSpatialEnv	
-affine_env_bi	
-affine_env_nil	
-affine_env_snoc	
-affine_env_spatial	
-combine_seps_as_from_as_gives	
-combine_seps_as_gives_nil	
-combine_seps_as_gives_singleton	
-combine_seps_gives_cons	
-combine_seps_gives_of_envs	
-into_emp_valid_forall	
-into_emp_valid_here	
-into_emp_valid_impl	
-into_emp_valid_proj	
-into_emp_valid_tforall	
-into_ih_Forall	
-into_ih_Forall2	
-into_ih_entails	
-into_ih_forall	
-into_ih_impl	
-into_laterN_env_sound	
-into_laterN_envs	
-tac_accu	
-tac_and_destruct	
-tac_and_destruct_choice	
-tac_and_split	
-tac_apply	
-tac_assert	
-tac_assumption	
-tac_assumption_coq	
-tac_clear	
-tac_combine_as	
-tac_combine_as_gives	
-tac_combine_gives	
-tac_emp_intro	
-tac_eval	
-tac_eval_in	
-tac_ex_falso	
-tac_exist	
-tac_exist_destruct	
-tac_false_destruct	
-tac_forall_intro	
-tac_forall_revert	
-tac_forall_specialize	
-tac_frame	
-tac_frame_pure	
-tac_impl_intro	
-tac_impl_intro_drop	
-tac_impl_intro_intuitionistic	
-tac_intuitionistic	
-tac_inv_elim	
-tac_löb	
-tac_modal_elim	
-tac_modal_intro	
-tac_or_destruct	
-tac_or_l	
-tac_or_r	
-tac_pose_proof	
-tac_pose_proof_hyp	
-tac_pure	
-tac_pure_intro	
-tac_pure_revert	
-tac_rename	
-tac_revert	
-tac_revert_ih	
-tac_rewrite	
-tac_rewrite_in	
-tac_sep_split	
-tac_spatial	
-tac_specialize	
-tac_specialize_assert	
-tac_specialize_assert_intuitionistic	
-tac_specialize_assert_pure	
-tac_specialize_frame	
-tac_specialize_intuitionistic_helper	
-tac_specialize_intuitionistic_helper_done	
-tac_start	
-tac_stop	
-tac_unlock	
-tac_unlock_True	
-tac_unlock_emp	
-tac_wand_intro	
-tac_wand_intro_drop	
-tac_wand_intro_intuitionistic	
-transform_intuitionistic_env_nil	
-transform_intuitionistic_env_snoc	
-transform_intuitionistic_env_snoc_not	
-transform_spatial_env_nil	
-transform_spatial_env_snoc	
-transform_spatial_env_snoc_not	
+AffineEnv		missing	foundational
+CombineSepsAs		missing	foundational
+CombineSepsAsGives		missing	foundational
+IntoEmpValid		missing	foundational
+IntoIH		missing	foundational
+IntoModalIntuitionisticEnv		missing	foundational
+IntoModalSpatialEnv		missing	foundational
+MaybeIntoLaterNEnvs		missing	foundational
+TransformIntuitionisticEnv		missing	foundational
+TransformSpatialEnv		missing	foundational
+affine_env_bi		missing	qol
+affine_env_nil		missing	qol
+affine_env_snoc		missing	qol
+affine_env_spatial		missing	qol
+combine_seps_as_from_as_gives		missing	qol
+combine_seps_as_gives_nil		missing	qol
+combine_seps_as_gives_singleton		missing	qol
+combine_seps_gives_cons		missing	qol
+combine_seps_gives_of_envs		missing	qol
+into_emp_valid_forall		missing	qol
+into_emp_valid_here		missing	qol
+into_emp_valid_impl		missing	qol
+into_emp_valid_proj		missing	qol
+into_emp_valid_tforall		missing	qol
+into_ih_Forall		missing	qol
+into_ih_Forall2		missing	qol
+into_ih_entails		missing	qol
+into_ih_forall		missing	qol
+into_ih_impl		missing	qol
+into_laterN_env_sound		missing	qol
+into_laterN_envs		missing	qol
+tac_accu		missing	qol
+tac_and_destruct		missing	qol
+tac_and_destruct_choice		missing	qol
+tac_and_split		missing	qol
+tac_apply		missing	qol
+tac_assert		missing	qol
+tac_assumption		missing	qol
+tac_assumption_coq		missing	qol
+tac_clear		missing	qol
+tac_combine_as		missing	qol
+tac_combine_as_gives		missing	qol
+tac_combine_gives		missing	qol
+tac_emp_intro		missing	qol
+tac_eval		missing	qol
+tac_eval_in		missing	qol
+tac_ex_falso		missing	qol
+tac_exist		missing	qol
+tac_exist_destruct		missing	qol
+tac_false_destruct		missing	qol
+tac_forall_intro		missing	qol
+tac_forall_revert		missing	qol
+tac_forall_specialize		missing	qol
+tac_frame		missing	qol
+tac_frame_pure		missing	qol
+tac_impl_intro		missing	qol
+tac_impl_intro_drop		missing	qol
+tac_impl_intro_intuitionistic		missing	qol
+tac_intuitionistic		missing	qol
+tac_inv_elim		missing	qol
+tac_löb		missing	qol
+tac_modal_elim		missing	qol
+tac_modal_intro		missing	qol
+tac_or_destruct		missing	qol
+tac_or_l		missing	qol
+tac_or_r		missing	qol
+tac_pose_proof		missing	qol
+tac_pose_proof_hyp		missing	qol
+tac_pure		missing	qol
+tac_pure_intro		missing	qol
+tac_pure_revert		missing	qol
+tac_rename		missing	qol
+tac_revert		missing	qol
+tac_revert_ih		missing	qol
+tac_rewrite		missing	qol
+tac_rewrite_in		missing	qol
+tac_sep_split		missing	qol
+tac_spatial		missing	qol
+tac_specialize		missing	qol
+tac_specialize_assert		missing	qol
+tac_specialize_assert_intuitionistic		missing	qol
+tac_specialize_assert_pure		missing	qol
+tac_specialize_frame		missing	qol
+tac_specialize_intuitionistic_helper		missing	qol
+tac_specialize_intuitionistic_helper_done		missing	qol
+tac_start		missing	qol
+tac_stop		missing	qol
+tac_unlock		missing	qol
+tac_unlock_True		missing	qol
+tac_unlock_emp		missing	qol
+tac_wand_intro		missing	qol
+tac_wand_intro_drop		missing	qol
+tac_wand_intro_intuitionistic		missing	qol
+transform_intuitionistic_env_nil		missing	qol
+transform_intuitionistic_env_snoc		missing	qol
+transform_intuitionistic_env_snoc_not		missing	qol
+transform_spatial_env_nil		missing	qol
+transform_spatial_env_snoc		missing	qol
+transform_spatial_env_snoc_not		missing	qol

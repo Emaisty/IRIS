@@ -1,101 +1,101 @@
-auth_proper	
-frag_proper	
-sts.car	
-sts.closed	
-sts.closed_op	
-sts.closed_proper	
-sts.closed_proper'	
-sts.closed_steps	
-sts.closed_up	
-sts.closed_up_empty	
-sts.closed_up_set	
-sts.closed_up_set_empty	
-sts.elem_of_up	
-sts.elem_of_up_set	
-sts.frame_step	
-sts.frame_step_mono	
-sts.frame_step_proper	
-sts.step	
-sts.step_closed	
-sts.steps_closed	
-sts.stsT	
-sts.subseteq_up_set	
-sts.up	
-sts.up_closed	
-sts.up_op	
-sts.up_preserving	
-sts.up_proper	
-sts.up_set	
-sts.up_set_preserving	
-sts.up_set_proper	
-sts.up_set_subseteq	
-sts.up_subseteq	
-sts.up_up_set	
-sts_auth	
-sts_auth_frag_op	
-sts_auth_frag_up_op	
-sts_auth_frag_valid_inv	
-sts_auth_proper	
-sts_auth_valid	
-sts_car_core_disjoint_l	
-sts_car_core_idemp	
-sts_car_core_instance	
-sts_car_core_l	
-sts_car_core_mono	
-sts_car_core_proper	
-sts_car_core_valid	
-sts_car_disjoint_instance	
-sts_car_disjoint_ll	
-sts_car_disjoint_lr	
-sts_car_disjoint_move_l	
-sts_car_disjoint_move_r	
-sts_car_disjoint_proper	
-sts_car_disjoint_proper'	
-sts_car_disjoint_rl	
-sts_car_disjoint_symmetric	
-sts_car_equiv	
-sts_car_equivalence	
-sts_car_op_assoc	
-sts_car_op_comm	
-sts_car_op_proper	
-sts_car_op_valid	
-sts_car_valid_instance	
-sts_car_valid_proper	
-sts_car_valid_proper'	
-sts_equiv	
-sts_equivalence	
-sts_frag	
-sts_frag_core_id	
-sts_frag_op	
-sts_frag_proper	
-sts_frag_up	
-sts_frag_up_proper	
-sts_frag_up_valid	
-sts_frag_valid	
-sts_notok.frame_prim_step	
-sts_notok.mk_closed	
-sts_notok.prim_frame_step	
-sts_notok.stsT	
-sts_notok.stsT_tok	
-sts_notok.stsT_token	
-sts_notok.sts_notok	
-sts_notok.sts_step	
-sts_notok.sts_steps	
-sts_notok_update_auth	
-sts_op_instance	
-sts_res	
-sts_resO	
-sts_resR	
-sts_res_cmra_total	
-sts_res_disrete_cmra	
-sts_res_op_instance	
-sts_res_pcore_instance	
-sts_res_ra_mixin	
-sts_res_valid_instance	
-sts_up_set_intersection	
-sts_update_auth	
-sts_update_frag	
-sts_update_frag_up	
-to_sts_res	
-to_sts_res_op	
-to_sts_res_proper	
+auth_proper		missing	qol
+frag_proper		missing	qol
+sts.car		missing	foundational
+sts.closed		missing	foundational
+sts.closed_op		missing	qol
+sts.closed_proper		missing	qol
+sts.closed_proper'		missing	qol
+sts.closed_steps		missing	qol
+sts.closed_up		missing	qol
+sts.closed_up_empty		missing	qol
+sts.closed_up_set		missing	qol
+sts.closed_up_set_empty		missing	qol
+sts.elem_of_up		missing	qol
+sts.elem_of_up_set		missing	qol
+sts.frame_step		missing	foundational
+sts.frame_step_mono		missing	qol
+sts.frame_step_proper		missing	qol
+sts.step		missing	foundational
+sts.step_closed		missing	qol
+sts.steps_closed		missing	qol
+sts.stsT		missing	foundational
+sts.subseteq_up_set		missing	qol
+sts.up		missing	foundational
+sts.up_closed		missing	qol
+sts.up_op		missing	qol
+sts.up_preserving		missing	qol
+sts.up_proper		missing	qol
+sts.up_set		missing	foundational
+sts.up_set_preserving		missing	qol
+sts.up_set_proper		missing	qol
+sts.up_set_subseteq		missing	qol
+sts.up_subseteq		missing	qol
+sts.up_up_set		missing	qol
+sts_auth		missing	foundational
+sts_auth_frag_op		missing	qol
+sts_auth_frag_up_op		missing	qol
+sts_auth_frag_valid_inv		missing	qol
+sts_auth_proper		missing	qol
+sts_auth_valid		missing	qol
+sts_car_core_disjoint_l		missing	qol
+sts_car_core_idemp		missing	qol
+sts_car_core_instance		missing	qol
+sts_car_core_l		missing	qol
+sts_car_core_mono		missing	qol
+sts_car_core_proper		missing	qol
+sts_car_core_valid		missing	qol
+sts_car_disjoint_instance		missing	foundational
+sts_car_disjoint_ll		missing	qol
+sts_car_disjoint_lr		missing	qol
+sts_car_disjoint_move_l		missing	qol
+sts_car_disjoint_move_r		missing	qol
+sts_car_disjoint_proper		missing	qol
+sts_car_disjoint_proper'		missing	qol
+sts_car_disjoint_rl		missing	qol
+sts_car_disjoint_symmetric		missing	qol
+sts_car_equiv		missing	foundational
+sts_car_equivalence		missing	qol
+sts_car_op_assoc		missing	qol
+sts_car_op_comm		missing	qol
+sts_car_op_proper		missing	qol
+sts_car_op_valid		missing	qol
+sts_car_valid_instance		missing	foundational
+sts_car_valid_proper		missing	qol
+sts_car_valid_proper'		missing	qol
+sts_equiv		missing	qol
+sts_equivalence		missing	qol
+sts_frag		missing	foundational
+sts_frag_core_id		missing	qol
+sts_frag_op		missing	qol
+sts_frag_proper		missing	qol
+sts_frag_up		missing	foundational
+sts_frag_up_proper		missing	qol
+sts_frag_up_valid		missing	qol
+sts_frag_valid		missing	qol
+sts_notok.frame_prim_step		missing	qol
+sts_notok.mk_closed		missing	qol
+sts_notok.prim_frame_step		missing	qol
+sts_notok.stsT		missing	foundational
+sts_notok.stsT_tok		missing	foundational
+sts_notok.stsT_token		missing	foundational
+sts_notok.sts_notok		missing	foundational
+sts_notok.sts_step		missing	qol
+sts_notok.sts_steps		missing	qol
+sts_notok_update_auth		missing	qol
+sts_op_instance		missing	foundational
+sts_res		missing	foundational
+sts_resO		missing	foundational
+sts_resR		missing	foundational
+sts_res_cmra_total		missing	qol
+sts_res_disrete_cmra		missing	qol
+sts_res_op_instance		missing	foundational
+sts_res_pcore_instance		missing	foundational
+sts_res_ra_mixin		missing	foundational
+sts_res_valid_instance		missing	foundational
+sts_up_set_intersection		missing	qol
+sts_update_auth		missing	qol
+sts_update_frag		missing	qol
+sts_update_frag_up		missing	qol
+to_sts_res		missing	foundational
+to_sts_res_op		missing	qol
+to_sts_res_proper		missing	qol

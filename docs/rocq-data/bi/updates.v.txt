@@ -1,111 +1,111 @@
-BiFUpdSbi	
-big_sepL_bupd	
-big_sepM2_bupd	
-big_sepM2_fupd	
-big_sepMS_bupd	
-big_sepMS_fupd	
-big_sepM_fupd	
-big_sepS_bupd	
-big_sepS_fupd	
-bupd_or_homomorphism	
-fupd_or_homomorphism	
-fupd_plain_forall	
-fupd_plain_forall'	
-fupd_plain_forall_2	
-fupd_plain_laterN	
-fupd_plainly_forall_2	
-fupd_plainly_laterN	
-step_fupd_mask_frame_r	
-step_fupd_plain_forall	
-BUpd	updates:BUpd
-BiBUpd	updates:BiBUpd
-BiBUpdFUpd	
-BiBUpdMixin	
-BiBUpdSbi	
-BiFUpd	
-BiFUpdMixin	
-FUpd	
-big_sepL2_fupd	
-big_sepL_fupd	
-big_sepM_bupd	
-bupd_absorbing	
-bupd_and	
-bupd_elim	
-bupd_exist	
-bupd_flip_mono'	
-bupd_forall	
-bupd_frame_l	updates:bupd_frame_l
-bupd_frame_r	updates:bupd_frame_r
-bupd_idemp	
-bupd_intro	updates:bupd_intro
-bupd_mono	updates:bupd_mono
-bupd_mono'	
-bupd_ne	updates:bupd_ne
-bupd_or	
-bupd_plain	
-bupd_plain_forall	
-bupd_plainly	
-bupd_plainly_elim	
-bupd_proper	
-bupd_sep	updates:bupd_sep
-bupd_sep_homomorphism	
-bupd_trans	updates:bupd_trans
-bupd_wand_l	
-bupd_wand_r	
-except_0_bupd	
-except_0_fupd	
-fupd_absorbing	
-fupd_and	
-fupd_elim	
-fupd_except_0	
-fupd_exist	
-fupd_flip_mono'	
-fupd_forall	
-fupd_frame_l	
-fupd_frame_r	
-fupd_idemp	
-fupd_intro	
-fupd_keep_plain	
-fupd_keep_plain_sep	
-fupd_keep_plainly	
-fupd_keep_si_pure	
-fupd_mask_frame	
-fupd_mask_frame_acc	
-fupd_mask_frame_r	
-fupd_mask_frame_r'	
-fupd_mask_intro	
-fupd_mask_intro_discard	
-fupd_mask_intro_subseteq	
-fupd_mask_mono	
-fupd_mask_subseteq	
-fupd_mask_subseteq_emptyset_difference	
-fupd_mask_weaken	
-fupd_mono	
-fupd_mono'	
-fupd_ne	
-fupd_or	
-fupd_plain_later	
-fupd_plain_mask	
-fupd_plainly_later	
-fupd_plainly_mask	
-fupd_proper	
-fupd_sep	
-fupd_sep_homomorphism	
-fupd_trans	
-fupd_trans_frame	
-fupd_wand_l	
-fupd_wand_r	
-step_fupdN_S_fupd	
-step_fupdN_add	
-step_fupdN_frame_l	
-step_fupdN_intro	
-step_fupdN_le	
-step_fupdN_mono	
-step_fupdN_plain	
-step_fupdN_wand	
-step_fupd_frame_l	
-step_fupd_fupd	
-step_fupd_intro	
-step_fupd_mask_mono	
-step_fupd_plain	
-step_fupd_wand	
+BiFUpdSbi		missing	foundational
+big_sepL_bupd		missing	qol
+big_sepM2_bupd		missing	qol
+big_sepM2_fupd		missing	qol
+big_sepMS_bupd		missing	qol
+big_sepMS_fupd		missing	qol
+big_sepM_fupd		missing	qol
+big_sepS_bupd		missing	qol
+big_sepS_fupd		missing	qol
+bupd_or_homomorphism		missing	qol
+fupd_or_homomorphism		missing	qol
+fupd_plain_forall		missing	qol
+fupd_plain_forall'		missing	qol
+fupd_plain_forall_2		missing	qol
+fupd_plain_laterN		missing	qol
+fupd_plainly_forall_2		missing	qol
+fupd_plainly_laterN		missing	qol
+step_fupd_mask_frame_r		missing	qol
+step_fupd_plain_forall		missing	qol
+BUpd	iris.bi.updates:BUpd	direct	foundational
+BiBUpd	iris.bi.updates:BiBUpd	direct	foundational
+BiBUpdFUpd	iris.bi.updates:BiBUpdFUpd	direct	foundational
+BiBUpdMixin		missing	foundational
+BiBUpdSbi		missing	foundational
+BiFUpd	iris.bi.updates:BiFUpd	direct	foundational
+BiFUpdMixin		missing	foundational
+FUpd	iris.bi.updates:FUpd	direct	foundational
+big_sepL2_fupd		missing	qol
+big_sepL_fupd		missing	qol
+big_sepM_bupd		missing	qol
+bupd_absorbing		missing	qol
+bupd_and		missing	qol
+bupd_elim		missing	foundational
+bupd_exist		missing	qol
+bupd_flip_mono'		missing	qol
+bupd_forall		missing	qol
+bupd_frame_l	iris.bi.updates:bupd_frame_l	direct	foundational
+bupd_frame_r	iris.bi.updates:bupd_frame_r	direct	foundational
+bupd_idemp		missing	qol
+bupd_intro	iris.bi.updates:bupd_intro	direct	foundational
+bupd_mono	iris.bi.updates:bupd_mono	direct	foundational
+bupd_mono'		missing	foundational
+bupd_ne	iris.bi.updates:bupd_ne	direct	qol
+bupd_or		missing	qol
+bupd_plain		missing	qol
+bupd_plain_forall		missing	qol
+bupd_plainly		missing	qol
+bupd_plainly_elim		missing	qol
+bupd_proper		missing	qol
+bupd_sep	iris.bi.updates:bupd_sep	direct	qol
+bupd_sep_homomorphism		missing	qol
+bupd_trans	iris.bi.updates:bupd_trans	direct	foundational
+bupd_wand_l		missing	qol
+bupd_wand_r		missing	qol
+except_0_bupd		missing	qol
+except_0_fupd	iris.base_logic.lib.fancy_updates:except_0_fupd	direct	qol
+fupd_absorbing		missing	qol
+fupd_and		missing	qol
+fupd_elim		missing	foundational
+fupd_except_0	iris.base_logic.lib.fancy_updates_mask:fupd_except_0	direct	qol
+fupd_exist		missing	qol
+fupd_flip_mono'		missing	qol
+fupd_forall		missing	qol
+fupd_frame_l	iris.base_logic.lib.fancy_updates_mask:fupd_frame_l	direct	foundational
+fupd_frame_r	iris.base_logic.lib.fancy_updates:fupd_frame_r	direct	foundational
+fupd_idemp		missing	qol
+fupd_intro	iris.base_logic.lib.fancy_updates_mask:fupd_intro	direct	foundational
+fupd_keep_plain		missing	qol
+fupd_keep_plain_sep		missing	qol
+fupd_keep_plainly		missing	qol
+fupd_keep_si_pure		missing	qol
+fupd_mask_frame	iris.program_logic.lifting:fupd_mask_frame	direct	foundational
+fupd_mask_frame_acc		missing	foundational
+fupd_mask_frame_r	iris.base_logic.lib.fancy_updates:fupd_mask_frame_r	direct	foundational
+fupd_mask_frame_r'		missing	foundational
+fupd_mask_intro	iris.base_logic.lib.fancy_updates_mask:fupd_mask_intro	direct	foundational
+fupd_mask_intro_discard		missing	foundational
+fupd_mask_intro_subseteq		missing	foundational
+fupd_mask_mono	iris.base_logic.lib.fancy_updates_mask:fupd_mask_mono	direct	foundational
+fupd_mask_subseteq	iris.base_logic.lib.fancy_updates_mask:fupd_mask_subseteq	direct	foundational
+fupd_mask_subseteq_emptyset_difference		missing	foundational
+fupd_mask_weaken		missing	foundational
+fupd_mono	iris.base_logic.lib.fancy_updates:fupd_mono	direct	foundational
+fupd_mono'		missing	foundational
+fupd_ne	iris.base_logic.lib.fancy_updates:fupd_ne	direct	qol
+fupd_or		missing	qol
+fupd_plain_later		missing	qol
+fupd_plain_mask		missing	qol
+fupd_plainly_later		missing	qol
+fupd_plainly_mask		missing	qol
+fupd_proper		missing	qol
+fupd_sep		missing	qol
+fupd_sep_homomorphism		missing	qol
+fupd_trans	iris.base_logic.lib.fancy_updates:fupd_trans	direct	foundational
+fupd_trans_frame		missing	foundational
+fupd_wand_l		missing	qol
+fupd_wand_r		missing	qol
+step_fupdN_S_fupd		missing	qol
+step_fupdN_add		missing	qol
+step_fupdN_frame_l		missing	qol
+step_fupdN_intro		missing	qol
+step_fupdN_le		missing	qol
+step_fupdN_mono		missing	qol
+step_fupdN_plain		missing	qol
+step_fupdN_wand		missing	qol
+step_fupd_frame_l		missing	qol
+step_fupd_fupd		missing	qol
+step_fupd_intro		missing	qol
+step_fupd_mask_mono		missing	qol
+step_fupd_plain		missing	qol
+step_fupd_wand		missing	qol

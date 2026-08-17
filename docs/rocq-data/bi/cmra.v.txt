@@ -1,31 +1,31 @@
-internal_cmra_valid	
-internal_cmra_valid_absorbing	
-internal_cmra_valid_discrete	
-internal_cmra_valid_elim	
-internal_cmra_valid_entails	
-internal_cmra_valid_intro	
-internal_cmra_valid_ne	
-internal_cmra_valid_persistent	
-internal_cmra_valid_plain	
-internal_cmra_valid_proper	
-internal_cmra_valid_timeless	
-internal_cmra_valid_weaken	
-internal_included	
-internal_included_absorbing	
-internal_included_discrete	
-internal_included_intro	
-internal_included_nonexpansive	
-internal_included_persistent	
-internal_included_plain	
-internal_included_proper	
-internal_included_refl	
-internal_included_timeless	
-internal_included_trans	
-intuitionistically_internal_cmra_valid	
-intuitionistically_internal_included	
-persistently_internal_cmra_valid	
-persistently_internal_included	
-plainly_internal_cmra_valid	
-plainly_internal_included	
-si_pure_internal_cmra_valid	
-si_pure_internal_included	
+internal_cmra_valid		missing	foundational
+internal_cmra_valid_absorbing		missing	qol
+internal_cmra_valid_discrete		missing	qol
+internal_cmra_valid_elim		missing	qol
+internal_cmra_valid_entails		missing	qol
+internal_cmra_valid_intro		missing	qol
+internal_cmra_valid_ne		missing	qol
+internal_cmra_valid_persistent		missing	qol
+internal_cmra_valid_plain		missing	qol
+internal_cmra_valid_proper		missing	qol
+internal_cmra_valid_timeless		missing	qol
+internal_cmra_valid_weaken		missing	qol
+internal_included		missing	foundational
+internal_included_absorbing		missing	qol
+internal_included_discrete		missing	qol
+internal_included_intro		missing	qol
+internal_included_nonexpansive		missing	qol
+internal_included_persistent		missing	qol
+internal_included_plain		missing	qol
+internal_included_proper		missing	qol
+internal_included_refl		missing	qol
+internal_included_timeless		missing	qol
+internal_included_trans		missing	qol
+intuitionistically_internal_cmra_valid		missing	qol
+intuitionistically_internal_included		missing	qol
+persistently_internal_cmra_valid		missing	qol
+persistently_internal_included		missing	qol
+plainly_internal_cmra_valid		missing	qol
+plainly_internal_included		missing	qol
+si_pure_internal_cmra_valid		missing	qol
+si_pure_internal_included		missing	qol

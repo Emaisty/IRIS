@@ -1,30 +1,30 @@
-cinv_inv	
-cinvΣ	
-into_acc_cinv	
-into_inv_cinv	
-subG_cinvΣ	
-cinv	
-cinvG	
-cinv_acc	
-cinv_acc_1	
-cinv_acc_strong	
-cinv_alloc	
-cinv_alloc_cofinite	
-cinv_alloc_open	
-cinv_alloc_strong	
-cinv_alloc_strong_open	
-cinv_cancel	
-cinv_contractive	
-cinv_excl	
-cinv_excl_excl	
-cinv_iff	
-cinv_ne	
-cinv_own	
-cinv_own_1_l	
-cinv_own_as_fractional	
-cinv_own_excl_alloc	
-cinv_own_fractional	
-cinv_own_timeless	
-cinv_own_valid	
-cinv_persistent	
-cinv_proper	
+cinv_inv		missing	qol
+cinvΣ		missing	foundational
+into_acc_cinv		missing	qol
+into_inv_cinv		missing	qol
+subG_cinvΣ		missing	qol
+cinv		missing	foundational
+cinvG		missing	foundational
+cinv_acc		missing	qol
+cinv_acc_1		missing	qol
+cinv_acc_strong		missing	qol
+cinv_alloc		missing	qol
+cinv_alloc_cofinite		missing	qol
+cinv_alloc_open		missing	qol
+cinv_alloc_strong		missing	qol
+cinv_alloc_strong_open		missing	qol
+cinv_cancel		missing	qol
+cinv_contractive		missing	qol
+cinv_excl		missing	foundational
+cinv_excl_excl		missing	qol
+cinv_iff		missing	qol
+cinv_ne		missing	qol
+cinv_own		missing	foundational
+cinv_own_1_l		missing	qol
+cinv_own_as_fractional		missing	qol
+cinv_own_excl_alloc		missing	qol
+cinv_own_fractional		missing	qol
+cinv_own_timeless		missing	qol
+cinv_own_valid		missing	qol
+cinv_persistent		missing	qol
+cinv_proper		missing	qol

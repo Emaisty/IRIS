@@ -1,96 +1,96 @@
-siPropO	
-siProp_dist	
-siProp_dist'	
-siProp_equiv	
-siProp_equiv'	
-siProp_primitive.and_elim_l	
-siProp_primitive.and_elim_r	
-siProp_primitive.and_intro	
-siProp_primitive.and_ne	
-siProp_primitive.entails_anti_symm	
-siProp_primitive.entails_po	
-siProp_primitive.equiv_entails	
-siProp_primitive.exist_elim	
-siProp_primitive.exist_intro	
-siProp_primitive.exist_ne	
-siProp_primitive.forall_elim	
-siProp_primitive.forall_intro	
-siProp_primitive.forall_ne	
-siProp_primitive.impl_elim_l'	
-siProp_primitive.impl_intro_r	
-siProp_primitive.impl_ne	
-siProp_primitive.later_contractive	
-siProp_primitive.later_exist_false	
-siProp_primitive.later_false_em	
-siProp_primitive.later_forall_2	
-siProp_primitive.later_intro	
-siProp_primitive.later_mono	
-siProp_primitive.or_elim	
-siProp_primitive.or_intro_l	
-siProp_primitive.or_intro_r	
-siProp_primitive.or_ne	
-siProp_primitive.pure_elim'	
-siProp_primitive.pure_forall_2	
-siProp_primitive.pure_intro	
-SiProp_downclose	
-siProp	
-siProp_and	
-siProp_and_aux	
-siProp_and_def	
-siProp_and_unseal	
-siProp_cmra_valid	
-siProp_cmra_valid_aux	
-siProp_cmra_valid_def	
-siProp_cmra_valid_unseal	
-siProp_cofe	
-siProp_compl	
-siProp_entails	
-siProp_exist	
-siProp_exist_aux	
-siProp_exist_def	
-siProp_exist_unseal	
-siProp_forall	
-siProp_forall_aux	
-siProp_forall_def	
-siProp_forall_unseal	
-siProp_impl	
-siProp_impl_aux	
-siProp_impl_def	
-siProp_impl_unseal	
-siProp_internal_eq	
-siProp_internal_eq_aux	
-siProp_internal_eq_def	
-siProp_internal_eq_unseal	
-siProp_later	
-siProp_later_aux	
-siProp_later_def	
-siProp_later_unseal	
-siProp_ofe_mixin	
-siProp_or	
-siProp_or_aux	
-siProp_or_def	
-siProp_or_unseal	
-siProp_primitive.cmra_valid_elim	
-siProp_primitive.cmra_valid_intro	
-siProp_primitive.cmra_valid_ne	
-siProp_primitive.cmra_valid_weaken	
-siProp_primitive.discrete_eq_1	
-siProp_primitive.fun_extI	
-siProp_primitive.internal_eq_entails	
-siProp_primitive.internal_eq_ne	
-siProp_primitive.internal_eq_refl	
-siProp_primitive.internal_eq_rewrite	
-siProp_primitive.internal_eq_soundness	
-siProp_primitive.later_equivI_1	
-siProp_primitive.later_equivI_2	
-siProp_primitive.later_soundness	
-siProp_primitive.prop_ext_2	
-siProp_primitive.pure_ne	
-siProp_primitive.pure_soundness	
-siProp_primitive.siProp_unseal	
-siProp_primitive.sig_equivI_1	
-siProp_primitive.valid_entails	
-siProp_pure	
-siProp_pure_aux	
-siProp_pure_def	
-siProp_pure_unseal	
+siPropO		missing	foundational
+siProp_dist		missing	qol
+siProp_dist'		missing	foundational
+siProp_equiv		missing	qol
+siProp_equiv'		missing	foundational
+siProp_primitive.and_elim_l		missing	qol
+siProp_primitive.and_elim_r		missing	qol
+siProp_primitive.and_intro		missing	qol
+siProp_primitive.and_ne		missing	qol
+siProp_primitive.entails_anti_symm		missing	qol
+siProp_primitive.entails_po		missing	qol
+siProp_primitive.equiv_entails		missing	qol
+siProp_primitive.exist_elim		missing	qol
+siProp_primitive.exist_intro		missing	qol
+siProp_primitive.exist_ne		missing	qol
+siProp_primitive.forall_elim		missing	qol
+siProp_primitive.forall_intro		missing	qol
+siProp_primitive.forall_ne		missing	qol
+siProp_primitive.impl_elim_l'		missing	qol
+siProp_primitive.impl_intro_r		missing	qol
+siProp_primitive.impl_ne		missing	qol
+siProp_primitive.later_contractive		missing	qol
+siProp_primitive.later_exist_false		missing	qol
+siProp_primitive.later_false_em		missing	qol
+siProp_primitive.later_forall_2		missing	qol
+siProp_primitive.later_intro		missing	qol
+siProp_primitive.later_mono		missing	qol
+siProp_primitive.or_elim		missing	qol
+siProp_primitive.or_intro_l		missing	qol
+siProp_primitive.or_intro_r		missing	qol
+siProp_primitive.or_ne		missing	qol
+siProp_primitive.pure_elim'		missing	qol
+siProp_primitive.pure_forall_2		missing	qol
+siProp_primitive.pure_intro		missing	qol
+SiProp_downclose		missing	foundational
+siProp		missing	foundational
+siProp_and		missing	foundational
+siProp_and_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_and_def		missing	foundational
+siProp_and_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_cmra_valid		missing	foundational
+siProp_cmra_valid_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_cmra_valid_def		missing	foundational
+siProp_cmra_valid_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_cofe		missing	qol
+siProp_compl		missing	foundational
+siProp_entails		missing	foundational
+siProp_exist		missing	foundational
+siProp_exist_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_exist_def		missing	foundational
+siProp_exist_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_forall		missing	foundational
+siProp_forall_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_forall_def		missing	foundational
+siProp_forall_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_impl		missing	foundational
+siProp_impl_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_impl_def		missing	foundational
+siProp_impl_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_internal_eq		missing	foundational
+siProp_internal_eq_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_internal_eq_def		missing	foundational
+siProp_internal_eq_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_later		missing	foundational
+siProp_later_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_later_def		missing	foundational
+siProp_later_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_ofe_mixin		missing	foundational
+siProp_or		missing	foundational
+siProp_or_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_or_def		missing	foundational
+siProp_or_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_primitive.cmra_valid_elim		missing	foundational
+siProp_primitive.cmra_valid_intro		missing	foundational
+siProp_primitive.cmra_valid_ne		missing	foundational
+siProp_primitive.cmra_valid_weaken		missing	foundational
+siProp_primitive.discrete_eq_1		missing	qol
+siProp_primitive.fun_extI		missing	qol
+siProp_primitive.internal_eq_entails		missing	qol
+siProp_primitive.internal_eq_ne		missing	qol
+siProp_primitive.internal_eq_refl		missing	qol
+siProp_primitive.internal_eq_rewrite		missing	qol
+siProp_primitive.internal_eq_soundness		missing	foundational
+siProp_primitive.later_equivI_1		missing	qol
+siProp_primitive.later_equivI_2		missing	qol
+siProp_primitive.later_soundness		missing	foundational
+siProp_primitive.prop_ext_2		missing	qol
+siProp_primitive.pure_ne		missing	qol
+siProp_primitive.pure_soundness		missing	foundational
+siProp_primitive.siProp_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_primitive.sig_equivI_1		missing	qol
+siProp_primitive.valid_entails		missing	qol
+siProp_pure		missing	foundational
+siProp_pure_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+siProp_pure_def		missing	foundational
+siProp_pure_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

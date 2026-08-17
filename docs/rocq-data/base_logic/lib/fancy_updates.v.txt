@@ -1,53 +1,53 @@
-tac_lc_add_laterN_split	
-elim_modal_bupd_fupd_finally	
-elim_modal_fupd_fupd_finally	
-from_forall_fupd_finally	
-from_forall_fupd_pure	
-from_modal_fupd_finally	
-from_pure_fupd_finally	
-fupd_finally	
-fupd_finally_add_lc	
-fupd_finally_and	
-fupd_finally_aux	
-fupd_finally_def	
-fupd_finally_except_0	
-fupd_finally_flip_mono'	
-fupd_finally_forall	
-fupd_finally_intro	
-fupd_finally_keep	
-fupd_finally_later	
-fupd_finally_mask_mono	
-fupd_finally_mono	
-fupd_finally_mono'	
-fupd_finally_ne	
-fupd_finally_proper	
-fupd_finally_soundness	
-fupd_finally_unseal	
-fupd_finally_wand	
-fupd_fupd_finally	
-fupd_keep	
-fupd_keep_pure	
-fupd_pure_forall	
-fupd_soundness	
-fupd_soundness_no_lc_unfold	
-fupd_unfold_no_lc	
-invGS_gen	
-invGpreS	
-invΣ	
-is_except_0_fupd_finally	
-lc_fupd_add_later	
-lc_fupd_add_laterN	
-lc_fupd_add_step_fupdN	
-lc_fupd_elim_later	
-step_fupdN_fupd_finally	
-step_fupdN_soundness	
-step_fupdN_soundness'	
-subG_invΣ	
-uPred_bi_bupd_fupd	
-uPred_bi_fupd	
-uPred_bi_fupd_sbi_no_lc	
-uPred_fupd	
-uPred_fupd_aux	
-uPred_fupd_def	
-uPred_fupd_mixin	
-uPred_fupd_unseal	
+tac_lc_add_laterN_split		missing	qol
+elim_modal_bupd_fupd_finally		missing	qol
+elim_modal_fupd_fupd_finally		missing	qol
+from_forall_fupd_finally		missing	qol
+from_forall_fupd_pure		missing	qol
+from_modal_fupd_finally		missing	qol
+from_pure_fupd_finally		missing	qol
+fupd_finally		missing	foundational
+fupd_finally_add_lc		missing	qol
+fupd_finally_and		missing	qol
+fupd_finally_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+fupd_finally_def		missing	foundational
+fupd_finally_except_0		missing	qol
+fupd_finally_flip_mono'		missing	qol
+fupd_finally_forall		missing	qol
+fupd_finally_intro		missing	qol
+fupd_finally_keep		missing	qol
+fupd_finally_later		missing	qol
+fupd_finally_mask_mono		missing	qol
+fupd_finally_mono		missing	qol
+fupd_finally_mono'		missing	qol
+fupd_finally_ne		missing	qol
+fupd_finally_proper		missing	qol
+fupd_finally_soundness		missing	foundational
+fupd_finally_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+fupd_finally_wand		missing	qol
+fupd_fupd_finally		missing	qol
+fupd_keep		missing	qol
+fupd_keep_pure		missing	qol
+fupd_pure_forall		missing	qol
+fupd_soundness		missing	foundational
+fupd_soundness_no_lc_unfold		missing	foundational
+fupd_unfold_no_lc		missing	qol
+invGS_gen		missing	foundational
+invGpreS		missing	foundational
+invΣ		missing	foundational
+is_except_0_fupd_finally		missing	qol
+lc_fupd_add_later		missing	qol
+lc_fupd_add_laterN		missing	qol
+lc_fupd_add_step_fupdN		missing	qol
+lc_fupd_elim_later		missing	qol
+step_fupdN_fupd_finally		missing	qol
+step_fupdN_soundness		missing	foundational
+step_fupdN_soundness'		missing	foundational
+subG_invΣ		missing	qol
+uPred_bi_bupd_fupd		missing	qol
+uPred_bi_fupd		missing	qol
+uPred_bi_fupd_sbi_no_lc		missing	qol
+uPred_fupd	iris.base_logic.lib.fancy_updates:mkProperFUpd	analogue	foundational	mkProperFUpd is the Arend fancy-update connective over world satisfaction and masks.
+uPred_fupd_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+uPred_fupd_def	iris.base_logic.lib.fancy_updates:mkProperFUpd	analogue	foundational	mkProperFUpd directly exposes the semantic body that Rocq seals as uPred_fupd_def.
+uPred_fupd_mixin		missing	qol
+uPred_fupd_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.

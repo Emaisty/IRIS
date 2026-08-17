@@ -1,24 +1,24 @@
-frame_ghost_var	
-ghost_var	
-ghost_varG	
-ghost_var_agree	
-ghost_var_alloc	
-ghost_var_alloc_strong	
-ghost_var_as_fractional	
-ghost_var_aux	
-ghost_var_combine_as	
-ghost_var_combine_gives	
-ghost_var_def	
-ghost_var_fractional	
-ghost_var_persist	
-ghost_var_persistent	
-ghost_var_split	
-ghost_var_timeless	
-ghost_var_unpersist	
-ghost_var_unseal	
-ghost_var_update	
-ghost_var_update_2	
-ghost_var_update_halves	
-ghost_var_valid_2	
-ghost_varΣ	
-subG_ghost_varΣ	
+frame_ghost_var		missing	qol
+ghost_var		missing	foundational
+ghost_varG		missing	foundational
+ghost_var_agree		missing	qol
+ghost_var_alloc		missing	qol
+ghost_var_alloc_strong		missing	qol
+ghost_var_as_fractional		missing	qol
+ghost_var_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_var_combine_as		missing	qol
+ghost_var_combine_gives		missing	qol
+ghost_var_def		missing	foundational
+ghost_var_fractional		missing	qol
+ghost_var_persist		missing	qol
+ghost_var_persistent		missing	qol
+ghost_var_split		missing	qol
+ghost_var_timeless		missing	qol
+ghost_var_unpersist		missing	qol
+ghost_var_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
+ghost_var_update		missing	qol
+ghost_var_update_2		missing	qol
+ghost_var_update_halves		missing	qol
+ghost_var_valid_2		missing	qol
+ghost_varΣ		missing	foundational
+subG_ghost_varΣ		missing	qol

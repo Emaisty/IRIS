@@ -1,95 +1,95 @@
-auth_frag_sep_homomorphism	
-big_opL_auth_frag	
-big_opMS_auth_frag	
-big_opM_auth_frag	
-big_opS_auth_frag	
-authO	
-authR	
-authRF	
-authRF_contractive	
-authUR	
-authURF	
-authURF_contractive	
-auth_auth	
-auth_auth_core_id	
-auth_auth_dfrac_included	
-auth_auth_dfrac_includedN	
-auth_auth_dfrac_is_op	
-auth_auth_dfrac_op	
-auth_auth_dfrac_op_inv	
-auth_auth_dfrac_op_invN	
-auth_auth_dfrac_op_inv_L	
-auth_auth_dfrac_op_valid	
-auth_auth_dfrac_op_validN	
-auth_auth_dfrac_valid	
-auth_auth_dfrac_validN	
-auth_auth_discrete	
-auth_auth_dist_inj	
-auth_auth_included	
-auth_auth_includedN	
-auth_auth_inj	
-auth_auth_ne	
-auth_auth_op_valid	
-auth_auth_op_validN	
-auth_auth_proper	
-auth_auth_valid	
-auth_auth_validN	
-auth_both_core_discarded	
-auth_both_core_frac	
-auth_both_core_id	
-auth_both_dfrac_included	
-auth_both_dfrac_includedN	
-auth_both_dfrac_valid	
-auth_both_dfrac_validN	
-auth_both_dfrac_valid_2	
-auth_both_dfrac_valid_discrete	
-auth_both_included	
-auth_both_includedN	
-auth_both_valid	
-auth_both_validN	lib.auth_cmra:auth_both_validN
-auth_both_valid_2	
-auth_both_valid_discrete	
-auth_cmra_discrete	
-auth_frag	
-auth_frag_core	
-auth_frag_core_id	
-auth_frag_discrete	
-auth_frag_dist_inj	
-auth_frag_included	
-auth_frag_includedN	
-auth_frag_inj	
-auth_frag_is_op	
-auth_frag_mono	
-auth_frag_ne	
-auth_frag_op	
-auth_frag_op_valid	
-auth_frag_op_validN	
-auth_frag_op_validN_1	
-auth_frag_op_validN_2	
-auth_frag_op_valid_1	
-auth_frag_op_valid_2	
-auth_frag_proper	
-auth_frag_valid	
-auth_frag_validN	
-auth_frag_validN_1	
-auth_frag_validN_2	
-auth_frag_valid_1	
-auth_frag_valid_2	
-auth_local_update	
-auth_ofe_discrete	
-auth_update	
-auth_updateP_auth_unpersist	
-auth_updateP_both_unpersist	
-auth_update_alloc	
-auth_update_auth	
-auth_update_auth_persist	
-auth_update_dealloc	
-auth_update_dfrac_alloc	
-auth_view_rel	
-auth_view_rel_discrete	
-auth_view_rel_exists	
-auth_view_rel_raw	
-auth_view_rel_raw_mono	
-auth_view_rel_raw_unit	
-auth_view_rel_raw_valid	
-auth_view_rel_unit	
+auth_frag_sep_homomorphism		missing	qol
+big_opL_auth_frag		missing	qol
+big_opMS_auth_frag		missing	qol
+big_opM_auth_frag		missing	qol
+big_opS_auth_frag		missing	qol
+authO	iris.algebra.auth:AuthOFE	analogue	foundational	AuthOFE is the Arend OFE presentation of authoritative elements.
+authR	iris.algebra.auth:AuthCMRA	analogue	foundational	AuthCMRA is the Arend CMRA presentation of authoritative elements.
+authRF		missing	foundational
+authRF_contractive		missing	qol
+authUR	iris.algebra.auth:AuthUCMRA	analogue	foundational	AuthUCMRA adds the same unit structure to the authoritative CMRA.
+authURF		missing	foundational
+authURF_contractive		missing	qol
+auth_auth		missing	foundational
+auth_auth_core_id		missing	qol
+auth_auth_dfrac_included		missing	qol
+auth_auth_dfrac_includedN		missing	qol
+auth_auth_dfrac_is_op		missing	qol
+auth_auth_dfrac_op		missing	qol
+auth_auth_dfrac_op_inv		missing	qol
+auth_auth_dfrac_op_invN		missing	qol
+auth_auth_dfrac_op_inv_L		missing	qol
+auth_auth_dfrac_op_valid		missing	qol
+auth_auth_dfrac_op_validN		missing	qol
+auth_auth_dfrac_valid		missing	qol
+auth_auth_dfrac_validN		missing	qol
+auth_auth_discrete		missing	qol
+auth_auth_dist_inj		missing	qol
+auth_auth_included		missing	qol
+auth_auth_includedN		missing	qol
+auth_auth_inj		missing	qol
+auth_auth_ne		missing	qol
+auth_auth_op_valid		missing	qol
+auth_auth_op_validN		missing	qol
+auth_auth_proper		missing	qol
+auth_auth_valid		missing	qol
+auth_auth_validN		missing	qol
+auth_both_core_discarded		missing	qol
+auth_both_core_frac		missing	qol
+auth_both_core_id		missing	qol
+auth_both_dfrac_included		missing	qol
+auth_both_dfrac_includedN		missing	qol
+auth_both_dfrac_valid		missing	qol
+auth_both_dfrac_validN		missing	qol
+auth_both_dfrac_valid_2		missing	qol
+auth_both_dfrac_valid_discrete		missing	qol
+auth_both_included		missing	qol
+auth_both_includedN		missing	qol
+auth_both_valid		missing	qol
+auth_both_validN	iris.algebra.auth:auth_both_validN	direct	qol
+auth_both_valid_2		missing	qol
+auth_both_valid_discrete		missing	qol
+auth_cmra_discrete		missing	qol
+auth_frag		missing	foundational
+auth_frag_core		missing	qol
+auth_frag_core_id		missing	qol
+auth_frag_discrete		missing	qol
+auth_frag_dist_inj		missing	qol
+auth_frag_included		missing	qol
+auth_frag_includedN		missing	qol
+auth_frag_inj		missing	qol
+auth_frag_is_op		missing	qol
+auth_frag_mono		missing	qol
+auth_frag_ne		missing	qol
+auth_frag_op		missing	qol
+auth_frag_op_valid		missing	qol
+auth_frag_op_validN		missing	qol
+auth_frag_op_validN_1		missing	qol
+auth_frag_op_validN_2		missing	qol
+auth_frag_op_valid_1		missing	qol
+auth_frag_op_valid_2		missing	qol
+auth_frag_proper		missing	qol
+auth_frag_valid		missing	qol
+auth_frag_validN		missing	qol
+auth_frag_validN_1		missing	qol
+auth_frag_validN_2		missing	qol
+auth_frag_valid_1		missing	qol
+auth_frag_valid_2		missing	qol
+auth_local_update		missing	qol
+auth_ofe_discrete		missing	qol
+auth_update		missing	qol
+auth_updateP_auth_unpersist		missing	qol
+auth_updateP_both_unpersist		missing	qol
+auth_update_alloc		missing	qol
+auth_update_auth		missing	qol
+auth_update_auth_persist		missing	qol
+auth_update_dealloc		missing	qol
+auth_update_dfrac_alloc		missing	qol
+auth_view_rel	iris.algebra.auth:AuthViewRel	analogue	foundational	AuthViewRel states the same authoritative/fragment validity relation.
+auth_view_rel_discrete		missing	qol
+auth_view_rel_exists		missing	qol
+auth_view_rel_raw		missing	foundational
+auth_view_rel_raw_mono		missing	qol
+auth_view_rel_raw_unit		missing	qol
+auth_view_rel_raw_valid		missing	qol
+auth_view_rel_unit		missing	qol
