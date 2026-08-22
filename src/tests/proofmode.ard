@@ -48,6 +48,11 @@
   : (P ∗ (Q ∗ R)) ⊢ Q =>
   ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $ iExact "HQ"
 
+\lemma proofmode_destruct_persistent {M : UCMRA} (P : ProperUPred M)
+  : ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HU HE" $ iDestruct "HU" "#HP" $
+    iSplitL "" (iExact "HP") (iExact "HP")
+
 \lemma proofmode_clear {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ Q =>
   ipm $ iIntros "HP HQ" $ iClear "HP" $ iExact "HQ"
@@ -83,13 +88,26 @@
   : ((P -∗ Q) ∗ P) ⊢ Q =>
   ipm $ iIntros "HW HP" $ iApply "HW" $ iExact "HP"
 
+\lemma proofmode_rewrite {M : UCMRA} (P Q : ProperUPred M)
+  : ((mkProperInternalEq {M} {UPredOFE M} P Q) ∗ Q) ⊢ P =>
+  ipm $ iIntros "HEq HQ" $ iRewrite "HEq" $ iExact "HQ"
+
 \lemma proofmode_next {M : UCMRA} (P : ProperUPred M)
   : (P ∗ mkProperEmp) ⊢ (|> P) =>
   ipm $ iIntros "HP HE" $ iNext $ iExact "HP"
 
+\lemma proofmode_lob {M : UCMRA} (P : ProperUPred M)
+  : (P ∗ mkProperEmp) ⊢ P =>
+  ipm $ iIntros "HP HE" $ iLob "IH" $ iExact "HP"
+
 \lemma proofmode_mod_intro {M : UCMRA} (P : ProperUPred M)
   : (P ∗ mkProperEmp) ⊢ (|==> P) =>
   ipm $ iIntros "HP HE" $ iModIntro $ iExact "HP"
+
+\lemma proofmode_mod {M : UCMRA} (P : ProperUPred M)
+  : ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
+  ipm $ iIntros "HU HE" $ iMod "HU" "HP" $
+    iModIntro $ iExact "HP"
 
 \lemma proofmode_split_l {M : UCMRA} (P Q R : ProperUPred M)
   : (P ∗ (Q ∗ R)) ⊢ ((P ∗ R) ∗ Q) =>
@@ -101,10 +119,20 @@
   ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $
     iSplitR "HQ" (iFrame "HP" $ iExact "HR") (iExact "HQ")
 
+\lemma proofmode_split_and {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ mkProperAnd P Q =>
+  ipm $ iIntros "HP HQ" $
+    iSplitL "" (iExact "HP") (iExact "HQ")
+
 \lemma proofmode_assert {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ (P ∗ Q) =>
   ipm $ iIntros "HP HQ" $
     iAssert "HR" "HP" P (iExact "HP") (iFrame "HR" $ iExact "HQ")
+
+\lemma proofmode_pose_proof {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HP HQ" $
+    iPoseProof "HR" "HP" P (iExact "HP") (iFrame "HR" $ iExact "HQ")
 
 \lemma proofmode_wp_value {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (v : Value) (Phi : Value -> iProp S)

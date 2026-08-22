@@ -75,8 +75,12 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "iSplitL", SplitLeftMeta.class, SplitLeftMeta::new);
     dependencyMeta(contributor, module, "iSplitR", SplitRightMeta.class, SplitRightMeta::new);
     dependencyMeta(contributor, module, "iAssert", AssertMeta.class, AssertMeta::new);
+    dependencyMeta(contributor, module, "iPoseProof", AssertMeta.class, AssertMeta::new);
     dependencyMeta(contributor, module, "iNext", NextMeta.class, NextMeta::new);
     dependencyMeta(contributor, module, "iModIntro", ModIntroMeta.class, ModIntroMeta::new);
+    dependencyMeta(contributor, module, "iMod", ModMeta.class, ModMeta::new);
+    dependencyMeta(contributor, module, "iRewrite", RewriteMeta.class, RewriteMeta::new);
+    dependencyMeta(contributor, module, "iLob", LobMeta.class, LobMeta::new);
     dependencyMeta(contributor, module, "wp_value", WpValueMeta.class, WpValueMeta::new);
     dependencyMeta(contributor, module, "wp_if", WpIfMeta.class, WpIfMeta::new);
     dependencyMeta(contributor, module, "wp_apply", WpApplyMeta.class, WpApplyMeta::new);
@@ -91,9 +95,8 @@ public final class ProofModeExtension extends DefaultArendExtension {
     }
 
     String[] remaining = {
-        "iPoseProof", "iSpecialize",
-        "iMod",
-        "iRewrite", "iInv", "iLob", "wp_pures"
+        "iSpecialize",
+        "iInv", "wp_pures"
     };
     for (String name : remaining) {
       contributor.declare(text("IRIS proof-mode tactic `" + name + "`"),

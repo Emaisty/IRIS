@@ -33,8 +33,12 @@ abstract class SplitMeta extends ExactMeta {
   private ArendRef pmSplitPutRight;
   @Dependency(name = "pm_split_sep")
   private ArendRef pmSplitSep;
+  @Dependency(name = "pm_split_and")
+  private ArendRef pmSplitAnd;
   @Dependency(name = "mkProperSep")
   private CoreFunctionDefinition mkProperSep;
+  @Dependency(name = "mkProperAnd")
+  private CoreFunctionDefinition mkProperAnd;
 
   protected abstract boolean selectedGoLeft();
 
@@ -98,10 +102,28 @@ abstract class SplitMeta extends ExactMeta {
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
     CoreExpression target = dereference(typechecker, goal.target());
+    if (target instanceof CoreFunCallExpression conjunction
+        && conjunction.getDefinition() == mkProperAnd) {
+      if (!selected.isEmpty()) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Ordinary conjunction duplicates the whole context; use an empty split pattern",
+            contextData.getMarker()));
+        return null;
+      }
+      List<ConcreteExpression> arguments = explicitArguments(contextData);
+      var factory = contextData.getFactory();
+      List<ConcreteArgument> callArgs = new ArrayList<>();
+      callArgs.add(factory.arg(factory.hole(), false));
+      callArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
+      callArgs.add(factory.arg(arguments.get(1), true));
+      callArgs.add(factory.arg(arguments.get(2), true));
+      return typechecker.typecheck(factory.app(factory.ref(pmSplitAnd), callArgs),
+          contextData.getExpectedType());
+    }
     if (!(target instanceof CoreFunCallExpression call)
         || call.getDefinition() != mkProperSep) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "iSplitL/iSplitR requires a separating-conjunction goal",
+          "iSplitL/iSplitR requires a conjunction goal",
           contextData.getMarker()));
       return null;
     }
