@@ -40,7 +40,7 @@ final class RewriteMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    CoreExpression proposition = dereference(typechecker,
+    CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression equality)
         || equality.getDefinition() != mkProperInternalEq

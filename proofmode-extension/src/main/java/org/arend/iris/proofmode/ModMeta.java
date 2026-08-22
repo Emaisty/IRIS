@@ -45,7 +45,7 @@ final class ModMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    CoreExpression proposition = dereference(typechecker,
+    CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression update)
         || update.getDefinition() != mkProperBUpd
@@ -55,7 +55,7 @@ final class ModMeta extends ExactMeta {
       return null;
     }
     CoreExpression body = update.getDefCallArguments().getLast();
-    CoreExpression target = dereference(typechecker, resolved.target());
+    CoreExpression target = weakHead(typechecker, resolved.target());
     if (!(target instanceof CoreFunCallExpression targetUpdate)
         || targetUpdate.getDefinition() != mkProperBUpd
         || targetUpdate.getDefCallArguments().isEmpty()) {

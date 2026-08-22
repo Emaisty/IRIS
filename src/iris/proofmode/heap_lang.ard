@@ -3,11 +3,18 @@
 \import iris.algebra.gmap
 \import iris.base_logic.lib.gfunctors
 \import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.invariants
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.upred
 \import iris.base_logic.notation
+\import iris.bi.big_op
 \import iris.program_logic.weakestpre
 \import iris.program_logic.lifting
+\import iris.proofmode.core
 \import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
 \import stdpp.coPset
+\import stdpp.namespaces
 
 -- Bridge names keep the virtual tactic module free of collisions with the
 -- term-level HeapLang rules (`wp_value`, `wp_fork`, ...).
@@ -34,3 +41,68 @@
   : (pm_wp H E f Phi) ⊢
       (pm_wp H E (If (Val (boolV false)) t f) Phi) =>
   wp_if_false H E t f Phi
+
+-- Open a selected invariant around a strongly atomic expression.  The
+-- extension only discovers the parameters and builds the selection; this
+-- theorem performs the resource permutation and both mask transitions.
+\lemma pm_wp_inv {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (e : Expr) (Phi : Value -> iProp S)
+    (hNE : coPSubset (nclose N) E) (atomic : StronglyAtomic {cnt} e)
+    {envs : PMEnvs (iResUR S)} (selection : PMSelection envs.spatial)
+    (body_name close_name : PMName)
+    (is_inv : selection.selected_prop ⊢
+      (iris.base_logic.lib.invariants.inv H.iris_wsat N P))
+    (next : envs_entails
+      (\new PMEnvs (iResUR S) {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc
+            (pm_snoc selection.selected_rest body_name (|> P))
+            close_name
+            ((|> P) -∗
+              (mkProperFUpd H.iris_wsat
+                (coPset_difference E (nclose N)) E mkProperEmp))
+      })
+      (pm_wp H (coPset_difference E (nclose N)) e
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : envs_entails envs (pm_wp H E e Phi) =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | R => pm_of_env selection.selected_rest
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat N P
+    | LP => |> P
+    | Close => LP -∗
+        (mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E mkProperEmp)
+    | K => I ∗ R
+    | WPInner => pm_wp H (coPset_difference E (nclose N)) e
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))
+    | prepare : (of_envs envs) ⊢ (Inv ∗ K) =>
+        properUPred_ent_trans (of_envs envs)
+          (I ∗ (Inv ∗ R)) (Inv ∗ K)
+          (sep_mono_r_ent I (pm_of_env envs.spatial) (Inv ∗ R)
+            (properUPred_ent_trans (pm_of_env envs.spatial)
+              (selection.selected_prop ∗ R) (Inv ∗ R)
+              selection.selection_sound
+              (sep_mono_l_ent selection.selected_prop Inv R is_inv)))
+          (sep_swap_ent I Inv R)
+    | arrange : ((LP ∗ Close) ∗ K) ⊢
+        (I ∗ ((R ∗ LP) ∗ Close)) =>
+        properUPred_ent_trans ((LP ∗ Close) ∗ (I ∗ R))
+          ((I ∗ R) ∗ (LP ∗ Close))
+          (I ∗ ((R ∗ LP) ∗ Close))
+          (sep_comm_ent (LP ∗ Close) (I ∗ R))
+          (properUPred_ent_trans ((I ∗ R) ∗ (LP ∗ Close))
+            (I ∗ (R ∗ (LP ∗ Close)))
+            (I ∗ ((R ∗ LP) ∗ Close))
+            (sep_assoc_l_ent I R (LP ∗ Close))
+            (sep_mono_r_ent I (R ∗ (LP ∗ Close))
+              ((R ∗ LP) ∗ Close) (sep_assoc_r_ent R LP Close)))
+    | opened : (((LP ∗ Close) ∗ K)) ⊢ WPInner =>
+        properUPred_ent_trans ((LP ∗ Close) ∗ K)
+          (I ∗ ((R ∗ LP) ∗ Close)) WPInner arrange next
+  \in properUPred_ent_trans (of_envs envs) (Inv ∗ K)
+    (pm_wp H E e Phi) prepare
+    (wp_atomic_inv_acc H E N P K e Phi hNE atomic opened)

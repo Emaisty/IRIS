@@ -10,6 +10,7 @@ import org.arend.ext.core.expr.CoreExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
 import org.arend.ext.core.expr.CoreNewExpression;
 import org.arend.ext.core.expr.CoreInferenceReferenceExpression;
+import org.arend.ext.core.ops.NormalizationMode;
 import org.arend.ext.error.TypecheckingError;
 import org.arend.ext.reference.ArendRef;
 import org.arend.ext.typechecking.ContextData;
@@ -121,6 +122,10 @@ final class IntrosMeta extends ExactMeta {
     CoreExpression tail = snocArgs.get(snocArgs.size() - 3);
     CoreExpression anonymous = snocArgs.get(snocArgs.size() - 2);
     CoreExpression proposition = dereference(typechecker, snocArgs.get(snocArgs.size() - 1));
+    if (!(proposition instanceof CoreFunCallExpression)) {
+      proposition = dereference(typechecker,
+          proposition.normalize(NormalizationMode.WHNF));
+    }
     if (!(proposition instanceof CoreFunCallExpression sep)
         || !sep.getDefinition().getName().equals(mkProperSep.getName())
         || sep.getDefCallArguments().size() < 3) {

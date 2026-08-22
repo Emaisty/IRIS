@@ -64,7 +64,7 @@ final class WpIfMeta extends ExactMeta {
     if (!requireCount(typechecker, contextData, 1)) return null;
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
-    CoreExpression target = dereference(typechecker, goal.target());
+    CoreExpression target = weakHead(typechecker, goal.target());
     if (!(target instanceof CoreFunCallExpression wpCall)
         || !(wpCall.getDefinition().getName().equals("wp")
           || wpCall.getDefinition().getName().equals("pm_wp"))

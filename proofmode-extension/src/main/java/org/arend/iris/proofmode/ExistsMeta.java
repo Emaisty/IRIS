@@ -28,7 +28,7 @@ final class ExistsMeta extends ExactMeta {
     if (!requireCount(typechecker, contextData, 2)) return null;
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
-    CoreExpression target = dereference(typechecker, goal.target());
+    CoreExpression target = weakHead(typechecker, goal.target());
     if (!(target instanceof CoreFunCallExpression exists)
         || !exists.getDefinition().getName().equals(mkProperExist.getName())
         || exists.getDefCallArguments().size() < 3) {

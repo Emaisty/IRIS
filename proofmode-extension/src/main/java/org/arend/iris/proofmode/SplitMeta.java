@@ -101,7 +101,7 @@ abstract class SplitMeta extends ExactMeta {
 
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
-    CoreExpression target = dereference(typechecker, goal.target());
+    CoreExpression target = weakHead(typechecker, goal.target());
     if (target instanceof CoreFunCallExpression conjunction
         && conjunction.getDefinition() == mkProperAnd) {
       if (!selected.isEmpty()) {

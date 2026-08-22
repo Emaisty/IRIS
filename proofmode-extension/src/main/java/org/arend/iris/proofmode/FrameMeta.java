@@ -35,7 +35,7 @@ final class FrameMeta extends ExactMeta {
           "Framing intuitionistic hypotheses is not implemented yet", contextData.getMarker()));
       return null;
     }
-    CoreExpression target = dereference(typechecker, resolved.target());
+    CoreExpression target = weakHead(typechecker, resolved.target());
     if (!(target instanceof CoreFunCallExpression sep)
         || !sep.getDefinition().getName().equals(mkProperSep.getName())
         || sep.getDefCallArguments().size() < 3) {

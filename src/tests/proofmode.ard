@@ -12,10 +12,14 @@
 \import iris.algebra.coPset
 \import iris.base_logic.lib.gfunctors
 \import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.invariants
 \import stdpp.coPset
 \import iris.program_logic.weakestpre \hiding (wp_value)
 \import iris.program_logic.lifting (wp_if_true, wp_fork)
 \import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+\import stdpp.namespaces
 \import iris.proofmode.core
 \import iris.proofmode.Meta
 
@@ -37,6 +41,21 @@
       (sep_elim_r_ent mkProperEmp ((mkProperEmp ∗ P) ∗ Q))
       (sep_mono_l_ent (mkProperEmp ∗ P) P Q
         ((BIuPredMixin M).bi_mixin_emp_sep_2 P))
+
+\lemma proofmode_intros_local_alias {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ P =>
+  \let | Aliased => P ∗ Q
+  \in (ipm $ iIntros "HP HQ" $ iExact "HP" : Aliased ⊢ P)
+
+\lemma proofmode_connective_local_aliases {M : UCMRA}
+    (P Q R : ProperUPred M) : ((P ∗ Q) ∗ R) ⊢ (Q ∗ R) =>
+  \let
+    | Pair => P ∗ Q
+    | Source => Pair ∗ R
+    | Goal => Q ∗ R
+  \in (ipm $ iIntros "HPAIR HR" $
+    iDestruct "HPAIR" "HP HQ" $ iFrame "HQ" $ iExact "HR"
+      : Source ⊢ Goal)
 
 \lemma proofmode_exact_latest {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ Q => ipm $ iIntros "HP HQ" $ iExact "HQ"
@@ -87,6 +106,11 @@
 \lemma proofmode_apply {M : UCMRA} (P Q : ProperUPred M)
   : ((P -∗ Q) ∗ P) ⊢ Q =>
   ipm $ iIntros "HW HP" $ iApply "HW" $ iExact "HP"
+
+\lemma proofmode_specialize {M : UCMRA} (P Q R : ProperUPred M)
+  : (((P -∗ Q) ∗ P) ∗ R) ⊢ (Q ∗ R) =>
+  ipm $ iIntros "HPAIR HR" $ iDestruct "HPAIR" "HW HP" $
+    iSpecialize "HW" "HP" "HQ" $ iFrame "HQ" $ iExact "HR"
 
 \lemma proofmode_rewrite {M : UCMRA} (P Q : ProperUPred M)
   : ((mkProperInternalEq {M} {UPredOFE M} P Q) ∗ Q) ⊢ P =>
@@ -169,6 +193,23 @@
   ipm $ iIntros "HR HE" $
     iris.proofmode.Meta.wp_fork (wp_fork H E body Phi) $ iExact "HR"
 
+\lemma proofmode_inv {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (Phi : Value -> iProp S) (hNE : coPSubset (nclose N) E)
+    (opened :
+      (mkProperEmp ∗
+        ((mkProperEmp ∗ (|> P)) ∗
+          ((|> P) -∗
+            (mkProperFUpd H.iris_wsat
+              (coPset_difference E (nclose N)) E mkProperEmp)))) ⊢
+      (wp H (coPset_difference E (nclose N)) NewProph
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : (iris.base_logic.lib.invariants.inv H.iris_wsat N P) ⊢
+      (wp H E NewProph Phi) =>
+  ipm $ iInv "" "HP Hclose" hNE new_proph_strongly_atomic $
+    iStopProof opened
+
 \func proofmode_lookup_smoke {M : UCMRA} (P Q : ProperUPred M) :
     pm_lookup (72 :: nil) (pm_snoc (pm_snoc pm_empty (80 :: nil) P)
       (72 :: nil) Q) = just Q => idp
@@ -185,3 +226,8 @@
 
 \func proofmode_duplicate_intro_fails {M : UCMRA} (P Q : ProperUPred M)
   : \Sigma => fails (ipm $ iIntros "H H" $ iExact "H" : (P ∗ Q) ⊢ P)
+
+\func proofmode_specialize_mismatch_fails {M : UCMRA}
+    (P Q R : ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HW HR" $
+    iSpecialize "HW" "HR" "HQ" $ iExact "HQ" : ((P -∗ Q) ∗ R) ⊢ Q)

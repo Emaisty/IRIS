@@ -79,6 +79,16 @@ class ExactMeta extends ProofModeMeta {
     return result;
   }
 
+  protected CoreExpression weakHead(ExpressionTypechecker typechecker,
+      CoreExpression expression) {
+    CoreExpression result = dereference(typechecker, expression);
+    if (result instanceof CoreFunCallExpression
+        || result instanceof CoreConCallExpression
+        || result instanceof CoreNewExpression
+        || result instanceof CoreClassCallExpression) return result;
+    return dereference(typechecker, result.normalize(NormalizationMode.WHNF));
+  }
+
   protected @Nullable String decodeName(ExpressionTypechecker typechecker,
       CoreExpression expression) {
     StringBuilder result = new StringBuilder();

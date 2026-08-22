@@ -27,7 +27,7 @@ abstract class OrMeta extends ExactMeta {
     if (!requireCount(typechecker, contextData, 1)) return null;
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
-    CoreExpression target = dereference(typechecker, goal.target());
+    CoreExpression target = weakHead(typechecker, goal.target());
     if (!(target instanceof CoreFunCallExpression or)
         || !or.getDefinition().getName().equals(mkProperOr.getName())
         || or.getDefCallArguments().size() < 3) {

@@ -72,7 +72,7 @@ final class DestructMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    CoreExpression proposition = dereference(typechecker,
+    CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression sep)
         || !sep.getDefinition().getName().equals(mkProperSep.getName())
@@ -128,7 +128,7 @@ final class DestructMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    CoreExpression proposition = dereference(typechecker,
+    CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression persistently)
         || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())

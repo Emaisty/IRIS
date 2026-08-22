@@ -1,0 +1,34 @@
+\import Function.Meta
+\import Data.Bool
+\import iris.algebra.coPset
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.notation
+\import iris.base_logic.upred
+\import iris.program_logic.weakestpre \hiding (wp_value)
+\import iris_heap_lang.lang
+\import iris.proofmode.Meta
+\import stdpp.coPset
+
+\lemma proofmode_wp_pures {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (result arg other : Value)
+    (Phi : Value -> iProp S)
+  : (Phi result) ⊢
+      (wp H E
+        (If (Val (boolV true))
+          (App (Val (LamV 0 (Val result))) (Val arg)) (Val other)) Phi) =>
+  ipm $ wp_pures $ wp_value $ iExact ""
+
+\lemma proofmode_wp_pures_rec_beta {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (result arg : Value)
+    (Phi : Value -> iProp S)
+  : (Phi result) ⊢
+      (wp H E (App (Val (RecV 0 1 (Val result))) (Val arg)) Phi) =>
+  ipm $ wp_pures $ wp_value $ iExact ""
+
+\lemma proofmode_wp_pures_rec_expr {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (body : Expr)
+    (Phi : Value -> iProp S)
+  : (Phi (RecV 0 1 body)) ⊢ (wp H E (Rec 0 1 body) Phi) =>
+  ipm $ wp_pures $ wp_value $ iExact ""

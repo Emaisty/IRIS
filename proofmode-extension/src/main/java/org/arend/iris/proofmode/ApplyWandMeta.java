@@ -39,7 +39,7 @@ final class ApplyWandMeta extends ExactMeta {
           "Applying intuitionistic hypotheses is not implemented yet", contextData.getMarker()));
       return null;
     }
-    CoreExpression proposition = dereference(typechecker,
+    CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression wand)
         || !wand.getDefinition().getName().equals(mkProperWand.getName())

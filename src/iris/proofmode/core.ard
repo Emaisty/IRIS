@@ -711,6 +711,97 @@
       (sep_comm_ent (P -∗ Q) P)
       ((BIuPredMixin M).bi_mixin_wand_elim P Q)) next
 
+\lemma pm_specialize_spatial {M : UCMRA} {env : PMEnv M}
+    (wand_selection : PMSelection env)
+    (argument_selection : PMSelection wand_selection.selected_rest)
+    (name : PMName) {P Q : ProperUPred M}
+    (is_wand : wand_selection.selected_prop ⊢ (P -∗ Q))
+    (is_argument : argument_selection.selected_prop ⊢ P)
+  : (pm_of_env env) ⊢
+      (pm_of_env (pm_snoc argument_selection.selected_rest name Q)) =>
+  properUPred_ent_trans (pm_of_env env)
+    ((P -∗ Q) ∗
+      (argument_selection.selected_prop ∗
+        pm_of_env argument_selection.selected_rest))
+    (pm_of_env argument_selection.selected_rest ∗ Q)
+    (properUPred_ent_trans (pm_of_env env)
+      (wand_selection.selected_prop ∗
+        pm_of_env wand_selection.selected_rest)
+      ((P -∗ Q) ∗
+        (argument_selection.selected_prop ∗
+          pm_of_env argument_selection.selected_rest))
+      wand_selection.selection_sound
+      (properUPred_ent_trans
+        (wand_selection.selected_prop ∗
+          pm_of_env wand_selection.selected_rest)
+        ((P -∗ Q) ∗ pm_of_env wand_selection.selected_rest)
+        ((P -∗ Q) ∗
+          (argument_selection.selected_prop ∗
+            pm_of_env argument_selection.selected_rest))
+        (sep_mono_l_ent wand_selection.selected_prop (P -∗ Q)
+          (pm_of_env wand_selection.selected_rest) is_wand)
+        (sep_mono_r_ent (P -∗ Q)
+          (pm_of_env wand_selection.selected_rest)
+          (argument_selection.selected_prop ∗
+            pm_of_env argument_selection.selected_rest)
+          argument_selection.selection_sound)))
+    (properUPred_ent_trans
+      ((P -∗ Q) ∗
+        (argument_selection.selected_prop ∗
+          pm_of_env argument_selection.selected_rest))
+      (((P -∗ Q) ∗ P) ∗
+        pm_of_env argument_selection.selected_rest)
+      (pm_of_env argument_selection.selected_rest ∗ Q)
+      (properUPred_ent_trans
+        ((P -∗ Q) ∗
+          (argument_selection.selected_prop ∗
+            pm_of_env argument_selection.selected_rest))
+        ((P -∗ Q) ∗
+          (P ∗ pm_of_env argument_selection.selected_rest))
+        (((P -∗ Q) ∗ P) ∗
+          pm_of_env argument_selection.selected_rest)
+        (sep_mono_r_ent (P -∗ Q)
+          (argument_selection.selected_prop ∗
+            pm_of_env argument_selection.selected_rest)
+          (P ∗ pm_of_env argument_selection.selected_rest)
+          (sep_mono_l_ent argument_selection.selected_prop P
+            (pm_of_env argument_selection.selected_rest) is_argument))
+        (sep_assoc_r_ent (P -∗ Q) P
+          (pm_of_env argument_selection.selected_rest)))
+      (properUPred_ent_trans
+        (((P -∗ Q) ∗ P) ∗
+          pm_of_env argument_selection.selected_rest)
+        (Q ∗ pm_of_env argument_selection.selected_rest)
+        (pm_of_env argument_selection.selected_rest ∗ Q)
+        (sep_mono_l_ent ((P -∗ Q) ∗ P) Q
+          (pm_of_env argument_selection.selected_rest)
+          (properUPred_ent_trans ((P -∗ Q) ∗ P)
+            (P ∗ (P -∗ Q)) Q (sep_comm_ent (P -∗ Q) P)
+            ((BIuPredMixin M).bi_mixin_wand_elim P Q)))
+        (sep_comm_ent Q (pm_of_env argument_selection.selected_rest))))
+
+\lemma pm_specialize {M : UCMRA} {envs : PMEnvs M}
+    (wand_selection : PMSelection envs.spatial)
+    (argument_selection : PMSelection wand_selection.selected_rest)
+    (name : PMName) {P Q R : ProperUPred M}
+    (is_wand : wand_selection.selected_prop ⊢ (P -∗ Q))
+    (is_argument : argument_selection.selected_prop ⊢ P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc argument_selection.selected_rest name Q
+      }) R)
+  : envs_entails envs R =>
+  properUPred_ent_trans (of_envs envs)
+    ((pm_of_persistent_env envs.intuitionistic) ∗
+      pm_of_env (pm_snoc argument_selection.selected_rest name Q)) R
+    (sep_mono_r_ent (pm_of_persistent_env envs.intuitionistic)
+      (pm_of_env envs.spatial)
+      (pm_of_env (pm_snoc argument_selection.selected_rest name Q))
+      (pm_specialize_spatial wand_selection argument_selection name
+        is_wand is_argument))
+    next
+
 \lemma pm_rewrite {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) {P Q : ProperUPred M}
     (is_equality : selection.selected_prop ⊢

@@ -1,6 +1,7 @@
 \import Logic
 \import Paths
 \import Paths.Meta
+\import Function.Meta
 \import Arith.Nat
 \import Arith.Rat
 \import Algebra.StrictlyOrdered
@@ -49,6 +50,8 @@
 \import examples.parallel_counter
 \import examples.parallel_counter_model
 \import examples.parallel_counter_ghost
+\import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
+  iAssumption, iSplitL, wp_apply)
 
 -- The exclusive token used by the Rocq spawn/join library.  It remains a
 -- separate functor requirement, since heap state and counter ghost state can
@@ -9320,30 +9323,22 @@
     | Public => msc_is_counter H G gam c
     | Source => Shift ∗ (Public ∗ P)
     | WithCopy => Source ∗ Public
-    | A1 => Shift ∗
-        ((Public ∗ P) ∗ Public)
-    | A2 => Shift ∗
-        (Public ∗ (P ∗ Public))
     | Target => Public ∗
         (Shift ∗ (P ∗ Public))
     | sourceToPublic : Source ⊢ Public =>
-        properUPred_ent_trans Source (Public ∗ P) Public
-          (sep_elim_r_ent Shift (Public ∗ P))
-          (sep_elim_l_ent Public P)
+        ipm $ iIntros "HShift HRest" $
+          iDestruct "HRest" "HPublic HP" $ iExact "HPublic"
     | copy : Source ⊢ WithCopy =>
         persistent_consequence_frame_ent Source Public
           (properUPred_ent_trans Source Public
             (<#> Public) sourceToPublic
             (msc_is_counter_persistent H G gam c))
   \in properUPred_ent_trans Source WithCopy Target copy
-      (properUPred_ent_trans WithCopy A1 Target
-        (sep_assoc_l_ent Shift (Public ∗ P) Public)
-        (properUPred_ent_trans A1 A2 Target
-          (sep_mono_r_ent Shift
-            ((Public ∗ P) ∗ Public)
-            (Public ∗ (P ∗ Public))
-            (sep_assoc_l_ent Public P Public))
-          (sep_swap_ent Shift Public (P ∗ Public))))
+      (ipm $ iIntros "HSource HPublic2" $
+        iDestruct "HSource" "HShift HRest" $
+        iDestruct "HRest" "HPublic HP" $
+        iFrame "HPublic" $ iFrame "HShift" $
+        iFrame "HP" $ iExact "HPublic2")
 
 \lemma msc_read_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -9382,16 +9377,12 @@
             | runFramed : Ready ⊢
                 (WP H mscE (App (Val msc_read) (Val CounterV))
                   (wp_frame_post CorePost Public)) =>
-                properUPred_ent_trans Ready
-                  ((WP H mscE (App (Val msc_read) (Val CounterV)) CorePost) ∗
-                    Public)
-                  (WP H mscE (App (Val msc_read) (Val CounterV))
-                    (wp_frame_post CorePost Public))
-                  (sep_mono_l_ent CorePre
-                    (WP H mscE (App (Val msc_read) (Val CounterV)) CorePost)
-                    Public runConcrete)
-                  (wp_frame_r H mscE
-                    (App (Val msc_read) (Val CounterV)) CorePost Public)
+                ipm $ iIntros "HCore HPublic" $
+                  wp_apply (wp_frame_r H mscE
+                    (App (Val msc_read) (Val CounterV)) CorePost Public) $
+                  iSplitL "HCore"
+                    (wp_apply runConcrete $ iExact "HCore")
+                    (iExact "HPublic")
             | finish : (WP H mscE (App (Val msc_read) (Val CounterV))
                   (wp_frame_post CorePost Public)) ⊢
                 (WP H mscE (App (Val msc_read) (Val CounterV))
@@ -9403,20 +9394,14 @@
             | concrete : Ready ⊢
                 (WP H mscE (App (Val msc_read) (Val CounterV))
                   (msc_read_post H G gam c Q)) =>
-                properUPred_ent_trans Ready
-                  (WP H mscE (App (Val msc_read) (Val CounterV))
-                    (wp_frame_post CorePost Public))
-                  (WP H mscE (App (Val msc_read) (Val CounterV))
-                    (msc_read_post H G gam c Q)) runFramed finish
+                ipm $ wp_apply finish $ wp_apply runFramed $ iAssumption
             | arrange : AfterPure ⊢ Ready =>
-                properUPred_ent_trans AfterPure
-                  (Inv ∗
-                    ((Shift ∗ P) ∗ Public)) Ready
-                  (sep_mono_r_ent Inv
-                    (Shift ∗ (P ∗ Public))
-                    ((Shift ∗ P) ∗ Public)
-                    (sep_assoc_r_ent Shift P Public))
-                  (sep_assoc_r_ent Inv (Shift ∗ P) Public)
+                ipm $ iIntros "HInv HRest" $
+                  iDestruct "HRest" "HShift HPair" $
+                  iDestruct "HPair" "HP HPublic" $
+                  iSplitL "HInv HShift HP"
+                    (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
+                    (iExact "HPublic")
             | afterEq : c = CounterV -> AfterPure ⊢ Goal =>
                 \lam counterEq => transport
                   (\lam cv => AfterPure ⊢
