@@ -1,0 +1,133 @@
+\import Arith.Nat
+\import Logic
+\import Function.Iterate
+\import Order.PartialOrder
+\import Order.LinearOrder
+\import Paths
+\import Set
+\import Data.Or
+\import Data.Maybe
+\import Logic.Meta
+
+\class OFE \extends BaseSet {
+  | dist : Nat -> E -> E -> \Prop
+  | equiv : E -> E -> \Prop
+  | equiv_refl (x : E) : equiv x x
+  | equiv_sym (x y : E) : equiv x y -> equiv y x
+  | equiv_trans (x y z : E) : equiv x y -> equiv y z -> equiv x z
+  | ofe_equiv_dist (x y : E) : equiv x y <-> (\Pi (n : Nat) -> dist n x y)
+  | ofe_dist_refl (n : Nat) (x : E) : dist n x x
+  | ofe_dist_sym (n : Nat) (x y : E) : dist n x y -> dist n y x
+  | ofe_dist_trans (n : Nat) (x y z : E) : dist n x y -> dist n y z -> dist n x z
+  | ofe_dist_le (n m : Nat) (x y : E) : dist n x y -> m <= n -> dist m x y
+}
+
+\class LeibnizOFE \extends OFE {
+  | equiv => {?}
+  | equiv_refl => {?}
+  | equiv_sym => {?}
+  | equiv_trans => {?}
+}
+
+\record DistLater {A : OFE} (n : Nat) (x : A.E) (y : A.E) {
+  | dist_later_lt : \Pi (m : Nat) -> m NatOrder.< n -> A.dist m x y
+}
+
+\func NonExpansive {A B : OFE} (f : A.E -> B.E) : \Prop => {?}
+
+\func NonExpansive2 {A B C : OFE} (f : A.E -> B.E -> C.E) : \Prop => {?}
+
+\func Discrete {O : OFE} (x : O.E) : \Prop => {?}
+
+\func OFEDiscrete (O : OFE) : \Prop => {?}
+
+\record Chain {O : OFE} (c : Nat -> O.E) {
+  | chain_cauchy (n m : Nat) : n <= m -> O.dist n (c m) (c n)
+}
+
+\class COFE \extends OFE {
+  | compl : \Pi (c : Nat -> E) -> Chain c -> E
+  | cofe_conv_compl (c : Nat -> E) (hc : Chain c) (n : Nat) : dist n (compl c hc) (c n)
+}
+
+\lemma n<=sucn (n : Nat) : n <= suc n => {?}
+
+\lemma dist_S {O : OFE} (n : Nat) (x y : O.E) : O.dist (suc n) x y -> O.dist n x y => {?}
+
+\lemma equiv_dist_n {O : OFE} (x y : O.E) : x = y -> \Pi (n : Nat) -> O.dist n x y => {?}
+
+\lemma ne_proper {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f) (x y : A.E) : x = y -> f x = f y => {?}
+
+\func chain_const {O : OFE} (a : O.E) : \Sigma (c : Nat -> O.E) (Chain c) => {?}
+
+\lemma compl_chain_const {O : COFE} (a : O.E) : 
+  \let cc => chain_const {O} a
+  \in O.equiv (O.compl cc.1 cc.2) a => {?}
+
+\func chain_map {A B : OFE} (f : A.E -> B.E) (hf : NonExpansive f) (c : Nat -> A.E) (hc : Chain c) : \Sigma (c' : Nat -> B.E) (Chain c') => {?}
+
+\lemma compl_chain_map {A B : COFE} (f : A.E -> B.E) (hf : NonExpansive f) (c : Nat -> A.E) (hc : Chain c) :
+  B.equiv (f (A.compl c hc)) (B.compl (chain_map f hf c hc).1 (chain_map f hf c hc).2) => {?}
+
+\lemma dist_later_zero {A : OFE} (x y : A.E) : DistLater {A} 0 x y => {?}
+
+\lemma dist_to_dist_later_suc {A : OFE} (n : Nat) (x y : A.E) (h : A.dist n x y) : DistLater {A} (suc n) x y => {?}
+
+\lemma dist_later_suc_to_dist {A : OFE} (n : Nat) (x y : A.E) (h : DistLater {A} (suc n) x y) : A.dist n x y => {?}
+
+\record OFEMor (A : OFE) (B : OFE) (f : A.E -> B.E) {
+  | ofe_mor_ne : NonExpansive f
+}
+
+\func ofe_mor_id {A : OFE} : OFEMor A A (\lam x => x) => {?}
+
+\func ofe_mor_comp {A B C : OFE} (g : OFEMor B C) (f : OFEMor A B) : OFEMor A C (\lam x => g.f (f.f x)) => {?}
+
+\func ofe_mor_const {A B : OFE} (b : B.E) : OFEMor A B (\lam _ => b) => {?}
+
+\instance UnitOFE : LeibnizOFE => {?}
+
+\instance UnitCOFE : COFE => {?}
+
+\instance EmptyOFE : LeibnizOFE => {?}
+
+\instance ProdOFE (A B : OFE) : OFE => {?}
+
+\instance ProdCOFE (A B : COFE) : COFE => {?}
+
+\instance SumOFE (A B : OFE) : OFE => {?}
+
+\instance OptionOFE (A : OFE) : OFE => {?}
+
+\func DiscreteOFE (S : \Set) : LeibnizOFE => {?}
+
+\instance FunOFE (A : \Type) (B : OFE) : OFE => {?}
+
+\instance FunCOFE (A : \Type) (B : COFE) : COFE => {?}
+
+\lemma discrete_dist_to_eq (V : \Set) (n : Nat) (a b : V) (h : (DiscreteOFE V).dist n a b) : a = b => {?}
+
+\func Contractive {A : OFE} (f : A.E -> A.E) : \Prop => {?}
+
+\lemma contractive_zero {A : OFE} (f : A.E -> A.E) (hf : Contractive f) (x y : A.E) : A.dist 0 (f x) (f y) => {?}
+
+\lemma contractive_implies_contractive2 {A : OFE} (f : A.E -> A.E) (hf : Contractive f) : Contractive f => {?}
+
+\lemma contractive_ne {A : OFE} (f : A.E -> A.E) (hf : Contractive f) : NonExpansive f => {?}
+
+\class Inhabited (A : \Type) {
+  | default : A
+}
+
+\func fp_approx {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) (n : Nat) : A.E => {?}
+
+\lemma fp_approx_cauchy {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) (n m : Nat) (le : n <= m) : A.dist n (fp_approx f hf m) (fp_approx f hf n) => {?}
+
+\func fixpoint {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) : A.E => {?}
+
+\lemma fixpoint_unfold {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) : A.equiv (fixpoint f hf) (f (fixpoint f hf)) => {?}
+
+\lemma fixpoint_unique {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) (x : A.E) (hx : A.equiv x (f x)) : A.equiv x (fixpoint f hf) => {?}
+  \where {
+    \lemma fixpoint_unique_aux {A : COFE} {inh : Inhabited A.E} (f : A.E -> A.E) (hf : Contractive f) (x : A.E) (hx : A.equiv x (f x)) (n : Nat) : A.dist n x (fixpoint f hf) => {?}
+  }

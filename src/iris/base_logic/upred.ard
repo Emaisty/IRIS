@@ -72,6 +72,36 @@
           (inclN_le {M} {\new Op M.E { | op => M.op }} a x1 n1 n2 h_a_x1 n2_le_n1)
           h_x1_x2
 
+-- Rocq Iris' `ownM_timeless`: ownership of a discrete CMRA element can be
+-- taken out from under one later, modulo except-zero.  At a positive step
+-- index, CMRA extension refines the one-step-old inclusion witness; discreteness
+-- identifies its owned component at every index.
+\lemma ownM_timeless {M : UCMRA} (a : M.E) (ha : Discrete {M} a) :
+  properUPred_ent (mkProperLater (mkProperOwn a))
+    (mkProperExceptZero (mkProperOwn a)) =>
+  \lam n x hx h => \case \elim n, hx, h \with {
+    | 0, _, _ => byLeft ()
+    | suc k, hxk, inP (c, hac) =>
+      \let
+        | split => M.cmra_extend k x a c
+            (M.cmra_validN_le (suc k) k x hxk (n<=sucn k)) hac
+        | az1 : M.equiv a split.1 =>
+            ha split.1
+              (M.ofe_dist_le k 0 a split.1
+                (M.ofe_dist_sym k split.1 a split.4) zero<=_)
+        | z1a : M.equiv split.1 a => M.equiv_sym a split.1 az1
+        | parts : M.equiv (M.op split.1 split.2) (M.op a split.2) =>
+            (M.ofe_equiv_dist (M.op split.1 split.2)
+              (M.op a split.2)).2
+              (\lam r => M.cmra_op_ne_2 split.2 r split.1 a
+                ((M.ofe_equiv_dist split.1 a).1 z1a r))
+        | owned : M.equiv x (M.op a split.2) =>
+            M.equiv_trans x (M.op split.1 split.2)
+              (M.op a split.2) split.3 parts
+      \in byRight (inP (split.2,
+        (M.ofe_equiv_dist x (M.op a split.2)).1 owned (suc k)))
+  }
+
 -- `mkProperCMRAValid a` lifts CMRA validity into uPred:
 -- holds at `(n, _)` iff `validN n a`. Resource-independent.
 

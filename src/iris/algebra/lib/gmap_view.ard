@@ -107,6 +107,25 @@
     (dq : Dfrac) (m : Gmap K cnt V.E) : (gmap_viewR K cnt V).E =>
   view_auth dq m
 
+\lemma gmap_view_auth_discrete_at {K : \Set} {cnt : Countable K}
+    {V : CMRA} (dq : Dfrac) (m : Gmap K cnt V.E)
+    (hm : Discrete {GmapOFE K cnt V} m) :
+  Discrete {gmap_viewR K cnt V} (gmap_view_auth dq m) =>
+  prod_discrete
+    (just (dq, to_agree m))
+    (gempty {K} {cnt} {\Sigma Dfrac V.E})
+    (option_just_discrete (dq, to_agree m)
+      (prod_discrete dq (to_agree m)
+        (discreteOFE_discrete Dfrac dq)
+        (to_agree_discrete m hm)))
+    (gmap_empty_discrete
+      {K} {cnt} {ProdCMRA DfracCMRA V})
+
+\lemma gmap_view_auth_discrete {K : \Set} {cnt : Countable K} {V : CMRA}
+    (dq : Dfrac) (m : Gmap K cnt V.E) (hV : OFEDiscrete V) :
+  Discrete {gmap_viewR K cnt V} (gmap_view_auth dq m) =>
+  gmap_view_auth_discrete_at dq m (gmap_discrete hV m)
+
 \func gmap_view_frag {K : \Set} {cnt : Countable K} {V : CMRA}
     (k : K) (dq : Dfrac) (v : V.E) : (gmap_viewR K cnt V).E =>
   view_frag (gsingleton k (dq, v))

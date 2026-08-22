@@ -1,0 +1,259 @@
+\import Logic
+\import Arith.Nat
+\import Data.List
+\import Order.PartialOrder
+\import Data.Bool
+\import Data.Maybe
+\import Paths
+\import Set
+\import interface
+\import updates
+\import lang
+\import lang_ectx
+\import ofe
+\import uPred
+\import cmra
+\import uPred
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+\import lib.auth_cmra
+\import lib.pmap
+
+\func big_sep_list {B : BIMixin} (l : List Value) (Phi : Value -> B.E) : B.E => {?}
+
+\func heap_state_to_gmap {cnt : Countable Loc} (s : State cnt) : Gmap Loc cnt (Maybe (Excl Value)) => {?}
+  \where {
+    \func tag (p : \Sigma Loc Value) : Maybe (\Sigma Loc (Maybe (Excl Value))) => {?}
+
+    \func heap_state_to_gmap_wf {cnt : Countable Loc} (s : State cnt) :
+      gmap_wf {Loc} {cnt} {Maybe (Excl Value)} (\new (Pmap (\Sigma Loc (Maybe (Excl Value)))) {  | tree => {?}  | tree_wf => {?}}) => {?}
+  }
+
+
+\lemma heap_state_to_gmap_validN {cnt : Countable Loc} (n : Nat) (sigma : State cnt) : (GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Value))).validN n (heap_state_to_gmap sigma) => {?}
+
+\lemma heap_state_to_gmap_lookup {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  glookup (heap_state_to_gmap sigma) l = (\case glookup sigma.heap l \with {  | nothing => nothing  | just v => just (just (excl v))}) => {?}
+
+\lemma heap_state_to_gmap_update {cnt : Countable Loc} (sigma : State cnt) (l : Loc) (v : Value) :
+  heap_state_to_gmap (\new (State cnt) {  | heap => {?}}) = lib.heap.heap_update (heap_state_to_gmap sigma) l v => {?}
+
+\func own_heap_auth {cnt : Countable Loc} (s : State cnt) : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\lemma own_heap_alloc_bupd {cnt : Countable Loc} (sigma : State cnt) (l : Loc) (v : Value) (fresh : glookup sigma.heap l = nothing) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (own_heap_auth sigma) (mkProperBUpd (mkProperSep (own_heap_auth (\new (State cnt) {  | heap => {?}})) (pointsTo l v))) 
+  => {?}
+
+\lemma own_heap_store_bupd {cnt : Countable Loc} (sigma : State cnt) (l : Loc) (old v : Value) (lookup : glookup sigma.heap l = just old) :
+properUPred_ent {HeapCMRA Loc cnt Value} (mkProperSep (own_heap_auth sigma) (pointsTo l old)) 
+  (mkProperBUpd (mkProperSep (own_heap_auth (\new (State cnt) {  | heap => {?}})) (pointsTo l v))) => {?}
+
+\func wp_pre_body {cnt : Countable Loc} (wp : Expr -> (Value -> ProperUPred (HeapCMRA Loc cnt Value)) -> ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (tv : Maybe Value) : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func wp_pre {cnt : Countable Loc} (wp : Expr -> (Value -> ProperUPred (HeapCMRA Loc cnt Value)) -> ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func WPFun {cnt : Countable Loc} : \Type => {?}
+
+\func WPFunDist {cnt : Countable Loc} (n : Nat) (f g : WPFun {cnt}) : \Prop => {?}
+
+\func ContractiveFun {cnt : Countable Loc} (F : WPFun {cnt} -> WPFun {cnt}) : \Prop => {?}
+
+\lemma wp_pre_contractive {cnt : Countable Loc} : ContractiveFun wp_pre => {?}
+
+\func WPFunCOFE {cnt : Countable Loc} : COFE => {?}
+
+\instance WPFunInhabited {cnt : Countable Loc} : Inhabited (WPFunCOFE {cnt}).E => {?}
+
+\lemma wp_pre_contractive_ofe {cnt : Countable Loc} : Contractive {WPFunCOFE} wp_pre => {?}
+
+\func wp {cnt : Countable Loc} (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func wp_unfold {cnt : Countable Loc} (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : upredEquiv (wp e Phi) (wp_pre wp e Phi) => {?}
+
+\lemma exist_elim_ent {cnt : Countable Loc} (T : \Type) (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value)) (Q : ProperUPred (HeapCMRA Loc cnt Value)) 
+(h : \Pi (t : T) -> properUPred_ent (Phi t) Q) : properUPred_ent (mkProperExist T Phi) Q => {?}
+
+\lemma true_sep_drop {cnt : Countable Loc} (P : ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (mkProperSep (mkProperPure (\Sigma)) P) P => {?}
+
+\func wp_value {cnt : Countable Loc} (v : Value) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : upredEquiv (wp (Val v) Phi) (mkProperBUpd (Phi v)) => {?}
+
+\func wp_mono {cnt : Countable Loc} (e : Expr) (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) :
+  properUPred_ent (wp e Phi) (wp e Psi) => {?}
+  \where {
+    \func wp_mono_at_le (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) (N : Nat) (n : Nat) 
+    (n_le_N : n <= N) (e : Expr) (a : (HeapCMRA Loc cnt Value).E) (hv : validN {HeapCMRA Loc cnt Value} n a) (hp : (wp e Phi).upred_holds n a) : (wp e Psi).upred_holds n a 
+      => {?}
+
+    \func wp_mono_aux (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) (e : Expr) :
+      properUPred_ent (wp e Phi) (wp e Psi) => {?}
+
+    \func wp_pre_mono_zero (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) (e : Expr) 
+    (a : (HeapCMRA Loc cnt Value).E) (hv : validN {HeapCMRA Loc cnt Value} 0 a) (hp : (wp_pre wp e Phi).upred_holds 0 a) :
+      (wp_pre wp e Psi).upred_holds 0 a => {?}
+
+    \func wp_pre_mono_step (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) (e : Expr) 
+    (a : (HeapCMRA Loc cnt Value).E) {n : Nat} (hv : validN {HeapCMRA Loc cnt Value} (suc n) a) (hp : (wp_pre wp e Phi).upred_holds (suc n) a)
+      (ih : \Pi (k : Nat) -> k <= n -> \Pi (e' : Expr) (a' : (HeapCMRA Loc cnt Value).E) ->
+      validN {HeapCMRA Loc cnt Value} k a' -> (wp e' Phi).upred_holds k a' -> (wp e' Psi).upred_holds k a') : (wp_pre wp e Psi).upred_holds (suc n) a => {?}
+  }
+
+
+\lemma wp_value_intro {cnt : Countable Loc} (v : Value) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (Phi v) (wp (Val v) Phi) => {?}
+
+\lemma wp_post_mono {cnt : Countable Loc} (e : Expr) (Phi Psi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (h : \Pi (v : Value) -> properUPred_ent (Phi v) (Psi v)) :
+  properUPred_ent (wp e Phi) (wp e Psi) => {?}
+
+\lemma wp_pure_step {cnt : Countable Loc} (e e' : Expr) (pure : \Pi (sigma : State cnt) -> PrimStep e sigma e' sigma) 
+(det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) -> PrimStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma)) 
+(no_val : to_val e = nothing) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp e' Phi) (wp e Phi) => {?}
+
+\lemma wp_load {cnt : Countable Loc} (l : Loc) (v : Value) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (pointsTo l v) (wp (Load (Val (LitV (LitLoc l)))) (\lam v' => mkProperAnd (mkProperPure (v' = v)) (pointsTo l v))) 
+  => {?}
+  \where {
+    \func own_heap_auth_heap_eq {cnt : Countable Loc} (s1 s2 : State cnt) (h : s1.heap = s2.heap) : own_heap_auth s1 = own_heap_auth s2 => {?}
+
+    \func heap_auth_frag_agree {cnt : Countable Loc} (n : Nat) (sigma : State cnt) (a_frag a_auth : (HeapCMRA Loc cnt Value).E) (l : Loc) (v : Value) 
+    (hv : (HeapCMRA Loc cnt Value).validN n ((HeapCMRA Loc cnt Value).op a_frag a_auth)) (h_auth : (own_heap_auth sigma).upred_holds n a_auth) 
+    (h_frag : (pointsTo l v).upred_holds n a_frag) : glookup sigma.heap l = just v => {?}
+      \where {
+        \func option_dist_to_eq_local (n : Nat) (o1 o2 : Maybe (Maybe (Excl Value))) (h : (OptionOFE (ExclUCMRA (DiscreteOFE Value))).dist n o1 o2) : o1 = o2 => {?}
+      }
+
+
+    \func base_load_step_inv {cnt : Countable Loc} (l : Loc) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (lookup : glookup sigma.heap l = just v) 
+    (hstep : BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2) : \Sigma (e2 = Val v) (sigma2 = sigma) => {?}
+
+\data LoadStepInv {cnt : Countable Loc} (l : Loc) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) : \Prop 
+      | LoadStepInvIntro (e2_eq : e2 = Val v) (sigma2_eq : sigma2 = sigma)
+
+    \func load_step_inv_ctx_item {cnt : Countable Loc} (l : Loc) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (lookup : glookup sigma.heap l = just v) 
+    (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr) (p1 : Load (Val (LitV (LitLoc l))) = fill_item Ki (fill K' e1')) (p2 : e2 = fill_item Ki (fill K' e2')) 
+    (base : BaseStep e1' sigma e2' sigma2) : LoadStepInv l v sigma e2 sigma2 => {?}
+
+    \func load_step_inv_ctx {cnt : Countable Loc} (l : Loc) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (lookup : glookup sigma.heap l = just v) (K : Ectx) 
+    (e1' e2' : Expr) (p1 : Load (Val (LitV (LitLoc l))) = fill K e1') (p2 : e2 = fill K e2') (base : BaseStep e1' sigma e2' sigma2) : LoadStepInv l v sigma e2 sigma2 
+      => {?}
+
+    \func load_step_inv {cnt : Countable Loc} (l : Loc) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (lookup : glookup sigma.heap l = just v) 
+    (hstep : PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2) : LoadStepInv l v sigma e2 sigma2 => {?}
+  }
+
+
+\lemma wp_store {cnt : Countable Loc} (l : Loc) (old : Value) (v : Value) : properUPred_ent {HeapCMRA Loc cnt Value} (pointsTo l old) 
+  (wp (Store (Val (LitV (LitLoc l))) (Val v)) (\lam v' => mkProperAnd (mkProperPure (v' = LitV LitUnit)) (pointsTo l v))) => {?}
+
+\lemma wp_alloc {cnt : Countable Loc} (v : Value) : properUPred_ent {HeapCMRA Loc cnt Value} (mkProperPure (\Sigma)) 
+  (wp (Alloc (Val v)) (\lam v' => mkProperExist Loc (\lam l => mkProperAnd (mkProperPure (v' = LitV (LitLoc l))) (pointsTo l v)))) => {?}
+
+\lemma sep_exist_l {cnt : Countable Loc} (T : \Type) (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value)) (R : ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (mkProperSep (mkProperExist T Phi) R) (mkProperExist T (\lam t => mkProperSep (Phi t) R)) => {?}
+
+\lemma exist_intro_ent {cnt : Countable Loc} (T : \Type) (Phi : T -> ProperUPred (HeapCMRA Loc cnt Value)) (t : T) : properUPred_ent (Phi t) (mkProperExist T Phi) => {?}
+
+\func base_redex_step_det {cnt : Countable Loc} (e e' : Expr) 
+(base_det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) -> BaseStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+  (ctx_absurd : \Pi (sigma : State cnt) (sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) ->
+  e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 -> Empty) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(step : PrimStep e sigma e2 sigma2) : \Sigma (e2 = e') (sigma2 = sigma) => {?}
+  \where {
+    \func base_redex_step_det_ctx {cnt : Countable Loc} (e e' : Expr) 
+    (base_det : \Pi (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) -> BaseStep e sigma e2 sigma2 -> \Sigma (e2 = e') (sigma2 = sigma))
+      (ctx_absurd : \Pi (sigma : State cnt) (sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) ->
+      e = fill_item Ki (fill K e1') -> BaseStep e1' sigma e2' sigma2 -> Empty) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (K : Ectx) 
+    (e1' e2' : Expr) (p1 : e = fill K e1') (p2 : e2 = fill K e2') (base : BaseStep e1' sigma e2' sigma2) : \Sigma (e2 = e') (sigma2 = sigma) => {?}
+  }
+
+
+\func rec_ctx_absurd {cnt : Countable Loc} (f x : String) (body : Expr) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : Rec f x body = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func lam_ctx_absurd {cnt : Countable Loc} (x : String) (body : Expr) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : Lam x body = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func iszero_ctx_absurd {cnt : Countable Loc} (arg : Value) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : IsZero (Val arg) = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func pred_ctx_absurd {cnt : Countable Loc} (arg : Value) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : Pred (Val arg) = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func mul_ctx_absurd {cnt : Countable Loc} (v1 v2 : Value) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : Mul (Val v1) (Val v2) = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func if_ctx_absurd {cnt : Countable Loc} (b : Bool) (thenE elseE : Expr) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : If (Val (LitV (LitBool b))) thenE elseE = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func app_lam_ctx_absurd {cnt : Countable Loc} (x : String) (body : Expr) (v : Value) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : App (Val (LamV x body)) (Val v) = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func app_rec_ctx_absurd {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value) (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr) 
+(p1 : App (Val (RecV f x body)) (Val v) = fill_item Ki (fill K e1')) (base : BaseStep e1' sigma e2' sigma2) : Empty => {?}
+
+\func base_rec_step_det {cnt : Countable Loc} (f x : String) (body : Expr) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (Rec f x body) sigma e2 sigma2) : \Sigma (e2 = Val (RecV f x body)) (sigma2 = sigma) => {?}
+
+\func base_lam_step_det {cnt : Countable Loc} (x : String) (body : Expr) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (base : BaseStep (Lam x body) sigma e2 sigma2) :
+  \Sigma (e2 = Val (LamV x body)) (sigma2 = sigma) => {?}
+
+\func base_iszero_zero_step_det {cnt : Countable Loc} (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (base : BaseStep (IsZero (Val (natV 0))) sigma e2 sigma2) :
+  \Sigma (e2 = Val (LitV (LitBool true))) (sigma2 = sigma) => {?}
+
+\func base_iszero_suc_step_det {cnt : Countable Loc} (n : Nat) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (base : BaseStep (IsZero (Val (natV (suc n)))) sigma e2 sigma2) :
+  \Sigma (e2 = Val (LitV (LitBool false))) (sigma2 = sigma) => {?}
+
+\func base_pred_suc_step_det {cnt : Countable Loc} (n : Nat) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) (base : BaseStep (Pred (Val (natV (suc n)))) sigma e2 sigma2) :
+  \Sigma (e2 = Val (natV n)) (sigma2 = sigma) => {?}
+
+\func base_if_true_step_det {cnt : Countable Loc} (thenE elseE : Expr) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (If (Val (LitV (LitBool true))) thenE elseE) sigma e2 sigma2) : \Sigma (e2 = thenE) (sigma2 = sigma) => {?}
+
+\func base_if_false_step_det {cnt : Countable Loc} (thenE elseE : Expr) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2) : \Sigma (e2 = elseE) (sigma2 = sigma) => {?}
+
+\func base_lam_beta_step_det {cnt : Countable Loc} (x : String) (body : Expr) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2) : \Sigma (e2 = subst x v body) (sigma2 = sigma) => {?}
+
+\func base_rec_beta_step_det {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2) : \Sigma (e2 = subst x v (subst f (RecV f x body) body)) (sigma2 = sigma) => {?}
+
+\func lit_nat_default (d : Nat) (l : Lit) : Nat => {?}
+
+\func value_nat_default (d : Nat) (v : Value) : Nat => {?}
+
+\func mul_expr_product_default (d : Nat) (e : Expr) : Nat => {?}
+
+\func base_mul_step_det {cnt : Countable Loc} (a b : Nat) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt) 
+(base : BaseStep (Mul (Val (natV a)) (Val (natV b))) sigma e2 sigma2) : \Sigma (e2 = Val (natV (a Nat.* b))) (sigma2 = sigma) => {?}
+
+\lemma wp_rec {cnt : Countable Loc} (f x : String) (body : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (RecV f x body)) (wp (Rec f x body) Phi) => {?}
+
+\lemma wp_lam {cnt : Countable Loc} (x : String) (body : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (LamV x body)) (wp (Lam x body) Phi) => {?}
+
+\lemma wp_lam_beta {cnt : Countable Loc} (x : String) (body : Expr) (v : Value) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp (subst x v body) Phi) (wp (App (Val (LamV x body)) (Val v)) Phi) => {?}
+
+\lemma wp_lam_beta_to {cnt : Countable Loc} (x : String) (body body' : Expr) (v : Value) (subst_eq : subst x v body = body') 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp body' Phi) (wp (App (Val (LamV x body)) (Val v)) Phi) => {?}
+
+\lemma wp_rec_beta {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp (subst x v (subst f (RecV f x body) body)) Phi) (wp (App (Val (RecV f x body)) (Val v)) Phi) => {?}
+
+\lemma wp_rec_beta_to {cnt : Countable Loc} (f x : String) (body body' : Expr) (v : Value) (subst_eq : subst x v (subst f (RecV f x body) body) = body') 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp body' Phi) (wp (App (Val (RecV f x body)) (Val v)) Phi) => {?}
+
+\lemma wp_iszero_zero {cnt : Countable Loc} (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (LitV (LitBool true))) (wp (IsZero (Val (natV 0))) Phi) => {?}
+
+\lemma wp_iszero_suc {cnt : Countable Loc} (n : Nat) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (LitV (LitBool false))) (wp (IsZero (Val (natV (suc n)))) Phi) => {?}
+
+\lemma wp_pred_suc {cnt : Countable Loc} (n : Nat) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (natV n)) (wp (Pred (Val (natV (suc n)))) Phi) => {?}
+
+\lemma wp_mul {cnt : Countable Loc} (a b : Nat) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (Phi (natV (a Nat.* b))) (wp (Mul (Val (natV a)) (Val (natV b))) Phi) => {?}

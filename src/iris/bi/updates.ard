@@ -10,6 +10,7 @@
 \import iris.algebra.cmra
 \import iris.algebra.ofe
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris_heap_lang.lang
 \import iris.algebra.gmap
 \import stdpp.coPset
@@ -273,10 +274,10 @@
                          (P : ProperUPred M)
   : ProperUPred M \elim k
   | 0     => P
-  | suc k => mkProperBUpd (mkProperLater (bupd_later_iter_fn k P))
+  | suc k => |==> (|> (bupd_later_iter_fn k P))
 
 \lemma bupd_ne {M : UCMRA} (n : Nat) (P Q : ProperUPred M)
-  : upredDist n P Q -> upredDist n (mkProperBUpd P) (mkProperBUpd Q) =>
+  : upredDist n P Q -> upredDist n (|==> P) (|==> Q) =>
   \lam hPQ m a m_le_n hv_a =>
       (\lam hP k k_le_m yf hv_op =>
            \case hP k k_le_m yf hv_op \with {
@@ -298,7 +299,7 @@
            })
 
 \lemma bupd_mono {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent P Q -> properUPred_ent (mkProperBUpd P) (mkProperBUpd Q) =>
+  : P ⊢ Q -> (|==> P) ⊢ (|==> Q) =>
   \lam hPQ n a hv hP k k_le_n yf hv_op =>
       \case hP k k_le_n yf hv_op \with {
         | inP (a', hv'_op, hp_a') =>
@@ -309,7 +310,7 @@
       }
 
 \lemma bupd_intro {M : UCMRA} (P : ProperUPred M)
-  : properUPred_ent P (mkProperBUpd P) =>
+  : P ⊢ (|==> P) =>
   \lam n a hv hP k k_le_n yf hv_op =>
       inP (a, hv_op,
            P.upred_mono n k a a hP
@@ -320,7 +321,7 @@
                k_le_n)
 
 \lemma bupd_trans {M : UCMRA} (P : ProperUPred M)
-  : properUPred_ent (mkProperBUpd (mkProperBUpd P)) (mkProperBUpd P) =>
+  : (|==> (|==> P)) ⊢ (|==> P) =>
   \lam n a hv hPP k k_le_n yf hv_op =>
       \case hPP k k_le_n yf hv_op \with {
         | inP (a', hv'_op, hbupd_a') =>
@@ -331,7 +332,7 @@
       }
 
 \lemma bupd_frame_r {M : UCMRA} (P R : ProperUPred M)
-  : properUPred_ent (mkProperSep (mkProperBUpd P) R) (mkProperBUpd (mkProperSep P R)) =>
+  : ((|==> P) ∗ R) ⊢ (|==> (P ∗ R)) =>
   \lam n a hv hsep => \case hsep \with {
     | inP (a1, a2, dist_a, hbupd, hR) =>
       \lam k k_le_n yf hv_op =>
@@ -363,7 +364,7 @@
                          (M.ofe_dist_sym k (M.op a2 M.unit) a2 (ucmra_unit_right_id_dist k a2)))
                 | hR_k : R.upred_holds k a2 =>
                   R.upred_mono n k a2 a2 hR inclN_a2 k_le_n
-                | hsep_new : (mkProperSep P R).upred_holds k (M.op a1' a2) =>
+                | hsep_new : (P ∗ R).upred_holds k (M.op a1' a2) =>
                   inP (a1', a2,
                        M.ofe_dist_refl k (M.op a1' a2),
                        hP_a1', hR_k)
@@ -372,7 +373,7 @@
   }
 
 \lemma bupd_extract_pure {M : UCMRA} (phi : \Prop) (n : Nat) (a : M.E)
-  : M.validN n a -> (mkProperBUpd (mkProperPure phi)).upred_holds n a -> phi =>
+  : M.validN n a -> (|==> (mkProperPure phi)).upred_holds n a -> phi =>
   \lam hv hbupd =>
       \let
         | hv_op : M.validN n (M.op a M.unit) =>
@@ -385,7 +386,7 @@
 \lemma bupd_later_iter_soundness
   {M : UCMRA} (k : Nat) (phi : \Prop) (a : M.E)
   : M.validN k a ->
-    (bupd_later_iter_fn k (mkProperBUpd (mkProperPure phi))).upred_holds k a -> phi
+    (bupd_later_iter_fn k (|==> (mkProperPure phi))).upred_holds k a -> phi
 \elim k
   | 0     => \lam hv h => bupd_extract_pure phi 0 a hv h
   | suc k => \lam hv h =>
@@ -400,7 +401,7 @@
               M.cmra_validN_le (suc k) k (M.op a' M.unit) hv'_op (n<=sucn k)
             | hv_a'  : M.validN k a' =>
               M.cmra_validN_op_l k a' M.unit hv'_op_k
-            | h_k    : (bupd_later_iter_fn k (mkProperBUpd (mkProperPure phi))).upred_holds k a' =>
+            | h_k    : (bupd_later_iter_fn k (|==> (mkProperPure phi))).upred_holds k a' =>
               hlater_a'
           \in bupd_later_iter_soundness k phi a' hv_a' h_k
       }
@@ -408,11 +409,11 @@
 
 \instance UPredBUpd (M : UCMRA) : BUpd
   | BIBase => BIuPred M
-  | bupd => mkProperBUpd
+  | bupd => \lam P => |==> P
 
 \instance UPredBiBUpd (M : UCMRA) : BiBUpd
   | BIMixin => BIuPredMixin M
-  | bupd => mkProperBUpd
+  | bupd => \lam P => |==> P
   | bi_bupd_mixin_bupd_intro   => bupd_intro
   | bi_bupd_mixin_bupd_mono    => bupd_mono
   | bi_bupd_mixin_bupd_trans   => bupd_trans
@@ -426,18 +427,18 @@
 
 \lemma bupd_frame_trans {M : UCMRA}
   (P R Q : ProperUPred M)
-  (h : properUPred_ent (mkProperSep P R) (mkProperBUpd Q))
-  : properUPred_ent (mkProperSep (mkProperBUpd P) R) (mkProperBUpd Q)
+  (h : (P ∗ R) ⊢ (|==> Q))
+  : ((|==> P) ∗ R) ⊢ (|==> Q)
   => properUPred_ent_trans
-      (mkProperSep (mkProperBUpd P) R)
-      (mkProperBUpd (mkProperSep P R))
-      (mkProperBUpd Q)
+      ((|==> P) ∗ R)
+      (|==> (P ∗ R))
+      (|==> Q)
       (bupd_frame_r P R)
       (properUPred_ent_trans
-          (mkProperBUpd (mkProperSep P R))
-          (mkProperBUpd (mkProperBUpd Q))
-          (mkProperBUpd Q)
-          (bupd_mono (mkProperSep P R) (mkProperBUpd Q) h)
+          (|==> (P ∗ R))
+          (|==> (|==> Q))
+          (|==> Q)
+          (bupd_mono (P ∗ R) (|==> Q) h)
           (bupd_trans Q))
 
 \func bupd_frame_l {Bu : BiBUpd} (R Q : Bu.E)

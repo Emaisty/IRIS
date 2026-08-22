@@ -1,0 +1,70 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Rat
+\import Algebra.Group
+\import Algebra.StrictlyOrdered
+\import Order.LinearOrder
+\import ofe
+\import cmra
+\import lib.frac
+
+\data Dfrac 
+  | DfracOwn Qp
+  | DfracDiscarded
+  | DfracBoth Qp
+
+\func dfrac_op (x y : Dfrac) : Dfrac => {?}
+
+\func dfrac_pcore (x : Dfrac) : Maybe Dfrac => {?}
+
+\func dfrac_valid (x : Dfrac) : \Prop => {?}
+
+\func dfrac_validN (n : Nat) (x : Dfrac) : \Prop => {?}
+
+\lemma dfrac_op_assoc (x y z : Dfrac) : dfrac_op x (dfrac_op y z) = dfrac_op (dfrac_op x y) z => {?}
+
+\lemma dfrac_op_comm (x y : Dfrac) : dfrac_op x y = dfrac_op y x => {?}
+
+\lemma qp_le_add (p q : Qp) : p.qp_val RatField.<= (p.qp_val RatField.+ q.qp_val) => {?}
+
+\lemma qp_lt_add (p q : Qp) : p.qp_val RatField.< (p.qp_val RatField.+ q.qp_val) => {?}
+
+\lemma dfrac_valid_op_l (x y : Dfrac) (h : dfrac_valid (dfrac_op x y)) : dfrac_valid x => {?}
+
+\lemma dfrac_pcore_l_proof (x cx : Dfrac) (h : dfrac_pcore x = just cx) : dfrac_op cx x = x => {?}
+
+\lemma dfrac_pcore_idemp_proof (x cx : Dfrac) (h : dfrac_pcore x = just cx) : (OptionOFE (DiscreteOFE Dfrac)).equiv (dfrac_pcore cx) (just cx) => {?}
+
+\func dfrac_core_eq_discarded (x cx : Dfrac) (h : dfrac_pcore x = just cx) : cx = DfracDiscarded => {?}
+
+\func dfrac_pcore_op_discarded (x z : Dfrac) (h : dfrac_pcore x = just DfracDiscarded) : dfrac_pcore (dfrac_op x z) = just DfracDiscarded => {?}
+
+\lemma dfrac_pcore_mono_proof (x y cx : Dfrac) (hxy : incl {DiscreteOFE Dfrac} {\new (Op Dfrac) {  | op => {?}}} x y) (hcore : dfrac_pcore x = just cx) :
+  TruncP (\Sigma (cy : Dfrac) (dfrac_pcore y = just cy) (incl {DiscreteOFE Dfrac} {\new (Op Dfrac) {  | op => {?}}} cx cy)) => {?}
+
+\func DfracCMRA : CMRA => {?}
+
+\lemma dfrac_discarded_core_id : CoreId {DfracCMRA} DfracDiscarded => {?}
+
+\lemma qp_lt_add_right (p q : Qp) : p.qp_val RatField.< (q.qp_val RatField.+ p.qp_val) => {?}
+
+\func dfrac_full_exclusive_at (y : Dfrac) (h : dfrac_valid (dfrac_op (DfracOwn qp_one) y)) : Empty => {?}
+
+\lemma dfrac_full_exclusive : Exclusive {DfracCMRA} (DfracOwn qp_one) => {?}
+
+\lemma dfrac_frame_own_lt_one (x : Dfrac) (q : Qp) (h : dfrac_valid (dfrac_op x (DfracOwn q))) : q.qp_val RatField.< RatField.ide => {?}
+
+\lemma dfrac_frame_both_lt_one (x : Dfrac) (q : Qp) (h : dfrac_valid (dfrac_op x (DfracBoth q))) : q.qp_val RatField.< RatField.ide => {?}
+
+\func dfrac_discard_update_at (dq : Dfrac) (mz : Maybe Dfrac) (h : dfrac_valid (cmra_opM {DfracCMRA} dq mz)) :
+  TruncP (\Sigma (y : Dfrac) (y = DfracDiscarded) (dfrac_valid (cmra_opM {DfracCMRA} y mz))) => {?}
+
+\lemma dfrac_discard_updatePM (dq : Dfrac) : cmra_updatePM {DfracCMRA} dq (\lam x => x = DfracDiscarded) => {?}
+
+\lemma rat_diff_zro (x : Rat) : x RatField.- RatField.zro = x => {?}
+
+\func qp_gap (q : Qp) (h : q.qp_val RatField.< RatField.ide) : Qp => {?}
+
+-- skipped: qp_gap_add_lt_one (typecheck errors)

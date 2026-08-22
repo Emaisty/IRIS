@@ -10,6 +10,7 @@
 \import iris.algebra.ofe
 \import iris.algebra.cmra
 \import iris.base_logic.upred \hiding (own_valid, own_mono, own_unit)
+\import iris.base_logic.notation
 \import iris.bi.updates
 \import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.own
@@ -41,14 +42,14 @@
 -- bupd allocation framing: if `emp ⊢ |==> A`, then any `R` can gain `A`.
 -- =================================================================================
 \lemma bupd_alloc_frame {M : UCMRA} (A R : ProperUPred M)
-    (h : properUPred_ent mkProperEmp (mkProperBUpd A))
-  : properUPred_ent R (mkProperBUpd (mkProperSep A R))
+    (h : mkProperEmp ⊢ (|==> A))
+  : R ⊢ (|==> (A ∗ R))
   => \lam n x hv hR =>
       \let
         | emp_unit : mkProperEmp.upred_holds n M.unit => inclN_refl_ucmra n M.unit
         | hvu : M.validN n M.unit => (M.cmra_valid_validN M.unit).1 M.ucmra_unit_valid n
-        | hbA : (mkProperBUpd A).upred_holds n M.unit => h n M.unit hvu emp_unit
-        | hsep : (mkProperSep (mkProperBUpd A) R).upred_holds n x =>
+        | hbA : (|==> A).upred_holds n M.unit => h n M.unit hvu emp_unit
+        | hsep : ((|==> A) ∗ R).upred_holds n x =>
             inP (M.unit, x,
                  M.ofe_dist_sym n (M.op M.unit x) x (ucmra_unit_left_id_dist n x),
                  hbA, hR)
@@ -94,85 +95,85 @@
 
 -- `P ⊢ |==>S` and `S ⊢ T` give `P ⊢ |==>T`.
 \lemma bupd_ent_trans {M : UCMRA} (P S T : ProperUPred M)
-    (h1 : properUPred_ent P (mkProperBUpd S)) (h2 : properUPred_ent S T)
-  : properUPred_ent P (mkProperBUpd T)
-  => properUPred_ent_trans P (mkProperBUpd S) (mkProperBUpd T)
+    (h1 : P ⊢ (|==> S)) (h2 : S ⊢ T)
+  : P ⊢ (|==> T)
+  => properUPred_ent_trans P (|==> S) (|==> T)
       h1 (bupd_mono S T h2)
 
 -- Allocate `A` (`emp ⊢ |==>A`) as a frame around `Body`, then continue.
 \lemma bupd_alloc_frame_then {M : UCMRA} (A Body G : ProperUPred M)
-    (h_alloc : properUPred_ent mkProperEmp (mkProperBUpd A))
-    (h_cont : properUPred_ent (mkProperSep A Body) (mkProperBUpd G))
-  : properUPred_ent Body (mkProperBUpd G)
-  => properUPred_ent_trans Body (mkProperBUpd (mkProperBUpd G)) (mkProperBUpd G)
-      (properUPred_ent_trans Body (mkProperBUpd (mkProperSep A Body)) (mkProperBUpd (mkProperBUpd G))
+    (h_alloc : mkProperEmp ⊢ (|==> A))
+    (h_cont : (A ∗ Body) ⊢ (|==> G))
+  : Body ⊢ (|==> G)
+  => properUPred_ent_trans Body (|==> (|==> G)) (|==> G)
+      (properUPred_ent_trans Body (|==> (A ∗ Body)) (|==> (|==> G))
           (bupd_alloc_frame A Body h_alloc)
-          (bupd_mono (mkProperSep A Body) (mkProperBUpd G) h_cont))
+          (bupd_mono (A ∗ Body) (|==> G) h_cont))
       (bupd_trans G)
 
 -- Allocate three independent resources `A`, `B`, `C` and reshape:
 --   emp ⊢ |==> C ∗ (B ∗ A) ⊢ G.
 \lemma bupd_alloc_three_then {M : UCMRA} (A B C G : ProperUPred M)
-    (ha : properUPred_ent mkProperEmp (mkProperBUpd A))
-    (hb : properUPred_ent mkProperEmp (mkProperBUpd B))
-    (hc : properUPred_ent mkProperEmp (mkProperBUpd C))
-    (final : properUPred_ent (mkProperSep C (mkProperSep B A)) G)
-  : properUPred_ent mkProperEmp (mkProperBUpd G)
+    (ha : mkProperEmp ⊢ (|==> A))
+    (hb : mkProperEmp ⊢ (|==> B))
+    (hc : mkProperEmp ⊢ (|==> C))
+    (final : (C ∗ (B ∗ A)) ⊢ G)
+  : mkProperEmp ⊢ (|==> G)
   => \let
-       | chain1 : properUPred_ent mkProperEmp (mkProperBUpd (mkProperSep B A)) =>
+       | chain1 : mkProperEmp ⊢ (|==> (B ∗ A)) =>
            properUPred_ent_trans mkProperEmp
-               (mkProperBUpd (mkProperBUpd (mkProperSep B A)))
-               (mkProperBUpd (mkProperSep B A))
-               (properUPred_ent_trans mkProperEmp (mkProperBUpd A)
-                   (mkProperBUpd (mkProperBUpd (mkProperSep B A)))
+               (|==> (|==> (B ∗ A)))
+               (|==> (B ∗ A))
+               (properUPred_ent_trans mkProperEmp (|==> A)
+                   (|==> (|==> (B ∗ A)))
                    ha
-                   (bupd_mono A (mkProperBUpd (mkProperSep B A))
+                   (bupd_mono A (|==> (B ∗ A))
                        (bupd_alloc_frame B A hb)))
-               (bupd_trans (mkProperSep B A))
-       | chain2 : properUPred_ent mkProperEmp
-             (mkProperBUpd (mkProperSep C (mkProperSep B A))) =>
+               (bupd_trans (B ∗ A))
+       | chain2 : mkProperEmp ⊢
+             (|==> (C ∗ (B ∗ A))) =>
            properUPred_ent_trans mkProperEmp
-               (mkProperBUpd (mkProperBUpd (mkProperSep C (mkProperSep B A))))
-               (mkProperBUpd (mkProperSep C (mkProperSep B A)))
-               (properUPred_ent_trans mkProperEmp (mkProperBUpd (mkProperSep B A))
-                   (mkProperBUpd (mkProperBUpd (mkProperSep C (mkProperSep B A))))
+               (|==> (|==> (C ∗ (B ∗ A))))
+               (|==> (C ∗ (B ∗ A)))
+               (properUPred_ent_trans mkProperEmp (|==> (B ∗ A))
+                   (|==> (|==> (C ∗ (B ∗ A))))
                    chain1
-                   (bupd_mono (mkProperSep B A)
-                       (mkProperBUpd (mkProperSep C (mkProperSep B A)))
-                       (bupd_alloc_frame C (mkProperSep B A) hc)))
-               (bupd_trans (mkProperSep C (mkProperSep B A)))
+                   (bupd_mono (B ∗ A)
+                       (|==> (C ∗ (B ∗ A)))
+                       (bupd_alloc_frame C (B ∗ A) hc)))
+               (bupd_trans (C ∗ (B ∗ A)))
      \in properUPred_ent_trans mkProperEmp
-         (mkProperBUpd (mkProperSep C (mkProperSep B A)))
-         (mkProperBUpd G)
+         (|==> (C ∗ (B ∗ A)))
+         (|==> G)
          chain2
-         (bupd_mono (mkProperSep C (mkProperSep B A)) G final)
+         (bupd_mono (C ∗ (B ∗ A)) G final)
 
 -- Allocate a unit resource, run a frame-preserving update to `Mid`, unpack to `Tgt`.
 \lemma bupd_unit_then {M : UCMRA} (U Mid Tgt : ProperUPred M)
-    (h_unit : properUPred_ent mkProperEmp (mkProperBUpd U))
-    (h_upd : properUPred_ent U (mkProperBUpd Mid))
-    (h_unpack : properUPred_ent Mid Tgt)
-  : properUPred_ent mkProperEmp (mkProperBUpd Tgt)
-  => properUPred_ent_trans mkProperEmp (mkProperBUpd Mid) (mkProperBUpd Tgt)
-      (properUPred_ent_trans mkProperEmp (mkProperBUpd (mkProperBUpd Mid)) (mkProperBUpd Mid)
-          (properUPred_ent_trans mkProperEmp (mkProperBUpd U) (mkProperBUpd (mkProperBUpd Mid))
+    (h_unit : mkProperEmp ⊢ (|==> U))
+    (h_upd : U ⊢ (|==> Mid))
+    (h_unpack : Mid ⊢ Tgt)
+  : mkProperEmp ⊢ (|==> Tgt)
+  => properUPred_ent_trans mkProperEmp (|==> Mid) (|==> Tgt)
+      (properUPred_ent_trans mkProperEmp (|==> (|==> Mid)) (|==> Mid)
+          (properUPred_ent_trans mkProperEmp (|==> U) (|==> (|==> Mid))
               h_unit
-              (bupd_mono U (mkProperBUpd Mid) h_upd))
+              (bupd_mono U (|==> Mid) h_upd))
           (bupd_trans Mid))
       (bupd_mono Mid Tgt h_unpack)
 
 -- Register-then-reshape: from `auI ⊢ |==>(Ains ∗ oI)` and a pure reshape of
 -- `(Ains ∗ oI) ∗ FRAME ⊢ G`, conclude `auI ∗ FRAME ⊢ |==>G`.
 \lemma alloc_frame_reshape {M : UCMRA} (auI Ains oI FRAME G : ProperUPred M)
-    (h_alloc : properUPred_ent auI (mkProperBUpd (mkProperSep Ains oI)))
-    (h_reshape : properUPred_ent (mkProperSep (mkProperSep Ains oI) FRAME) G)
-  : properUPred_ent (mkProperSep auI FRAME) (mkProperBUpd G)
-  => properUPred_ent_trans (mkProperSep auI FRAME)
-      (mkProperSep (mkProperBUpd (mkProperSep Ains oI)) FRAME)
-      (mkProperBUpd G)
-      (sep_mono_l_ent auI (mkProperBUpd (mkProperSep Ains oI)) FRAME h_alloc)
-      (bupd_frame_trans (mkProperSep Ains oI) FRAME G
-          (properUPred_ent_trans (mkProperSep (mkProperSep Ains oI) FRAME) G (mkProperBUpd G)
+    (h_alloc : auI ⊢ (|==> (Ains ∗ oI)))
+    (h_reshape : ((Ains ∗ oI) ∗ FRAME) ⊢ G)
+  : (auI ∗ FRAME) ⊢ (|==> G)
+  => properUPred_ent_trans (auI ∗ FRAME)
+      ((|==> (Ains ∗ oI)) ∗ FRAME)
+      (|==> G)
+      (sep_mono_l_ent auI (|==> (Ains ∗ oI)) FRAME h_alloc)
+      (bupd_frame_trans (Ains ∗ oI) FRAME G
+          (properUPred_ent_trans ((Ains ∗ oI) ∗ FRAME) G (|==> G)
               h_reshape (bupd_intro G)))
 
 -- =================================================================================
@@ -191,9 +192,9 @@
 -- =================================================================================
 
 \lemma wsat_alloc {S : gFunctors} (WP : wsatGpreS S)
-  : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist1 (wsatGS S) (\lam W =>
-          mkProperSep (wsat W) (ownE W coPset_universe))))
+  : mkProperEmp ⊢
+      (|==> (mkProperExist1 (wsatGS S) (\lam W =>
+          (wsat W) ∗ (ownE W coPset_universe))))
   => \let
        | M => iResUR S
        | av => wsat_inv_auth (DfracOwn qp_one)
@@ -214,8 +215,8 @@
        | alloc_E => own_alloc WP.wsatGpreS_enabled (CoPset coPset_universe) hval_E
        | alloc_D => own_alloc WP.wsatGpreS_disabled (GSet gset_empty) hval_D
        | Goal_body : ProperUPred (iResUR S) =>
-           mkProperExist1 (wsatGS S) (\lam W => mkProperSep (wsat W) (ownE W coPset_universe))
-       | final : properUPred_ent (mkProperSep A_D (mkProperSep A_E A_I)) Goal_body =>
+           mkProperExist1 (wsatGS S) (\lam W => (wsat W) ∗ (ownE W coPset_universe))
+       | final : (A_D ∗ (A_E ∗ A_I)) ⊢ Goal_body =>
            \lam n x hv h => \case h \with {
              | inP (aD, aEI, dx, hAD, hAEI) => \case hAEI \with {
                | inP (aE, aI, dEI, hAE, hAI) => \case hAD, hAE, hAI \with {
@@ -265,9 +266,9 @@
 
 \lemma ownD_alloc_fresh {S : gFunctors} (W : wsatGS S) (psi : gname -> \Prop)
     (oracle : \Pi (X : Gset) -> TruncP (\Sigma (i : gname) (plookup X i = nothing) (psi i)))
-  : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist gname (\lam i =>
-          mkProperSep (mkProperPure (psi i)) (ownD W (gset_singleton i)))))
+  : mkProperEmp ⊢
+      (|==> (mkProperExist gname (\lam i =>
+          (mkProperPure (psi i)) ∗ (ownD W (gset_singleton i)))))
   => \let
        | M => iResUR S
        | Xi : gset_disj -> \Prop => \lam y => TruncP (\Sigma (i : gname)
@@ -276,10 +277,10 @@
        | step_updP => own_updatePM W.wsatGpreS_disabled W.disabled_name (GSet gset_empty) Xi
            (gset_disj_alloc_empty_updatePM psi oracle)
        | Mid : ProperUPred (iResUR S) => mkProperExist gset_disj (\lam b =>
-           mkProperAnd (mkProperPure (Xi b)) (own W.wsatGpreS_disabled W.disabled_name b))
+           (mkProperPure (Xi b)) ∧ (own W.wsatGpreS_disabled W.disabled_name b))
        | Tgt : ProperUPred (iResUR S) => mkProperExist gname (\lam i =>
-           mkProperSep (mkProperPure (psi i)) (ownD W (gset_singleton i)))
-       | unpack : properUPred_ent Mid Tgt =>
+           (mkProperPure (psi i)) ∗ (ownD W (gset_singleton i)))
+       | unpack : Mid ⊢ Tgt =>
            \lam n x hv hmid => \case hmid \with {
              | inP (b, (hpure, hown)) => \case hpure \with {
                | inP (i, beq, hpsi) =>
@@ -303,13 +304,11 @@
 \lemma ownI_auth_alloc {S : gFunctors} (W : wsatGS S)
     (I : Gmap gname gnameCountable (iProp S)) (i : gname) (P : iProp S)
     (hfresh : glookup I i = nothing)
-  : properUPred_ent
-      (own W.wsatGpreS_inv W.invariant_name
-          (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I)))
-      (mkProperBUpd (mkProperSep
-          (own W.wsatGpreS_inv W.invariant_name
+  : (own W.wsatGpreS_inv W.invariant_name
+          (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I))) ⊢
+      (|==> ((own W.wsatGpreS_inv W.invariant_name
               (wsat_inv_auth (DfracOwn qp_one)
-                (invariant_unfold_map (ginsert i P I))))
+                (invariant_unfold_map (ginsert i P I)))) ∗
           (ownI W i P)))
   => \let
        | m => invariant_unfold_map I
@@ -332,30 +331,26 @@
              ((wsat_invR S).op authIns fragV) upd
        | step => own_update_op W.wsatGpreS_inv W.invariant_name
            (wsat_inv_auth (DfracOwn qp_one) m) authIns fragV upd_det
-       | reshape : properUPred_ent
-             (mkProperSep (own W.wsatGpreS_inv W.invariant_name authIns)
-                          (own W.wsatGpreS_inv W.invariant_name fragV))
-             (mkProperSep
-                 (own W.wsatGpreS_inv W.invariant_name
+       | reshape : ((own W.wsatGpreS_inv W.invariant_name authIns) ∗
+                          (own W.wsatGpreS_inv W.invariant_name fragV)) ⊢
+             ((own W.wsatGpreS_inv W.invariant_name
                      (wsat_inv_auth (DfracOwn qp_one)
-                       (invariant_unfold_map (ginsert i P I))))
+                       (invariant_unfold_map (ginsert i P I)))) ∗
                  (ownI W i P)) =>
            \lam n x hv hown =>
-               transport (\lam mm => (mkProperSep
-                             (own W.wsatGpreS_inv W.invariant_name
-                                 (wsat_inv_auth (DfracOwn qp_one) mm))
+               transport (\lam mm => ((own W.wsatGpreS_inv W.invariant_name
+                                 (wsat_inv_auth (DfracOwn qp_one) mm)) ∗
                              (ownI W i P)).upred_holds n x)
                    (inv (invariant_unfold_map_ginsert I i P))
                    hown
      \in bupd_ent_trans {iResUR S}
          (own W.wsatGpreS_inv W.invariant_name
            (wsat_inv_auth (DfracOwn qp_one) m))
-         (mkProperSep (own W.wsatGpreS_inv W.invariant_name authIns)
+         ((own W.wsatGpreS_inv W.invariant_name authIns) ∗
                       (own W.wsatGpreS_inv W.invariant_name fragV))
-         (mkProperSep
-             (own W.wsatGpreS_inv W.invariant_name
+         ((own W.wsatGpreS_inv W.invariant_name
                  (wsat_inv_auth (DfracOwn qp_one)
-                   (invariant_unfold_map (ginsert i P I))))
+                   (invariant_unfold_map (ginsert i P I)))) ∗
              (ownI W i P))
          step reshape
 
@@ -366,10 +361,9 @@
 
 \lemma ownI_alloc {S : gFunctors} (W : wsatGS S) (phi : gname -> \Prop) (P : iProp S)
     (Hfresh : \Pi (E : Gset) -> TruncP (\Sigma (i : gname) (plookup E i = nothing) (phi i)))
-  : properUPred_ent
-      (mkProperSep (wsat W) (mkProperLater P))
-      (mkProperBUpd (mkProperExist gname (\lam i =>
-          mkProperSep (mkProperPure (phi i)) (mkProperSep (wsat W) (ownI W i P)))))
+  : ((wsat W) ∗ (|> P)) ⊢
+      (|==> (mkProperExist gname (\lam i =>
+          (mkProperPure (phi i)) ∗ ((wsat W) ∗ (ownI W i P)))))
   => \let
        | M => iResUR S
        | au : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
@@ -378,11 +372,11 @@
        | big : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
            \lam J => big_sepM J (wsat_entry W)
        | Goal : ProperUPred (iResUR S) => mkProperExist gname (\lam i =>
-           mkProperSep (mkProperPure (phi i)) (mkProperSep (wsat W) (ownI W i P)))
+           (mkProperPure (phi i)) ∗ ((wsat W) ∗ (ownI W i P)))
        -- per-I body of the proof
        | perI : \Pi (I : Gmap gname gnameCountable (iProp S)) ->
-             properUPred_ent (mkProperSep (mkProperSep (au I) (big I)) (mkProperLater P))
-                             (mkProperBUpd Goal) =>
+             (((au I) ∗ (big I)) ∗ (|> P)) ⊢
+                             (|==> Goal) =>
            \lam I =>
              \let
                | psi_I : gname -> \Prop => \lam i => \Sigma (glookup I i = nothing) (phi i)
@@ -397,14 +391,13 @@
                        \in inP (i, hX, (glookup_nothing_of_dom I i hdom, hphi))
                    }
                | AiExist : ProperUPred (iResUR S) => mkProperExist gname (\lam i =>
-                   mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i)))
+                   (mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i)))
                | Body : ProperUPred (iResUR S) =>
-                   mkProperSep (mkProperSep (au I) (big I)) (mkProperLater P)
+                   ((au I) ∗ (big I)) ∗ (|> P)
                -- inner: (AiExist ∗ Body) ⊢ |==> Goal, eliminating the fresh index
                | perI_i : \Pi (i : gname) ->
-                     properUPred_ent
-                         (mkProperSep (mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i))) Body)
-                         (mkProperBUpd Goal) =>
+                     (((mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i))) ∗ Body) ⊢
+                         (|==> Goal) =>
                    \lam i => \lam n x hv hs =>
                      \let
                        | hfresh : glookup I i = nothing => \case hs \with {
@@ -414,111 +407,108 @@
                            | inP (aPD, _, _, hPD, _) => \case hPD \with {
                              | inP (_, _, _, hpu, _) => hpu.2 } }
                        | FRAME : ProperUPred (iResUR S) =>
-                           mkProperSep (mkProperSep (mkProperLater P) (ownD W (gset_singleton i))) (big I)
+                           ((|> P) ∗ (ownD W (gset_singleton i))) ∗ (big I)
                        -- reshape: (au(ins) ∗ ownI) ∗ FRAME ⊢ Goal
-                       | reshape : properUPred_ent
-                             (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) FRAME) Goal =>
+                       | reshape : (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ FRAME) ⊢ Goal =>
                            \let
-                             | frame_to_big : properUPred_ent FRAME (big (ginsert i P I)) =>
+                             | frame_to_big : FRAME ⊢ (big (ginsert i P I)) =>
                                  properUPred_ent_trans FRAME
-                                     (mkProperSep (wsat_entry W i P) (big I)) (big (ginsert i P I))
-                                     (sep_mono_l_ent (mkProperSep (mkProperLater P) (ownD W (gset_singleton i)))
+                                     ((wsat_entry W i P) ∗ (big I)) (big (ginsert i P I))
+                                     (sep_mono_l_ent ((|> P) ∗ (ownD W (gset_singleton i)))
                                          (wsat_entry W i P) (big I)
-                                         (or_intro_l_ent (mkProperSep (mkProperLater P) (ownD W (gset_singleton i)))
+                                         (or_intro_l_ent ((|> P) ∗ (ownD W (gset_singleton i)))
                                              (ownE W (coPset_singleton i))))
                                      (big_sepM_insert I (wsat_entry W) i P hfresh).2
                            \in properUPred_ent_trans
-                               (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) FRAME)
-                               (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) (big (ginsert i P I)))
+                               (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ FRAME)
+                               (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ (big (ginsert i P I)))
                                Goal
-                               (sep_mono_r_ent (mkProperSep (au (ginsert i P I)) (ownI W i P))
+                               (sep_mono_r_ent ((au (ginsert i P I)) ∗ (ownI W i P))
                                    FRAME (big (ginsert i P I)) frame_to_big)
                                (properUPred_ent_trans
-                                   (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) (big (ginsert i P I)))
-                                   (mkProperSep (mkProperSep (au (ginsert i P I)) (big (ginsert i P I))) (ownI W i P))
+                                   (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ (big (ginsert i P I)))
+                                   (((au (ginsert i P I)) ∗ (big (ginsert i P I))) ∗ (ownI W i P))
                                    Goal
                                    -- (au∗ownI)∗big ⊢ (au∗big)∗ownI
                                    (properUPred_ent_trans
-                                       (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) (big (ginsert i P I)))
-                                       (mkProperSep (au (ginsert i P I)) (mkProperSep (ownI W i P) (big (ginsert i P I))))
-                                       (mkProperSep (mkProperSep (au (ginsert i P I)) (big (ginsert i P I))) (ownI W i P))
+                                       (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ (big (ginsert i P I)))
+                                       ((au (ginsert i P I)) ∗ ((ownI W i P) ∗ (big (ginsert i P I))))
+                                       (((au (ginsert i P I)) ∗ (big (ginsert i P I))) ∗ (ownI W i P))
                                        (sep_assoc_l_ent (au (ginsert i P I)) (ownI W i P) (big (ginsert i P I)))
                                        (properUPred_ent_trans
-                                           (mkProperSep (au (ginsert i P I)) (mkProperSep (ownI W i P) (big (ginsert i P I))))
-                                           (mkProperSep (au (ginsert i P I)) (mkProperSep (big (ginsert i P I)) (ownI W i P)))
-                                           (mkProperSep (mkProperSep (au (ginsert i P I)) (big (ginsert i P I))) (ownI W i P))
+                                           ((au (ginsert i P I)) ∗ ((ownI W i P) ∗ (big (ginsert i P I))))
+                                           ((au (ginsert i P I)) ∗ ((big (ginsert i P I)) ∗ (ownI W i P)))
+                                           (((au (ginsert i P I)) ∗ (big (ginsert i P I))) ∗ (ownI W i P))
                                            (sep_mono_r_ent (au (ginsert i P I))
-                                               (mkProperSep (ownI W i P) (big (ginsert i P I)))
-                                               (mkProperSep (big (ginsert i P I)) (ownI W i P))
+                                               ((ownI W i P) ∗ (big (ginsert i P I)))
+                                               ((big (ginsert i P I)) ∗ (ownI W i P))
                                                (sep_comm_ent (ownI W i P) (big (ginsert i P I))))
                                            (sep_assoc_r_ent (au (ginsert i P I)) (big (ginsert i P I)) (ownI W i P))))
                                    -- (au∗big)∗ownI ⊢ Goal
                                    (properUPred_ent_trans
-                                       (mkProperSep (mkProperSep (au (ginsert i P I)) (big (ginsert i P I))) (ownI W i P))
-                                       (mkProperSep (wsat W) (ownI W i P))
+                                       (((au (ginsert i P I)) ∗ (big (ginsert i P I))) ∗ (ownI W i P))
+                                       ((wsat W) ∗ (ownI W i P))
                                        Goal
-                                       (sep_mono_l_ent (mkProperSep (au (ginsert i P I)) (big (ginsert i P I)))
+                                       (sep_mono_l_ent ((au (ginsert i P I)) ∗ (big (ginsert i P I)))
                                            (wsat W) (ownI W i P)
-                                           (exist_intro_ent (\lam J => mkProperSep (au J) (big J)) (ginsert i P I)))
-                                       (properUPred_ent_trans (mkProperSep (wsat W) (ownI W i P))
-                                           (mkProperSep (mkProperPure (phi i)) (mkProperSep (wsat W) (ownI W i P)))
+                                           (exist_intro_ent (\lam J => (au J) ∗ (big J)) (ginsert i P I)))
+                                       (properUPred_ent_trans ((wsat W) ∗ (ownI W i P))
+                                           ((mkProperPure (phi i)) ∗ ((wsat W) ∗ (ownI W i P)))
                                            Goal
-                                           (pure_intro_sep_ent (phi i) hphi (mkProperSep (wsat W) (ownI W i P)))
+                                           (pure_intro_sep_ent (phi i) hphi ((wsat W) ∗ (ownI W i P)))
                                            (exist_intro_ent (\lam i' =>
-                                               mkProperSep (mkProperPure (phi i')) (mkProperSep (wsat W) (ownI W i' P))) i))))
+                                               (mkProperPure (phi i')) ∗ ((wsat W) ∗ (ownI W i' P))) i))))
                        -- chain: au I ∗ FRAME ⊢ |==> Goal
-                       | chain : properUPred_ent (mkProperSep (au I) FRAME) (mkProperBUpd Goal) =>
+                       | chain : ((au I) ∗ FRAME) ⊢ (|==> Goal) =>
                            alloc_frame_reshape {iResUR S} (au I) (au (ginsert i P I)) (ownI W i P) FRAME Goal
                                (ownI_auth_alloc W I i P hfresh) reshape
                        -- rearr: LHS ⊢ au I ∗ FRAME
-                       | rearr : properUPred_ent
-                             (mkProperSep (mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i))) Body)
-                             (mkProperSep (au I) FRAME) =>
+                       | rearr : (((mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i))) ∗ Body) ⊢
+                             ((au I) ∗ FRAME) =>
                            \let
                              | oD => ownD W (gset_singleton i)
-                             | lp => mkProperLater P
-                             | innerFrame : properUPred_ent
-                                   (mkProperSep oD (mkProperSep (big I) lp))
+                             | lp => |> P
+                             | innerFrame : (oD ∗ ((big I) ∗ lp)) ⊢
                                    FRAME =>
                                  properUPred_ent_trans
-                                     (mkProperSep oD (mkProperSep (big I) lp))
-                                     (mkProperSep oD (mkProperSep lp (big I)))
+                                     (oD ∗ ((big I) ∗ lp))
+                                     (oD ∗ (lp ∗ (big I)))
                                      FRAME
-                                     (sep_mono_r_ent oD (mkProperSep (big I) lp) (mkProperSep lp (big I))
+                                     (sep_mono_r_ent oD ((big I) ∗ lp) (lp ∗ (big I))
                                          (sep_comm_ent (big I) lp))
                                      (properUPred_ent_trans
-                                         (mkProperSep oD (mkProperSep lp (big I)))
-                                         (mkProperSep (mkProperSep oD lp) (big I))
+                                         (oD ∗ (lp ∗ (big I)))
+                                         ((oD ∗ lp) ∗ (big I))
                                          FRAME
                                          (sep_assoc_r_ent oD lp (big I))
-                                         (sep_mono_l_ent (mkProperSep oD lp) (mkProperSep lp oD) (big I)
+                                         (sep_mono_l_ent (oD ∗ lp) (lp ∗ oD) (big I)
                                              (sep_comm_ent oD lp)))
                            \in properUPred_ent_trans
-                               (mkProperSep (mkProperSep (mkProperPure (psi_I i)) oD) Body)
-                               (mkProperSep oD Body)
-                               (mkProperSep (au I) FRAME)
-                               (sep_mono_l_ent (mkProperSep (mkProperPure (psi_I i)) oD) oD Body
+                               (((mkProperPure (psi_I i)) ∗ oD) ∗ Body)
+                               (oD ∗ Body)
+                               ((au I) ∗ FRAME)
+                               (sep_mono_l_ent ((mkProperPure (psi_I i)) ∗ oD) oD Body
                                    (sep_elim_r_ent (mkProperPure (psi_I i)) oD))
                                (properUPred_ent_trans
-                                   (mkProperSep oD Body)
-                                   (mkProperSep oD (mkProperSep (au I) (mkProperSep (big I) lp)))
-                                   (mkProperSep (au I) FRAME)
-                                   (sep_mono_r_ent oD Body (mkProperSep (au I) (mkProperSep (big I) lp))
+                                   (oD ∗ Body)
+                                   (oD ∗ ((au I) ∗ ((big I) ∗ lp)))
+                                   ((au I) ∗ FRAME)
+                                   (sep_mono_r_ent oD Body ((au I) ∗ ((big I) ∗ lp))
                                        (sep_assoc_l_ent (au I) (big I) lp))
                                    (properUPred_ent_trans
-                                       (mkProperSep oD (mkProperSep (au I) (mkProperSep (big I) lp)))
-                                       (mkProperSep (au I) (mkProperSep oD (mkProperSep (big I) lp)))
-                                       (mkProperSep (au I) FRAME)
-                                       (sep_swap_ent oD (au I) (mkProperSep (big I) lp))
-                                       (sep_mono_r_ent (au I) (mkProperSep oD (mkProperSep (big I) lp)) FRAME
+                                       (oD ∗ ((au I) ∗ ((big I) ∗ lp)))
+                                       ((au I) ∗ (oD ∗ ((big I) ∗ lp)))
+                                       ((au I) ∗ FRAME)
+                                       (sep_swap_ent oD (au I) ((big I) ∗ lp))
+                                       (sep_mono_r_ent (au I) (oD ∗ ((big I) ∗ lp)) FRAME
                                            innerFrame)))
                      \in chain n x hv (rearr n x hv hs)
              \in bupd_alloc_frame_then {iResUR S} AiExist Body Goal
                  (ownD_alloc_fresh W psi_I oracle_I)
-                 (sep_exist_l_elim (\lam i => mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i)))
-                     Body (mkProperBUpd Goal) perI_i)
-     \in sep_exist_l_elim (\lam I => mkProperSep (au I) (big I)) (mkProperLater P)
-         (mkProperBUpd Goal) perI
+                 (sep_exist_l_elim (\lam i => (mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i)))
+                     Body (|==> Goal) perI_i)
+     \in sep_exist_l_elim (\lam I => (au I) ∗ (big I)) (|> P)
+         (|==> Goal) perI
 
 -- =================================================================================
 -- ownI_alloc_open (Rocq: `ownI_alloc_open`):
@@ -531,11 +521,11 @@
 
 \lemma ownI_alloc_open {S : gFunctors} (W : wsatGS S) (phi : gname -> \Prop) (P : iProp S)
     (Hfresh : \Pi (E : Gset) -> TruncP (\Sigma (i : gname) (plookup E i = nothing) (phi i)))
-  : properUPred_ent (wsat W)
-      (mkProperBUpd (mkProperExist gname (\lam i =>
-          mkProperSep (mkProperPure (phi i))
-              (mkProperSep (mkProperWand (ownE W (coPset_singleton i)) (wsat W))
-                  (mkProperSep (ownI W i P) (ownD W (gset_singleton i)))))))
+  : (wsat W) ⊢
+      (|==> (mkProperExist gname (\lam i =>
+          (mkProperPure (phi i)) ∗
+              (((ownE W (coPset_singleton i)) -∗ (wsat W)) ∗
+                  ((ownI W i P) ∗ (ownD W (gset_singleton i)))))))
   => \let
        | M => iResUR S
        | au : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
@@ -544,11 +534,11 @@
        | big : Gmap gname gnameCountable (iProp S) -> ProperUPred (iResUR S) =>
            \lam J => big_sepM J (wsat_entry W)
        | Goal : ProperUPred (iResUR S) => mkProperExist gname (\lam i =>
-           mkProperSep (mkProperPure (phi i))
-               (mkProperSep (mkProperWand (ownE W (coPset_singleton i)) (wsat W))
-                   (mkProperSep (ownI W i P) (ownD W (gset_singleton i)))))
+           (mkProperPure (phi i)) ∗
+               (((ownE W (coPset_singleton i)) -∗ (wsat W)) ∗
+                   ((ownI W i P) ∗ (ownD W (gset_singleton i)))))
        | perI : \Pi (I : Gmap gname gnameCountable (iProp S)) ->
-             properUPred_ent (mkProperSep (au I) (big I)) (mkProperBUpd Goal) =>
+             ((au I) ∗ (big I)) ⊢ (|==> Goal) =>
            \lam I =>
              \let
                | psi_I : gname -> \Prop => \lam i => \Sigma (glookup I i = nothing) (phi i)
@@ -563,12 +553,11 @@
                        \in inP (i, hX, (glookup_nothing_of_dom I i hdom, hphi))
                    }
                | AiExist : ProperUPred (iResUR S) => mkProperExist gname (\lam i =>
-                   mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i)))
-               | Body : ProperUPred (iResUR S) => mkProperSep (au I) (big I)
+                   (mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i)))
+               | Body : ProperUPred (iResUR S) => (au I) ∗ (big I)
                | perI_i : \Pi (i : gname) ->
-                     properUPred_ent
-                         (mkProperSep (mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i))) Body)
-                         (mkProperBUpd Goal) =>
+                     (((mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i))) ∗ Body) ⊢
+                         (|==> Goal) =>
                    \lam i => \lam n x hv hs =>
                      \let
                        | hfresh : glookup I i = nothing => \case hs \with {
@@ -580,41 +569,39 @@
                        | oD => ownD W (gset_singleton i)
                        | oE => ownE W (coPset_singleton i)
                        -- The wand `oE -∗ wsat W`, from `au(ins) ∗ big I`.
-                       | wand_body : properUPred_ent (mkProperSep (au (ginsert i P I)) (big I))
-                             (mkProperWand oE (wsat W)) =>
-                           wand_intro_ent (mkProperSep (au (ginsert i P I)) (big I)) oE (wsat W)
+                       | wand_body : ((au (ginsert i P I)) ∗ (big I)) ⊢
+                             (oE -∗ (wsat W)) =>
+                           wand_intro_ent ((au (ginsert i P I)) ∗ (big I)) oE (wsat W)
                                (\let
-                                  | to_big_ins : properUPred_ent (mkProperSep oE (big I)) (big (ginsert i P I)) =>
-                                      properUPred_ent_trans (mkProperSep oE (big I))
-                                          (mkProperSep (wsat_entry W i P) (big I)) (big (ginsert i P I))
+                                  | to_big_ins : (oE ∗ (big I)) ⊢ (big (ginsert i P I)) =>
+                                      properUPred_ent_trans (oE ∗ (big I))
+                                          ((wsat_entry W i P) ∗ (big I)) (big (ginsert i P I))
                                           (sep_mono_l_ent oE (wsat_entry W i P) (big I)
-                                              (or_intro_r_ent (mkProperSep (mkProperLater P) oD) oE))
+                                              (or_intro_r_ent ((|> P) ∗ oD) oE))
                                           (big_sepM_insert I (wsat_entry W) i P hfresh).2
                                 \in properUPred_ent_trans
-                                    (mkProperSep (mkProperSep (au (ginsert i P I)) (big I)) oE)
-                                    (mkProperSep (au (ginsert i P I)) (big (ginsert i P I)))
+                                    (((au (ginsert i P I)) ∗ (big I)) ∗ oE)
+                                    ((au (ginsert i P I)) ∗ (big (ginsert i P I)))
                                     (wsat W)
                                     (properUPred_ent_trans
-                                        (mkProperSep (mkProperSep (au (ginsert i P I)) (big I)) oE)
-                                        (mkProperSep (au (ginsert i P I)) (mkProperSep (big I) oE))
-                                        (mkProperSep (au (ginsert i P I)) (big (ginsert i P I)))
+                                        (((au (ginsert i P I)) ∗ (big I)) ∗ oE)
+                                        ((au (ginsert i P I)) ∗ ((big I) ∗ oE))
+                                        ((au (ginsert i P I)) ∗ (big (ginsert i P I)))
                                         (sep_assoc_l_ent (au (ginsert i P I)) (big I) oE)
-                                        (sep_mono_r_ent (au (ginsert i P I)) (mkProperSep (big I) oE)
+                                        (sep_mono_r_ent (au (ginsert i P I)) ((big I) ∗ oE)
                                             (big (ginsert i P I))
-                                            (properUPred_ent_trans (mkProperSep (big I) oE)
-                                                (mkProperSep oE (big I)) (big (ginsert i P I))
+                                            (properUPred_ent_trans ((big I) ∗ oE)
+                                                (oE ∗ (big I)) (big (ginsert i P I))
                                                 (sep_comm_ent (big I) oE) to_big_ins)))
-                                    (exist_intro_ent (\lam J => mkProperSep (au J) (big J)) (ginsert i P I)))
+                                    (exist_intro_ent (\lam J => (au J) ∗ (big J)) (ginsert i P I)))
                        -- reshape: (au(ins) ∗ ownI) ∗ FRAME ⊢ Goal, FRAME = oD ∗ big I
-                       | FRAME : ProperUPred (iResUR S) => mkProperSep oD (big I)
-                       | reshape : properUPred_ent
-                             (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) FRAME) Goal =>
+                       | FRAME : ProperUPred (iResUR S) => oD ∗ (big I)
+                       | reshape : (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ FRAME) ⊢ Goal =>
                            \let
                              -- (au(ins) ∗ ownI) ∗ (oD ∗ big I) ⊢ (au(ins) ∗ big I) ∗ (ownI ∗ oD)
-                             | regroup : properUPred_ent
-                                   (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) FRAME)
-                                   (mkProperSep (mkProperSep (au (ginsert i P I)) (big I))
-                                                (mkProperSep (ownI W i P) oD)) =>
+                             | regroup : (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ FRAME) ⊢
+                                   (((au (ginsert i P I)) ∗ (big I)) ∗
+                                                ((ownI W i P) ∗ oD)) =>
                                  \lam n1 x1 hv1 h1 => \case h1 \with {
                                    | inP (aHead, aFr, dx1, hHead, hFr) => \case hHead \with {
                                      | inP (aAu, aOI, dHead, hAu, hOI) => \case hFr \with {
@@ -634,46 +621,45 @@
                                    }
                                  }
                            \in properUPred_ent_trans
-                               (mkProperSep (mkProperSep (au (ginsert i P I)) (ownI W i P)) FRAME)
-                               (mkProperSep (mkProperSep (au (ginsert i P I)) (big I))
-                                            (mkProperSep (ownI W i P) oD))
+                               (((au (ginsert i P I)) ∗ (ownI W i P)) ∗ FRAME)
+                               (((au (ginsert i P I)) ∗ (big I)) ∗
+                                            ((ownI W i P) ∗ oD))
                                Goal
                                regroup
                                (properUPred_ent_trans
-                                   (mkProperSep (mkProperSep (au (ginsert i P I)) (big I))
-                                                (mkProperSep (ownI W i P) oD))
-                                   (mkProperSep (mkProperWand oE (wsat W)) (mkProperSep (ownI W i P) oD))
+                                   (((au (ginsert i P I)) ∗ (big I)) ∗
+                                                ((ownI W i P) ∗ oD))
+                                   ((oE -∗ (wsat W)) ∗ ((ownI W i P) ∗ oD))
                                    Goal
-                                   (sep_mono_l_ent (mkProperSep (au (ginsert i P I)) (big I))
-                                       (mkProperWand oE (wsat W)) (mkProperSep (ownI W i P) oD) wand_body)
+                                   (sep_mono_l_ent ((au (ginsert i P I)) ∗ (big I))
+                                       (oE -∗ (wsat W)) ((ownI W i P) ∗ oD) wand_body)
                                    (properUPred_ent_trans
-                                       (mkProperSep (mkProperWand oE (wsat W)) (mkProperSep (ownI W i P) oD))
-                                       (mkProperSep (mkProperPure (phi i))
-                                           (mkProperSep (mkProperWand oE (wsat W)) (mkProperSep (ownI W i P) oD)))
+                                       ((oE -∗ (wsat W)) ∗ ((ownI W i P) ∗ oD))
+                                       ((mkProperPure (phi i)) ∗
+                                           ((oE -∗ (wsat W)) ∗ ((ownI W i P) ∗ oD)))
                                        Goal
                                        (pure_intro_sep_ent (phi i) hphi
-                                           (mkProperSep (mkProperWand oE (wsat W)) (mkProperSep (ownI W i P) oD)))
+                                           ((oE -∗ (wsat W)) ∗ ((ownI W i P) ∗ oD)))
                                        (exist_intro_ent (\lam i' =>
-                                           mkProperSep (mkProperPure (phi i'))
-                                               (mkProperSep (mkProperWand (ownE W (coPset_singleton i')) (wsat W))
-                                                   (mkProperSep (ownI W i' P) (ownD W (gset_singleton i'))))) i)))
-                       | chain : properUPred_ent (mkProperSep (au I) FRAME) (mkProperBUpd Goal) =>
+                                           (mkProperPure (phi i')) ∗
+                                               (((ownE W (coPset_singleton i')) -∗ (wsat W)) ∗
+                                                   ((ownI W i' P) ∗ (ownD W (gset_singleton i'))))) i)))
+                       | chain : ((au I) ∗ FRAME) ⊢ (|==> Goal) =>
                            alloc_frame_reshape {iResUR S} (au I) (au (ginsert i P I)) (ownI W i P) FRAME Goal
                                (ownI_auth_alloc W I i P hfresh) reshape
                        -- rearr: ((pure ∗ oD) ∗ (au ∗ big)) ⊢ au ∗ (oD ∗ big) = au ∗ FRAME
-                       | rearr : properUPred_ent
-                             (mkProperSep (mkProperSep (mkProperPure (psi_I i)) oD) Body)
-                             (mkProperSep (au I) FRAME) =>
+                       | rearr : (((mkProperPure (psi_I i)) ∗ oD) ∗ Body) ⊢
+                             ((au I) ∗ FRAME) =>
                            properUPred_ent_trans
-                               (mkProperSep (mkProperSep (mkProperPure (psi_I i)) oD) Body)
-                               (mkProperSep oD Body)
-                               (mkProperSep (au I) FRAME)
-                               (sep_mono_l_ent (mkProperSep (mkProperPure (psi_I i)) oD) oD Body
+                               (((mkProperPure (psi_I i)) ∗ oD) ∗ Body)
+                               (oD ∗ Body)
+                               ((au I) ∗ FRAME)
+                               (sep_mono_l_ent ((mkProperPure (psi_I i)) ∗ oD) oD Body
                                    (sep_elim_r_ent (mkProperPure (psi_I i)) oD))
                                (sep_swap_ent oD (au I) (big I))
                      \in chain n x hv (rearr n x hv hs)
              \in bupd_alloc_frame_then {iResUR S} AiExist Body Goal
                  (ownD_alloc_fresh W psi_I oracle_I)
-                 (sep_exist_l_elim (\lam i => mkProperSep (mkProperPure (psi_I i)) (ownD W (gset_singleton i)))
-                     Body (mkProperBUpd Goal) perI_i)
-     \in exist_elim_ent (\lam I => mkProperSep (au I) (big I)) (mkProperBUpd Goal) perI
+                 (sep_exist_l_elim (\lam i => (mkProperPure (psi_I i)) ∗ (ownD W (gset_singleton i)))
+                     Body (|==> Goal) perI_i)
+     \in exist_elim_ent (\lam I => (au I) ∗ (big I)) (|==> Goal) perI

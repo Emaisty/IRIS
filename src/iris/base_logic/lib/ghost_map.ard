@@ -1,0 +1,196 @@
+\import Logic
+\import Paths
+\import Set
+\import Data.Maybe
+\import Arith.Rat
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.gmap
+\import iris.algebra.dfrac
+\import iris.algebra.frac
+\import iris.algebra.agree
+\import iris.algebra.lib.gmap_view
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.own
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.gen_heap
+
+-- Rocq's ghost_map is the same gmap-view resource used by gen_heap, without
+-- the physical-state interpretation layered on top.  Reusing that resource
+-- keeps allocation, agreement, and updates on one verified implementation.
+\func ghost_mapR (K : \Set0) (cnt : Countable K) (V : \Set0) : UCMRA.{0} =>
+  gen_heapR K cnt V
+
+\func ghost_mapSigma (K : \Set0) (cnt : Countable K) (V : \Set0)
+  : gFunctors => gen_heapSigma K cnt V
+
+\func ghost_mapGpreS (K : \Set0) (cnt : Countable K) (V : \Set0)
+    (S : gFunctors) : \Type => gen_heapGpreS K cnt V S
+
+\func ghost_mapGS (K : \Set0) (cnt : Countable K) (V : \Set0)
+    (S : gFunctors) : \Type => gen_heapGS K cnt V S
+
+\func subG_ghost_mapGpreS {K : \Set0} {cnt : Countable K} {V : \Set0}
+    {S : gFunctors} (h : subG (ghost_mapSigma K cnt V) S)
+  : ghost_mapGpreS K cnt V S => subG_gen_heapGpreS h
+
+\func ghost_map_auth {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (q : Qp) (m : Gmap K cnt V) : iProp S =>
+  own H.gen_heap_inG H.gen_heap_name
+    (gmap_view_auth (DfracOwn q) (gen_heap_map m))
+
+\func ghost_map_elem {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (k : K) (v : V) : iProp S => pointsto_full H k v
+
+\lemma ghost_map_auth_timeless {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (q : Qp) (m : Gmap K cnt V) :
+  (|> (ghost_map_auth H q m)) ⊢
+    (<except_0> (ghost_map_auth H q m)) =>
+  own_timeless H.gen_heap_inG H.gen_heap_name
+    (gmap_view_auth (DfracOwn q) (gen_heap_map m))
+    (gmap_view_auth_discrete (DfracOwn q) (gen_heap_map m)
+      (\lam a => agree_discrete (discreteOFE_discrete V) a))
+
+\lemma ghost_map_alloc_empty {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (Hpre : ghost_mapGpreS K cnt V S)
+  : mkProperEmp ⊢
+      (|==> (mkProperExist1 (ghost_mapGS K cnt V S)
+        (\lam H => ghost_map_auth H qp_one gempty))) =>
+  gen_heap_init Hpre gempty
+
+-- Name-oriented allocation used when a larger protocol record stores the
+-- ghost-map name but fixes the `inG` witness ahead of time.
+\lemma ghost_map_alloc_empty_name {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (Hpre : ghost_mapGpreS K cnt V S) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (\lam gam =>
+      ghost_map_auth
+        (\new gen_heapGS {
+          | gen_heap_inG => Hpre.gen_heap_inG
+          | gen_heap_name => gam
+        }) qp_one gempty))) =>
+  own_alloc Hpre.gen_heap_inG (gen_heap_auth gempty)
+    (gen_heap_auth_valid gempty)
+
+\lemma ghost_map_insert {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (m : Gmap K cnt V) (k : K) (v : V)
+    (fresh : glookup m k = nothing)
+  : (ghost_map_auth H qp_one m) ⊢
+      (|==> ((ghost_map_auth H qp_one (ginsert k v m)) ∗
+        (ghost_map_elem H k v))) =>
+  gen_heap_alloc H m k (DfracOwn qp_one) v fresh RatField.<=-refl
+
+\lemma ghost_map_lookup {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (m : Gmap K cnt V) (k : K) (v : V)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k v)) ⊢
+      (mkProperPure (glookup m k = just v)) =>
+  gen_heap_valid H m k (DfracOwn qp_one) v
+
+\lemma ghost_map_update {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (m : Gmap K cnt V) (k : K) (old new : V)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k old)) ⊢
+      (|==> ((ghost_map_auth H qp_one (ginsert k new m)) ∗
+        (ghost_map_elem H k new))) =>
+  gen_heap_update H m k old new
+
+\lemma ghost_map_agree_delete {K V : \Set0} {cnt : Countable K}
+    (m : Gmap K cnt V) (k : K)
+  : gen_heap_map (gdelete k m) = gdelete k (gen_heap_map m) =>
+  gmap_eq (gen_heap_map (gdelete k m))
+    (gdelete k (gen_heap_map m)) (\lam j =>
+      \case EqDecision.decideEq {cnt} j k \with {
+        | yes eq =>
+          \let
+            | deleted : glookup (gdelete k m) j = nothing =>
+                transport (\lam x => glookup (gdelete k m) x = nothing)
+                  (inv eq) (gmap_view_lookup_delete_eq k m)
+            | lhs : glookup (gen_heap_map (gdelete k m)) j = nothing =>
+                glookup_map_support_absent (gdelete k m)
+                  (\lam p => just (to_agree p.2)) j deleted
+            | rhs : glookup (gdelete k (gen_heap_map m)) j = nothing =>
+                transport (\lam x => glookup
+                  (gdelete k (gen_heap_map m)) x = nothing)
+                  (inv eq) (gmap_view_lookup_delete_eq k (gen_heap_map m))
+          \in lhs *> inv rhs
+        | no neq =>
+          \let kne : Not (k = j) => \lam q => neq (inv q)
+          \in \case glookup m j \as old, idp : glookup m j = old \with {
+            | nothing, oldEq =>
+              \let
+                | deleted : glookup (gdelete k m) j = nothing =>
+                    gmap_view_lookup_delete_ne k j m kne *> oldEq
+                | lhs : glookup (gen_heap_map (gdelete k m)) j = nothing =>
+                    glookup_map_support_absent (gdelete k m)
+                      (\lam p => just (to_agree p.2)) j deleted
+                | mapped : glookup (gen_heap_map m) j = nothing =>
+                    glookup_map_support_absent m
+                      (\lam p => just (to_agree p.2)) j oldEq
+                | rhs : glookup (gdelete k (gen_heap_map m)) j = nothing =>
+                    gmap_view_lookup_delete_ne k j (gen_heap_map m) kne
+                      *> mapped
+              \in lhs *> inv rhs
+            | just value, oldEq =>
+              \let
+                | deleted : glookup (gdelete k m) j = just value =>
+                    gmap_view_lookup_delete_ne k j m kne *> oldEq
+                | lhs : glookup (gen_heap_map (gdelete k m)) j =
+                    just (to_agree value) =>
+                    glookup_map_support_present (gdelete k m)
+                      (\lam p => just (to_agree p.2)) j value deleted
+                | mapped : glookup (gen_heap_map m) j =
+                    just (to_agree value) =>
+                    glookup_map_support_present m
+                      (\lam p => just (to_agree p.2)) j value oldEq
+                | rhs : glookup (gdelete k (gen_heap_map m)) j =
+                    just (to_agree value) =>
+                    gmap_view_lookup_delete_ne k j (gen_heap_map m) kne
+                      *> mapped
+              \in lhs *> inv rhs
+          }
+      })
+
+\lemma ghost_map_delete_cmra {K V : \Set0} {cnt : Countable K}
+    (m : Gmap K cnt V) (k : K) (v : V)
+  : cmra_updateP {ghost_mapR K cnt V}
+      ((ghost_mapR K cnt V).op
+        (gmap_view_auth (DfracOwn qp_one) (gen_heap_map m))
+        (gmap_view_frag k (DfracOwn qp_one) (to_agree v)))
+      (\lam y => y = gmap_view_auth (DfracOwn qp_one)
+        (gen_heap_map (gdelete k m))) =>
+  \lam n frame valid =>
+    \scase gmap_view_delete (gen_heap_map m) k (to_agree v)
+        n frame valid \with {
+      | inP (y, ey, hy) => inP (y,
+          ey *> pmap (gmap_view_auth (DfracOwn qp_one))
+            (inv (ghost_map_agree_delete m k)), hy)
+    }
+
+\lemma ghost_map_delete {K V : \Set0} {cnt : Countable K}
+    {S : gFunctors} (H : ghost_mapGS K cnt V S)
+    (m : Gmap K cnt V) (k : K) (v : V)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k v)) ⊢
+      (|==> (ghost_map_auth H qp_one (gdelete k m))) =>
+  \let
+    | A => ghost_mapR K cnt V
+    | auth => gmap_view_auth (DfracOwn qp_one) (gen_heap_map m)
+    | elem => gmap_view_frag k (DfracOwn qp_one) (to_agree v)
+    | deleted => gmap_view_auth (DfracOwn qp_one)
+        (gen_heap_map (gdelete k m))
+  \in properUPred_ent_trans
+      ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k v))
+      (own H.gen_heap_inG H.gen_heap_name (A.op auth elem))
+      (|==> (ghost_map_auth H qp_one (gdelete k m)))
+      (\lam n x hx hsep =>
+        (own_op H.gen_heap_inG H.gen_heap_name auth elem n x hx).2 hsep)
+      (own_update H.gen_heap_inG H.gen_heap_name (A.op auth elem) deleted
+        (cmra_updateP_update_det (A.op auth elem) deleted
+          (ghost_map_delete_cmra m k v)))

@@ -1,0 +1,87 @@
+\import Logic
+\import Arith.Nat
+\import Data.Maybe
+\import Order.PartialOrder
+\import Paths
+\import Set
+\import interface
+\import updates
+\import lang
+\import lang_ectx
+\import ofe
+\import uPred
+\import cmra
+\import weakestpre
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+\import lib.auth_cmra
+\import lib.pmap
+
+\lemma wp_bupd {cnt : Countable Loc} (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (mkProperBUpd {HeapCMRA Loc cnt Value} (wp e Phi)) (wp e Phi) => {?}
+
+\func wp_bind_post {cnt : Countable Loc} (K : Ectx) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : Value -> ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func wp_bind_at_le {cnt : Countable Loc} (K : Ectx) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (N n : Nat) (n_le_N : n <= N) (e : Expr) 
+(a : (HeapCMRA Loc cnt Value).E) (hv : (HeapCMRA Loc cnt Value).validN n a) (hp : (wp e (wp_bind_post K Phi)).upred_holds n a) :
+  (wp (fill K e) Phi).upred_holds n a => {?}
+
+\func wp_bind_pre_zero {cnt : Countable Loc} (K : Ectx) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (a : (HeapCMRA Loc cnt Value).E) 
+(hv : (HeapCMRA Loc cnt Value).validN 0 a) (hp : (wp_pre wp e (wp_bind_post K Phi)).upred_holds 0 a) : (wp_pre wp (fill K e) Phi).upred_holds 0 a => {?}
+
+\func wp_bind_pre_step {cnt : Countable Loc} (K : Ectx) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (a : (HeapCMRA Loc cnt Value).E) {n : Nat} 
+(hv : (HeapCMRA Loc cnt Value).validN (suc n) a) (hp : (wp_pre wp e (wp_bind_post K Phi)).upred_holds (suc n) a)
+  (ih : \Pi (k : Nat) -> k <= n -> \Pi (e' : Expr) (a' : (HeapCMRA Loc cnt Value).E) ->
+  (HeapCMRA Loc cnt Value).validN k a' -> (wp e' (wp_bind_post K Phi)).upred_holds k a' -> (wp (fill K e') Phi).upred_holds k a') :
+  (wp_pre wp (fill K e) Phi).upred_holds (suc n) a => {?}
+
+\func wp_bind {cnt : Countable Loc} (K : Ectx) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e (\lam v => wp (fill K (Val v)) Phi)) (wp (fill K e) Phi) => {?}
+
+\lemma wp_bind_item {cnt : Countable Loc} (Ki : EctxItem) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e (\lam v => wp (fill_item Ki (Val v)) Phi)) (wp (fill_item Ki e) Phi) => {?}
+
+\lemma wp_bind_app_r {cnt : Countable Loc} (vf : Value) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e (\lam v => wp (App (Val vf) (Val v)) Phi)) (wp (App (Val vf) e) Phi) => {?}
+
+\lemma wp_bind_app_l {cnt : Countable Loc} (e1 e2 : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e1 (\lam v => wp (App (Val v) e2) Phi)) (wp (App e1 e2) Phi) => {?}
+
+\lemma wp_rec_lam_app2_to {cnt : Countable Loc} (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value) 
+(subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1) (subst_lam_eq : subst y v2 body1 = body2) 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp body2 Phi) (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi) => {?}
+
+\lemma wp_rec_lam_app1_to {cnt : Countable Loc} (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr) 
+(subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi) (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) arg) Phi) => {?}
+
+\lemma wp_rec_expr_lam_app2_to {cnt : Countable Loc} (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value) 
+(subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1) (subst_lam_eq : subst y v2 body1 = body2) 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp body2 Phi) (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi) => {?}
+
+\lemma wp_lam_expr_app_to {cnt : Countable Loc} (x : String) (body body' : Expr) (v : Value) (subst_eq : subst x v body = body') 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp body' Phi) (wp (App (Lam x body) (Val v)) Phi) => {?}
+
+\lemma wp_lam_expr_app_arg_to {cnt : Countable Loc} (x : String) (body : Expr) (arg : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp (App (Val (LamV x body)) arg) Phi) (wp (App (Lam x body) arg) Phi) => {?}
+
+\lemma wp_lam_expr_app_r_to {cnt : Countable Loc} (x : String) (body body' arg : Expr) (subst_eq : \Pi (v : Value) -> subst x v body = body') 
+(Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) : properUPred_ent (wp arg (\lam _ => wp body' Phi)) (wp (App (Lam x body) arg) Phi) => {?}
+
+\lemma wp_rec_expr_lam_app1_to {cnt : Countable Loc} (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr) 
+(subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi) (wp (App (App (Rec f x (Lam y body)) (Val v1)) arg) Phi) => {?}
+
+\lemma wp_bind_if {cnt : Countable Loc} (e t f : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e (\lam v => wp (If (Val v) t f) Phi)) (wp (If e t f) Phi) => {?}
+
+\lemma wp_bind_mul_l {cnt : Countable Loc} (e1 e2 : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e1 (\lam v => wp (Mul (Val v) e2) Phi)) (wp (Mul e1 e2) Phi) => {?}
+
+\lemma wp_bind_mul_r {cnt : Countable Loc} (v1 : Value) (e2 : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e2 (\lam v => wp (Mul (Val v1) (Val v)) Phi)) (wp (Mul (Val v1) e2) Phi) => {?}
+
+\lemma wp_bind_store_r {cnt : Countable Loc} (v1 : Value) (e2 : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (wp e2 (\lam v => wp (Store (Val v1) (Val v)) Phi)) (wp (Store (Val v1) e2) Phi) => {?}

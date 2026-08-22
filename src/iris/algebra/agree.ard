@@ -30,6 +30,7 @@
   | agree_tl => nil
 
 
+
 -- =================================================================================
 -- List membership
 -- =================================================================================
@@ -173,6 +174,51 @@
   | ofe_dist_sym => agree_dist_sym
   | ofe_dist_trans => agree_dist_trans
   | ofe_dist_le => agree_dist_le
+
+\lemma agree_discrete {A : OFE} (hA : OFEDiscrete A)
+    (x : AgreeElem A) : Discrete {AgreeOFE A} x =>
+  \lam y h n =>
+    (\lam a ha => \case h.1 a ha \with {
+       | inP (b, hb, dab) => inP (b, hb,
+           (A.ofe_equiv_dist a b).1 (hA a b dab) n)
+     },
+     \lam b hb => \case h.2 b hb \with {
+       | inP (a, ha, dab) => inP (a, ha,
+           (A.ofe_equiv_dist a b).1 (hA a b dab) n)
+     })
+
+-- A singleton agreement element is discrete whenever the stored value is.
+-- The concrete list representation may contain duplicates on the other side,
+-- so the conclusion is OFE equivalence (as in Rocq Iris), not record equality.
+\lemma to_agree_discrete {A : OFE} (x : A.E) (hx : Discrete {A} x) :
+  Discrete {AgreeOFE A} (to_agree x) =>
+  \lam y h n =>
+    (\lam a ha => \case ha \with {
+        | inl ea => \case h.1 a (inl ea) \with {
+            | inP (b, hb, dab) =>
+              \let
+                | dxb : A.dist 0 x b =>
+                    transport (\lam z => A.dist 0 z b) ea dab
+                | exb : A.equiv x b => hx b dxb
+              \in inP (b, hb,
+                transport (\lam z => A.dist n z b) (inv ea)
+                  ((A.ofe_equiv_dist x b).1 exb n))
+          }
+        | inr impossible => \case impossible \with {}
+      },
+     \lam b hb => \case h.2 b hb \with {
+        | inP (a, ha, dab) => \case ha \with {
+            | inl ea =>
+              \let
+                | dxb : A.dist 0 x b =>
+                    transport (\lam z => A.dist 0 z b) ea dab
+                | exb : A.equiv x b => hx b dxb
+              \in inP (a, inl ea,
+                transport (\lam z => A.dist n z b) (inv ea)
+                  ((A.ofe_equiv_dist x b).1 exb n))
+            | inr impossible => \case impossible \with {}
+          }
+      })
 
 
 -- =================================================================================
@@ -395,6 +441,17 @@
 -- =================================================================================
 -- Downstream lemmas
 -- =================================================================================
+
+\lemma to_agree_valid {A : OFE} (a : A.E) :
+  (AgreeCMRA A).valid (to_agree a) =>
+  \lam n x y hx hy => \case hx \with {
+    | inl ex => \case hy \with {
+      | inl ey => transport2 (\lam u v => A.dist n u v)
+          (inv ex) (inv ey) (A.ofe_dist_refl n a)
+      | inr impossible => \case impossible \with {}
+    }
+    | inr impossible => \case impossible \with {}
+  }
 
 \lemma to_agree_ne {A : OFE} (n : Nat) (a b : A.E) (h : A.dist n a b)
   : (AgreeOFE A).dist n (to_agree a) (to_agree b) =>

@@ -1,0 +1,91 @@
+\import Logic
+\import Arith.Nat
+\import Data.Bool
+\import Data.Maybe
+\import Order.PartialOrder
+\import Paths
+\import Set
+\import lang
+\import lang_subst
+\import hoare
+\import weakestpre
+\import lifting
+\import uPred
+\import cmra
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+\import interface
+
+\func fact_rec_body : Expr => {?}
+
+\func fact_recV : Value => {?}
+
+\func fact_body : Expr => {?}
+
+\func factorial_call_body : Expr => {?}
+
+\func factorial_call_body_at (k : Nat) : Expr => {?}
+
+\func factorial_prog : Expr => {?}
+
+\func fact_worker_post {cnt : Countable Loc} (l : Loc) (j k : Nat) : Value -> ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func factorial_post {cnt : Countable Loc} (k : Nat) : Value -> ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func factorial_spec {cnt : Countable Loc} : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\func factorial_spec_Q {cnt : Countable Loc} : ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\lemma subst_fact_zero_l (l : Loc) (recV : Value) : subst "l" (LitV (LitLoc l))
+  (If (IsZero (Val (natV 0))) (Load (Var "l")) 
+  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l"))) (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0)))))) = If 
+(IsZero (Val (natV 0))) (Load (Val (LitV (LitLoc l))))
+  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l))))) 
+  (Store (Val (LitV (LitLoc l))) (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))) => {?}
+
+\lemma subst_fact_zero_unfold {cnt : Countable Loc} (l : Loc) (j : Nat) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (step_after_n : properUPred_ent (pointsTo l (natV j))  (wp (App (Val (LamV "l"  (If (IsZero (Val (natV 0))) (Load (Var "l")) 
+  (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l"))) (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0)))))))) 
+(Val (LitV (LitLoc l)))) Post)) : properUPred_ent (pointsTo l (natV j)) (wp (App (App fact_body (Val (natV 0))) (Val (LitV (LitLoc l)))) Post) => {?}
+
+\lemma subst_fact_suc_after_store {cnt : Countable Loc} (l : Loc) (j k' : Nat) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(rec_call : properUPred_ent (pointsTo l (natV (j Nat.* suc k'))) (wp (App (App (Val fact_recV) (Val (natV k'))) (Val (LitV (LitLoc l)))) Post)) :
+  properUPred_ent (pointsTo l (natV (j Nat.* suc k'))) (wp (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post) => {?}
+
+\lemma subst_fact_suc_else {cnt : Countable Loc} (l : Loc) (j k' : Nat) (recV : Value) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
+  (after_store : properUPred_ent (pointsTo l (natV j))
+  (wp (Store (Val (LitV (LitLoc l))) (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k'))))) 
+  (\lam _ => wp (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post))) : properUPred_ent (pointsTo l (natV j))
+  (wp (App (Lam "_" (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))) 
+  (Store (Val (LitV (LitLoc l))) (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))) Post) => {?}
+
+\lemma subst_fact_suc_unfold {cnt : Countable Loc} (l : Loc) (j k' : Nat) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value)) (normalized : Expr) 
+(step_normalized : properUPred_ent (pointsTo l (natV j)) (wp normalized Post)) :
+  properUPred_ent (pointsTo l (natV j)) (wp (App (App fact_body (Val (natV (suc k')))) (Val (LitV (LitLoc l)))) Post) => {?}
+
+\lemma subst_fact_call_l_beta {cnt : Countable Loc} (l : Loc) (k : Nat) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(worker : properUPred_ent (pointsTo l (natV 1)) (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) Post)) :
+  properUPred_ent (pointsTo l (natV 1)) (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val (LitV (LitLoc l)))) Post) => {?}
+
+\lemma subst_fact_public_k_beta {cnt : Countable Loc} (k : Nat) (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(body_step : properUPred_ent (mkProperPure (\Sigma)) (wp (factorial_call_body_at k) Post)) :
+  properUPred_ent (mkProperPure (\Sigma)) (wp (App (Val (LamV "k" factorial_call_body)) (Val (natV k))) Post) => {?}
+
+\func fact_var_spec {cnt : Countable Loc} (l : Loc) (j k : Nat) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (pointsTo l (natV j)) (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) (fact_worker_post l j k)) 
+  => {?}
+
+\func fact_closure_correct {cnt : Countable Loc} (l : Loc) (j k : Nat) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (pointsTo l (natV j)) (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) (fact_worker_post l j k)) 
+  => {?}
+
+\func fact_body_correct {cnt : Countable Loc} (l : Loc) (j k : Nat) :
+  properUPred_ent {HeapCMRA Loc cnt Value} (pointsTo l (natV j)) (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) (fact_worker_post l j k)) 
+  => {?}
+
+\lemma factorial_call_correct {cnt : Countable Loc} (k : Nat) : properUPred_ent {HeapCMRA Loc cnt Value} (mkProperPure (\Sigma)) (wp (factorial_call_body_at k) (factorial_post k)) => {?}
+
+\func factorial_correct' {cnt : Countable Loc} : properUPred_ent {HeapCMRA Loc cnt Value} (mkProperPure (\Sigma)) factorial_spec => {?}
+
+\func factorial_correct_Q {cnt : Countable Loc} : properUPred_ent {HeapCMRA Loc cnt Value} (mkProperPure (\Sigma)) factorial_spec_Q => {?}

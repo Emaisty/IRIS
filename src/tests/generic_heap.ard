@@ -1,4 +1,5 @@
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.base_logic.lib.iprop
 \import iris_heap_lang.lang
 \import iris.program_logic.weakestpre
@@ -10,24 +11,23 @@
 \import iris.base_logic.lib.gen_heap
 
 -- A closed, binder-free heap-language client of the canonical generic stack.
--- It deliberately avoids `String` and therefore remains a useful A12 smoke
--- example while named-variable substitution is deferred.
+-- It deliberately avoids binders and remains a useful closed smoke example.
 \func alloc_unit_program : Expr => Alloc (Val (LitV LitUnit))
 
 \lemma alloc_unit_wp {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-  : properUPred_ent mkProperEmp
-      (wp H E alloc_unit_program
+  : mkProperEmp ⊢
+      (WP H E alloc_unit_program
         (\lam w => mkProperExist Loc (\lam l =>
-          mkProperAnd (mkProperPure (w = LitV (LitLoc l)))
+          (mkProperPure (w = LitV (LitLoc l))) ∧
             (pointsto_full H.iris_gen_heap l (LitV LitUnit))))) =>
   wp_alloc H E (LitV LitUnit)
 
 \lemma alloc_unit_hoare {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-  : properUPred_ent mkProperEmp
+  : mkProperEmp ⊢
       (ht H E mkProperEmp alloc_unit_program
         (\lam w => mkProperExist Loc (\lam l =>
-          mkProperAnd (mkProperPure (w = LitV (LitLoc l)))
+          (mkProperPure (w = LitV (LitLoc l))) ∧
             (pointsto_full H.iris_gen_heap l (LitV LitUnit))))) =>
   ht_alloc H E (LitV LitUnit)

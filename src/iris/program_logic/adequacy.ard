@@ -10,6 +10,7 @@
 \import Order.PartialOrder
 \import iris.algebra.cmra
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.bi.updates
 \import iris.base_logic.lib.iprop
 \import iris_heap_lang.lang
@@ -44,9 +45,20 @@
 \func init_resources {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (sigma : State cnt)
     (observations : List Observation) : iProp S =>
-  mkProperSep (state_interp H sigma observations)
-    (mkProperSep (wsat H.iris_wsat)
+  (state_interp H sigma observations) ∗
+    ((wsat H.iris_wsat) ∗
       (ownE H.iris_wsat coPset_universe))
+
+-- Adequacy initializes the conventional heap-language fork postcondition,
+-- which is inhabited for every returned value.  Packaging that witness with
+-- `irisGS` lets clients prove specifications that use a real fork/join library
+-- without quantifying over impossible arbitrary fork postconditions.
+\func fork_post_inhabited {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) : \Type =>
+  \Pi (v : Value) -> mkProperEmp ⊢ (H.iris_fork_post v)
+
+\func irisGS_with_fork (cnt : Countable Loc) (S : gFunctors) : \Set1 =>
+  \Sigma (H : irisGS cnt S) (fork_post_inhabited H)
 
 \func heap_package {cnt : Countable Loc} {S : gFunctors}
     (sigma : State cnt) : iProp S =>
@@ -55,7 +67,7 @@
 
 \func world_package {S : gFunctors} : iProp S =>
   mkProperExist1 (wsatGS S)
-    (\lam W => mkProperSep (wsat W) (ownE W coPset_universe))
+    (\lam W => (wsat W) ∗ (ownE W coPset_universe))
 
 \func proph_package {S : gFunctors}
     (observations : List Observation) (used : Gset) : iProp S =>
@@ -66,51 +78,51 @@
 -- unfolding both large allocation proofs while it is assembling `irisGS`.
 \lemma bupd_alloc_two_then {M : UCMRA}
     (A B G : ProperUPred M)
-    (allocA : properUPred_ent mkProperEmp (mkProperBUpd A))
-    (allocB : properUPred_ent mkProperEmp (mkProperBUpd B))
-    (package : properUPred_ent (mkProperSep A B) G)
-  : properUPred_ent mkProperEmp (mkProperBUpd G) =>
+    (allocA : mkProperEmp ⊢ (|==> A))
+    (allocB : mkProperEmp ⊢ (|==> B))
+    (package : (A ∗ B) ⊢ G)
+  : mkProperEmp ⊢ (|==> G) =>
   \let
-    | addA : properUPred_ent B (mkProperBUpd (mkProperSep A B)) =>
+    | addA : B ⊢ (|==> (A ∗ B)) =>
         bupd_alloc_frame A B allocA
-    | allocateBoth : properUPred_ent mkProperEmp
-        (mkProperBUpd (mkProperSep A B)) =>
+    | allocateBoth : mkProperEmp ⊢
+        (|==> (A ∗ B)) =>
         properUPred_ent_trans mkProperEmp
-          (mkProperBUpd (mkProperBUpd (mkProperSep A B)))
-          (mkProperBUpd (mkProperSep A B))
+          (|==> (|==> (A ∗ B)))
+          (|==> (A ∗ B))
           (properUPred_ent_trans mkProperEmp
-            (mkProperBUpd B)
-            (mkProperBUpd (mkProperBUpd (mkProperSep A B)))
+            (|==> B)
+            (|==> (|==> (A ∗ B)))
             allocB
-            (bupd_mono B (mkProperBUpd (mkProperSep A B)) addA))
-          (bupd_trans (mkProperSep A B))
+            (bupd_mono B (|==> (A ∗ B)) addA))
+          (bupd_trans (A ∗ B))
   \in properUPred_ent_trans mkProperEmp
-      (mkProperBUpd (mkProperSep A B)) (mkProperBUpd G)
-      allocateBoth (bupd_mono (mkProperSep A B) G package)
+      (|==> (A ∗ B)) (|==> G)
+      allocateBoth (bupd_mono (A ∗ B) G package)
 
 \lemma init_from_allocations {cnt : Countable Loc} {S : gFunctors}
     (sigma : State cnt) (observations : List Observation)
-    (heapAlloc : properUPred_ent mkProperEmp
-      (mkProperBUpd (heap_package {cnt} {S} sigma)))
-    (worldAlloc : properUPred_ent mkProperEmp
-      (mkProperBUpd (world_package {S})))
-    (prophAlloc : properUPred_ent mkProperEmp
-      (mkProperBUpd
+    (heapAlloc : mkProperEmp ⊢
+      (|==> (heap_package {cnt} {S} sigma)))
+    (worldAlloc : mkProperEmp ⊢
+      (|==> (world_package {S})))
+    (prophAlloc : mkProperEmp ⊢
+      (|==>
         (proph_package {S} observations sigma.usedProph)))
-  : properUPred_ent mkProperEmp
-      (mkProperBUpd
+  : mkProperEmp ⊢
+      (|==>
         (mkProperExist1 (irisGS cnt S)
           (\lam H => init_resources H sigma observations))) =>
   \let
     | HeapPackage : iProp S => heap_package {cnt} {S} sigma
     | ProphPackage : iProp S =>
         proph_package {S} observations sigma.usedProph
-    | HeapProph : iProp S => mkProperSep HeapPackage ProphPackage
+    | HeapProph : iProp S => HeapPackage ∗ ProphPackage
     | WorldPackage : iProp S => world_package
-    | Combined : iProp S => mkProperSep HeapProph WorldPackage
+    | Combined : iProp S => HeapProph ∗ WorldPackage
     | Goal : iProp S => mkProperExist1 (irisGS cnt S)
         (\lam H => init_resources H sigma observations)
-    | package : properUPred_ent Combined Goal =>
+    | package : Combined ⊢ Goal =>
         \lam n x hx hcombined => \case hcombined \with {
           | inP (aHeapProph, aWorld, dx, hHeapProph, hWorldPackage) =>
             \case hHeapProph, hWorldPackage \with {
@@ -126,8 +138,8 @@
                 }
             }
         }
-    | allocateHeapProph : properUPred_ent mkProperEmp
-        (mkProperBUpd HeapProph) =>
+    | allocateHeapProph : mkProperEmp ⊢
+        (|==> HeapProph) =>
         bupd_alloc_two_then HeapPackage ProphPackage HeapProph
           heapAlloc prophAlloc
           (properUPred_ent_refl HeapProph)
@@ -142,11 +154,77 @@
 \lemma init {cnt : Countable Loc} {S : gFunctors}
     (Hpre : irisGpreS cnt S) (sigma : State cnt)
     (observations : List Observation)
-  : properUPred_ent mkProperEmp
-      (mkProperBUpd
+  : mkProperEmp ⊢
+      (|==>
         (mkProperExist1 (irisGS cnt S)
           (\lam H => init_resources H sigma observations))) =>
   init_from_allocations sigma observations
+    (gen_heap_init Hpre.iris_heap_pre sigma.heap)
+    (wsat_alloc Hpre.iris_wsat_pre)
+    (proph_map_init Hpre.iris_proph_pre observations sigma.usedProph)
+
+-- The fork-aware initialization package.  Its spatial resources are exactly
+-- `init_resources`; the extra component is only a proof that the concrete
+-- fork postcondition chosen by `init` is inhabited.
+\lemma init_from_allocations_with_fork {cnt : Countable Loc}
+    {S : gFunctors} (sigma : State cnt)
+    (observations : List Observation)
+    (heapAlloc : mkProperEmp ⊢
+      (|==> (heap_package {cnt} {S} sigma)))
+    (worldAlloc : mkProperEmp ⊢
+      (|==> (world_package {S})))
+    (prophAlloc : mkProperEmp ⊢
+      (|==>
+        (proph_package {S} observations sigma.usedProph))) :
+  mkProperEmp ⊢
+    (|==>
+      (mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations))) =>
+  \let
+    | HeapPackage : iProp S => heap_package {cnt} {S} sigma
+    | ProphPackage : iProp S =>
+        proph_package {S} observations sigma.usedProph
+    | HeapProph : iProp S => HeapPackage ∗ ProphPackage
+    | WorldPackage : iProp S => world_package
+    | Combined : iProp S => HeapProph ∗ WorldPackage
+    | Goal : iProp S => mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations)
+    | package : Combined ⊢ Goal =>
+        \lam n x hx hcombined => \case hcombined \with {
+          | inP (aHeapProph, aWorld, dx, hHeapProph, hWorldPackage) =>
+            \case hHeapProph, hWorldPackage \with {
+              | inP (aHeap, aProph, dhp, hHeapPackage, hProphPackage),
+                  inP (W, hWorld) =>
+                \case hHeapPackage, hProphPackage \with {
+                  | inP (G, hHeap), inP (P, hProph) =>
+                \let
+                  | H : irisGS cnt S =>
+                      mkIrisGS W G P
+                        (\lam _ => mkProperPure (TruncP Nat))
+                  | inhabited : fork_post_inhabited H =>
+                      \lam _ _ _ _ _ => inP 0
+                  | HF : irisGS_with_fork cnt S => (H, inhabited)
+                \in inP (HF,
+                  inP (aHeapProph, aWorld, dx,
+                    inP (aHeap, aProph, dhp, hHeap, hProph), hWorld))
+                }
+            }
+        }
+    | allocateHeapProph : mkProperEmp ⊢
+        (|==> HeapProph) =>
+        bupd_alloc_two_then HeapPackage ProphPackage HeapProph
+          heapAlloc prophAlloc (properUPred_ent_refl HeapProph)
+  \in bupd_alloc_two_then HeapProph WorldPackage Goal
+      allocateHeapProph worldAlloc package
+
+\lemma init_with_fork {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (sigma : State cnt)
+    (observations : List Observation) :
+  mkProperEmp ⊢
+    (|==>
+      (mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations))) =>
+  init_from_allocations_with_fork sigma observations
     (gen_heap_init Hpre.iris_heap_pre sigma.heap)
     (wsat_alloc Hpre.iris_wsat_pre)
     (proph_map_init Hpre.iris_proph_pre observations sigma.usedProph)
@@ -198,7 +276,7 @@
     (H : irisGS cnt S) (Phi : Value -> iProp S) (tp : ThreadPool)
   : iProp S \elim tp
   | nil => mkProperEmp
-  | :: e efs => mkProperSep (wp H coPset_universe e Phi)
+  | :: e efs => (WP H coPset_universe e Phi) ∗
       (wp_forks H.iris_fork_post (wp H) efs)
 
 \lemma wp_thread_pool_forks {cnt : Countable Loc} {S : gFunctors}
@@ -213,21 +291,20 @@
   : iProp S \elim k
   | 0 => P
   | suc k' => mkProperFUpd H.iris_wsat E coPset_empty
-      (mkProperLater
+      (|>
         (mkProperFUpd H.iris_wsat coPset_empty E
           (wp_step_iter H E k' P)))
 
 \lemma wp_step_iter_mono {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (k : Nat)
-    (P Q : iProp S) (hPQ : properUPred_ent P Q)
-  : properUPred_ent
-      (wp_step_iter H E k P) (wp_step_iter H E k Q) \elim k
+    (P Q : iProp S) (hPQ : P ⊢ Q)
+  : (wp_step_iter H E k P) ⊢ (wp_step_iter H E k Q) \elim k
   | 0 => hPQ
   | suc k' => fupd_mono H.iris_wsat E coPset_empty
-      (mkProperLater
+      (|>
         (mkProperFUpd H.iris_wsat coPset_empty E
           (wp_step_iter H E k' P)))
-      (mkProperLater
+      (|>
         (mkProperFUpd H.iris_wsat coPset_empty E
           (wp_step_iter H E k' Q)))
       (proper_later_mono
@@ -241,171 +318,158 @@
 
 \lemma big_sepL_append_2 {M : UCMRA} {A : \Type}
     (Psi : A -> ProperUPred M) (l1 l2 : List A)
-  : properUPred_ent
-      (mkProperSep (big_sepL Psi l1) (big_sepL Psi l2))
+  : ((big_sepL Psi l1) ∗ (big_sepL Psi l2)) ⊢
       (big_sepL Psi (l1 ++ l2)) \elim l1
   | nil => (BIuPredMixin M).bi_mixin_emp_sep_2 (big_sepL Psi l2)
   | :: a l1 => properUPred_ent_trans
-      (mkProperSep
-        (mkProperSep (Psi a) (big_sepL Psi l1))
+      (((Psi a) ∗ (big_sepL Psi l1)) ∗
         (big_sepL Psi l2))
-      (mkProperSep (Psi a)
-        (mkProperSep (big_sepL Psi l1) (big_sepL Psi l2)))
-      (mkProperSep (Psi a) (big_sepL Psi (l1 ++ l2)))
+      ((Psi a) ∗
+        ((big_sepL Psi l1) ∗ (big_sepL Psi l2)))
+      ((Psi a) ∗ (big_sepL Psi (l1 ++ l2)))
       (sep_assoc_l_ent (Psi a) (big_sepL Psi l1) (big_sepL Psi l2))
       (sep_mono_r_ent (Psi a)
-        (mkProperSep (big_sepL Psi l1) (big_sepL Psi l2))
+        ((big_sepL Psi l1) ∗ (big_sepL Psi l2))
         (big_sepL Psi (l1 ++ l2))
         (big_sepL_append_2 Psi l1 l2))
 
 \lemma wp_step_iter_one_frame_r {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (P R : iProp S)
-  : properUPred_ent
-      (mkProperSep (wp_step_iter H E 1 P) R)
-      (wp_step_iter H E 1 (mkProperSep P R)) =>
+  : ((wp_step_iter H E 1 P) ∗ R) ⊢
+      (wp_step_iter H E 1 (P ∗ R)) =>
   \let
     | Inner => mkProperFUpd H.iris_wsat coPset_empty E P
-    | framedLater : properUPred_ent
-        (mkProperSep (mkProperLater Inner) R)
-        (mkProperLater
+    | framedLater : ((|> Inner) ∗ R) ⊢
+        (|>
           (mkProperFUpd H.iris_wsat coPset_empty E
-            (mkProperSep P R))) =>
+            (P ∗ R))) =>
         properUPred_ent_trans
-          (mkProperSep (mkProperLater Inner) R)
-          (mkProperSep (mkProperLater Inner) (mkProperLater R))
-          (mkProperLater
+          ((|> Inner) ∗ R)
+          ((|> Inner) ∗ (|> R))
+          (|>
             (mkProperFUpd H.iris_wsat coPset_empty E
-              (mkProperSep P R)))
-          (sep_mono_r_ent (mkProperLater Inner) R (mkProperLater R)
+              (P ∗ R)))
+          (sep_mono_r_ent (|> Inner) R (|> R)
             (proper_later_intro R))
           (properUPred_ent_trans
-            (mkProperSep (mkProperLater Inner) (mkProperLater R))
-            (mkProperLater (mkProperSep Inner R))
-            (mkProperLater
+            ((|> Inner) ∗ (|> R))
+            (|> (Inner ∗ R))
+            (|>
               (mkProperFUpd H.iris_wsat coPset_empty E
-                (mkProperSep P R)))
+                (P ∗ R)))
             (proper_later_sep_2 Inner R)
-            (proper_later_mono (mkProperSep Inner R)
+            (proper_later_mono (Inner ∗ R)
               (mkProperFUpd H.iris_wsat coPset_empty E
-                (mkProperSep P R))
+                (P ∗ R))
               (fupd_frame_r H.iris_wsat coPset_empty E P R)))
   \in properUPred_ent_trans
-      (mkProperSep
-        (mkProperFUpd H.iris_wsat E coPset_empty
-          (mkProperLater Inner)) R)
+      ((mkProperFUpd H.iris_wsat E coPset_empty
+          (|> Inner)) ∗ R)
       (mkProperFUpd H.iris_wsat E coPset_empty
-        (mkProperSep (mkProperLater Inner) R))
+        ((|> Inner) ∗ R))
       (mkProperFUpd H.iris_wsat E coPset_empty
-        (mkProperLater
+        (|>
           (mkProperFUpd H.iris_wsat coPset_empty E
-            (mkProperSep P R))))
-      (fupd_frame_r H.iris_wsat E coPset_empty (mkProperLater Inner) R)
+            (P ∗ R))))
+      (fupd_frame_r H.iris_wsat E coPset_empty (|> Inner) R)
       (fupd_mono H.iris_wsat E coPset_empty
-        (mkProperSep (mkProperLater Inner) R)
-        (mkProperLater
+        ((|> Inner) ∗ R)
+        (|>
           (mkProperFUpd H.iris_wsat coPset_empty E
-            (mkProperSep P R))) framedLater)
+            (P ∗ R))) framedLater)
 
 \lemma wp_step_iter_one_frame_l {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (R P : iProp S)
-  : properUPred_ent
-      (mkProperSep R (wp_step_iter H E 1 P))
-      (wp_step_iter H E 1 (mkProperSep R P)) =>
+  : (R ∗ (wp_step_iter H E 1 P)) ⊢
+      (wp_step_iter H E 1 (R ∗ P)) =>
   properUPred_ent_trans
-    (mkProperSep R (wp_step_iter H E 1 P))
-    (mkProperSep (wp_step_iter H E 1 P) R)
-    (wp_step_iter H E 1 (mkProperSep R P))
+    (R ∗ (wp_step_iter H E 1 P))
+    ((wp_step_iter H E 1 P) ∗ R)
+    (wp_step_iter H E 1 (R ∗ P))
     (sep_comm_ent R (wp_step_iter H E 1 P))
     (properUPred_ent_trans
-      (mkProperSep (wp_step_iter H E 1 P) R)
-      (wp_step_iter H E 1 (mkProperSep P R))
-      (wp_step_iter H E 1 (mkProperSep R P))
+      ((wp_step_iter H E 1 P) ∗ R)
+      (wp_step_iter H E 1 (P ∗ R))
+      (wp_step_iter H E 1 (R ∗ P))
       (wp_step_iter_one_frame_r H E P R)
-      (wp_step_iter_mono H E 1 (mkProperSep P R) (mkProperSep R P)
+      (wp_step_iter_mono H E 1 (P ∗ R) (R ∗ P)
         (sep_comm_ent P R)))
 
 \lemma select_head_state {M : UCMRA} (P R St : ProperUPred M)
-  : properUPred_ent
-      (mkProperSep (mkProperSep P R) St)
-      (mkProperSep (mkProperSep P St) R) =>
+  : ((P ∗ R) ∗ St) ⊢
+      ((P ∗ St) ∗ R) =>
   properUPred_ent_trans
-    (mkProperSep (mkProperSep P R) St)
-    (mkProperSep P (mkProperSep R St))
-    (mkProperSep (mkProperSep P St) R)
+    ((P ∗ R) ∗ St)
+    (P ∗ (R ∗ St))
+    ((P ∗ St) ∗ R)
     (sep_assoc_l_ent P R St)
     (properUPred_ent_trans
-      (mkProperSep P (mkProperSep R St))
-      (mkProperSep P (mkProperSep St R))
-      (mkProperSep (mkProperSep P St) R)
-      (sep_mono_r_ent P (mkProperSep R St) (mkProperSep St R)
+      (P ∗ (R ∗ St))
+      (P ∗ (St ∗ R))
+      ((P ∗ St) ∗ R)
+      (sep_mono_r_ent P (R ∗ St) (St ∗ R)
         (sep_comm_ent R St))
       (sep_assoc_r_ent P St R))
 
 \lemma rebuild_stepped_pool {M : UCMRA}
     (St P Spawned Tail : ProperUPred M)
-  : properUPred_ent
-      (mkProperSep (mkProperSep St (mkProperSep P Spawned)) Tail)
-      (mkProperSep (mkProperSep P (mkProperSep Tail Spawned)) St) =>
+  : ((St ∗ (P ∗ Spawned)) ∗ Tail) ⊢
+      ((P ∗ (Tail ∗ Spawned)) ∗ St) =>
   properUPred_ent_trans
-    (mkProperSep (mkProperSep St (mkProperSep P Spawned)) Tail)
-    (mkProperSep St
-      (mkProperSep (mkProperSep P Spawned) Tail))
-    (mkProperSep (mkProperSep P (mkProperSep Tail Spawned)) St)
-    (sep_assoc_l_ent St (mkProperSep P Spawned) Tail)
+    ((St ∗ (P ∗ Spawned)) ∗ Tail)
+    (St ∗
+      ((P ∗ Spawned) ∗ Tail))
+    ((P ∗ (Tail ∗ Spawned)) ∗ St)
+    (sep_assoc_l_ent St (P ∗ Spawned) Tail)
     (properUPred_ent_trans
-      (mkProperSep St
-        (mkProperSep (mkProperSep P Spawned) Tail))
-      (mkProperSep
-        (mkProperSep (mkProperSep P Spawned) Tail) St)
-      (mkProperSep (mkProperSep P (mkProperSep Tail Spawned)) St)
-      (sep_comm_ent St (mkProperSep (mkProperSep P Spawned) Tail))
+      (St ∗
+        ((P ∗ Spawned) ∗ Tail))
+      (((P ∗ Spawned) ∗ Tail) ∗ St)
+      ((P ∗ (Tail ∗ Spawned)) ∗ St)
+      (sep_comm_ent St ((P ∗ Spawned) ∗ Tail))
       (sep_mono_l_ent
-        (mkProperSep (mkProperSep P Spawned) Tail)
-        (mkProperSep P (mkProperSep Tail Spawned)) St
+        ((P ∗ Spawned) ∗ Tail)
+        (P ∗ (Tail ∗ Spawned)) St
         (properUPred_ent_trans
-          (mkProperSep (mkProperSep P Spawned) Tail)
-          (mkProperSep P (mkProperSep Spawned Tail))
-          (mkProperSep P (mkProperSep Tail Spawned))
+          ((P ∗ Spawned) ∗ Tail)
+          (P ∗ (Spawned ∗ Tail))
+          (P ∗ (Tail ∗ Spawned))
           (sep_assoc_l_ent P Spawned Tail)
-          (sep_mono_r_ent P (mkProperSep Spawned Tail)
-            (mkProperSep Tail Spawned) (sep_comm_ent Spawned Tail)))))
+          (sep_mono_r_ent P (Spawned ∗ Tail)
+            (Tail ∗ Spawned) (sep_comm_ent Spawned Tail)))))
 
 \lemma rebuild_wp_forks {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (Phi : Value -> iProp S)
     (e2 : Expr) (tail efs : ThreadPool) (sigma2 : State cnt)
     (futureObservations : List Observation)
-  : properUPred_ent
-      (mkProperSep
-        (mkProperSep (state_interp H sigma2 futureObservations)
-          (mkProperSep (wp H coPset_universe e2 Phi)
-            (wp_forks H.iris_fork_post (wp H) efs)))
-        (wp_forks H.iris_fork_post (wp H) tail))
-      (mkProperSep
-        (mkProperSep (wp H coPset_universe e2 Phi)
-          (wp_forks H.iris_fork_post (wp H) (tail ++ efs)))
+  : (((state_interp H sigma2 futureObservations) ∗
+          ((WP H coPset_universe e2 Phi) ∗
+            (wp_forks H.iris_fork_post (wp H) efs))) ∗
+        (wp_forks H.iris_fork_post (wp H) tail)) ⊢
+      (((WP H coPset_universe e2 Phi) ∗
+          (wp_forks H.iris_fork_post (wp H) (tail ++ efs))) ∗
         (state_interp H sigma2 futureObservations)) =>
   \let
-    | WP2 => wp H coPset_universe e2 Phi
+    | WP2 => WP H coPset_universe e2 Phi
     | Tail => wp_forks H.iris_fork_post (wp H) tail
     | Spawned => wp_forks H.iris_fork_post (wp H) efs
     | State2 => state_interp H sigma2 futureObservations
-    | combine : properUPred_ent (mkProperSep Tail Spawned)
+    | combine : (Tail ∗ Spawned) ⊢
         (wp_forks H.iris_fork_post (wp H) (tail ++ efs)) =>
         big_sepL_append_2
-          (\lam ef => wp H coPset_universe ef H.iris_fork_post)
+          (\lam ef => WP H coPset_universe ef H.iris_fork_post)
           tail efs
   \in properUPred_ent_trans
-      (mkProperSep (mkProperSep State2 (mkProperSep WP2 Spawned)) Tail)
-      (mkProperSep (mkProperSep WP2 (mkProperSep Tail Spawned)) State2)
-      (mkProperSep
-        (mkProperSep WP2
-          (wp_forks H.iris_fork_post (wp H) (tail ++ efs))) State2)
+      ((State2 ∗ (WP2 ∗ Spawned)) ∗ Tail)
+      ((WP2 ∗ (Tail ∗ Spawned)) ∗ State2)
+      ((WP2 ∗
+          (wp_forks H.iris_fork_post (wp H) (tail ++ efs))) ∗ State2)
       (rebuild_stepped_pool State2 WP2 Spawned Tail)
       (sep_mono_l_ent
-        (mkProperSep WP2 (mkProperSep Tail Spawned))
-        (mkProperSep WP2
+        (WP2 ∗ (Tail ∗ Spawned))
+        (WP2 ∗
           (wp_forks H.iris_fork_post (wp H) (tail ++ efs))) State2
-        (sep_mono_r_ent WP2 (mkProperSep Tail Spawned)
+        (sep_mono_r_ent WP2 (Tail ∗ Spawned)
           (wp_forks H.iris_fork_post (wp H) (tail ++ efs)) combine))
 
 \lemma wp_thread_pool_step {cnt : Countable Loc} {S : gFunctors}
@@ -413,25 +477,24 @@
     (tp1 tp2 : ThreadPool) (sigma1 sigma2 : State cnt)
     (observations futureObservations : List Observation)
     (step : ThreadStep tp1 sigma1 tp2 sigma2 observations)
-  : properUPred_ent
-      (mkProperSep (wp_thread_pool H Phi tp1)
-        (state_interp H sigma1 (observations ++ futureObservations)))
+  : ((wp_thread_pool H Phi tp1) ∗
+        (state_interp H sigma1 (observations ++ futureObservations))) ⊢
       (wp_step_iter H coPset_universe 1
-        (mkProperSep (wp_thread_pool H Phi tp2)
+        ((wp_thread_pool H Phi tp2) ∗
           (state_interp H sigma2 futureObservations))) \elim step
   | ThreadStepHere e1 e2 tail efs p1 p2 head => rewrite p1 $ rewrite p2 $
       \let
-        | WP1 => wp H coPset_universe e1 Phi
+        | WP1 => WP H coPset_universe e1 Phi
         | ForkTail => wp_forks H.iris_fork_post (wp H) tail
-        | Source => mkProperSep (mkProperSep WP1 ForkTail)
+        | Source => (WP1 ∗ ForkTail) ∗
             (state_interp H sigma1 (observations ++ futureObservations))
-        | Body => mkProperSep (state_interp H sigma2 futureObservations)
-            (mkProperSep (wp H coPset_universe e2 Phi)
+        | Body => (state_interp H sigma2 futureObservations) ∗
+            ((WP H coPset_universe e2 Phi) ∗
               (wp_forks H.iris_fork_post (wp H) efs))
         | selected => select_head_state WP1 ForkTail
             (state_interp H sigma1 (observations ++ futureObservations))
         | stepped => sep_mono_l_ent
-            (mkProperSep WP1
+            (WP1 ∗
               (state_interp H sigma1
                 (observations ++ futureObservations)))
             (wp_step_result H coPset_universe e2 Phi sigma2 efs
@@ -443,54 +506,43 @@
         | rebuilt => rebuild_wp_forks H Phi e2 tail efs sigma2
             futureObservations
       \in properUPred_ent_trans Source
-          (mkProperSep
-            (wp_step_result H coPset_universe e2 Phi sigma2 efs) ForkTail)
+          ((wp_step_result H coPset_universe e2 Phi sigma2 efs
+              futureObservations) ∗ ForkTail)
           (wp_step_iter H coPset_universe 1
-            (mkProperSep
-              (wp_thread_pool H Phi ((e2 :: tail) ++ efs))
+            ((wp_thread_pool H Phi ((e2 :: tail) ++ efs)) ∗
               (state_interp H sigma2 futureObservations)))
           (properUPred_ent_trans Source
-            (mkProperSep
-              (mkProperSep WP1
+            ((WP1 ∗
                 (state_interp H sigma1
-                  (observations ++ futureObservations))) ForkTail)
-            (mkProperSep
-              (wp_step_result H coPset_universe e2 Phi sigma2 efs
-                futureObservations) ForkTail)
+                  (observations ++ futureObservations))) ∗ ForkTail)
+            ((wp_step_result H coPset_universe e2 Phi sigma2 efs
+                futureObservations) ∗ ForkTail)
             selected stepped)
           (properUPred_ent_trans
-            (mkProperSep
-              (wp_step_result H coPset_universe e2 Phi sigma2 efs
-                futureObservations) ForkTail)
-            (wp_step_iter H coPset_universe 1 (mkProperSep Body ForkTail))
+            ((wp_step_result H coPset_universe e2 Phi sigma2 efs
+                futureObservations) ∗ ForkTail)
+            (wp_step_iter H coPset_universe 1 (Body ∗ ForkTail))
             (wp_step_iter H coPset_universe 1
-              (mkProperSep
-                (wp_thread_pool H Phi ((e2 :: tail) ++ efs))
+              ((wp_thread_pool H Phi ((e2 :: tail) ++ efs)) ∗
                 (state_interp H sigma2 futureObservations)))
             framed
             (wp_step_iter_mono H coPset_universe 1
-              (mkProperSep Body ForkTail)
-              (mkProperSep
-                (wp_thread_pool H Phi ((e2 :: tail) ++ efs))
+              (Body ∗ ForkTail)
+              ((wp_thread_pool H Phi ((e2 :: tail) ++ efs)) ∗
                 (state_interp H sigma2 futureObservations)) rebuilt))
   | ThreadStepThere e tail1 tail2 p1 p2 tailStep => rewrite p1 $ rewrite p2 $
       \let
-        | Main => wp H coPset_universe e Phi
-        | Tail1 => mkProperSep
-            (wp_forks H.iris_fork_post (wp H) tail1)
+        | Main => WP H coPset_universe e Phi
+        | Tail1 => (wp_forks H.iris_fork_post (wp H) tail1) ∗
             (state_interp H sigma1
               (observations ++ futureObservations))
-        | Tail2 => mkProperSep
-            (wp_forks H.iris_fork_post (wp H) tail2)
+        | Tail2 => (wp_forks H.iris_fork_post (wp H) tail2) ∗
             (state_interp H sigma2 futureObservations)
-        | tailPreserved : properUPred_ent
-            (mkProperSep
-              (wp_forks H.iris_fork_post (wp H) tail1)
+        | tailPreserved : ((wp_forks H.iris_fork_post (wp H) tail1) ∗
               (state_interp H sigma1
-                (observations ++ futureObservations)))
+                (observations ++ futureObservations))) ⊢
             (wp_step_iter H coPset_universe 1
-              (mkProperSep
-                (wp_forks H.iris_fork_post (wp H) tail2)
+              ((wp_forks H.iris_fork_post (wp H) tail2) ∗
                 (state_interp H sigma2 futureObservations))) =>
             rewriteI (wp_thread_pool_forks H tail1) $
             rewriteI (wp_thread_pool_forks H tail2) $
@@ -498,43 +550,39 @@
                 tail1 tail2 sigma1 sigma2 observations
                 futureObservations tailStep
       \in properUPred_ent_trans
-          (mkProperSep (mkProperSep Main
-            (wp_forks H.iris_fork_post (wp H) tail1))
+          ((Main ∗
+            (wp_forks H.iris_fork_post (wp H) tail1)) ∗
             (state_interp H sigma1
               (observations ++ futureObservations)))
-          (mkProperSep Main Tail1)
+          (Main ∗ Tail1)
           (wp_step_iter H coPset_universe 1
-            (mkProperSep
-              (wp_thread_pool H Phi (e :: tail2))
+            ((wp_thread_pool H Phi (e :: tail2)) ∗
               (state_interp H sigma2 futureObservations)))
           (sep_assoc_l_ent Main
             (wp_forks H.iris_fork_post (wp H) tail1)
             (state_interp H sigma1
               (observations ++ futureObservations)))
           (properUPred_ent_trans
-            (mkProperSep Main Tail1)
-            (mkProperSep Main
+            (Main ∗ Tail1)
+            (Main ∗
               (wp_step_iter H coPset_universe 1 Tail2))
             (wp_step_iter H coPset_universe 1
-              (mkProperSep
-                (wp_thread_pool H Phi (e :: tail2))
+              ((wp_thread_pool H Phi (e :: tail2)) ∗
                 (state_interp H sigma2 futureObservations)))
             (sep_mono_r_ent Main Tail1
               (wp_step_iter H coPset_universe 1 Tail2) tailPreserved)
             (properUPred_ent_trans
-              (mkProperSep Main
+              (Main ∗
                 (wp_step_iter H coPset_universe 1 Tail2))
               (wp_step_iter H coPset_universe 1
-                (mkProperSep Main Tail2))
+                (Main ∗ Tail2))
               (wp_step_iter H coPset_universe 1
-                (mkProperSep
-                  (wp_thread_pool H Phi (e :: tail2))
+                ((wp_thread_pool H Phi (e :: tail2)) ∗
                   (state_interp H sigma2 futureObservations)))
               (wp_step_iter_one_frame_l H coPset_universe Main Tail2)
               (wp_step_iter_mono H coPset_universe 1
-                (mkProperSep Main Tail2)
-                (mkProperSep
-                  (wp_thread_pool H Phi (e :: tail2))
+                (Main ∗ Tail2)
+                ((wp_thread_pool H Phi (e :: tail2)) ∗
                   (state_interp H sigma2 futureObservations))
                 (sep_assoc_r_ent Main
                   (wp_forks H.iris_fork_post (wp H) tail2)
@@ -545,41 +593,39 @@
     (tp1 tp2 : ThreadPool) (sigma1 sigma2 : State cnt)
     (observations futureObservations : List Observation)
     (steps : ThreadSteps k tp1 sigma1 tp2 sigma2 observations)
-  : properUPred_ent
-      (mkProperSep (wp_thread_pool H Phi tp1)
-        (state_interp H sigma1 (observations ++ futureObservations)))
+  : ((wp_thread_pool H Phi tp1) ∗
+        (state_interp H sigma1 (observations ++ futureObservations))) ⊢
       (wp_step_iter H coPset_universe k
-        (mkProperSep (wp_thread_pool H Phi tp2)
+        ((wp_thread_pool H Phi tp2) ∗
           (state_interp H sigma2 futureObservations))) \elim k, steps
   | 0, ThreadStepsRefl ptp ps pobs => rewrite pobs $
       rewrite ptp $ rewrite ps $
       properUPred_ent_refl
-        (mkProperSep (wp_thread_pool H Phi tp2)
+        ((wp_thread_pool H Phi tp2) ∗
           (state_interp H sigma2 futureObservations))
   | suc k', ThreadStepsStep tpMid sigmaMid
       headObservations tailObservations head tail pobs => rewrite pobs $
       rewrite (++-assoc {Observation} {headObservations}
         {tailObservations} {futureObservations}) $
       \let
-        | Mid => mkProperSep (wp_thread_pool H Phi tpMid)
+        | Mid => (wp_thread_pool H Phi tpMid) ∗
             (state_interp H sigmaMid
               (tailObservations ++ futureObservations))
-        | Final => mkProperSep (wp_thread_pool H Phi tp2)
+        | Final => (wp_thread_pool H Phi tp2) ∗
             (state_interp H sigma2 futureObservations)
-        | first : properUPred_ent
-            (mkProperSep (wp_thread_pool H Phi tp1)
+        | first : ((wp_thread_pool H Phi tp1) ∗
               (state_interp H sigma1
                 (headObservations ++
-                  (tailObservations ++ futureObservations))))
+                  (tailObservations ++ futureObservations)))) ⊢
             (wp_step_iter H coPset_universe 1 Mid) =>
             wp_thread_pool_step H Phi tp1 tpMid sigma1 sigmaMid
               headObservations (tailObservations ++ futureObservations) head
-        | rest : properUPred_ent Mid
+        | rest : Mid ⊢
             (wp_step_iter H coPset_universe k' Final) =>
             wp_thread_pool_preservation H Phi k' tpMid tp2
               sigmaMid sigma2 tailObservations futureObservations tail
       \in properUPred_ent_trans
-          (mkProperSep (wp_thread_pool H Phi tp1)
+          ((wp_thread_pool H Phi tp1) ∗
             (state_interp H sigma1
               (headObservations ++
                 (tailObservations ++ futureObservations))))
@@ -598,68 +644,70 @@
     (sigma sigma' : State cnt) (observations : List Observation)
     (steps : ThreadSteps k (e :: nil) sigma
       ((Val v) :: tail) sigma' observations)
-  : properUPred_ent
-      (mkProperSep (wp_thread_pool H Phi (e :: nil))
-        (state_interp H sigma observations))
+  : ((wp_thread_pool H Phi (e :: nil)) ∗
+        (state_interp H sigma observations)) ⊢
       (wp_step_iter H coPset_universe k
         (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
           (Phi v))) =>
   properUPred_ent_trans
-    (mkProperSep (wp_thread_pool H Phi (e :: nil))
+    ((wp_thread_pool H Phi (e :: nil)) ∗
       (state_interp H sigma observations))
     (wp_step_iter H coPset_universe k
-      (mkProperSep (wp_thread_pool H Phi ((Val v) :: tail))
+      ((wp_thread_pool H Phi ((Val v) :: tail)) ∗
         (state_interp H sigma' nil)))
     (wp_step_iter H coPset_universe k
       (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
         (Phi v)))
-    (wp_thread_pool_preservation H Phi k (e :: nil) ((Val v) :: tail)
-      sigma sigma' observations nil steps)
+    (transport (\lam obs => ((wp_thread_pool H Phi (e :: nil)) ∗
+          (state_interp H sigma obs)) ⊢
+        (wp_step_iter H coPset_universe k
+          ((wp_thread_pool H Phi ((Val v) :: tail)) ∗
+            (state_interp H sigma' nil)))) ++_nil
+      (wp_thread_pool_preservation H Phi k (e :: nil) ((Val v) :: tail)
+        sigma sigma' observations nil steps))
     (wp_step_iter_mono H coPset_universe k
-      (mkProperSep (wp_thread_pool H Phi ((Val v) :: tail))
+      ((wp_thread_pool H Phi ((Val v) :: tail)) ∗
         (state_interp H sigma' nil))
       (mkProperFUpd H.iris_wsat coPset_universe coPset_universe (Phi v))
       (properUPred_ent_trans
-        (mkProperSep
-          (mkProperSep (wp H coPset_universe (Val v) Phi)
-            (wp_forks H.iris_fork_post (wp H) tail))
+        (((WP H coPset_universe (Val v) Phi) ∗
+            (wp_forks H.iris_fork_post (wp H) tail)) ∗
           (state_interp H sigma' nil))
-        (wp H coPset_universe (Val v) Phi)
+        (WP H coPset_universe (Val v) Phi)
         (mkProperFUpd H.iris_wsat coPset_universe coPset_universe (Phi v))
         (properUPred_ent_trans
-          (mkProperSep
-            (mkProperSep (wp H coPset_universe (Val v) Phi)
-              (wp_forks H.iris_fork_post (wp H) tail))
+          (((WP H coPset_universe (Val v) Phi) ∗
+              (wp_forks H.iris_fork_post (wp H) tail)) ∗
             (state_interp H sigma' nil))
-          (mkProperSep (wp H coPset_universe (Val v) Phi)
+          ((WP H coPset_universe (Val v) Phi) ∗
             (wp_forks H.iris_fork_post (wp H) tail))
-          (wp H coPset_universe (Val v) Phi)
+          (WP H coPset_universe (Val v) Phi)
           (sep_elim_l_ent
-            (mkProperSep (wp H coPset_universe (Val v) Phi)
+            ((WP H coPset_universe (Val v) Phi) ∗
               (wp_forks H.iris_fork_post (wp H) tail))
             (state_interp H sigma' nil))
-          (sep_elim_l_ent (wp H coPset_universe (Val v) Phi)
+          (sep_elim_l_ent (WP H coPset_universe (Val v) Phi)
             (wp_forks H.iris_fork_post (wp H) tail)))
         (wp_value_elim H coPset_universe v Phi)))
 
 \lemma wp_forks_member {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (e : Expr) (tp : ThreadPool)
     (member : ThreadIn e tp)
-  : properUPred_ent (wp_forks H.iris_fork_post (wp H) tp)
-      (wp H coPset_universe e H.iris_fork_post) \elim tp
+  : (wp_forks H.iris_fork_post (wp H) tp) ⊢
+      (WP H coPset_universe e H.iris_fork_post) \elim tp
   | nil => absurd member
   | :: head tail => \case member \with {
       | byLeft p => rewriteI p $
           sep_elim_l_ent
-            (wp H coPset_universe head H.iris_fork_post)
+            (WP H coPset_universe head H.iris_fork_post)
             (wp_forks H.iris_fork_post (wp H) tail)
       | byRight m => properUPred_ent_trans
-          (mkProperSep (wp H coPset_universe head H.iris_fork_post)
+          ((WP H coPset_universe head H.iris_fork_post) ∗
             (wp_forks H.iris_fork_post (wp H) tail))
           (wp_forks H.iris_fork_post (wp H) tail)
-          (wp H coPset_universe e H.iris_fork_post)
+          (WP H coPset_universe e H.iris_fork_post)
           (sep_elim_r_ent
-            (wp H coPset_universe head H.iris_fork_post)
+            (WP H coPset_universe head H.iris_fork_post)
             (wp_forks H.iris_fork_post (wp H) tail))
           (wp_forks_member H e tail m)
     }
@@ -669,88 +717,87 @@
     (tp : ThreadPool) (sigma : State cnt) (e : Expr)
     (observations : List Observation)
     (member : ThreadIn e tp) (notVal : to_val e = nothing)
-  : properUPred_ent
-      (mkProperSep (wp_thread_pool H Phi tp) (state_interp H sigma observations))
+  : ((wp_thread_pool H Phi tp) ∗ (state_interp H sigma observations)) ⊢
       (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
         (mkProperPure (Reducible e sigma))) \elim tp
   | nil => absurd member
   | :: main tail => \case member \with {
       | byLeft p => rewrite p $
           properUPred_ent_trans
-            (mkProperSep
-              (mkProperSep (wp H coPset_universe e Phi)
-                (wp_forks H.iris_fork_post (wp H) tail))
+            (((WP H coPset_universe e Phi) ∗
+                (wp_forks H.iris_fork_post (wp H) tail)) ∗
               (state_interp H sigma observations))
-            (mkProperSep (wp H coPset_universe e Phi)
+            ((WP H coPset_universe e Phi) ∗
               (state_interp H sigma observations))
             (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
               (mkProperPure (Reducible e sigma)))
             (properUPred_ent_trans
-              (mkProperSep
-                (mkProperSep (wp H coPset_universe e Phi)
-                  (wp_forks H.iris_fork_post (wp H) tail))
+              (((WP H coPset_universe e Phi) ∗
+                  (wp_forks H.iris_fork_post (wp H) tail)) ∗
                 (state_interp H sigma observations))
-              (mkProperSep (wp H coPset_universe e Phi)
-                (mkProperSep
-                  (wp_forks H.iris_fork_post (wp H) tail)
+              ((WP H coPset_universe e Phi) ∗
+                ((wp_forks H.iris_fork_post (wp H) tail) ∗
                   (state_interp H sigma observations)))
-              (mkProperSep (wp H coPset_universe e Phi)
+              ((WP H coPset_universe e Phi) ∗
                 (state_interp H sigma observations))
-              (sep_assoc_l_ent (wp H coPset_universe e Phi)
+              (sep_assoc_l_ent (WP H coPset_universe e Phi)
                 (wp_forks H.iris_fork_post (wp H) tail)
                 (state_interp H sigma observations))
-              (sep_mono_r_ent (wp H coPset_universe e Phi)
-                (mkProperSep (wp_forks H.iris_fork_post (wp H) tail)
+              (sep_mono_r_ent (WP H coPset_universe e Phi)
+                ((wp_forks H.iris_fork_post (wp H) tail) ∗
                   (state_interp H sigma observations))
                 (state_interp H sigma observations)
                 (sep_elim_r_ent
                   (wp_forks H.iris_fork_post (wp H) tail)
                   (state_interp H sigma observations))))
-            (wp_reducible H coPset_universe e Phi sigma
-              observations nil notVal)
+            (transport (\lam obs => ((WP H coPset_universe e Phi) ∗
+                  (state_interp H sigma obs)) ⊢
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+                  (mkProperPure (Reducible e sigma)))) ++_nil
+              (wp_reducible H coPset_universe e Phi sigma
+                observations nil notVal))
       | byRight m =>
           properUPred_ent_trans
-            (mkProperSep
-              (mkProperSep (wp H coPset_universe main Phi)
-                (wp_forks H.iris_fork_post (wp H) tail))
+            (((WP H coPset_universe main Phi) ∗
+                (wp_forks H.iris_fork_post (wp H) tail)) ∗
               (state_interp H sigma observations))
-            (mkProperSep
-              (wp H coPset_universe e H.iris_fork_post)
+            ((WP H coPset_universe e H.iris_fork_post) ∗
               (state_interp H sigma observations))
             (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
               (mkProperPure (Reducible e sigma)))
             (properUPred_ent_trans
-              (mkProperSep
-                (mkProperSep (wp H coPset_universe main Phi)
-                  (wp_forks H.iris_fork_post (wp H) tail))
+              (((WP H coPset_universe main Phi) ∗
+                  (wp_forks H.iris_fork_post (wp H) tail)) ∗
                 (state_interp H sigma observations))
-              (mkProperSep (wp_forks H.iris_fork_post (wp H) tail)
+              ((wp_forks H.iris_fork_post (wp H) tail) ∗
                 (state_interp H sigma observations))
-              (mkProperSep
-                (wp H coPset_universe e H.iris_fork_post)
+              ((WP H coPset_universe e H.iris_fork_post) ∗
                 (state_interp H sigma observations))
               (properUPred_ent_trans
-                (mkProperSep
-                  (mkProperSep (wp H coPset_universe main Phi)
-                    (wp_forks H.iris_fork_post (wp H) tail))
+                (((WP H coPset_universe main Phi) ∗
+                    (wp_forks H.iris_fork_post (wp H) tail)) ∗
                   (state_interp H sigma observations))
-                (mkProperSep (wp H coPset_universe main Phi)
-                  (mkProperSep (wp_forks H.iris_fork_post (wp H) tail)
+                ((WP H coPset_universe main Phi) ∗
+                  ((wp_forks H.iris_fork_post (wp H) tail) ∗
                     (state_interp H sigma observations)))
-                (mkProperSep (wp_forks H.iris_fork_post (wp H) tail)
+                ((wp_forks H.iris_fork_post (wp H) tail) ∗
                   (state_interp H sigma observations))
-                (sep_assoc_l_ent (wp H coPset_universe main Phi)
+                (sep_assoc_l_ent (WP H coPset_universe main Phi)
                   (wp_forks H.iris_fork_post (wp H) tail)
                   (state_interp H sigma observations))
-                (sep_elim_r_ent (wp H coPset_universe main Phi)
-                  (mkProperSep (wp_forks H.iris_fork_post (wp H) tail)
+                (sep_elim_r_ent (WP H coPset_universe main Phi)
+                  ((wp_forks H.iris_fork_post (wp H) tail) ∗
                     (state_interp H sigma observations))))
               (sep_mono_l_ent
                 (wp_forks H.iris_fork_post (wp H) tail)
-                (wp H coPset_universe e H.iris_fork_post)
+                (WP H coPset_universe e H.iris_fork_post)
                 (state_interp H sigma observations) (wp_forks_member H e tail m)))
-            (wp_reducible H coPset_universe e H.iris_fork_post sigma
-              observations nil notVal)
+            (transport (\lam obs => ((WP H coPset_universe e H.iris_fork_post) ∗
+                  (state_interp H sigma obs)) ⊢
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+                  (mkProperPure (Reducible e sigma)))) ++_nil
+              (wp_reducible H coPset_universe e H.iris_fork_post sigma
+                observations nil notVal))
     }
 
 \lemma wp_thread_steps_reducible {cnt : Countable Loc} {S : gFunctors}
@@ -759,25 +806,29 @@
     (sigma sigma' : State cnt) (observations : List Observation)
     (steps : ThreadSteps k (e :: nil) sigma tp sigma' observations)
     (member : ThreadIn e' tp) (notVal : to_val e' = nothing)
-  : properUPred_ent
-      (mkProperSep (wp_thread_pool H Phi (e :: nil))
-        (state_interp H sigma observations))
+  : ((wp_thread_pool H Phi (e :: nil)) ∗
+        (state_interp H sigma observations)) ⊢
       (wp_step_iter H coPset_universe k
         (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
           (mkProperPure (Reducible e' sigma')))) =>
   properUPred_ent_trans
-    (mkProperSep (wp_thread_pool H Phi (e :: nil))
+    ((wp_thread_pool H Phi (e :: nil)) ∗
       (state_interp H sigma observations))
     (wp_step_iter H coPset_universe k
-      (mkProperSep (wp_thread_pool H Phi tp)
+      ((wp_thread_pool H Phi tp) ∗
         (state_interp H sigma' nil)))
     (wp_step_iter H coPset_universe k
       (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
         (mkProperPure (Reducible e' sigma'))))
-    (wp_thread_pool_preservation H Phi k (e :: nil) tp sigma sigma'
-      observations nil steps)
+    (transport (\lam obs => ((wp_thread_pool H Phi (e :: nil)) ∗
+          (state_interp H sigma obs)) ⊢
+        (wp_step_iter H coPset_universe k
+          ((wp_thread_pool H Phi tp) ∗
+            (state_interp H sigma' nil)))) ++_nil
+      (wp_thread_pool_preservation H Phi k (e :: nil) tp sigma sigma'
+        observations nil steps))
     (wp_step_iter_mono H coPset_universe k
-      (mkProperSep (wp_thread_pool H Phi tp)
+      ((wp_thread_pool H Phi tp) ∗
         (state_interp H sigma' nil))
       (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
         (mkProperPure (Reducible e' sigma')))
@@ -796,11 +847,11 @@
 -- =================================================================================
 
 \func world {S : gFunctors} (W : wsatGS S) (E : coPset) : iProp S =>
-  mkProperSep (wsat W) (ownE W E)
+  (wsat W) ∗ (ownE W E)
 
 \lemma except_zero_positive {M : UCMRA} (P : ProperUPred M)
     (n : Nat) (a : M.E)
-  : (mkProperExceptZero P).upred_holds (suc n) a -> P.upred_holds (suc n) a =>
+  : (<except_0> P).upred_holds (suc n) a -> P.upred_holds (suc n) a =>
   \lam h => \case h \with {
     | byLeft impossible => absurd impossible
     | byRight hp => hp
@@ -816,12 +867,12 @@
 \lemma fupd_elim_with_world {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (P : iProp S) (n : Nat) (a : (iResUR S).E)
     (ha : (iResUR S).validN n a)
-    (h : (mkProperSep (mkProperFUpd W E1 E2 P) (world W E1))
+    (h : ((mkProperFUpd W E1 E2 P) ∗ (world W E1))
       .upred_holds n a)
   : TruncP (\Sigma (a' : (iResUR S).E)
       ((iResUR S).validN n a')
-      ((mkProperExceptZero
-        (mkProperSep (wsat W) (mkProperSep (ownE W E2) P)))
+      ((<except_0>
+        ((wsat W) ∗ ((ownE W E2) ∗ P)))
         .upred_holds n a')) =>
   \case h \with {
     | inP (af, aw, da, hf, hw) =>
@@ -829,9 +880,9 @@
         | M => iResUR S
         | hafw : M.validN n (M.op af aw) =>
             M.cmra_validN_ne n a (M.op af aw) da ha
-        | hb : (mkProperBUpd
-            (mkProperExceptZero
-              (mkProperSep (wsat W) (mkProperSep (ownE W E2) P))))
+        | hb : (|==>
+            (<except_0>
+              ((wsat W) ∗ ((ownE W E2) ∗ P))))
             .upred_holds n (M.op af aw) =>
             hf n <=-refl aw hafw hw
         | hafwu : M.validN n (M.op (M.op af aw) M.unit) =>
@@ -848,13 +899,12 @@
 \lemma wp_step_iter_pure_soundness_zero {cnt : Countable Loc}
     {S : gFunctors} (H : irisGS cnt S) (E1 E2 : coPset)
     (phi : \Prop) (a : (iResUR S).E) (ha : (iResUR S).validN 1 a)
-    (h : (mkProperSep (world H.iris_wsat E1)
+    (h : ((world H.iris_wsat E1) ∗
       (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi)))
       .upred_holds 1 a)
   : phi =>
   \let
-    | reordered : (mkProperSep
-        (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi))
+    | reordered : ((mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi)) ∗
         (world H.iris_wsat E1)).upred_holds 1 a =>
         sep_comm_ent (world H.iris_wsat E1)
           (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi)) 1 a ha h
@@ -866,8 +916,8 @@
         | a' => opened0.1
         | hex => opened0.3
         | hbody => except_zero_positive
-            (mkProperSep (wsat H.iris_wsat)
-              (mkProperSep (ownE H.iris_wsat E2) (mkProperPure phi)))
+            ((wsat H.iris_wsat) ∗
+              ((ownE H.iris_wsat E2) ∗ (mkProperPure phi)))
             0 a' hex
       \in \case hbody \with {
         | inP (_, _, _, _, htail) => \case htail \with {
@@ -880,12 +930,12 @@
     {S : gFunctors} (H : irisGS cnt S) (E1 E2 : coPset)
     (k : Nat) (phi : \Prop) (a : (iResUR S).E)
     (ha : (iResUR S).validN (suc (suc k)) a)
-    (h : (mkProperSep (world H.iris_wsat E1)
+    (h : ((world H.iris_wsat E1) ∗
       (wp_step_iter H E1 (suc k)
         (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi))))
       .upred_holds (suc (suc k)) a)
     (ih : \Pi (a' : (iResUR S).E) -> (iResUR S).validN (suc k) a' ->
-      (mkProperSep (world H.iris_wsat E1)
+      ((world H.iris_wsat E1) ∗
         (wp_step_iter H E1 k
           (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi))))
         .upred_holds (suc k) a' -> phi)
@@ -895,46 +945,44 @@
     | Tail => wp_step_iter H E1 k
         (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi))
     | Inner => mkProperFUpd H.iris_wsat coPset_empty E1 Tail
-    | reordered : (mkProperSep
-        (mkProperFUpd H.iris_wsat E1 coPset_empty (mkProperLater Inner))
+    | reordered : ((mkProperFUpd H.iris_wsat E1 coPset_empty (|> Inner)) ∗
         (world H.iris_wsat E1)).upred_holds (suc (suc k)) a =>
         sep_comm_ent (world H.iris_wsat E1)
-          (mkProperFUpd H.iris_wsat E1 coPset_empty (mkProperLater Inner))
+          (mkProperFUpd H.iris_wsat E1 coPset_empty (|> Inner))
           (suc (suc k)) a ha h
   \in truncP_elim_prop
     (fupd_elim_with_world H.iris_wsat E1 coPset_empty
-      (mkProperLater Inner) (suc (suc k)) a ha reordered)
+      (|> Inner) (suc (suc k)) a ha reordered)
     (\lam opened1 =>
       \let
         | a1 => opened1.1
         | ha1 => opened1.2
         | hex1 => opened1.3
-        | body1 => mkProperSep (wsat H.iris_wsat)
-            (mkProperSep (ownE H.iris_wsat coPset_empty)
-              (mkProperLater Inner))
+        | body1 => (wsat H.iris_wsat) ∗
+            ((ownE H.iris_wsat coPset_empty) ∗
+              (|> Inner))
         | hbody1 : body1.upred_holds (suc (suc k)) a1 =>
             except_zero_positive body1 (suc k) a1 hex1
-        | groupedLater : (mkProperLater
-            (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+        | groupedLater : (|>
+            ((world H.iris_wsat coPset_empty) ∗ Inner))
             .upred_holds (suc (suc k)) a1 =>
             properUPred_ent_trans body1
-              (mkProperSep (world H.iris_wsat coPset_empty)
-                (mkProperLater Inner))
-              (mkProperLater
-                (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+              ((world H.iris_wsat coPset_empty) ∗
+                (|> Inner))
+              (|>
+                ((world H.iris_wsat coPset_empty) ∗ Inner))
               (sep_assoc_r_ent (wsat H.iris_wsat)
-                (ownE H.iris_wsat coPset_empty) (mkProperLater Inner))
+                (ownE H.iris_wsat coPset_empty) (|> Inner))
               (properUPred_ent_trans
-                (mkProperSep (world H.iris_wsat coPset_empty)
-                  (mkProperLater Inner))
-                (mkProperSep
-                  (mkProperLater (world H.iris_wsat coPset_empty))
-                  (mkProperLater Inner))
-                (mkProperLater
-                  (mkProperSep (world H.iris_wsat coPset_empty) Inner))
+                ((world H.iris_wsat coPset_empty) ∗
+                  (|> Inner))
+                ((|> (world H.iris_wsat coPset_empty)) ∗
+                  (|> Inner))
+                (|>
+                  ((world H.iris_wsat coPset_empty) ∗ Inner))
                 (sep_mono_l_ent (world H.iris_wsat coPset_empty)
-                  (mkProperLater (world H.iris_wsat coPset_empty))
-                  (mkProperLater Inner)
+                  (|> (world H.iris_wsat coPset_empty))
+                  (|> Inner)
                   (proper_later_intro (world H.iris_wsat coPset_empty)))
                 (proper_later_sep_2
                   (world H.iris_wsat coPset_empty) Inner))
@@ -942,10 +990,9 @@
         | ha1' : M.validN (suc k) a1 =>
             M.cmra_validN_le (suc (suc k)) (suc k) a1 ha1
               (suc<=suc (id<=suc {k}))
-        | hworldInner : (mkProperSep
-            (world H.iris_wsat coPset_empty) Inner)
+        | hworldInner : ((world H.iris_wsat coPset_empty) ∗ Inner)
             .upred_holds (suc k) a1 => groupedLater
-        | reorderedInner : (mkProperSep Inner
+        | reorderedInner : (Inner ∗
             (world H.iris_wsat coPset_empty))
             .upred_holds (suc k) a1 =>
             sep_comm_ent (world H.iris_wsat coPset_empty) Inner
@@ -957,11 +1004,11 @@
             | a2 => opened2.1
             | ha2 => opened2.2
             | hex2 => opened2.3
-            | body2 => mkProperSep (wsat H.iris_wsat)
-                (mkProperSep (ownE H.iris_wsat E1) Tail)
+            | body2 => (wsat H.iris_wsat) ∗
+                ((ownE H.iris_wsat E1) ∗ Tail)
             | hbody2 : body2.upred_holds (suc k) a2 =>
                 except_zero_positive body2 k a2 hex2
-            | htail : (mkProperSep (world H.iris_wsat E1) Tail)
+            | htail : ((world H.iris_wsat E1) ∗ Tail)
                 .upred_holds (suc k) a2 =>
                 sep_assoc_r_ent (wsat H.iris_wsat)
                   (ownE H.iris_wsat E1) Tail (suc k) a2 ha2 hbody2
@@ -971,7 +1018,7 @@
     {S : gFunctors} (H : irisGS cnt S) (E1 E2 : coPset)
     (k : Nat) (phi : \Prop) (a : (iResUR S).E)
     (ha : (iResUR S).validN (suc k) a)
-    (h : (mkProperSep (world H.iris_wsat E1)
+    (h : ((world H.iris_wsat E1) ∗
       (wp_step_iter H E1 k
         (mkProperFUpd H.iris_wsat E1 E2 (mkProperPure phi))))
       .upred_holds (suc k) a)
@@ -986,13 +1033,12 @@
     (e : Expr) (Phi : Value -> iProp S)
     (sigma : State cnt) (observations : List Observation)
     (k : Nat) (E2 : coPset) (phi : \Prop)
-    (hinit : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist1 (irisGS cnt S)
+    (hinit : mkProperEmp ⊢
+      (|==> (mkProperExist1 (irisGS cnt S)
         (\lam H => init_resources H sigma observations))))
-    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
-      (wp H coPset_universe e Phi))
-    (run : \Pi (H : irisGS cnt S) -> properUPred_ent
-      (mkProperSep (wp H coPset_universe e Phi) (state_interp H sigma observations))
+    (hwp : \Pi (H : irisGS cnt S) -> mkProperEmp ⊢
+      (WP H coPset_universe e Phi))
+    (run : \Pi (H : irisGS cnt S) -> ((WP H coPset_universe e Phi) ∗ (state_interp H sigma observations)) ⊢
       (wp_step_iter H coPset_universe k
         (mkProperFUpd H.iris_wsat coPset_universe E2
           (mkProperPure phi))))
@@ -1007,7 +1053,7 @@
         inP (M.unit,
           M.ofe_dist_sym (suc k) (M.op M.unit M.unit) M.unit
             (ucmra_unit_left_id_dist (suc k) M.unit))
-    | hb : (mkProperBUpd Init).upred_holds (suc k) M.unit =>
+    | hb : (|==> Init).upred_holds (suc k) M.unit =>
         hinit (suc k) M.unit hu hemp
     | huu : M.validN (suc k) (M.op M.unit M.unit) =>
         cmra_validN_proper {M} (suc k) M.unit (M.op M.unit M.unit)
@@ -1027,49 +1073,155 @@
           | ha : M.validN (suc k) a =>
               M.cmra_validN_op_l (suc k) a M.unit hau
           | World => world H.iris_wsat coPset_universe
-          | WPState => mkProperSep (wp H coPset_universe e Phi)
+          | WPState => (WP H coPset_universe e Phi) ∗
               (state_interp H sigma observations)
-          | withWP : properUPred_ent (init_resources H sigma observations)
-              (mkProperSep (init_resources H sigma observations)
-                (wp H coPset_universe e Phi)) =>
+          | withWP : (init_resources H sigma observations) ⊢
+              ((init_resources H sigma observations) ∗
+                (WP H coPset_universe e Phi)) =>
               properUPred_ent_trans (init_resources H sigma observations)
-                (mkProperSep (init_resources H sigma observations) mkProperEmp)
-                (mkProperSep (init_resources H sigma observations)
-                  (wp H coPset_universe e Phi))
+                ((init_resources H sigma observations) ∗ mkProperEmp)
+                ((init_resources H sigma observations) ∗
+                  (WP H coPset_universe e Phi))
                 (add_emp_r_ent (init_resources H sigma observations))
                 (sep_mono_r_ent (init_resources H sigma observations) mkProperEmp
-                  (wp H coPset_universe e Phi) (hwp H))
-          | Added => mkProperSep (init_resources H sigma observations)
-              (wp H coPset_universe e Phi)
-          | Associated => mkProperSep (state_interp H sigma observations)
-              (mkProperSep World (wp H coPset_universe e Phi))
-          | Swapped => mkProperSep World
-              (mkProperSep (state_interp H sigma observations)
-                (wp H coPset_universe e Phi))
-          | associate : properUPred_ent Added Associated =>
+                  (WP H coPset_universe e Phi) (hwp H))
+          | Added => (init_resources H sigma observations) ∗
+              (WP H coPset_universe e Phi)
+          | Associated => (state_interp H sigma observations) ∗
+              (World ∗ (WP H coPset_universe e Phi))
+          | Swapped => World ∗
+              ((state_interp H sigma observations) ∗
+                (WP H coPset_universe e Phi))
+          | associate : Added ⊢ Associated =>
               sep_assoc_l_ent (state_interp H sigma observations) World
-                (wp H coPset_universe e Phi)
-          | swap : properUPred_ent Associated Swapped =>
+                (WP H coPset_universe e Phi)
+          | swap : Associated ⊢ Swapped =>
               sep_swap_ent (state_interp H sigma observations) World
-                (wp H coPset_universe e Phi)
-          | finish : properUPred_ent Swapped (mkProperSep World WPState) =>
+                (WP H coPset_universe e Phi)
+          | finish : Swapped ⊢ (World ∗ WPState) =>
               sep_mono_r_ent World
-                (mkProperSep (state_interp H sigma observations)
-                  (wp H coPset_universe e Phi))
+                ((state_interp H sigma observations) ∗
+                  (WP H coPset_universe e Phi))
                 WPState
                 (sep_comm_ent (state_interp H sigma observations)
-                  (wp H coPset_universe e Phi))
-          | arranged : properUPred_ent (init_resources H sigma observations)
-              (mkProperSep World WPState) =>
+                  (WP H coPset_universe e Phi))
+          | arranged : (init_resources H sigma observations) ⊢
+              (World ∗ WPState) =>
               properUPred_ent_trans (init_resources H sigma observations) Added
-                (mkProperSep World WPState) withWP
+                (World ∗ WPState) withWP
                 (properUPred_ent_trans Added Associated
-                  (mkProperSep World WPState) associate
+                  (World ∗ WPState) associate
                   (properUPred_ent_trans Associated Swapped
-                    (mkProperSep World WPState) swap finish))
-          | hstart : (mkProperSep World WPState).upred_holds (suc k) a =>
+                    (World ∗ WPState) swap finish))
+          | hstart : (World ∗ WPState).upred_holds (suc k) a =>
               arranged (suc k) a ha hresources
-          | hclosed : (mkProperSep World
+          | hclosed : (World ∗
+              (wp_step_iter H coPset_universe k
+                (mkProperFUpd H.iris_wsat coPset_universe E2
+                  (mkProperPure phi))))
+              .upred_holds (suc k) a =>
+              sep_mono_r_ent World WPState
+                (wp_step_iter H coPset_universe k
+                  (mkProperFUpd H.iris_wsat coPset_universe E2
+                    (mkProperPure phi))) (run H)
+                (suc k) a ha hstart
+        \in wp_step_iter_pure_soundness H coPset_universe E2 k
+            phi a ha hclosed)
+
+-- Fork-aware counterpart of `wp_pure_soundness_from_init`.  The operational
+-- preservation argument is unchanged; only the initialized witness carries
+-- the proof required by clients of fork/join.
+\lemma wp_pure_soundness_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (Phi : Value -> iProp S)
+    (sigma : State cnt) (observations : List Observation)
+    (k : Nat) (E2 : coPset) (phi : \Prop)
+    (hinit : mkProperEmp ⊢
+      (|==>
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      mkProperEmp ⊢
+        (WP H coPset_universe e Phi))
+    (run : \Pi (H : irisGS cnt S) -> ((WP H coPset_universe e Phi) ∗
+        (state_interp H sigma observations)) ⊢
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe E2
+          (mkProperPure phi)))) : phi =>
+  \let
+    | M => iResUR S
+    | Init => mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations)
+    | hu : M.validN (suc k) M.unit =>
+        (M.cmra_valid_validN M.unit).1 M.ucmra_unit_valid (suc k)
+    | hemp : mkProperEmp.upred_holds (suc k) M.unit =>
+        inP (M.unit,
+          M.ofe_dist_sym (suc k) (M.op M.unit M.unit) M.unit
+            (ucmra_unit_left_id_dist (suc k) M.unit))
+    | hb : (|==> Init).upred_holds (suc k) M.unit =>
+        hinit (suc k) M.unit hu hemp
+    | huu : M.validN (suc k) (M.op M.unit M.unit) =>
+        cmra_validN_proper {M} (suc k) M.unit (M.op M.unit M.unit)
+          (M.equiv_sym (M.op M.unit M.unit) M.unit
+            (ucmra_unit_right_id M.unit)) hu
+  \in truncP_elim_prop
+    (hb (suc k) <=-refl M.unit huu)
+    \lam opened0 =>
+      \let
+        | a => opened0.1
+        | hau => opened0.2
+        | hex => opened0.3
+      \in truncP_elim_prop hex (\lam initialized =>
+        \let
+          | HF => initialized.1
+          | H => HF.1
+          | FPI => HF.2
+          | hresources => initialized.2
+          | ha : M.validN (suc k) a =>
+              M.cmra_validN_op_l (suc k) a M.unit hau
+          | World => world H.iris_wsat coPset_universe
+          | WPState => (WP H coPset_universe e Phi) ∗
+              (state_interp H sigma observations)
+          | withWP : (init_resources H sigma observations) ⊢
+              ((init_resources H sigma observations) ∗
+                (WP H coPset_universe e Phi)) =>
+              properUPred_ent_trans (init_resources H sigma observations)
+                ((init_resources H sigma observations) ∗ mkProperEmp)
+                ((init_resources H sigma observations) ∗
+                  (WP H coPset_universe e Phi))
+                (add_emp_r_ent (init_resources H sigma observations))
+                (sep_mono_r_ent (init_resources H sigma observations)
+                  mkProperEmp (WP H coPset_universe e Phi) (hwp H FPI))
+          | Added => (init_resources H sigma observations) ∗
+              (WP H coPset_universe e Phi)
+          | Associated => (state_interp H sigma observations) ∗
+              (World ∗ (WP H coPset_universe e Phi))
+          | Swapped => World ∗
+              ((state_interp H sigma observations) ∗
+                (WP H coPset_universe e Phi))
+          | associate : Added ⊢ Associated =>
+              sep_assoc_l_ent (state_interp H sigma observations) World
+                (WP H coPset_universe e Phi)
+          | swap : Associated ⊢ Swapped =>
+              sep_swap_ent (state_interp H sigma observations) World
+                (WP H coPset_universe e Phi)
+          | finish : Swapped ⊢
+              (World ∗ WPState) =>
+              sep_mono_r_ent World
+                ((state_interp H sigma observations) ∗
+                  (WP H coPset_universe e Phi)) WPState
+                (sep_comm_ent (state_interp H sigma observations)
+                  (WP H coPset_universe e Phi))
+          | arranged : (init_resources H sigma observations) ⊢
+              (World ∗ WPState) =>
+              properUPred_ent_trans (init_resources H sigma observations)
+                Added (World ∗ WPState) withWP
+                (properUPred_ent_trans Added Associated
+                  (World ∗ WPState) associate
+                  (properUPred_ent_trans Associated Swapped
+                    (World ∗ WPState) swap finish))
+          | hstart : (World ∗ WPState).upred_holds
+              (suc k) a => arranged (suc k) a ha hresources
+          | hclosed : (World ∗
               (wp_step_iter H coPset_universe k
                 (mkProperFUpd H.iris_wsat coPset_universe E2
                   (mkProperPure phi))))
@@ -1086,11 +1238,11 @@
     (e : Expr) (phi : Value -> \Prop)
     (sigma : State cnt) (k : Nat) (v : Value) (tail : ThreadPool)
     (sigma' : State cnt) (observations : List Observation)
-    (hinit : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist1 (irisGS cnt S)
+    (hinit : mkProperEmp ⊢
+      (|==> (mkProperExist1 (irisGS cnt S)
         (\lam H => init_resources H sigma observations))))
-    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
-      (wp H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (hwp : \Pi (H : irisGS cnt S) -> mkProperEmp ⊢
+      (WP H coPset_universe e (\lam w => mkProperPure (phi w))))
     (steps : ThreadSteps k (e :: nil) sigma
       ((Val v) :: tail) sigma' observations)
   : phi v =>
@@ -1098,16 +1250,16 @@
   \in wp_pure_soundness_from_init e Phi sigma observations k coPset_universe
     (phi v) hinit hwp
     (\lam H => properUPred_ent_trans
-      (mkProperSep (wp H coPset_universe e Phi) (state_interp H sigma observations))
-      (mkProperSep (wp_thread_pool H Phi (e :: nil))
+      ((WP H coPset_universe e Phi) ∗ (state_interp H sigma observations))
+      ((wp_thread_pool H Phi (e :: nil)) ∗
         (state_interp H sigma observations))
       (wp_step_iter H coPset_universe k
         (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
           (mkProperPure (phi v))))
-      (sep_mono_l_ent (wp H coPset_universe e Phi)
-        (mkProperSep (wp H coPset_universe e Phi) mkProperEmp)
+      (sep_mono_l_ent (WP H coPset_universe e Phi)
+        ((WP H coPset_universe e Phi) ∗ mkProperEmp)
         (state_interp H sigma observations)
-        (add_emp_r_ent (wp H coPset_universe e Phi)))
+        (add_emp_r_ent (WP H coPset_universe e Phi)))
       (wp_thread_steps_value H k e v tail Phi sigma sigma'
         observations steps))
 
@@ -1115,10 +1267,10 @@
     (e : Expr) (Phi : Value -> iProp S) (sigma : State cnt)
     (k : Nat) (tp : ThreadPool) (sigma' : State cnt) (e' : Expr)
     (observations : List Observation)
-    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
-      (wp H coPset_universe e Phi))
-    (hinit : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist1 (irisGS cnt S)
+    (hwp : \Pi (H : irisGS cnt S) -> mkProperEmp ⊢
+      (WP H coPset_universe e Phi))
+    (hinit : mkProperEmp ⊢
+      (|==> (mkProperExist1 (irisGS cnt S)
         (\lam H => init_resources H sigma observations))))
     (steps : ThreadSteps k (e :: nil) sigma tp sigma' observations)
     (member : ThreadIn e' tp) (notVal : to_val e' = nothing)
@@ -1126,16 +1278,78 @@
   wp_pure_soundness_from_init e Phi sigma observations k coPset_empty
     (Reducible e' sigma') hinit hwp
     (\lam H => properUPred_ent_trans
-      (mkProperSep (wp H coPset_universe e Phi) (state_interp H sigma observations))
-      (mkProperSep (wp_thread_pool H Phi (e :: nil))
+      ((WP H coPset_universe e Phi) ∗ (state_interp H sigma observations))
+      ((wp_thread_pool H Phi (e :: nil)) ∗
         (state_interp H sigma observations))
       (wp_step_iter H coPset_universe k
         (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
           (mkProperPure (Reducible e' sigma'))))
-      (sep_mono_l_ent (wp H coPset_universe e Phi)
-        (mkProperSep (wp H coPset_universe e Phi) mkProperEmp)
+      (sep_mono_l_ent (WP H coPset_universe e Phi)
+        ((WP H coPset_universe e Phi) ∗ mkProperEmp)
         (state_interp H sigma observations)
-        (add_emp_r_ent (wp H coPset_universe e Phi)))
+        (add_emp_r_ent (WP H coPset_universe e Phi)))
+      (wp_thread_steps_reducible H Phi k e tp e' sigma sigma'
+        observations steps member notVal))
+
+\lemma wp_adequacy_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt) (k : Nat) (v : Value) (tail : ThreadPool)
+    (sigma' : State cnt) (observations : List Observation)
+    (hinit : mkProperEmp ⊢
+      (|==>
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      mkProperEmp ⊢
+        (WP H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (steps : ThreadSteps k (e :: nil) sigma
+      ((Val v) :: tail) sigma' observations) : phi v =>
+  \let Phi : Value -> iProp S => \lam w => mkProperPure (phi w)
+  \in wp_pure_soundness_from_fork_init e Phi sigma observations k
+    coPset_universe (phi v) hinit hwp
+    (\lam H => properUPred_ent_trans
+      ((WP H coPset_universe e Phi) ∗
+        (state_interp H sigma observations))
+      ((wp_thread_pool H Phi (e :: nil)) ∗
+        (state_interp H sigma observations))
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+          (mkProperPure (phi v))))
+      (sep_mono_l_ent (WP H coPset_universe e Phi)
+        ((WP H coPset_universe e Phi) ∗ mkProperEmp)
+        (state_interp H sigma observations)
+        (add_emp_r_ent (WP H coPset_universe e Phi)))
+      (wp_thread_steps_value H k e v tail Phi sigma sigma'
+        observations steps))
+
+\lemma wp_reducible_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (Phi : Value -> iProp S)
+    (sigma : State cnt) (k : Nat) (tp : ThreadPool)
+    (sigma' : State cnt) (e' : Expr) (observations : List Observation)
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      mkProperEmp ⊢
+        (WP H coPset_universe e Phi))
+    (hinit : mkProperEmp ⊢
+      (|==>
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (steps : ThreadSteps k (e :: nil) sigma tp sigma' observations)
+    (member : ThreadIn e' tp) (notVal : to_val e' = nothing) :
+  Reducible e' sigma' =>
+  wp_pure_soundness_from_fork_init e Phi sigma observations k
+    coPset_empty (Reducible e' sigma') hinit hwp
+    (\lam H => properUPred_ent_trans
+      ((WP H coPset_universe e Phi) ∗
+        (state_interp H sigma observations))
+      ((wp_thread_pool H Phi (e :: nil)) ∗
+        (state_interp H sigma observations))
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+          (mkProperPure (Reducible e' sigma'))))
+      (sep_mono_l_ent (WP H coPset_universe e Phi)
+        ((WP H coPset_universe e Phi) ∗ mkProperEmp)
+        (state_interp H sigma observations)
+        (add_emp_r_ent (WP H coPset_universe e Phi)))
       (wp_thread_steps_reducible H Phi k e tp e' sigma sigma'
         observations steps member notVal))
 
@@ -1162,8 +1376,8 @@
 \func wp_adequacy {cnt : Countable Loc} {S : gFunctors}
     (Hpre : irisGpreS cnt S) (e : Expr) (phi : Value -> \Prop)
     (sigma : State cnt)
-    (hwp : \Pi (H : irisGS cnt S) -> properUPred_ent mkProperEmp
-      (wp H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (hwp : \Pi (H : irisGS cnt S) -> mkProperEmp ⊢
+      (WP H coPset_universe e (\lam w => mkProperPure (phi w))))
   : Adequate e sigma (\lam v _ => phi v) \cowith
   | adequate_result => \lam k v tail sigma' observations steps =>
       wp_adequacy_from_init e phi sigma k v tail sigma' observations
@@ -1178,5 +1392,31 @@
             (wp_reducible_from_init e
               (\lam w => mkProperPure (phi w)) sigma k tp sigma' e'
               observations hwp (init Hpre sigma observations)
+              steps member h)
+      }
+
+-- Public fork-aware adequacy.  This is the theorem used by closed clients
+-- whose WP proof invokes spawn/join; result adequacy and safety cover the full
+-- reachable thread pool exactly as in `wp_adequacy`.
+\func wp_adequacy_with_fork {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt)
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      mkProperEmp ⊢
+        (WP H coPset_universe e (\lam w => mkProperPure (phi w)))) :
+  Adequate e sigma (\lam v _ => phi v) \cowith
+  | adequate_result => \lam k v tail sigma' observations steps =>
+      wp_adequacy_from_fork_init e phi sigma k v tail sigma'
+        observations (init_with_fork Hpre sigma observations) hwp steps
+  | adequate_not_stuck =>
+      \lam k tp sigma' observations steps e' member =>
+      \case to_val e' \as tv, idp : to_val e' = tv
+      \return not_stuck e' sigma'
+      \with {
+        | just v, h => byLeft (v, h)
+        | nothing, h => byRight
+            (wp_reducible_from_fork_init e
+              (\lam w => mkProperPure (phi w)) sigma k tp sigma' e'
+              observations hwp (init_with_fork Hpre sigma observations)
               steps member h)
       }

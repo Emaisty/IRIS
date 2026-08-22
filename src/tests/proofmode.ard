@@ -1,0 +1,159 @@
+\import Function.Meta
+\import Meta
+\import Data.List
+\import Data.Maybe
+\import Data.Bool
+\import iris.algebra.cmra
+\import iris.algebra.gmap
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.big_op
+\import iris.bi.updates
+\import iris.algebra.coPset
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import stdpp.coPset
+\import iris.program_logic.weakestpre \hiding (wp_value)
+\import iris.program_logic.lifting (wp_if_true, wp_fork)
+\import iris_heap_lang.lang
+\import iris.proofmode.core
+\import iris.proofmode.Meta
+
+\lemma proofmode_start_smoke {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iStopProof $
+    properUPred_ent_trans
+      (mkProperEmp ∗ (mkProperEmp ∗ (P ∗ Q)))
+      (mkProperEmp ∗ (P ∗ Q)) (P ∗ Q)
+      (sep_elim_r_ent mkProperEmp (mkProperEmp ∗ (P ∗ Q)))
+      (sep_elim_r_ent mkProperEmp (P ∗ Q))
+
+\lemma proofmode_intros_smoke {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HP HQ" $ iStopProof $
+    properUPred_ent_trans
+      (mkProperEmp ∗ ((mkProperEmp ∗ P) ∗ Q))
+      ((mkProperEmp ∗ P) ∗ Q) (P ∗ Q)
+      (sep_elim_r_ent mkProperEmp ((mkProperEmp ∗ P) ∗ Q))
+      (sep_mono_l_ent (mkProperEmp ∗ P) P Q
+        ((BIuPredMixin M).bi_mixin_emp_sep_2 P))
+
+\lemma proofmode_exact_latest {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ Q => ipm $ iIntros "HP HQ" $ iExact "HQ"
+
+\lemma proofmode_exact_older {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ P => ipm $ iIntros "HP HQ" $ iExact "HP"
+
+\lemma proofmode_destruct {M : UCMRA} (P Q R : ProperUPred M)
+  : (P ∗ (Q ∗ R)) ⊢ Q =>
+  ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $ iExact "HQ"
+
+\lemma proofmode_clear {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ Q =>
+  ipm $ iIntros "HP HQ" $ iClear "HP" $ iExact "HQ"
+
+\lemma proofmode_rename {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ Q =>
+  ipm $ iIntros "HP HQ" $ iRename "HQ" "HZ" $ iExact "HZ"
+
+\lemma proofmode_frame {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HP HQ" $ iFrame "HP" $ iExact "HQ"
+
+\lemma proofmode_left {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ mkProperEmp) ⊢ (P ∨ Q) =>
+  ipm $ iIntros "HP HE" $ iLeft $ iExact "HP"
+
+\lemma proofmode_right {M : UCMRA} (P Q : ProperUPred M)
+  : (Q ∗ mkProperEmp) ⊢ (P ∨ Q) =>
+  ipm $ iIntros "HQ HE" $ iRight $ iExact "HQ"
+
+\lemma proofmode_exists {M : UCMRA} (P : ProperUPred M)
+  : (P ∗ mkProperEmp) ⊢ (mkProperExist Nat (\lam _ => P)) =>
+  ipm $ iIntros "HP HE" $ iExists 0 $ iExact "HP"
+
+\lemma proofmode_pure_intro {M : UCMRA} (P : ProperUPred M)
+    (phi : \Prop) (h : phi)
+  : P ⊢ mkProperPure phi => ipm $ iPureIntro $ h
+
+\lemma proofmode_assumption {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ P => ipm $ iIntros "HP HQ" $ iAssumption
+
+\lemma proofmode_apply {M : UCMRA} (P Q : ProperUPred M)
+  : ((P -∗ Q) ∗ P) ⊢ Q =>
+  ipm $ iIntros "HW HP" $ iApply "HW" $ iExact "HP"
+
+\lemma proofmode_next {M : UCMRA} (P : ProperUPred M)
+  : (P ∗ mkProperEmp) ⊢ (|> P) =>
+  ipm $ iIntros "HP HE" $ iNext $ iExact "HP"
+
+\lemma proofmode_mod_intro {M : UCMRA} (P : ProperUPred M)
+  : (P ∗ mkProperEmp) ⊢ (|==> P) =>
+  ipm $ iIntros "HP HE" $ iModIntro $ iExact "HP"
+
+\lemma proofmode_split_l {M : UCMRA} (P Q R : ProperUPred M)
+  : (P ∗ (Q ∗ R)) ⊢ ((P ∗ R) ∗ Q) =>
+  ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $
+    iSplitL "HP HR" (iFrame "HP" $ iExact "HR") (iExact "HQ")
+
+\lemma proofmode_split_r {M : UCMRA} (P Q R : ProperUPred M)
+  : (P ∗ (Q ∗ R)) ⊢ ((P ∗ R) ∗ Q) =>
+  ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $
+    iSplitR "HQ" (iFrame "HP" $ iExact "HR") (iExact "HQ")
+
+\lemma proofmode_assert {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HP HQ" $
+    iAssert "HR" "HP" P (iExact "HP") (iFrame "HR" $ iExact "HQ")
+
+\lemma proofmode_wp_value {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value) (Phi : Value -> iProp S)
+  : ((Phi v) ∗ mkProperEmp) ⊢ (wp H E (Val v) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_value $ iExact "HP"
+
+\lemma proofmode_wp_if_true {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E t Phi) ∗ mkProperEmp) ⊢
+      (wp H E (If (Val (boolV true)) t f) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_if $ iExact "HP"
+
+\lemma proofmode_wp_if_false {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E f Phi) ∗ mkProperEmp) ⊢
+      (wp H E (If (Val (boolV false)) t f) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_if $ iExact "HP"
+
+\lemma proofmode_wp_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E t Phi) ∗ mkProperEmp) ⊢
+      (wp H E (If (Val (boolV true)) t f) Phi) =>
+  ipm $ iIntros "HP HE" $
+    wp_apply (wp_if_true H E t f Phi) $ iExact "HP"
+
+\lemma proofmode_wp_fork_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (body : Expr)
+    (Phi : Value -> iProp S)
+  : (((Phi unitV) ∗ (wp H coPset_universe body H.iris_fork_post)) ∗
+      mkProperEmp) ⊢ (wp H E (Fork body) Phi) =>
+  ipm $ iIntros "HR HE" $
+    iris.proofmode.Meta.wp_fork (wp_fork H E body Phi) $ iExact "HR"
+
+\func proofmode_lookup_smoke {M : UCMRA} (P Q : ProperUPred M) :
+    pm_lookup (72 :: nil) (pm_snoc (pm_snoc pm_empty (80 :: nil) P)
+      (72 :: nil) Q) = just Q => idp
+
+\func proofmode_delete_smoke {M : UCMRA} (P Q : ProperUPred M) :
+    pm_delete (72 :: nil) (pm_snoc (pm_snoc pm_empty (80 :: nil) P)
+      (72 :: nil) Q) = pm_snoc pm_empty (80 :: nil) P => idp
+
+\func proofmode_duplicate_insert_fails {M : UCMRA} (P Q : ProperUPred M) :
+    pm_insert (80 :: nil) Q (pm_snoc pm_empty (80 :: nil) P) = nothing => idp
+
+\func proofmode_missing_name_fails {M : UCMRA} (P : ProperUPred M)
+  : \Sigma => fails (ipm $ iExact "missing" : P ⊢ P)
+
+\func proofmode_duplicate_intro_fails {M : UCMRA} (P Q : ProperUPred M)
+  : \Sigma => fails (ipm $ iIntros "H H" $ iExact "H" : (P ∗ Q) ⊢ P)

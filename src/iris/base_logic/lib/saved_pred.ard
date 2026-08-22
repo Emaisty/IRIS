@@ -1,0 +1,173 @@
+\import Logic
+\import Paths
+\import Data.Or
+\import Arith.Nat
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.dfrac
+\import iris.algebra.agree
+\import iris.algebra.prod
+\import iris.algebra.lib.gmap_view_functor
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.own
+
+-- Pointwise lifting of an OFunctor through a non-dependent function space.
+\func funO_map {X : \Set0} {A B : OFE} (f : OFEMor A B) :
+  OFEMor (FunOFE X A) (FunOFE X B) \cowith
+  | ofe_mor_car => \lam p x => f.ofe_mor_car (p x)
+  | ofe_mor_ne => \lam n p q h x =>
+      f.ofe_mor_ne n (p x) (q x) (h x)
+
+\func funOF (X : \Set0) (F : OFunctor) : OFunctor \cowith
+  | oFunctor_car => \lam A B => FunOFE X (F.oFunctor_car A B)
+  | oFunctor_map => \lam fg => funO_map (F.oFunctor_map fg)
+  | oFunctor_map_ne => \lam n fg fg' h p x =>
+      F.oFunctor_map_ne n fg fg' h (p x)
+  | oFunctor_map_id => \lam p x => F.oFunctor_map_id (p x)
+  | oFunctor_map_compose => \lam f g f' g' p x =>
+      F.oFunctor_map_compose f g f' g' (p x)
+
+\func funOF_contractive (X : \Set0) (F : OFunctor)
+    (hF : OFunctorContractive F) : OFunctorContractive (funOF X F) \cowith
+  | oFunctor_map_contractive => \lam n fg fg' h p x =>
+      hF.oFunctor_map_contractive n fg fg' h (p x)
+
+-- Dfrac × Agree lifted pointwise over an OFunctor.
+\func dfracAgreeRF (F : OFunctor) : RFunctor \cowith
+  | rFunctor_car => \lam A B =>
+      ProdCMRA DfracCMRA (AgreeCMRA (F.oFunctor_car A B))
+  | rFunctor_map => \lam fg =>
+      prodO_map (ofe_mor_id {DfracCMRA})
+        (agreeO_map (F.oFunctor_map fg))
+  | rFunctor_map_ne => \lam n fg fg' h =>
+      prodO_map_ne_map n
+        (ofe_mor_id {DfracCMRA}) (ofe_mor_id {DfracCMRA})
+        (agreeO_map (F.oFunctor_map fg))
+        (agreeO_map (F.oFunctor_map fg'))
+        ((OFEMorOFE DfracCMRA DfracCMRA).ofe_dist_refl n ofe_mor_id)
+        (agreeO_map_ne_map n (F.oFunctor_map fg) (F.oFunctor_map fg')
+          (F.oFunctor_map_ne n fg fg' h))
+  | rFunctor_map_id => \lam x =>
+      (DfracCMRA.equiv_refl x.1,
+       (agreeRF F).rFunctor_map_id x.2)
+  | rFunctor_map_compose => \lam f g f' g' x =>
+      (DfracCMRA.equiv_refl x.1,
+       (agreeRF F).rFunctor_map_compose f g f' g' x.2)
+  | rFunctor_mor => \lam fg =>
+      prodO_map_cmra_morphism
+        (ofe_mor_id {DfracCMRA})
+        (agreeO_map (F.oFunctor_map fg))
+        (cmra_morphism_id {DfracCMRA})
+        ((agreeRF F).rFunctor_mor fg)
+
+\func dfracAgreeRF_contractive (F : OFunctor)
+    (hF : OFunctorContractive F) :
+  RFunctorContractive (dfracAgreeRF F) \cowith
+  | rFunctor_map_contractive => \lam n fg fg' h =>
+      prodO_map_ne_map n
+        (ofe_mor_id {DfracCMRA}) (ofe_mor_id {DfracCMRA})
+        (agreeO_map (F.oFunctor_map fg))
+        (agreeO_map (F.oFunctor_map fg'))
+        ((OFEMorOFE DfracCMRA DfracCMRA).ofe_dist_refl n ofe_mor_id)
+        (agreeO_map_ne_map n (F.oFunctor_map fg) (F.oFunctor_map fg')
+          (hF.oFunctor_map_contractive n fg fg' h))
+
+\func savedPredOF (X : \Set0) : OFunctor =>
+  funOF X (laterOF idOF)
+
+\func savedPredOF_contractive (X : \Set0) :
+  OFunctorContractive (savedPredOF X) =>
+  funOF_contractive X (laterOF idOF) (laterOF_contractive idOF)
+
+\func savedPredRF (X : \Set0) : RFunctor =>
+  dfracAgreeRF (savedPredOF X)
+
+\func savedPredRF_contractive (X : \Set0) :
+  RFunctorContractive (savedPredRF X) =>
+  dfracAgreeRF_contractive (savedPredOF X) (savedPredOF_contractive X)
+
+\func savedPred_gFunctor (X : \Set0) : gFunctor =>
+  mkGFunctor (savedPredRF X) (savedPredRF_contractive X)
+
+\func savedPredSigma (X : \Set0) : gFunctors =>
+  gFunctors_singleton (savedPred_gFunctor X)
+
+\record savedPredG (S : gFunctors) (X : \Set0)
+  | saved_pred_inG :
+      inG S (rFunctor_apply (savedPredRF X) (iPropCOFE S))
+
+\func subG_savedPredG {S : gFunctors} {X : \Set0}
+    (h : subG (savedPredSigma X) S) : savedPredG S X \cowith
+  | saved_pred_inG => subG_inG h
+
+\func saved_pred_value {S : gFunctors} {X : \Set0}
+    (Phi : X -> iProp S) :
+  ((savedPredOF X).oFunctor_car (iPropCOFE S) (iPropCOFE S)).E =>
+  \lam x => next (Phi x)
+
+\func saved_pred_elem {S : gFunctors} {X : \Set0}
+    (dq : Dfrac) (Phi : X -> iProp S) :
+  (rFunctor_apply (savedPredRF X) (iPropCOFE S)).E =>
+  (dq, to_agree (saved_pred_value Phi))
+
+\func saved_pred_own {S : gFunctors} {X : \Set0}
+    (H : savedPredG S X) (gam : gname) (dq : Dfrac)
+    (Phi : X -> iProp S) : iProp S =>
+  own H.saved_pred_inG gam (saved_pred_elem dq Phi)
+
+\lemma saved_pred_discarded_persistent {S : gFunctors} {X : \Set0}
+    (H : savedPredG S X) (gam : gname) (Phi : X -> iProp S) :
+  (saved_pred_own H gam DfracDiscarded Phi) ⊢
+    (<#> (saved_pred_own H gam DfracDiscarded Phi)) =>
+  own_core_persistent H.saved_pred_inG gam
+    (saved_pred_elem DfracDiscarded Phi)
+    (dfrac_discarded_core_id,
+      ((AgreeOFE
+        ((savedPredOF X).oFunctor_car (iPropCOFE S) (iPropCOFE S)))
+        .equiv_refl (to_agree (saved_pred_value Phi))))
+
+\lemma saved_pred_alloc {S : gFunctors} {X : \Set0}
+    (H : savedPredG S X) (Phi : X -> iProp S) (dq : Dfrac)
+    (hdq : dfrac_valid dq) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (\lam gam =>
+      saved_pred_own H gam dq Phi))) =>
+  own_alloc H.saved_pred_inG (saved_pred_elem dq Phi)
+    (hdq, to_agree_valid (saved_pred_value Phi))
+
+\lemma saved_pred_later_eq_holds {S : gFunctors}
+    (n : Nat) (resource : (iResUR S).E) (P Q : iProp S)
+    (h : (LaterOFE (iPropO S)).dist n (next P) (next Q)) :
+  (|>
+    (mkProperInternalEq {iResUR S} {iPropO S} P Q)).upred_holds n resource =>
+  \case \elim n, \elim h \with {
+    | 0, _ => ()
+    | suc n', h' => h'.dist_later_lt n' id<suc
+  }
+
+\lemma saved_pred_agree {S : gFunctors} {X : \Set0}
+    (H : savedPredG S X) (gam : gname)
+    (dq1 dq2 : Dfrac) (Phi Psi : X -> iProp S) (x : X) :
+  ((saved_pred_own H gam dq1 Phi) ∗
+      (saved_pred_own H gam dq2 Psi)) ⊢
+    (|>
+      (mkProperInternalEq {iResUR S} {iPropO S} (Phi x) (Psi x))) =>
+  properUPred_ent_trans
+    ((saved_pred_own H gam dq1 Phi) ∗
+      (saved_pred_own H gam dq2 Psi))
+    (mkProperValidOf {iResUR S}
+      {rFunctor_apply (savedPredRF X) (iPropCOFE S)}
+      ((rFunctor_apply (savedPredRF X) (iPropCOFE S)).op
+        (saved_pred_elem dq1 Phi) (saved_pred_elem dq2 Psi)))
+    (|>
+      (mkProperInternalEq {iResUR S} {iPropO S} (Phi x) (Psi x)))
+    (own_op_valid H.saved_pred_inG gam
+      (saved_pred_elem dq1 Phi) (saved_pred_elem dq2 Psi))
+    (\lam n resource _ hv =>
+      saved_pred_later_eq_holds n resource (Phi x) (Psi x)
+        (to_agree_op_inv n (saved_pred_value Phi) (saved_pred_value Psi)
+          hv.2 x))

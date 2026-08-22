@@ -1,0 +1,36 @@
+\import Data.Bool
+\import iris.algebra.coPset
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.notation
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import iris_heap_lang.lang
+\import stdpp.coPset
+
+-- Bridge names keep the virtual tactic module free of collisions with the
+-- term-level HeapLang rules (`wp_value`, `wp_fork`, ...).
+\func pm_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (Phi : Value -> iProp S) : iProp S => wp H E e Phi
+
+\lemma pm_wp_value_intro {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value)
+    (Phi : Value -> iProp S)
+  : (Phi v) ⊢ (pm_wp H E (Val v) Phi) =>
+  wp_value_intro H E v Phi
+
+\lemma pm_wp_if_true {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : (pm_wp H E t Phi) ⊢
+      (pm_wp H E (If (Val (boolV true)) t f) Phi) =>
+  wp_if_true H E t f Phi
+
+\lemma pm_wp_if_false {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : (pm_wp H E f Phi) ⊢
+      (pm_wp H E (If (Val (boolV false)) t f) Phi) =>
+  wp_if_false H E t f Phi

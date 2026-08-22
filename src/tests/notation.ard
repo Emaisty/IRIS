@@ -1,0 +1,50 @@
+\import iris.base_logic.notation
+\import iris.algebra.cmra
+\import iris.bi.big_op
+\import iris.bi.updates
+\import iris.base_logic.upred
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+\import iris.program_logic.weakestpre
+\import stdpp.coPset
+
+-- Duplicates of existing lemmas, stated with the notation layer.
+\lemma sep_comm_ent_notation {M : UCMRA} (P Q : ProperUPred M)
+  : P ∗ Q ⊢ Q ∗ P =>
+  sep_comm_ent P Q
+
+\lemma later_intro_notation {M : UCMRA} (P : ProperUPred M)
+  : P ⊢ |> P =>
+  proper_later_intro P
+
+\lemma and_elim_l_notation {M : UCMRA} (P Q : ProperUPred M)
+  : P ∧ Q ⊢ P =>
+  \lam _ _ _ h => h.1
+
+\lemma equivI_refl_notation {M : UCMRA} (P : ProperUPred M)
+  : P ⊣⊢ P =>
+  \lam _ _ _ => (\lam h => h, \lam h => h)
+
+-- Smoke checks for metas whose expansion is otherwise not exercised above.
+\func wand_notation {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M =>
+  P -∗ Q
+
+\func or_notation {M : UCMRA} (P Q : ProperUPred M) : ProperUPred M =>
+  P ∨ Q
+
+\func persistently_notation {M : UCMRA} (P : ProperUPred M) : ProperUPred M =>
+  <#> P
+
+\func except_zero_notation {M : UCMRA} (P : ProperUPred M) : ProperUPred M =>
+  <except_0> P
+
+\func bupd_notation {M : UCMRA} (P : ProperUPred M) : ProperUPred M =>
+  |==> P
+
+\lemma wp_value_intro_notation {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (v : Value) (Phi : Value -> iProp S)
+  : Phi v ⊢ WP H E (Val v) Phi =>
+  wp_value_intro H E v Phi

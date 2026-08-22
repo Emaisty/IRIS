@@ -8,6 +8,7 @@
 \import iris.algebra.ofe
 \import iris.algebra.cmra
 \import iris.base_logic.upred \hiding (own_valid, own_mono)
+\import iris.base_logic.notation
 \import iris.algebra.gmap
 \import stdpp.pmap
 
@@ -30,7 +31,7 @@
 \func big_sepL {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M) (l : List A)
   : ProperUPred M \elim l
   | nil => mkProperEmp
-  | :: a l => mkProperSep (Phi a) (big_sepL Phi l)
+  | :: a l => (Phi a) ∗ (big_sepL Phi l)
 
 \func gmap_to_list {K : \Set} {cnt : Countable K} {A : \Set} (m : Gmap K cnt A)
   : List (\Sigma K A) => strip (pmap_to_list m.gtree)
@@ -49,7 +50,7 @@
 
 -- P ∗ (Q ∗ R) ⊢ Q ∗ (P ∗ R)
 \lemma sep_swap_ent {M : UCMRA} (P Q R : ProperUPred M)
-  : properUPred_ent (mkProperSep P (mkProperSep Q R)) (mkProperSep Q (mkProperSep P R))
+  : (P ∗ (Q ∗ R)) ⊢ (Q ∗ (P ∗ R))
   => \lam n x hv h => \case h \with {
     | inP (a, b, dab, hP, hQR) => \case hQR \with {
       | inP (c, d, dcd, hQ, hR) =>
@@ -70,8 +71,8 @@
   }
 
 \lemma sep_mono_r_ent {M : UCMRA} (P Q Q' : ProperUPred M)
-    (h : properUPred_ent Q Q')
-  : properUPred_ent (mkProperSep P Q) (mkProperSep P Q')
+    (h : Q ⊢ Q')
+  : (P ∗ Q) ⊢ (P ∗ Q')
   => \lam n x hv hs => \case hs \with {
     | inP (a, b, dab, hP, hQ) =>
       inP (a, b, dab, hP,
@@ -84,33 +85,33 @@
 
 \lemma big_sepL_extract_1 {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M)
     (l1 l2 : List A) (a : A)
-  : properUPred_ent (big_sepL Phi (l1 ++ a :: l2))
-                    (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2)))
+  : (big_sepL Phi (l1 ++ a :: l2)) ⊢
+                    ((Phi a) ∗ (big_sepL Phi (l1 ++ l2)))
 \elim l1
   | nil => properUPred_ent_refl (big_sepL Phi (a :: l2))
   | :: b l1 =>
       properUPred_ent_trans
-        (mkProperSep (Phi b) (big_sepL Phi (l1 ++ a :: l2)))
-        (mkProperSep (Phi b) (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2))))
-        (mkProperSep (Phi a) (mkProperSep (Phi b) (big_sepL Phi (l1 ++ l2))))
+        ((Phi b) ∗ (big_sepL Phi (l1 ++ a :: l2)))
+        ((Phi b) ∗ ((Phi a) ∗ (big_sepL Phi (l1 ++ l2))))
+        ((Phi a) ∗ ((Phi b) ∗ (big_sepL Phi (l1 ++ l2))))
         (sep_mono_r_ent (Phi b) (big_sepL Phi (l1 ++ a :: l2))
-            (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2)))
+            ((Phi a) ∗ (big_sepL Phi (l1 ++ l2)))
             (big_sepL_extract_1 Phi l1 l2 a))
         (sep_swap_ent (Phi b) (Phi a) (big_sepL Phi (l1 ++ l2)))
 
 \lemma big_sepL_extract_2 {M : UCMRA} {A : \Type} (Phi : A -> ProperUPred M)
     (l1 l2 : List A) (a : A)
-  : properUPred_ent (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2)))
+  : ((Phi a) ∗ (big_sepL Phi (l1 ++ l2))) ⊢
                     (big_sepL Phi (l1 ++ a :: l2))
 \elim l1
   | nil => properUPred_ent_refl (big_sepL Phi (a :: l2))
   | :: b l1 =>
       properUPred_ent_trans
-        (mkProperSep (Phi a) (mkProperSep (Phi b) (big_sepL Phi (l1 ++ l2))))
-        (mkProperSep (Phi b) (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2))))
-        (mkProperSep (Phi b) (big_sepL Phi (l1 ++ a :: l2)))
+        ((Phi a) ∗ ((Phi b) ∗ (big_sepL Phi (l1 ++ l2))))
+        ((Phi b) ∗ ((Phi a) ∗ (big_sepL Phi (l1 ++ l2))))
+        ((Phi b) ∗ (big_sepL Phi (l1 ++ a :: l2)))
         (sep_swap_ent (Phi a) (Phi b) (big_sepL Phi (l1 ++ l2)))
-        (sep_mono_r_ent (Phi b) (mkProperSep (Phi a) (big_sepL Phi (l1 ++ l2)))
+        (sep_mono_r_ent (Phi b) ((Phi a) ∗ (big_sepL Phi (l1 ++ l2)))
             (big_sepL Phi (l1 ++ a :: l2))
             (big_sepL_extract_2 Phi l1 l2 a))
 
@@ -222,16 +223,16 @@
     (m : Gmap K cnt A) (Phi : K -> A -> ProperUPred M) (k : K) (v : A)
     (h : glookup m k = just v)
   : \Sigma (R : ProperUPred M)
-           (properUPred_ent (big_sepM m Phi) (mkProperSep (Phi k v) R))
-           (properUPred_ent (mkProperSep (Phi k v) R) (big_sepM m Phi))
+           ((big_sepM m Phi) ⊢ ((Phi k v) ∗ R))
+           (((Phi k v) ∗ R) ⊢ (big_sepM m Phi))
   => \let
        | (l1, l2, p) => gmap_to_list_decomp m k v h
        | Phi' => \lam (e : \Sigma K A) => Phi e.1 e.2
      \in ( big_sepL Phi' (l1 ++ l2)
-         , transport (\lam l => properUPred_ent (big_sepL Phi' l)
-                                  (mkProperSep (Phi k v) (big_sepL Phi' (l1 ++ l2))))
+         , transport (\lam l => (big_sepL Phi' l) ⊢
+                                  ((Phi k v) ∗ (big_sepL Phi' (l1 ++ l2))))
              (inv p) (big_sepL_extract_1 Phi' l1 l2 (k, v))
-         , transport (\lam l => properUPred_ent (mkProperSep (Phi k v) (big_sepL Phi' (l1 ++ l2)))
+         , transport (\lam l => ((Phi k v) ∗ (big_sepL Phi' (l1 ++ l2))) ⊢
                                   (big_sepL Phi' l))
              (inv p) (big_sepL_extract_2 Phi' l1 l2 (k, v))
          )
@@ -455,39 +456,189 @@
 \func big_sepM_insert {M : UCMRA} {K : \Set} {cnt : Countable K} {A : \Set}
     (m : Gmap K cnt A) (Phi : K -> A -> ProperUPred M) (k : K) (v : A)
     (h : glookup m k = nothing)
-  : \Sigma (properUPred_ent (big_sepM (ginsert k v m) Phi)
-               (mkProperSep (Phi k v) (big_sepM m Phi)))
-           (properUPred_ent (mkProperSep (Phi k v) (big_sepM m Phi))
+  : \Sigma ((big_sepM (ginsert k v m) Phi) ⊢
+               ((Phi k v) ∗ (big_sepM m Phi)))
+           (((Phi k v) ∗ (big_sepM m Phi)) ⊢
                (big_sepM (ginsert k v m) Phi))
   => \let
        | (l1, l2, p1, p2) => gmap_to_list_insert_decomp m k v h
        | Phi' => \lam (e : \Sigma K A) => Phi e.1 e.2
      \in ( transport2
-              (\lam la lb => properUPred_ent (big_sepL Phi' la)
-                  (mkProperSep (Phi k v) (big_sepL Phi' lb)))
+              (\lam la lb => (big_sepL Phi' la) ⊢
+                  ((Phi k v) ∗ (big_sepL Phi' lb)))
               (inv p1) (inv p2)
               (big_sepL_extract_1 Phi' l1 l2 (k, v))
          , transport2
-              (\lam la lb => properUPred_ent (mkProperSep (Phi k v) (big_sepL Phi' lb))
+              (\lam la lb => ((Phi k v) ∗ (big_sepL Phi' lb)) ⊢
                   (big_sepL Phi' la))
               (inv p1) (inv p2)
               (big_sepL_extract_2 Phi' l1 l2 (k, v))
          )
+
+-- Deletion counterpart of `big_sepM_insert`.  Canonical `PNode'` may collapse
+-- the last empty node, but its traversal is still exactly the concatenation
+-- of the surviving node value and children.
+\lemma pmap_to_list_PNode' {A : \Set} (v : Maybe A) (l r : Pmap' A)
+    (prefix : Pos -> Pos) :
+  pmap_to_list_tree (PNode' v l r) prefix =
+    (\case v \return List (\Sigma Pos A) \with {
+      | nothing => nil
+      | just x => (prefix xH, x) :: nil
+    }) ++ pmap_to_list_tree l (\lam q => prefix (xO q))
+       ++ pmap_to_list_tree r (\lam q => prefix (xI q))
+\elim v, l, r
+  | nothing, PEmpty, PEmpty => idp
+  | nothing, PEmpty, PNode _ _ _ => idp
+  | nothing, PNode _ _ _, _ => idp
+  | just _, _, _ => idp
+
+\func pmap_to_list_tree_delete_decomp {A : \Set} (a : A)
+    (t : Pmap' A) (prefix : Pos -> Pos) (k : Pos)
+    (h : plookup' t k = just a) :
+  \Sigma (l1 l2 : List (\Sigma Pos A))
+    (pmap_to_list_tree t prefix = l1 ++ (prefix k, a) :: l2)
+    (pmap_to_list_tree (partial_alter' (\lam _ => nothing) k t) prefix =
+      l1 ++ l2)
+\elim t, k
+  | PEmpty, _ => \case h \with {}
+  | PNode v l r, xH =>
+    \let
+      | tail => pmap_to_list_tree l (\lam q => prefix (xO q)) ++
+          pmap_to_list_tree r (\lam q => prefix (xI q))
+      | headEq : (\case v \return List (\Sigma Pos A) \with {
+            | nothing => nil
+            | just x => (prefix xH, x) :: nil }) =
+          (prefix xH, a) :: nil =>
+          pmap (\lam o => \case o \return List (\Sigma Pos A) \with {
+            | nothing => nil
+            | just x => (prefix xH, x) :: nil }) h
+    \in (nil, tail,
+      pmap (\lam xs => xs ++ tail) headEq,
+      pmap_to_list_PNode' nothing l r prefix)
+  | PNode v l r, xO q =>
+    \let
+      | (l1, l2, before, after) =>
+          pmap_to_list_tree_delete_decomp a l
+            (\lam z => prefix (xO z)) q h
+      | here => \case v \return List (\Sigma Pos A) \with {
+          | nothing => nil
+          | just x => (prefix xH, x) :: nil
+        }
+      | right => pmap_to_list_tree r (\lam z => prefix (xI z))
+    \in (here ++ l1, l2 ++ right,
+      pmap (\lam xs => here ++ (xs ++ right)) before
+        *> pmap (here ++ __) (++-assoc {\Sigma Pos A} {l1} {(prefix (xO q), a) :: l2} {right})
+        *> inv (++-assoc {\Sigma Pos A} {here} {l1} {(prefix (xO q), a) :: (l2 ++ right)}),
+      pmap_to_list_PNode' v
+          (partial_alter' (\lam _ => nothing) q l) r prefix
+        *> pmap (\lam xs => here ++ (xs ++ right)) after
+        *> pmap (here ++ __) (++-assoc {\Sigma Pos A} {l1} {l2} {right})
+        *> inv (++-assoc {\Sigma Pos A} {here} {l1} {l2 ++ right}))
+  | PNode v l r, xI q =>
+    \let
+      | (l1, l2, before, after) =>
+          pmap_to_list_tree_delete_decomp a r
+            (\lam z => prefix (xI z)) q h
+      | here => \case v \return List (\Sigma Pos A) \with {
+          | nothing => nil
+          | just x => (prefix xH, x) :: nil
+        }
+      | left => pmap_to_list_tree l (\lam z => prefix (xO z))
+    \in (here ++ left ++ l1, l2,
+      pmap (\lam xs => here ++ (left ++ xs)) before
+        *> pmap (here ++ __) (inv (++-assoc {\Sigma Pos A} {left} {l1} {(prefix (xI q), a) :: l2}))
+        *> inv (++-assoc {\Sigma Pos A} {here} {left ++ l1} {(prefix (xI q), a) :: l2}),
+      pmap_to_list_PNode' v l
+          (partial_alter' (\lam _ => nothing) q r) prefix
+        *> pmap (\lam xs => here ++ (left ++ xs)) after
+        *> pmap (here ++ __) (inv (++-assoc {\Sigma Pos A} {left} {l1} {l2}))
+        *> inv (++-assoc {\Sigma Pos A} {here} {left ++ l1} {l2}))
+
+-- Gmap-level deletion preserves the traversal order of every surviving entry.
+\func gmap_to_list_delete_decomp {K : \Set} {cnt : Countable K} {A : \Set}
+    (m : Gmap K cnt A) (k : K) (v : A) (h : glookup m k = just v)
+  : \Sigma (l1 l2 : List (\Sigma K A))
+      (gmap_to_list m = l1 ++ (k, v) :: l2)
+      (gmap_to_list (gdelete k m) = l1 ++ l2)
+  => \case plookup m.gtree (encode {cnt} k) \as o,
+           idp : plookup m.gtree (encode {cnt} k) = o
+       \return \Sigma (l1 l2 : List (\Sigma K A))
+          (gmap_to_list m = l1 ++ (k, v) :: l2)
+          (gmap_to_list (gdelete k m) = l1 ++ l2)
+     \with {
+       | nothing, ho =>
+           \let bad : nothing = {Maybe A} just v =>
+               inv (pmap (\lam (o : Maybe (\Sigma K A)) => \case o \return Maybe A \with {
+                            | nothing => nothing
+                            | just p => just p.2
+                          }) ho)
+                 *> h
+           \in \case bad \with {}
+       | just p, ho =>
+           \let
+             | hv : p.2 = v =>
+                 pmap (\lam (o : Maybe A) => \case o \return A \with {
+                         | nothing => v
+                         | just w => w
+                       })
+                      (inv (pmap (\lam (o : Maybe (\Sigma K A)) => \case o \return Maybe A \with {
+                                    | nothing => nothing
+                                    | just q => just q.2
+                                  }) ho)
+                        *> h)
+             | hk : p.1 = k =>
+                 encode_inj {cnt} p.1 k
+                   (m.gtree_wf (encode {cnt} k) p ho)
+             | ppair : p = {\Sigma K A} (k, v) =>
+                 path (\lam i => (hk @ i, hv @ i))
+             | (t1, t2, before, after) =>
+                 pmap_to_list_tree_delete_decomp p m.gtree.tree
+                   (\lam x => x) (encode {cnt} k) ho
+           \in (gmap_to_list.strip t1, gmap_to_list.strip t2,
+             pmap gmap_to_list.strip before
+               *> strip_append t1 ((encode {cnt} k, p) :: t2)
+               *> pmap (\lam e => gmap_to_list.strip t1 ++ e :: gmap_to_list.strip t2) ppair,
+             pmap gmap_to_list.strip after *> strip_append t1 t2)
+     }
+
+-- Rocq `big_sepM_delete`: split a present entry from the map big operator and
+-- reassemble it after deleting that entry from the remainder.
+\func big_sepM_delete {M : UCMRA} {K : \Set} {cnt : Countable K} {A : \Set}
+    (m : Gmap K cnt A) (Phi : K -> A -> ProperUPred M) (k : K) (v : A)
+    (h : glookup m k = just v)
+  : \Sigma
+      ((big_sepM m Phi) ⊢
+        ((Phi k v) ∗ (big_sepM (gdelete k m) Phi)))
+      (((Phi k v) ∗ (big_sepM (gdelete k m) Phi)) ⊢
+        (big_sepM m Phi))
+  => \let
+       | (l1, l2, before, after) => gmap_to_list_delete_decomp m k v h
+       | Phi' => \lam (e : \Sigma K A) => Phi e.1 e.2
+     \in (transport2
+            (\lam la lb => (big_sepL Phi' la) ⊢
+              ((Phi k v) ∗ (big_sepL Phi' lb)))
+            (inv before) (inv after)
+            (big_sepL_extract_1 Phi' l1 l2 (k, v)),
+          transport2
+            (\lam la lb => ((Phi k v) ∗ (big_sepL Phi' lb)) ⊢
+              (big_sepL Phi' la))
+            (inv before) (inv after)
+            (big_sepL_extract_2 Phi' l1 l2 (k, v)))
 
 -- =================================================================================
 -- General separating-conjunction rearrangements (model-level, reusable).
 -- =================================================================================
 
 \lemma sep_mono_l_ent {M : UCMRA} (P P' Q : ProperUPred M)
-    (h : properUPred_ent P P')
-  : properUPred_ent (mkProperSep P Q) (mkProperSep P' Q)
+    (h : P ⊢ P')
+  : (P ∗ Q) ⊢ (P' ∗ Q)
   => \lam n x hv hs => \case hs \with {
     | inP (a, b, dab, hP, hQ) =>
       inP (a, b, dab, h n a (validN_sub_l n x a b hv dab) hP, hQ)
   }
 
 \lemma sep_comm_ent {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent (mkProperSep P Q) (mkProperSep Q P)
+  : (P ∗ Q) ⊢ (Q ∗ P)
   => \lam n x hv hs => \case hs \with {
     | inP (a, b, dab, hP, hQ) =>
       inP (b, a,
@@ -496,7 +647,7 @@
   }
 
 \lemma sep_assoc_l_ent {M : UCMRA} (P Q R : ProperUPred M)
-  : properUPred_ent (mkProperSep (mkProperSep P Q) R) (mkProperSep P (mkProperSep Q R))
+  : ((P ∗ Q) ∗ R) ⊢ (P ∗ (Q ∗ R))
   => \lam n x hv hs => \case hs \with {
     | inP (ab, c, dabc, hPQ, hR) => \case hPQ \with {
       | inP (a, b, dab, hP, hQ) =>
@@ -512,7 +663,7 @@
   }
 
 \lemma sep_assoc_r_ent {M : UCMRA} (P Q R : ProperUPred M)
-  : properUPred_ent (mkProperSep P (mkProperSep Q R)) (mkProperSep (mkProperSep P Q) R)
+  : (P ∗ (Q ∗ R)) ⊢ ((P ∗ Q) ∗ R)
   => \lam n x hv hs => \case hs \with {
     | inP (a, bc, dabc, hP, hQR) => \case hQR \with {
       | inP (b, c, dbc, hQ, hR) =>
@@ -527,8 +678,8 @@
   }
 
 \lemma sep_exist_l_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (R : ProperUPred M)
-  : properUPred_ent (mkProperSep (mkProperExist A Phi) R)
-                    (mkProperExist A (\lam a => mkProperSep (Phi a) R))
+  : ((mkProperExist A Phi) ∗ R) ⊢
+                    (mkProperExist A (\lam a => (Phi a) ∗ R))
   => \lam n x hv hs => \case hs \with {
     | inP (a1, a2, dab, hex, hR) => \case hex \with {
       | inP (t, hPhi) => inP (t, inP (a1, a2, dab, hPhi, hR))
@@ -538,8 +689,8 @@
 -- Pull a big_sep existential out of an outer sep, then eliminate per-witness.
 \lemma sep_exist_l_elim {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M)
     (R Z : ProperUPred M)
-    (h : \Pi (a : A) -> properUPred_ent (mkProperSep (Phi a) R) Z)
-  : properUPred_ent (mkProperSep (mkProperExist A Phi) R) Z
+    (h : \Pi (a : A) -> ((Phi a) ∗ R) ⊢ Z)
+  : ((mkProperExist A Phi) ∗ R) ⊢ Z
   => \lam n x hv hs => \case sep_exist_l_ent Phi R n x hv hs \with {
     | inP (t, hbody) => h t n x hv hbody
   }
@@ -548,7 +699,7 @@
 -- the sep rearrangements).
 
 \lemma sep_elim_r_ent {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent (mkProperSep P Q) Q
+  : (P ∗ Q) ⊢ Q
   => \lam n x hv hs => \case hs \with {
     | inP (a, b, dab, hP, hQ) =>
       Q.upred_mono n n b x hQ
@@ -557,23 +708,76 @@
   }
 
 \lemma or_intro_l_ent {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent P (mkProperOr P Q)
+  : P ⊢ (P ∨ Q)
   => \lam n x hv h => byLeft h
 
 \lemma exist_intro_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (a : A)
-  : properUPred_ent (Phi a) (mkProperExist A Phi)
+  : (Phi a) ⊢ (mkProperExist A Phi)
   => \lam n x hv h => inP (a, h)
 
 \lemma pure_intro_sep_ent {M : UCMRA} (phi : \Prop) (hphi : phi) (Q : ProperUPred M)
-  : properUPred_ent Q (mkProperSep (mkProperPure phi) Q)
+  : Q ⊢ ((mkProperPure phi) ∗ Q)
   => \lam n x hv hq =>
       inP (M.unit, x,
            M.ofe_dist_sym n (M.op M.unit x) x (ucmra_unit_left_id_dist n x),
            hphi, hq)
 
+-- A pure consequence can be retained next to the assertion that established
+-- it.  This is the term-mode counterpart of `iDestruct ... as %H`, where the
+-- spatial hypothesis remains available afterwards.
+\lemma pure_consequence_frame_ent {M : UCMRA} (P : ProperUPred M)
+    (phi : \Prop) (h : P ⊢ (mkProperPure phi)) :
+  P ⊢ ((mkProperPure phi) ∗ P) =>
+  \lam n x hv hp =>
+    inP (M.unit, x,
+      M.ofe_dist_sym n (M.op M.unit x) x (ucmra_unit_left_id_dist n x),
+      h n x hv hp, hp)
+
+-- Retain P while extracting a persistent consequence Q from it.  Proof mode
+-- uses this law implicitly for `iPoseProof ... as "#HQ"`: Q lives in the
+-- core of the same resource, so no linear ownership is consumed.
+\lemma persistent_consequence_frame_ent {M : UCMRA}
+    (P Q : ProperUPred M)
+    (h : P ⊢ (<#> Q)) :
+  P ⊢ (P ∗ Q) =>
+  \lam n x hv hp =>
+    inP (x, ucmra_core {M} x,
+      M.ofe_dist_trans n x (M.op (ucmra_core {M} x) x)
+        (M.op x (ucmra_core {M} x))
+        (equiv_dist {M}
+          (M.equiv_sym (M.op (ucmra_core {M} x) x) x
+            (ucmra_core_left_id {M} x)) n)
+        (cmra_comm_dist {M} n (ucmra_core {M} x) x),
+      hp, h n x hv hp)
+
+-- Eliminate a pure fact while retaining its spatial neighbour.
+\lemma pure_sep_l_elim {M : UCMRA} (phi : \Prop)
+    (P Q : ProperUPred M) (h : phi -> P ⊢ Q) :
+  ((mkProperPure phi) ∗ P) ⊢ Q =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a, b, dab, hphi, hp) =>
+      h hphi n x hv
+        (P.upred_mono n n b x hp (inP (a,
+          M.ofe_dist_trans n x (M.op a b) (M.op b a) dab
+            (cmra_comm_dist {M} n a b))) <=-refl)
+  }
+
+-- Internal equality rewrites the right-hand assertion at the same index.
+\lemma internal_eq_elim_r_ent {M : UCMRA} (P Q : ProperUPred M) :
+  ((mkProperInternalEq {M} {UPredOFE M} P Q) ∗ Q) ⊢ P =>
+  \lam n x hv hs => \case hs \with {
+    | inP (a, b, dab, heq, hq) =>
+      \let
+        | hvb : M.validN n b => validN_sub_r n x a b hv dab
+        | hp : P.upred_holds n b => (heq n b <=-refl hvb).2 hq
+      \in P.upred_mono n n b x hp
+        (inP (a, M.ofe_dist_trans n x (M.op a b) (M.op b a) dab
+          (cmra_comm_dist {M} n a b))) <=-refl
+  }
+
 \lemma wand_intro_ent {M : UCMRA} (R P Q : ProperUPred M)
-    (h : properUPred_ent (mkProperSep R P) Q)
-  : properUPred_ent R (mkProperWand P Q)
+    (h : (R ∗ P) ⊢ Q)
+  : R ⊢ (P -∗ Q)
   => \lam n a1 hv hR m m_le_n a2 hv_op hP =>
       h m (M.op a1 a2) hv_op
           (inP (a1, a2, M.ofe_dist_refl m (M.op a1 a2),
@@ -581,7 +785,7 @@
                 hP))
 
 \lemma sep_elim_l_ent {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent (mkProperSep P Q) P
+  : (P ∗ Q) ⊢ P
   => \lam n x hv hs => \case hs \with {
     | inP (a, b, dab, hP, hQ) =>
       P.upred_mono n n a x hP
@@ -590,12 +794,12 @@
   }
 
 \lemma or_intro_r_ent {M : UCMRA} (P Q : ProperUPred M)
-  : properUPred_ent Q (mkProperOr P Q)
+  : Q ⊢ (P ∨ Q)
   => \lam n x hv h => byRight h
 
 \lemma exist_elim_ent {M : UCMRA} {A : \Set0} (Phi : A -> ProperUPred M) (Z : ProperUPred M)
-    (h : \Pi (a : A) -> properUPred_ent (Phi a) Z)
-  : properUPred_ent (mkProperExist A Phi) Z
+    (h : \Pi (a : A) -> (Phi a) ⊢ Z)
+  : (mkProperExist A Phi) ⊢ Z
   => \lam n x hv hex => \case hex \with { | inP (t, hp) => h t n x hv hp }
 
 -- (a·b)·(c·d) ≡ (a·d)·(b·c)

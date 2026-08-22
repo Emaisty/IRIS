@@ -1,0 +1,36 @@
+\import interface
+\import Logic
+\import Arith.Nat
+\import lang
+\import Paths
+\import Order.PartialOrder
+\import uPred
+\import cmra
+\import updates
+\import weakestpre
+\import lib.heap
+\import lib.gmap_cmra
+\import lib.excl_cmra
+
+\func ht {cnt : Countable Loc} (P : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) :
+  ProperUPred (HeapCMRA Loc cnt Value) => {?}
+
+\lemma ht_conseq {cnt : Countable Loc} (P P' : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi Phi' : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(hP : properUPred_ent P' P) (hPhi : \Pi (v : Value) -> properUPred_ent (Phi v) (Phi' v)) : properUPred_ent (ht P e Phi) (ht P' e Phi') => {?}
+
+\lemma ht_conseq_pre {cnt : Countable Loc} (P P' : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(hP : properUPred_ent P' P) : properUPred_ent (ht P e Phi) (ht P' e Phi) => {?}
+
+\lemma ht_conseq_post {cnt : Countable Loc} (P : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi Phi' : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(hPhi : \Pi (v : Value) -> properUPred_ent (Phi v) (Phi' v)) : properUPred_ent (ht P e Phi) (ht P e Phi') => {?}
+
+\lemma ht_value {cnt : Countable Loc} (P : ProperUPred (HeapCMRA Loc cnt Value)) (v : Value) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(h : properUPred_ent P (Phi v)) : properUPred_ent (mkProperPure (\Sigma)) (ht P (Val v) Phi) => {?}
+
+\lemma ht_frame_r_from_wp_frame {cnt : Countable Loc} (P R : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(wp_frame : properUPred_ent (mkProperSep (wp e Phi) R) (wp e (\lam v => mkProperSep (Phi v) R))) :
+  properUPred_ent (ht P e Phi) (ht (mkProperSep P R) e (\lam v => mkProperSep (Phi v) R)) => {?}
+
+\lemma ht_frame_l_from_wp_frame {cnt : Countable Loc} (P R : ProperUPred (HeapCMRA Loc cnt Value)) (e : Expr) (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value)) 
+(wp_frame : properUPred_ent (mkProperSep (wp e Phi) R) (wp e (\lam v => mkProperSep (Phi v) R))) :
+  properUPred_ent (ht P e Phi) (ht (mkProperSep R P) e (\lam v => mkProperSep R (Phi v))) => {?}

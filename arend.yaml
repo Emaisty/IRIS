@@ -2,3 +2,5 @@ langVersion: 1.12
 sourcesDir: src
 binariesDir: bin
 dependencies: [ arend-lib ]
+extensionsDir: ext
+extensionMainClass: org.arend.iris.proofmode.ProofModeExtension
