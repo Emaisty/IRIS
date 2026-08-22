@@ -126,6 +126,23 @@
       \in inP (a, b, dx, hR, h n n_le_N b hb hP)
   }
 
+\lemma sep_mono_l_at {M : UCMRA} (N : Nat)
+    (P Q R : ProperUPred M) (h : properUPred_ent_at N P Q)
+  : properUPred_ent_at N (mkProperSep P R) (mkProperSep Q R) =>
+  \lam n n_le_N x hx hs => \case hs \with {
+    | inP (a, b, dx, hP, hR) =>
+      \let
+        | hab : M.validN n (M.op a b) =>
+            M.cmra_validN_ne n x (M.op a b) dx hx
+        | ha : M.validN n a => cmra_validN_op_l {M} n a b hab
+      \in inP (a, b, dx, h n n_le_N a ha hP, hR)
+  }
+
+\lemma properUPred_ent_to_at {M : UCMRA} (N : Nat)
+    (P Q : ProperUPred M) (h : properUPred_ent P Q) :
+  properUPred_ent_at N P Q =>
+  \lam n _ x hx hp => h n x hx hp
+
 \lemma fupd_mono_at {S : gFunctors} (W : wsatGS S) (N : Nat)
     (E1 E2 : coPset) (P Q : iProp S)
     (h : properUPred_ent_at N P Q)
@@ -335,6 +352,20 @@
             m ((iResUR S).op x frame) hv_op hb
     \in bupd_trans (mkProperExceptZero target)
           m ((iResUR S).op x frame) hv_op hbb
+
+-- A basic update around a fancy update is absorbed by the latter.  This is
+-- the mask-polymorphic form used by the derived WP update rule.
+\lemma bupd_fupd_flatten {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S) :
+  properUPred_ent
+    (mkProperBUpd (mkProperFUpd W E1 E2 P))
+    (mkProperFUpd W E1 E2 P) =>
+  properUPred_ent_trans
+    (mkProperBUpd (mkProperFUpd W E1 E2 P))
+    (mkProperFUpd W E1 E1 (mkProperFUpd W E1 E2 P))
+    (mkProperFUpd W E1 E2 P)
+    (bupd_fupd W E1 (mkProperFUpd W E1 E2 P))
+    (fupd_trans W E1 E1 E2 P)
 
 \lemma op_frame_sep_dist {M : UCMRA} (n : Nat) (r x a b : M.E)
     (d : M.dist n x (M.op a b))

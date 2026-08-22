@@ -10,8 +10,7 @@
 \import iris.base_logic.lib.gen_heap
 
 -- A closed, binder-free heap-language client of the canonical generic stack.
--- It deliberately avoids `String` and therefore remains a useful A12 smoke
--- example while named-variable substitution is deferred.
+-- It deliberately avoids binders and remains a useful closed smoke example.
 \func alloc_unit_program : Expr => Alloc (Val (LitV LitUnit))
 
 \lemma alloc_unit_wp {cnt : Countable Loc} {S : gFunctors}

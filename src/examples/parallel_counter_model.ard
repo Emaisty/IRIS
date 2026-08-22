@@ -1,0 +1,164 @@
+\import Logic
+\import Paths
+\import Arith.Nat
+\import Arith.Rat
+\import Data.Or
+\import Algebra.StrictlyOrdered
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.frac
+\import iris.algebra.agree
+\import iris.algebra.view
+\import iris.algebra.lib.gmap_view
+\import iris.algebra.lib.frac_auth
+\import iris.base_logic.upred
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.own
+
+-- The abstract model of the modular counter.  This file deliberately stops at
+-- the model ghost state; the shard/request invariant is layered on top once
+-- saved predicates are available.
+
+\func msc_modelR : CMRA.{0} =>
+  frac_authR (AgreeCMRA (DiscreteOFE Nat))
+
+\func msc_modelRF : RFunctor => constRF msc_modelR
+
+\func msc_modelRF_contractive : RFunctorContractive msc_modelRF =>
+  constRF_contractive msc_modelR
+
+\func msc_model_gFunctor : gFunctor =>
+  mkGFunctor msc_modelRF msc_modelRF_contractive
+
+\func msc_modelSigma : gFunctors =>
+  gFunctors_singleton msc_model_gFunctor
+
+\record mscModelG (S : gFunctors)
+  | msc_model_inG : inG S msc_modelR
+
+\func subG_mscModelG {S : gFunctors} (h : subG msc_modelSigma S)
+  : mscModelG S \cowith
+  | msc_model_inG =>
+      transport (\lam Z => inG S Z)
+        (rFunctor_apply_constRF msc_modelR (iPropCOFE S))
+        (subG_inG h)
+
+\func msc_auth_elem (n : Nat) : msc_modelR.E =>
+  frac_auth_auth (to_agree n)
+
+\func msc_frag_elem (q : Qp) (n : Nat) : msc_modelR.E =>
+  frac_auth_frag q (to_agree n)
+
+\func msc_auth {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (n : Nat) : iProp S =>
+  own H.msc_model_inG gam (msc_auth_elem n)
+
+\func msc_frag {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (q : Qp) (n : Nat) : iProp S =>
+  own H.msc_model_inG gam (msc_frag_elem q n)
+
+\lemma msc_frag_elem_discrete (q : Qp) (n : Nat) :
+  Discrete {msc_modelR} (msc_frag_elem q n) =>
+  frac_auth_frag_discrete q (to_agree n)
+    (to_agree_discrete n (discreteOFE_discrete Nat n))
+
+\lemma msc_frag_timeless {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (q : Qp) (n : Nat) :
+  properUPred_ent (mkProperLater (msc_frag H gam q n))
+    (mkProperExceptZero (msc_frag H gam q n)) =>
+  own_timeless H.msc_model_inG gam (msc_frag_elem q n)
+    (msc_frag_elem_discrete q n)
+
+\lemma msc_frag_split {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (q1 q2 : Qp) (n : Nat) :
+  upredEquiv
+    (msc_frag H gam (qp_add q1 q2) n)
+    (mkProperSep (msc_frag H gam q1 n) (msc_frag H gam q2 n)) =>
+  (UPredOFE (iResUR S)).equiv_trans
+    (msc_frag H gam (qp_add q1 q2) n)
+    (own H.msc_model_inG gam
+      (msc_modelR.op (msc_frag_elem q1 n) (msc_frag_elem q2 n)))
+    (mkProperSep (msc_frag H gam q1 n) (msc_frag H gam q2 n))
+    (own_proper H.msc_model_inG gam
+      (msc_frag_elem (qp_add q1 q2) n)
+      (msc_modelR.op (msc_frag_elem q1 n) (msc_frag_elem q2 n))
+      (frac_auth_frag_op_core_id q1 q2 (to_agree n)
+        (agree_idemp (to_agree n))))
+    (own_op H.msc_model_inG gam
+      (msc_frag_elem q1 n) (msc_frag_elem q2 n))
+
+\lemma msc_to_agree_valid (n : Nat) :
+  (AgreeCMRA (DiscreteOFE Nat)).valid (to_agree n) =>
+  \lam step a b ha hb => \case ha \with {
+    | inl ea => \case hb \with {
+      | inl eb => transport2 (\lam x y => x = y) (inv ea) (inv eb) idp
+      | inr impossible => \case impossible \with {}
+    }
+    | inr impossible => \case impossible \with {}
+  }
+
+\lemma msc_model_alloc {S : gFunctors} (H : mscModelG S) (n : Nat) :
+  properUPred_ent mkProperEmp
+    (mkProperBUpd (mkProperExist gname (\lam gam =>
+      mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one n)))) =>
+  \let
+    | auth => msc_auth_elem n
+    | frag => msc_frag_elem qp_one n
+    | both => msc_modelR.op auth frag
+  \in properUPred_ent_trans mkProperEmp
+    (mkProperBUpd (mkProperExist gname (\lam gam =>
+      own H.msc_model_inG gam both)))
+    (mkProperBUpd (mkProperExist gname (\lam gam =>
+      mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one n))))
+    (own_alloc H.msc_model_inG both
+      (frac_auth_valid (to_agree n) (msc_to_agree_valid n)))
+    (bupd_mono
+      (mkProperExist gname (\lam gam => own H.msc_model_inG gam both))
+      (mkProperExist gname (\lam gam =>
+        mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one n)))
+      (\lam step x hx hex => \case hex \with {
+        | inP (gam, hown) =>
+          inP (gam, (own_op H.msc_model_inG gam auth frag step x hx).1 hown)
+      }))
+
+\lemma msc_auth_frag_update {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (n m k : Nat) :
+  properUPred_ent
+    (mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one m))
+    (mkProperBUpd
+      (mkProperSep (msc_auth H gam k) (msc_frag H gam qp_one k))) =>
+  properUPred_ent_trans
+    (mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one m))
+    (own H.msc_model_inG gam
+      (msc_modelR.op (msc_auth_elem n) (msc_frag_elem qp_one m)))
+    (mkProperBUpd
+      (mkProperSep (msc_auth H gam k) (msc_frag H gam qp_one k)))
+    (\lam step x hx hsep =>
+      (own_op H.msc_model_inG gam
+        (msc_auth_elem n) (msc_frag_elem qp_one m) step x hx).2 hsep)
+    (own_update_op H.msc_model_inG gam
+      (msc_modelR.op (msc_auth_elem n) (msc_frag_elem qp_one m))
+      (msc_auth_elem k) (msc_frag_elem qp_one k)
+      (cmra_updateP_update_det
+        (msc_modelR.op (msc_auth_elem n) (msc_frag_elem qp_one m))
+        (msc_modelR.op (msc_auth_elem k) (msc_frag_elem qp_one k))
+        (frac_auth_update_1 (to_agree n) (to_agree m) (to_agree k)
+          (msc_to_agree_valid k))))
+
+\lemma msc_auth_frag_agree {S : gFunctors} (H : mscModelG S)
+    (gam : gname) (n m : Nat) :
+  properUPred_ent
+    (mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one m))
+    (mkProperPure (n = m)) =>
+  properUPred_ent_trans
+    (mkProperSep (msc_auth H gam n) (msc_frag H gam qp_one m))
+    (mkProperValidOf {iResUR S} {msc_modelR}
+      (msc_modelR.op (msc_auth_elem n) (msc_frag_elem qp_one m)))
+    (mkProperPure (n = m))
+    (own_op_valid H.msc_model_inG gam
+      (msc_auth_elem n) (msc_frag_elem qp_one m))
+    (\lam step _ _ hv =>
+      view_agree_dist_extract step n (to_agree m)
+        (frac_auth_agreeN step (to_agree n) (to_agree m) hv))

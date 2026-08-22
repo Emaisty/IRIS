@@ -1730,7 +1730,7 @@
   }
 
 \func rec_ctx_absurd
-  {cnt : Countable Loc} (f x : String) (body : Expr)
+  {cnt : Countable Loc} (f x : Name) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Rec f x body = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1751,7 +1751,7 @@
   | StoreRCtx _ => \case p1 \with {}
 
 \func lam_ctx_absurd
-  {cnt : Countable Loc} (x : String) (body : Expr)
+  {cnt : Countable Loc} (x : Name) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Lam x body = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1896,7 +1896,7 @@
   | StoreRCtx _ => \case p1 \with {}
 
 \func app_lam_ctx_absurd
-  {cnt : Countable Loc} (x : String) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (x : Name) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (LamV x body)) (Val v) = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1933,7 +1933,7 @@
   | StoreRCtx _ => \case p1 \with {}
 
 \func app_rec_ctx_absurd
-  {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (f x : Name) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (RecV f x body)) (Val v) = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1970,7 +1970,7 @@
   | StoreRCtx _ => \case p1 \with {}
 
 \func base_rec_step_det
-  {cnt : Countable Loc} (f x : String) (body : Expr)
+  {cnt : Countable Loc} (f x : Name) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (Rec f x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (RecV f x body)) (sigma2 = sigma)
@@ -2002,7 +2002,7 @@
   }
 
 \func base_lam_step_det
-  {cnt : Countable Loc} (x : String) (body : Expr)
+  {cnt : Countable Loc} (x : Name) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (Lam x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (LamV x body)) (sigma2 = sigma)
@@ -2175,7 +2175,7 @@
   }
 
 \func base_lam_beta_step_det
-  {cnt : Countable Loc} (x : String) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (x : Name) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2 nil)
   : \Sigma (e2 = subst x v body) (sigma2 = sigma)
@@ -2210,7 +2210,7 @@
   }
 
 \func base_rec_beta_step_det
-  {cnt : Countable Loc} (f x : String) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (f x : Name) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2 nil)
   : \Sigma (e2 = subst x v (subst f (RecV f x body) body)) (sigma2 = sigma)
@@ -2299,7 +2299,7 @@
 
 \lemma wp_rec
   {cnt : Countable Loc}
-  (f x : String) (body : Expr)
+  (f x : Name) (body : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (Phi (RecV f x body)) (wp (Rec f x body) Phi)
   => properUPred_ent_trans
@@ -2320,7 +2320,7 @@
 
 \lemma wp_lam
   {cnt : Countable Loc}
-  (x : String) (body : Expr)
+  (x : Name) (body : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (Phi (LamV x body)) (wp (Lam x body) Phi)
   => properUPred_ent_trans
@@ -2341,7 +2341,7 @@
 
 \lemma wp_lam_beta
   {cnt : Countable Loc}
-  (x : String) (body : Expr) (v : Value)
+  (x : Name) (body : Expr) (v : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp (subst x v body) Phi)
       (wp (App (Val (LamV x body)) (Val v)) Phi)
@@ -2359,7 +2359,7 @@
 
 \lemma wp_lam_beta_to
   {cnt : Countable Loc}
-  (x : String) (body body' : Expr) (v : Value)
+  (x : Name) (body body' : Expr) (v : Value)
   (subst_eq : subst x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
@@ -2377,7 +2377,7 @@
 
 \lemma wp_rec_beta
   {cnt : Countable Loc}
-  (f x : String) (body : Expr) (v : Value)
+  (f x : Name) (body : Expr) (v : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp (subst x v (subst f (RecV f x body) body)) Phi)
       (wp (App (Val (RecV f x body)) (Val v)) Phi)
@@ -2395,7 +2395,7 @@
 
 \lemma wp_rec_beta_to
   {cnt : Countable Loc}
-  (f x : String) (body body' : Expr) (v : Value)
+  (f x : Name) (body body' : Expr) (v : Value)
   (subst_eq : subst x v (subst f (RecV f x body) body) = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
@@ -2836,7 +2836,7 @@
 
 \lemma wp_rec_lam_app2_to
   {cnt : Countable Loc}
-  (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value)
+  (f x y : Name) (body body1 body2 : Expr) (v1 v2 : Value)
   (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (subst_lam_eq : subst y v2 body1 = body2)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
@@ -2865,7 +2865,7 @@
 
 \lemma wp_rec_lam_app1_to
   {cnt : Countable Loc}
-  (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr)
+  (f x y : Name) (body body1 : Expr) (v1 : Value) (arg : Expr)
   (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)
@@ -2887,7 +2887,7 @@
 
 \lemma wp_rec_expr_lam_app2_to
   {cnt : Countable Loc}
-  (f x y : String) (body body1 body2 : Expr) (v1 v2 : Value)
+  (f x y : Name) (body body1 body2 : Expr) (v1 v2 : Value)
   (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (subst_lam_eq : subst y v2 body1 = body2)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
@@ -2942,7 +2942,7 @@
 
 \lemma wp_lam_expr_app_to
   {cnt : Countable Loc}
-  (x : String) (body body' : Expr) (v : Value)
+  (x : Name) (body body' : Expr) (v : Value)
   (subst_eq : subst x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
@@ -2961,7 +2961,7 @@
 
 \lemma wp_lam_expr_app_arg_to
   {cnt : Countable Loc}
-  (x : String) (body : Expr) (arg : Expr)
+  (x : Name) (body : Expr) (arg : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
       (wp (App (Val (LamV x body)) arg) Phi)
@@ -2975,7 +2975,7 @@
 
 \lemma wp_lam_expr_app_r_to
   {cnt : Countable Loc}
-  (x : String) (body body' arg : Expr)
+  (x : Name) (body body' arg : Expr)
   (subst_eq : \Pi (v : Value) -> subst x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
@@ -2998,7 +2998,7 @@
 
 \lemma wp_rec_expr_lam_app1_to
   {cnt : Countable Loc}
-  (f x y : String) (body body1 : Expr) (v1 : Value) (arg : Expr)
+  (f x y : Name) (body body1 : Expr) (v1 : Value) (arg : Expr)
   (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)

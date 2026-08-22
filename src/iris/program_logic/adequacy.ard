@@ -48,6 +48,17 @@
     (mkProperSep (wsat H.iris_wsat)
       (ownE H.iris_wsat coPset_universe))
 
+-- Adequacy initializes the conventional heap-language fork postcondition,
+-- which is inhabited for every returned value.  Packaging that witness with
+-- `irisGS` lets clients prove specifications that use a real fork/join library
+-- without quantifying over impossible arbitrary fork postconditions.
+\func fork_post_inhabited {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) : \Type =>
+  \Pi (v : Value) -> properUPred_ent mkProperEmp (H.iris_fork_post v)
+
+\func irisGS_with_fork (cnt : Countable Loc) (S : gFunctors) : \Set1 =>
+  \Sigma (H : irisGS cnt S) (fork_post_inhabited H)
+
 \func heap_package {cnt : Countable Loc} {S : gFunctors}
     (sigma : State cnt) : iProp S =>
   mkProperExist1 (gen_heapGS Loc cnt Value S)
@@ -147,6 +158,72 @@
         (mkProperExist1 (irisGS cnt S)
           (\lam H => init_resources H sigma observations))) =>
   init_from_allocations sigma observations
+    (gen_heap_init Hpre.iris_heap_pre sigma.heap)
+    (wsat_alloc Hpre.iris_wsat_pre)
+    (proph_map_init Hpre.iris_proph_pre observations sigma.usedProph)
+
+-- The fork-aware initialization package.  Its spatial resources are exactly
+-- `init_resources`; the extra component is only a proof that the concrete
+-- fork postcondition chosen by `init` is inhabited.
+\lemma init_from_allocations_with_fork {cnt : Countable Loc}
+    {S : gFunctors} (sigma : State cnt)
+    (observations : List Observation)
+    (heapAlloc : properUPred_ent mkProperEmp
+      (mkProperBUpd (heap_package {cnt} {S} sigma)))
+    (worldAlloc : properUPred_ent mkProperEmp
+      (mkProperBUpd (world_package {S})))
+    (prophAlloc : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (proph_package {S} observations sigma.usedProph))) :
+  properUPred_ent mkProperEmp
+    (mkProperBUpd
+      (mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations))) =>
+  \let
+    | HeapPackage : iProp S => heap_package {cnt} {S} sigma
+    | ProphPackage : iProp S =>
+        proph_package {S} observations sigma.usedProph
+    | HeapProph : iProp S => mkProperSep HeapPackage ProphPackage
+    | WorldPackage : iProp S => world_package
+    | Combined : iProp S => mkProperSep HeapProph WorldPackage
+    | Goal : iProp S => mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations)
+    | package : properUPred_ent Combined Goal =>
+        \lam n x hx hcombined => \case hcombined \with {
+          | inP (aHeapProph, aWorld, dx, hHeapProph, hWorldPackage) =>
+            \case hHeapProph, hWorldPackage \with {
+              | inP (aHeap, aProph, dhp, hHeapPackage, hProphPackage),
+                  inP (W, hWorld) =>
+                \case hHeapPackage, hProphPackage \with {
+                  | inP (G, hHeap), inP (P, hProph) =>
+                \let
+                  | H : irisGS cnt S =>
+                      mkIrisGS W G P
+                        (\lam _ => mkProperPure (TruncP Nat))
+                  | inhabited : fork_post_inhabited H =>
+                      \lam _ _ _ _ _ => inP 0
+                  | HF : irisGS_with_fork cnt S => (H, inhabited)
+                \in inP (HF,
+                  inP (aHeapProph, aWorld, dx,
+                    inP (aHeap, aProph, dhp, hHeap, hProph), hWorld))
+                }
+            }
+        }
+    | allocateHeapProph : properUPred_ent mkProperEmp
+        (mkProperBUpd HeapProph) =>
+        bupd_alloc_two_then HeapPackage ProphPackage HeapProph
+          heapAlloc prophAlloc (properUPred_ent_refl HeapProph)
+  \in bupd_alloc_two_then HeapProph WorldPackage Goal
+      allocateHeapProph worldAlloc package
+
+\lemma init_with_fork {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (sigma : State cnt)
+    (observations : List Observation) :
+  properUPred_ent mkProperEmp
+    (mkProperBUpd
+      (mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations))) =>
+  init_from_allocations_with_fork sigma observations
     (gen_heap_init Hpre.iris_heap_pre sigma.heap)
     (wsat_alloc Hpre.iris_wsat_pre)
     (proph_map_init Hpre.iris_proph_pre observations sigma.usedProph)
@@ -444,7 +521,8 @@
             futureObservations
       \in properUPred_ent_trans Source
           (mkProperSep
-            (wp_step_result H coPset_universe e2 Phi sigma2 efs) ForkTail)
+            (wp_step_result H coPset_universe e2 Phi sigma2 efs
+              futureObservations) ForkTail)
           (wp_step_iter H coPset_universe 1
             (mkProperSep
               (wp_thread_pool H Phi ((e2 :: tail) ++ efs))
@@ -613,8 +691,14 @@
     (wp_step_iter H coPset_universe k
       (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
         (Phi v)))
-    (wp_thread_pool_preservation H Phi k (e :: nil) ((Val v) :: tail)
-      sigma sigma' observations nil steps)
+    (transport (\lam obs => properUPred_ent
+        (mkProperSep (wp_thread_pool H Phi (e :: nil))
+          (state_interp H sigma obs))
+        (wp_step_iter H coPset_universe k
+          (mkProperSep (wp_thread_pool H Phi ((Val v) :: tail))
+            (state_interp H sigma' nil)))) ++_nil
+      (wp_thread_pool_preservation H Phi k (e :: nil) ((Val v) :: tail)
+        sigma sigma' observations nil steps))
     (wp_step_iter_mono H coPset_universe k
       (mkProperSep (wp_thread_pool H Phi ((Val v) :: tail))
         (state_interp H sigma' nil))
@@ -706,8 +790,13 @@
                 (sep_elim_r_ent
                   (wp_forks H.iris_fork_post (wp H) tail)
                   (state_interp H sigma observations))))
-            (wp_reducible H coPset_universe e Phi sigma
-              observations nil notVal)
+            (transport (\lam obs => properUPred_ent
+                (mkProperSep (wp H coPset_universe e Phi)
+                  (state_interp H sigma obs))
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+                  (mkProperPure (Reducible e sigma)))) ++_nil
+              (wp_reducible H coPset_universe e Phi sigma
+                observations nil notVal))
       | byRight m =>
           properUPred_ent_trans
             (mkProperSep
@@ -749,8 +838,14 @@
                 (wp_forks H.iris_fork_post (wp H) tail)
                 (wp H coPset_universe e H.iris_fork_post)
                 (state_interp H sigma observations) (wp_forks_member H e tail m)))
-            (wp_reducible H coPset_universe e H.iris_fork_post sigma
-              observations nil notVal)
+            (transport (\lam obs => properUPred_ent
+                (mkProperSep
+                  (wp H coPset_universe e H.iris_fork_post)
+                  (state_interp H sigma obs))
+                (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+                  (mkProperPure (Reducible e sigma)))) ++_nil
+              (wp_reducible H coPset_universe e H.iris_fork_post sigma
+                observations nil notVal))
     }
 
 \lemma wp_thread_steps_reducible {cnt : Countable Loc} {S : gFunctors}
@@ -774,8 +869,14 @@
     (wp_step_iter H coPset_universe k
       (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
         (mkProperPure (Reducible e' sigma'))))
-    (wp_thread_pool_preservation H Phi k (e :: nil) tp sigma sigma'
-      observations nil steps)
+    (transport (\lam obs => properUPred_ent
+        (mkProperSep (wp_thread_pool H Phi (e :: nil))
+          (state_interp H sigma obs))
+        (wp_step_iter H coPset_universe k
+          (mkProperSep (wp_thread_pool H Phi tp)
+            (state_interp H sigma' nil)))) ++_nil
+      (wp_thread_pool_preservation H Phi k (e :: nil) tp sigma sigma'
+        observations nil steps))
     (wp_step_iter_mono H coPset_universe k
       (mkProperSep (wp_thread_pool H Phi tp)
         (state_interp H sigma' nil))
@@ -1082,6 +1183,115 @@
         \in wp_step_iter_pure_soundness H coPset_universe E2 k
             phi a ha hclosed)
 
+-- Fork-aware counterpart of `wp_pure_soundness_from_init`.  The operational
+-- preservation argument is unchanged; only the initialized witness carries
+-- the proof required by clients of fork/join.
+\lemma wp_pure_soundness_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (Phi : Value -> iProp S)
+    (sigma : State cnt) (observations : List Observation)
+    (k : Nat) (E2 : coPset) (phi : \Prop)
+    (hinit : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      properUPred_ent mkProperEmp
+        (wp H coPset_universe e Phi))
+    (run : \Pi (H : irisGS cnt S) -> properUPred_ent
+      (mkProperSep (wp H coPset_universe e Phi)
+        (state_interp H sigma observations))
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe E2
+          (mkProperPure phi)))) : phi =>
+  \let
+    | M => iResUR S
+    | Init => mkProperExist1 (irisGS_with_fork cnt S)
+        (\lam HF => init_resources HF.1 sigma observations)
+    | hu : M.validN (suc k) M.unit =>
+        (M.cmra_valid_validN M.unit).1 M.ucmra_unit_valid (suc k)
+    | hemp : mkProperEmp.upred_holds (suc k) M.unit =>
+        inP (M.unit,
+          M.ofe_dist_sym (suc k) (M.op M.unit M.unit) M.unit
+            (ucmra_unit_left_id_dist (suc k) M.unit))
+    | hb : (mkProperBUpd Init).upred_holds (suc k) M.unit =>
+        hinit (suc k) M.unit hu hemp
+    | huu : M.validN (suc k) (M.op M.unit M.unit) =>
+        cmra_validN_proper {M} (suc k) M.unit (M.op M.unit M.unit)
+          (M.equiv_sym (M.op M.unit M.unit) M.unit
+            (ucmra_unit_right_id M.unit)) hu
+  \in truncP_elim_prop
+    (hb (suc k) <=-refl M.unit huu)
+    \lam opened0 =>
+      \let
+        | a => opened0.1
+        | hau => opened0.2
+        | hex => opened0.3
+      \in truncP_elim_prop hex (\lam initialized =>
+        \let
+          | HF => initialized.1
+          | H => HF.1
+          | FPI => HF.2
+          | hresources => initialized.2
+          | ha : M.validN (suc k) a =>
+              M.cmra_validN_op_l (suc k) a M.unit hau
+          | World => world H.iris_wsat coPset_universe
+          | WPState => mkProperSep (wp H coPset_universe e Phi)
+              (state_interp H sigma observations)
+          | withWP : properUPred_ent (init_resources H sigma observations)
+              (mkProperSep (init_resources H sigma observations)
+                (wp H coPset_universe e Phi)) =>
+              properUPred_ent_trans (init_resources H sigma observations)
+                (mkProperSep (init_resources H sigma observations) mkProperEmp)
+                (mkProperSep (init_resources H sigma observations)
+                  (wp H coPset_universe e Phi))
+                (add_emp_r_ent (init_resources H sigma observations))
+                (sep_mono_r_ent (init_resources H sigma observations)
+                  mkProperEmp (wp H coPset_universe e Phi) (hwp H FPI))
+          | Added => mkProperSep (init_resources H sigma observations)
+              (wp H coPset_universe e Phi)
+          | Associated => mkProperSep
+              (state_interp H sigma observations)
+              (mkProperSep World (wp H coPset_universe e Phi))
+          | Swapped => mkProperSep World
+              (mkProperSep (state_interp H sigma observations)
+                (wp H coPset_universe e Phi))
+          | associate : properUPred_ent Added Associated =>
+              sep_assoc_l_ent (state_interp H sigma observations) World
+                (wp H coPset_universe e Phi)
+          | swap : properUPred_ent Associated Swapped =>
+              sep_swap_ent (state_interp H sigma observations) World
+                (wp H coPset_universe e Phi)
+          | finish : properUPred_ent Swapped
+              (mkProperSep World WPState) =>
+              sep_mono_r_ent World
+                (mkProperSep (state_interp H sigma observations)
+                  (wp H coPset_universe e Phi)) WPState
+                (sep_comm_ent (state_interp H sigma observations)
+                  (wp H coPset_universe e Phi))
+          | arranged : properUPred_ent
+              (init_resources H sigma observations)
+              (mkProperSep World WPState) =>
+              properUPred_ent_trans (init_resources H sigma observations)
+                Added (mkProperSep World WPState) withWP
+                (properUPred_ent_trans Added Associated
+                  (mkProperSep World WPState) associate
+                  (properUPred_ent_trans Associated Swapped
+                    (mkProperSep World WPState) swap finish))
+          | hstart : (mkProperSep World WPState).upred_holds
+              (suc k) a => arranged (suc k) a ha hresources
+          | hclosed : (mkProperSep World
+              (wp_step_iter H coPset_universe k
+                (mkProperFUpd H.iris_wsat coPset_universe E2
+                  (mkProperPure phi))))
+              .upred_holds (suc k) a =>
+              sep_mono_r_ent World WPState
+                (wp_step_iter H coPset_universe k
+                  (mkProperFUpd H.iris_wsat coPset_universe E2
+                    (mkProperPure phi))) (run H)
+                (suc k) a ha hstart
+        \in wp_step_iter_pure_soundness H coPset_universe E2 k
+            phi a ha hclosed)
+
 \lemma wp_adequacy_from_init {cnt : Countable Loc} {S : gFunctors}
     (e : Expr) (phi : Value -> \Prop)
     (sigma : State cnt) (k : Nat) (v : Value) (tail : ThreadPool)
@@ -1139,6 +1349,68 @@
       (wp_thread_steps_reducible H Phi k e tp e' sigma sigma'
         observations steps member notVal))
 
+\lemma wp_adequacy_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt) (k : Nat) (v : Value) (tail : ThreadPool)
+    (sigma' : State cnt) (observations : List Observation)
+    (hinit : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      properUPred_ent mkProperEmp
+        (wp H coPset_universe e (\lam w => mkProperPure (phi w))))
+    (steps : ThreadSteps k (e :: nil) sigma
+      ((Val v) :: tail) sigma' observations) : phi v =>
+  \let Phi : Value -> iProp S => \lam w => mkProperPure (phi w)
+  \in wp_pure_soundness_from_fork_init e Phi sigma observations k
+    coPset_universe (phi v) hinit hwp
+    (\lam H => properUPred_ent_trans
+      (mkProperSep (wp H coPset_universe e Phi)
+        (state_interp H sigma observations))
+      (mkProperSep (wp_thread_pool H Phi (e :: nil))
+        (state_interp H sigma observations))
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+          (mkProperPure (phi v))))
+      (sep_mono_l_ent (wp H coPset_universe e Phi)
+        (mkProperSep (wp H coPset_universe e Phi) mkProperEmp)
+        (state_interp H sigma observations)
+        (add_emp_r_ent (wp H coPset_universe e Phi)))
+      (wp_thread_steps_value H k e v tail Phi sigma sigma'
+        observations steps))
+
+\lemma wp_reducible_from_fork_init {cnt : Countable Loc}
+    {S : gFunctors} (e : Expr) (Phi : Value -> iProp S)
+    (sigma : State cnt) (k : Nat) (tp : ThreadPool)
+    (sigma' : State cnt) (e' : Expr) (observations : List Observation)
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      properUPred_ent mkProperEmp
+        (wp H coPset_universe e Phi))
+    (hinit : properUPred_ent mkProperEmp
+      (mkProperBUpd
+        (mkProperExist1 (irisGS_with_fork cnt S)
+          (\lam HF => init_resources HF.1 sigma observations))))
+    (steps : ThreadSteps k (e :: nil) sigma tp sigma' observations)
+    (member : ThreadIn e' tp) (notVal : to_val e' = nothing) :
+  Reducible e' sigma' =>
+  wp_pure_soundness_from_fork_init e Phi sigma observations k
+    coPset_empty (Reducible e' sigma') hinit hwp
+    (\lam H => properUPred_ent_trans
+      (mkProperSep (wp H coPset_universe e Phi)
+        (state_interp H sigma observations))
+      (mkProperSep (wp_thread_pool H Phi (e :: nil))
+        (state_interp H sigma observations))
+      (wp_step_iter H coPset_universe k
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_empty
+          (mkProperPure (Reducible e' sigma'))))
+      (sep_mono_l_ent (wp H coPset_universe e Phi)
+        (mkProperSep (wp H coPset_universe e Phi) mkProperEmp)
+        (state_interp H sigma observations)
+        (add_emp_r_ent (wp H coPset_universe e Phi)))
+      (wp_thread_steps_reducible H Phi k e tp e' sigma sigma'
+        observations steps member notVal))
+
 \func ThreadPoolSafe {cnt : Countable Loc}
     (tp : ThreadPool) (sigma : State cnt) : \Prop =>
   \Pi (e : Expr) -> ThreadIn e tp -> not_stuck e sigma
@@ -1178,5 +1450,31 @@
             (wp_reducible_from_init e
               (\lam w => mkProperPure (phi w)) sigma k tp sigma' e'
               observations hwp (init Hpre sigma observations)
+              steps member h)
+      }
+
+-- Public fork-aware adequacy.  This is the theorem used by closed clients
+-- whose WP proof invokes spawn/join; result adequacy and safety cover the full
+-- reachable thread pool exactly as in `wp_adequacy`.
+\func wp_adequacy_with_fork {cnt : Countable Loc} {S : gFunctors}
+    (Hpre : irisGpreS cnt S) (e : Expr) (phi : Value -> \Prop)
+    (sigma : State cnt)
+    (hwp : \Pi (H : irisGS cnt S) -> fork_post_inhabited H ->
+      properUPred_ent mkProperEmp
+        (wp H coPset_universe e (\lam w => mkProperPure (phi w)))) :
+  Adequate e sigma (\lam v _ => phi v) \cowith
+  | adequate_result => \lam k v tail sigma' observations steps =>
+      wp_adequacy_from_fork_init e phi sigma k v tail sigma'
+        observations (init_with_fork Hpre sigma observations) hwp steps
+  | adequate_not_stuck =>
+      \lam k tp sigma' observations steps e' member =>
+      \case to_val e' \as tv, idp : to_val e' = tv
+      \return not_stuck e' sigma'
+      \with {
+        | just v, h => byLeft (v, h)
+        | nothing, h => byRight
+            (wp_reducible_from_fork_init e
+              (\lam w => mkProperPure (phi w)) sigma k tp sigma' e'
+              observations hwp (init_with_fork Hpre sigma observations)
               steps member h)
       }

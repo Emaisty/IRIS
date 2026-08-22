@@ -55,7 +55,7 @@
 
 
 \func Discrete {O : OFE} (x : O.E) : \Prop =>
-  \Pi (y : O.E) -> O.dist 0 x y -> x = y
+  \Pi (y : O.E) -> O.dist 0 x y -> O.equiv x y
 
 \func OFEDiscrete (O : OFE) : \Prop =>
   \Pi (x : O.E) -> Discrete x
@@ -141,6 +141,38 @@
 \record OFEMor (A B : OFE)
   | ofe_mor_car : A.E -> B.E
   | ofe_mor_ne : NonExpansive ofe_mor_car
+
+\lemma discrete_path {O : OFE} {x y : O.E} (p : x = y)
+    (hx : Discrete {O} x) : Discrete {O} y \elim p
+  | idp => hx
+
+-- A non-expansive retraction preserves discrete elements.  This is useful
+-- for Iris' `inG` fold/unfold isomorphism, whose two sides are equivalent
+-- rather than definitionally equal.
+\lemma ofe_retract_discrete {A B : OFE}
+    (f : OFEMor A B) (g : OFEMor B A)
+    (hgf : \Pi (x : A.E) -> A.equiv (g.ofe_mor_car (f.ofe_mor_car x)) x)
+    (hfg : \Pi (y : B.E) -> B.equiv (f.ofe_mor_car (g.ofe_mor_car y)) y)
+    (x : A.E) (hx : Discrete {A} x) :
+  Discrete {B} (f.ofe_mor_car x) =>
+  \lam y hxy =>
+    \let
+      | xgy0 : A.dist 0 x (g.ofe_mor_car y) =>
+          A.ofe_dist_trans 0 x
+            (g.ofe_mor_car (f.ofe_mor_car x)) (g.ofe_mor_car y)
+            (A.ofe_dist_sym 0 (g.ofe_mor_car (f.ofe_mor_car x)) x
+              ((A.ofe_equiv_dist
+                (g.ofe_mor_car (f.ofe_mor_car x)) x).1 (hgf x) 0))
+            (g.ofe_mor_ne 0 (f.ofe_mor_car x) y hxy)
+      | xgy : A.equiv x (g.ofe_mor_car y) => hx (g.ofe_mor_car y) xgy0
+      | mapped : B.equiv (f.ofe_mor_car x)
+          (f.ofe_mor_car (g.ofe_mor_car y)) =>
+          (B.ofe_equiv_dist (f.ofe_mor_car x)
+            (f.ofe_mor_car (g.ofe_mor_car y))).2
+            (\lam n => f.ofe_mor_ne n x (g.ofe_mor_car y)
+              ((A.ofe_equiv_dist x (g.ofe_mor_car y)).1 xgy n))
+    \in B.equiv_trans (f.ofe_mor_car x)
+      (f.ofe_mor_car (g.ofe_mor_car y)) y mapped (hfg y)
 
 \instance OFEMorOFE (A B : OFE) : OFE \cowith
   | E => OFEMor A B
@@ -731,6 +763,35 @@
   | ofe_dist_sym => \lam _ x y => inv
   | ofe_dist_trans => \lam _ x y z p q => p *> q
   | ofe_dist_le => \lam _ _ _ _ h _ => h
+
+-- Every element of the Leibniz/discrete OFE is discrete.  Keeping this
+-- lemma explicit avoids relying on conversion when a concrete resource
+-- algebra merely exposes `DiscreteOFE A` as its OFE field.
+\lemma discreteOFE_discrete (A : \Set) : OFEDiscrete (DiscreteOFE A) =>
+  \lam _ _ h => h
+
+-- Discreteness is closed under the non-recursive OFE constructors.  These
+-- are the term-mode counterparts of Iris' `Discrete` instances and are used
+-- by timelessness proofs for composite ghost resources.
+\lemma prod_discrete {A B : OFE} (x : A.E) (y : B.E)
+    (hx : Discrete {A} x) (hy : Discrete {B} y) :
+  Discrete {ProdOFE A B} (x, y) =>
+  \lam z hd => (hx z.1 hd.1, hy z.2 hd.2)
+
+\lemma option_nothing_discrete {A : OFE} :
+  Discrete {OptionOFE A} nothing =>
+  \lam o hd => \case \elim o, hd \with {
+    | nothing, _ => ()
+    | just _, impossible => \case impossible \with {}
+  }
+
+\lemma option_just_discrete {A : OFE} (x : A.E)
+    (hx : Discrete {A} x) :
+  Discrete {OptionOFE A} (just x) =>
+  \lam o hd => \case \elim o, hd \with {
+    | nothing, impossible => \case impossible \with {}
+    | just y, hxy => hx y hxy
+  }
 
 \instance FunOFE (A : \Type) (B : OFE) : OFE \cowith
   | E => A -> B.E

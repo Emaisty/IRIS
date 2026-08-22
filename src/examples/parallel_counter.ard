@@ -1,0 +1,180 @@
+\import Arith.Nat
+\import Data.Bool
+\import Data.List
+\import Data.Maybe
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+
+-- Stable numeric binders keep substitution decidable without postulating an
+-- equality principle for the compiler's legacy opaque String primitive.
+\func nT : Name => 0
+\func nC : Name => 1
+\func nK : Name => 2
+\func nL : Name => 3
+\func nSum : Name => 4
+\func nA : Name => 5
+\func nI : Name => 6
+\func nAcc : Name => 7
+\func nN : Name => 8
+\func nP : Name => 9
+\func nR : Name => 10
+\func nThunk : Name => 11
+\func nHandle : Name => 12
+\func nCell : Name => 13
+\func nJoin : Name => 14
+\func nLeft : Name => 15
+\func nRight : Name => 16
+\func nX : Name => 17
+\func nY : Name => 18
+\func nH1 : Name => 19
+\func nH2 : Name => 20
+\func nIgnore : Name => 21
+\func nNextI : Name => 22
+\func nNextAcc : Name => 23
+
+\func letE (x : Name) (rhs body : Expr) : Expr =>
+  App (Lam x body) rhs
+
+\func seqE (first second : Expr) : Expr => letE nIgnore first second
+
+\func app2 (f a b : Expr) : Expr => App (App f a) b
+\func app3 (f a b c : Expr) : Expr => App (app2 f a b) c
+\func app4 (f a b c d : Expr) : Expr => App (app3 f a b c) d
+
+-- A one-step expression used by ResolveProph.  Resolve requires its first
+-- argument to perform an actual atomic base step, just like heap_lang Skip.
+\func skipE : Expr =>
+  App (Val (LamV nIgnore (Val unitV))) (Val unitV)
+
+\func resolveProphE (p result : Expr) : Expr =>
+  Resolve skipE p result
+
+-- λ T, let a := AllocN T 0 in (a,T)
+\func msc_new_counter : Value =>
+  LamV nT
+    (letE nA
+      (AllocN (Var nT) (Val (natV 0)))
+      (Pair (Var nA) (Var nT)))
+
+-- λ c k, let a := Fst c in let l := a +ₗ k in FAA l 1;; ()
+\func msc_incr : Value =>
+  LamV nC (Lam nK
+    (letE nA (Fst (Var nC))
+      (letE nL (LocAdd (Var nA) (Var nK))
+        (seqE (FAA (Var nL) (Val (natV 1))) (Val unitV)))))
+
+-- rec sum a T i acc := if i=T then acc else
+--   let n := !(a +ₗ i) in sum a T (i+1) (acc+n)
+\func msc_sum_loop : Value =>
+  RecV 4 5 (Lam 0 (Lam 6 (Lam 7
+    (If (NatEq (Var 6) (Var 0))
+      (Var 7)
+      (letE 3 (LocAdd (Var 5) (Var 6))
+        (letE 8 (Load (Var 3))
+          (letE 22 (NatAdd (Var 6) (Val (natV 1)))
+            (letE 23 (NatAdd (Var 7) (Var 8))
+              (app4 (Var 4)
+                (Var 5) (Var 0) (Var 22) (Var 23))))))))))
+
+-- λ c, NewProph; scan all shards; resolve the prophecy with the total.
+\func msc_read : Value =>
+  LamV nC
+    (letE nP NewProph
+      (letE nA (Fst (Var nC))
+        (letE nT (Snd (Var nC))
+          (letE nR
+            (app4 (Val msc_sum_loop)
+              (Var nA) (Var nT) (Val (natV 0)) (Val (natV 0)))
+            (seqE
+              (resolveProphE (Var nP) (Var nR))
+              (Var nR))))))
+
+-- Decode the value predicted for a read.  The prophecy payload produced by
+-- Resolve is `((), r)`; malformed or empty traces conservatively decode to 0,
+-- matching the Rocq counter's `msc_proph_total`.
+\func MscProphPayload : \Set => \Sigma Value Value
+
+\func msc_proph_total (resolves : List MscProphPayload) : Nat \elim resolves
+  | nil => 0
+  | :: (_, value) _ => \case value_nat value \with {
+      | nothing => 0
+      | just n => n
+    }
+
+\lemma msc_proph_total_cons (r : Nat) (resolves : List MscProphPayload) :
+  msc_proph_total ((unitV, natV r) :: resolves) = r => idp
+
+-- A heap-language spawn/join implementation.  The cell contains
+-- ((ready : Bool), result); the exclusive right to call join is represented
+-- logically by the handle predicate in the accompanying proof library.
+\func spawn : Value =>
+  LamV nThunk
+    (letE nHandle
+      (Alloc (Val (PairV (boolV false) unitV)))
+      (seqE
+        (Fork
+          (letE nR (App (Var nThunk) (Val unitV))
+            (Store (Var nHandle)
+              (Pair (Val (boolV true)) (Var nR)))))
+        (Var nHandle)))
+
+\func join : Value =>
+  RecV nJoin nHandle
+    (letE nCell (Load (Var nHandle))
+      (If (Fst (Var nCell))
+        (Snd (Var nCell))
+        (App (Var nJoin) (Var nHandle))))
+
+-- Run the left thunk in a fork, the right thunk in the current thread, then
+-- join the left one.  Returning both results matches Iris' `par` library.
+\func par : Value =>
+  LamV nLeft (Lam nRight
+    (letE nHandle (App (Val spawn) (Var nLeft))
+      (letE nY (App (Var nRight) (Val unitV))
+        (letE nX (App (Val join) (Var nHandle))
+          (Pair (Var nX) (Var nY))))))
+
+\func msc_incr_twice : Value =>
+  LamV nC (Lam nK
+    (seqE
+      (app2 (Val msc_incr) (Var nC) (Var nK))
+      (app2 (Val msc_incr) (Var nC) (Var nK))))
+
+\func msc_two_incr_twice_read : Value =>
+  LamV nC (Lam nH1 (Lam nH2
+    (seqE
+      (app2 (Val par)
+        (Lam nIgnore
+          (app2 (Val msc_incr_twice) (Var nC) (Var nH1)))
+        (Lam nIgnore
+          (app2 (Val msc_incr_twice) (Var nC) (Var nH2))))
+      (App (Val msc_read) (Var nC)))))
+
+-- Closed integration client used by adequacy: two shards, initial count zero.
+\func msc_closed_client : Expr =>
+  letE nC (App (Val msc_new_counter) (Val (natV 2)))
+    (app3 (Val msc_two_incr_twice_read)
+      (Var nC) (Val (natV 0)) (Val (natV 1)))
+
+-- Computation checks for the primitive fragment used above.
+\func nat_add_eval (n m : Nat) :
+  eval_heap_binop NatAddOp (natV n) (natV m) = just (natV (n Nat.+ m)) => idp
+
+\func loc_add_eval (l i : Nat) :
+  eval_heap_binop LocAddOp (LitV (LitLoc l)) (natV i) =
+    just (LitV (LitLoc (l Nat.+ i))) => idp
+
+\lemma faa_base_step {cnt : Countable Loc} (sigma : State cnt)
+    (l old incr : Nat)
+    (lookup : glookup sigma.heap l = just (natV old)) :
+  BaseStep
+    (FAA (Val (LitV (LitLoc l))) (Val (natV incr))) sigma
+    (Val (natV old))
+    (state_update_heap sigma
+      (heap_update sigma.heap l (natV (old Nat.+ incr))))
+    nil nil =>
+  FAAS l old incr lookup idp idp idp {idp} {idp}
+
+\lemma fork_base_step {cnt : Countable Loc} (sigma : State cnt) (e : Expr) :
+  BaseStep (Fork e) sigma (Val unitV) sigma (e :: nil) nil =>
+  ForkS e idp idp idp {idp} {idp}

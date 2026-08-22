@@ -1,0 +1,68 @@
+\import Arith.Nat
+\import Data.List
+\import iris.base_logic.upred
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gen_heap
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import stdpp.coPset
+
+-- Public signature checks for the primitive WP rules used by the modular
+-- sharded-counter port.
+\lemma counter_nat_add_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (n m : Nat)
+    (Phi : Value -> iProp S)
+  : properUPred_ent
+      (wp H E (Val (natV (n Nat.+ m))) Phi)
+      (wp H E (NatAdd (Val (natV n)) (Val (natV m))) Phi) =>
+  wp_nat_add H E n m Phi
+
+\lemma counter_loc_add_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l i : Nat)
+    (Phi : Value -> iProp S)
+  : properUPred_ent
+      (wp H E (Val (LitV (LitLoc (l Nat.+ i)))) Phi)
+      (wp H E (LocAdd (Val (LitV (LitLoc l))) (Val (natV i))) Phi) =>
+  wp_loc_add H E l i Phi
+
+\lemma counter_fork_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (body : Expr)
+    (Phi : Value -> iProp S)
+  : properUPred_ent
+      (mkProperSep (Phi unitV)
+        (wp H coPset_universe body H.iris_fork_post))
+      (wp H E (Fork body) Phi) =>
+  wp_fork H E body Phi
+
+\lemma counter_faa_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset)
+    (l : Loc) (old incr : Nat)
+  : properUPred_ent
+      (pointsto_full H.iris_gen_heap l (natV old))
+      (wp H E
+        (FAA (Val (LitV (LitLoc l))) (Val (natV incr)))
+        (\lam returned => mkProperAnd
+          (mkProperPure (returned = natV old))
+          (pointsto_full H.iris_gen_heap l
+            (natV (old Nat.+ incr))))) =>
+  wp_faa H E l old incr
+
+\lemma counter_allocN_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (n : Nat) (v : Value)
+    (positive : \Sigma (k : Nat) (n = suc k))
+  : properUPred_ent mkProperEmp
+      (wp H E (AllocN (Val (natV n)) (Val v))
+        (\lam returned => mkProperExist Loc (\lam l =>
+          mkProperAnd
+            (mkProperPure (returned = LitV (LitLoc l)))
+            (pointsto_block H.iris_gen_heap suc l n v)))) =>
+  wp_allocN H E n v positive
+
+\lemma counter_block_is_array {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (l n : Nat) (v : Value)
+  : pointsto_block H.iris_gen_heap suc l n v =
+      pointsto_array H.iris_gen_heap suc l (replicate n v) =>
+  pointsto_block_replicate H.iris_gen_heap suc l n v

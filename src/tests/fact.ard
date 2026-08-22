@@ -18,6 +18,12 @@
 -- =================================================================================
 -- Factorial in IRIS
 -- =================================================================================
+
+\func factName : Name => 0
+\func nName : Name => 1
+\func lName : Name => 2
+\func kName : Name => 3
+\func ignoreName : Name => 4
 --
 --   fact n l :=
 --          if n = 0 then !l
@@ -32,32 +38,32 @@
 -- =================================================================================
 
 \func fact_rec_body : Expr =>
-  Lam "l" (
-    If (IsZero (Var "n"))
-        (Load (Var "l"))
+  Lam lName (
+    If (IsZero (Var nName))
+        (Load (Var lName))
         (App
-            (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
-            (Store (Var "l")
-                (Mul (Load (Var "l")) (Var "n")))))
+            (Lam ignoreName (App (App (Var factName) (Pred (Var nName))) (Var lName)))
+            (Store (Var lName)
+                (Mul (Load (Var lName)) (Var nName)))))
 
 \func fact_recV : Value =>
-  RecV "fact" "n" fact_rec_body
+  RecV factName nName fact_rec_body
 
 \func fact_body : Expr =>
   Val fact_recV
 
 \func factorial_call_body : Expr =>
   App
-    (Lam "l" (App (App fact_body (Var "k")) (Var "l")))
+    (Lam lName (App (App fact_body (Var kName)) (Var lName)))
     (Alloc (Val (LitV (LitInt 1))))
 
 \func factorial_call_body_at (k : Nat) : Expr =>
   App
-    (Lam "l" (App (App fact_body (Val (natV k))) (Var "l")))
+    (Lam lName (App (App fact_body (Val (natV k))) (Var lName)))
     (Alloc (Val (LitV (LitInt 1))))
 
 \func factorial_prog : Expr =>
-  Lam "k" factorial_call_body
+  Lam kName factorial_call_body
 
 -- =================================================================================
 -- Specifications
@@ -102,43 +108,33 @@
 
 -- Factorial-specific substitution/beta facts.  These are deliberately kept in
 -- the example: they are not generic language laws, and their missing proofs are
--- blocked by the String comparisons inside lang.subst.
+-- now discharged by decidable equality on semantic binder names.
 
 \lemma subst_fact_zero_l
   (l : Loc) (recV : Value)
-  : (subst "l" (LitV (LitLoc l))
+  : (subst lName (LitV (LitLoc l))
       (If (IsZero (Val (natV 0)))
-          (Load (Var "l"))
-          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+          (Load (Var lName))
+          (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Var lName)))
+              (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
     =
       If (IsZero (Val (natV 0)))
         (Load (Val (LitV (LitLoc l))))
-        (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+        (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
           (Store (Val (LitV (LitLoc l)))
             (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
-  =>
-    subst_by_string_decisions "l" (LitV (LitLoc l))
-      (If (IsZero (Val (natV 0)))
-          (Load (Var "l"))
-          (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-              (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
-      (If (IsZero (Val (natV 0)))
-        (Load (Val (LitV (LitLoc l))))
-        (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
-          (Store (Val (LitV (LitLoc l)))
-            (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))))
+  => idp
 
 \lemma subst_fact_zero_unfold
   {cnt : Countable Loc} (l : Loc) (j : Nat)
   (Post : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   (step_after_n : properUPred_ent
     (pointsTo l (natV j))
-    (wp (App (Val (LamV "l"
+    (wp (App (Val (LamV lName
           (If (IsZero (Val (natV 0)))
-              (Load (Var "l"))
-              (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
-                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+              (Load (Var lName))
+              (App (Lam ignoreName (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var lName)))
+                  (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))))
         (Val (LitV (LitLoc l)))) Post))
   : properUPred_ent
       (pointsTo l (natV j))
@@ -146,33 +142,27 @@
   =>
     properUPred_ent_trans
       (pointsTo l (natV j))
-      (wp (App (Val (LamV "l"
+      (wp (App (Val (LamV lName
             (If (IsZero (Val (natV 0)))
-                (Load (Var "l"))
-                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
-                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+                (Load (Var lName))
+                (App (Lam ignoreName (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var lName)))
+                    (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))))
           (Val (LitV (LitLoc l)))) Post)
       (wp (App (App fact_body (Val (natV 0))) (Val (LitV (LitLoc l)))) Post)
       step_after_n
-      (wp_rec_lam_app1_to "fact" "n" "l"
-        (If (IsZero (Var "n"))
-            (Load (Var "l"))
-            (App (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
-                (Store (Var "l")
-                    (Mul (Load (Var "l")) (Var "n")))))
+      (wp_rec_lam_app1_to factName nName lName
+        (If (IsZero (Var nName))
+            (Load (Var lName))
+            (App (Lam ignoreName (App (App (Var factName) (Pred (Var nName))) (Var lName)))
+                (Store (Var lName)
+                    (Mul (Load (Var lName)) (Var nName)))))
         (If (IsZero (Val (natV 0)))
-            (Load (Var "l"))
-            (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
-                (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+            (Load (Var lName))
+            (App (Lam ignoreName (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var lName)))
+                (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
         (natV 0)
         (Val (LitV (LitLoc l)))
-        (subst_by_string_decisions "n" (natV 0)
-          (subst "fact" fact_recV fact_rec_body)
-          (Lam "l"
-            (If (IsZero (Val (natV 0)))
-                (Load (Var "l"))
-                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var "l")))
-                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+        idp
         Post)
 
 \lemma subst_fact_suc_after_store
@@ -213,19 +203,17 @@
         (\lam _ => wp (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))) Post)))
   : properUPred_ent
       (pointsTo l (natV j))
-      (wp (App (Lam "_" (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))))
+      (wp (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))))
             (Store (Val (LitV (LitLoc l)))
               (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))) Post)
   =>
     \lam n a hv hpts =>
-      wp_lam_expr_app_r_to "_"
+      wp_lam_expr_app_r_to ignoreName
         (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
         (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
         (Store (Val (LitV (LitLoc l)))
           (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV (suc k')))))
-        (\lam v => subst_by_string_decisions "_" v
-          (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l))))
-          (App (App (Val recV) (Pred (Val (natV (suc k'))))) (Val (LitV (LitLoc l)))))
+        (\lam v => idp)
         Post
         n a hv (after_store n a hv hpts)
 
@@ -243,32 +231,21 @@
       (wp normalized Post)
       (wp (App (App fact_body (Val (natV (suc k')))) (Val (LitV (LitLoc l)))) Post)
       step_normalized
-      (wp_rec_lam_app2_to "fact" "n" "l"
-        (If (IsZero (Var "n"))
-            (Load (Var "l"))
-            (App (Lam "_" (App (App (Var "fact") (Pred (Var "n"))) (Var "l")))
-                (Store (Var "l")
-                    (Mul (Load (Var "l")) (Var "n")))))
+      (wp_rec_lam_app2_to factName nName lName
+        (If (IsZero (Var nName))
+            (Load (Var lName))
+            (App (Lam ignoreName (App (App (Var factName) (Pred (Var nName))) (Var lName)))
+                (Store (Var lName)
+                    (Mul (Load (Var lName)) (Var nName)))))
         (If (IsZero (Val (natV (suc k'))))
-            (Load (Var "l"))
-            (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
-                (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))
+            (Load (Var lName))
+            (App (Lam ignoreName (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var lName)))
+                (Store (Var lName) (Mul (Load (Var lName)) (Val (natV (suc k')))))))
         normalized
         (natV (suc k'))
         (LitV (LitLoc l))
-        (subst_by_string_decisions "n" (natV (suc k'))
-          (subst "fact" fact_recV fact_rec_body)
-          (Lam "l"
-            (If (IsZero (Val (natV (suc k'))))
-                (Load (Var "l"))
-                (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
-                    (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))))
-        (subst_by_string_decisions "l" (LitV (LitLoc l))
-          (If (IsZero (Val (natV (suc k'))))
-              (Load (Var "l"))
-              (App (Lam "_" (App (App (Val fact_recV) (Pred (Val (natV (suc k'))))) (Var "l")))
-                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV (suc k')))))))
-          normalized)
+        idp
+        idp
         Post)
 
 \lemma subst_fact_call_l_beta
@@ -279,22 +256,20 @@
     (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) Post))
   : properUPred_ent
       (pointsTo l (natV 1))
-      (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+      (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName))))
             (Val (LitV (LitLoc l)))) Post)
   =>
     properUPred_ent_trans
       (pointsTo l (natV 1))
       (wp (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))) Post)
-      (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+      (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName))))
             (Val (LitV (LitLoc l)))) Post)
       worker
-      (wp_lam_beta_to "l"
-        (App (App fact_body (Val (natV k))) (Var "l"))
+      (wp_lam_beta_to lName
+        (App (App fact_body (Val (natV k))) (Var lName))
         (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l))))
         (LitV (LitLoc l))
-        (subst_by_string_decisions "l" (LitV (LitLoc l))
-          (App (App fact_body (Val (natV k))) (Var "l"))
-          (App (App fact_body (Val (natV k))) (Val (LitV (LitLoc l)))))
+        idp
         Post)
 
 \lemma subst_fact_public_k_beta
@@ -303,16 +278,16 @@
   (body_step : properUPred_ent (mkProperPure (\Sigma)) (wp (factorial_call_body_at k) Post))
   : properUPred_ent
       (mkProperPure (\Sigma))
-      (wp (App (Val (LamV "k" factorial_call_body)) (Val (natV k))) Post)
+      (wp (App (Val (LamV kName factorial_call_body)) (Val (natV k))) Post)
   =>
     properUPred_ent_trans
       (mkProperPure (\Sigma))
       (wp (factorial_call_body_at k) Post)
-      (wp (App (Val (LamV "k" factorial_call_body)) (Val (natV k))) Post)
+      (wp (App (Val (LamV kName factorial_call_body)) (Val (natV k))) Post)
       body_step
-      (wp_lam_beta_to "k" factorial_call_body (factorial_call_body_at k)
+      (wp_lam_beta_to kName factorial_call_body (factorial_call_body_at k)
         (natV k)
-        (subst_by_string_decisions "k" (natV k) factorial_call_body (factorial_call_body_at k))
+        idp
         Post)
 
 -- =================================================================================
@@ -332,21 +307,21 @@
       | Post : Value -> ProperUPred M => fact_worker_post l j 0
       | recV : Value => fact_recV
       | after_n : Expr =>
-        App (Val (LamV "l" (
+        App (Val (LamV lName (
           If (IsZero (Val (natV 0)))
-              (Load (Var "l"))
-              (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))))
+              (Load (Var lName))
+              (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Var lName)))
+                  (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))))
           (Val (LitV (LitLoc l)))
       | after_l : Expr =>
-        subst "l" (LitV (LitLoc l))
+        subst lName (LitV (LitLoc l))
           (If (IsZero (Val (natV 0)))
-              (Load (Var "l"))
-              (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-                  (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+              (Load (Var lName))
+              (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Var lName)))
+                  (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
       | thenE : Expr => Load (Val (LitV (LitLoc l)))
       | elseE : Expr =>
-        App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
+        App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Val (LitV (LitLoc l)))))
             (Store (Val (LitV (LitLoc l)))
                 (Mul (Load (Val (LitV (LitLoc l)))) (Val (natV 0))))
       | normalized : Expr => If (IsZero (Val (natV 0))) thenE elseE
@@ -419,21 +394,21 @@
       => wp_pure_step
           after_n
           after_l
-          (\lam s => BasePrim (BetaS "l" _ _ idp idp idp {idp}))
+          (\lam s => BasePrim (BetaS lName _ _ idp idp idp {idp}))
           (base_redex_step_det
             after_n
             after_l
-            (base_lam_beta_step_det "l"
+            (base_lam_beta_step_det lName
               (If (IsZero (Val (natV 0)))
-                  (Load (Var "l"))
-                  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-                      (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+                  (Load (Var lName))
+                  (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Var lName)))
+                      (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
               (LitV (LitLoc l)))
-            (app_lam_ctx_absurd "l"
+            (app_lam_ctx_absurd lName
               (If (IsZero (Val (natV 0)))
-                  (Load (Var "l"))
-                  (App (Lam "_" (App (App (Val recV) (Pred (Val (natV 0)))) (Var "l")))
-                      (Store (Var "l") (Mul (Load (Var "l")) (Val (natV 0))))))
+                  (Load (Var lName))
+                  (App (Lam ignoreName (App (App (Val recV) (Pred (Val (natV 0)))) (Var lName)))
+                      (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
               (LitV (LitLoc l))))
           idp
           Post
@@ -469,7 +444,7 @@
       | recV : Value => fact_recV
       | thenE : Expr => Load (Val locV)
       | elseE : Expr =>
-        App (Lam "_" (App (App (Val recV) (Pred (Val nV))) (Val locV)))
+        App (Lam ignoreName (App (App (Val recV) (Pred (Val nV))) (Val locV)))
             (Store (Val locV) (Mul (Load (Val locV)) (Val nV)))
       | normalized : Expr => If (IsZero (Val nV)) thenE elseE
       | mul_post : Value -> ProperUPred M =>
@@ -697,19 +672,19 @@
                       hand.2) )))
       | s_after_alloc : \Pi (vloc : Value) -> properUPred_ent {M}
           (alloc_post vloc)
-          (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+          (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
             (factorial_post k))
       => \lam vloc =>
           exist_elim_ent Loc
             (\lam l => mkProperAnd
               (mkProperPure (vloc = LitV (LitLoc l)))
               (pointsTo l (natV 1)))
-            (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+            (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
               (factorial_post k))
             (\lam l n a hv hand =>
               transport
                 (\lam vv =>
-                  (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vv))
+                  (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vv))
                     (factorial_post k)).upred_holds n a)
                 (inv hand.1)
                 (subst_fact_call_l_beta l k (factorial_post k) (worker_ent l)
@@ -718,21 +693,21 @@
           (mkProperPure (\Sigma))
           (wp (Alloc (Val (natV 1)))
             (\lam vloc =>
-              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+              wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
                 (factorial_post k)))
       => properUPred_ent_trans
           (mkProperPure (\Sigma))
           (wp (Alloc (Val (natV 1))) alloc_post)
           (wp (Alloc (Val (natV 1)))
             (\lam vloc =>
-              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+              wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
                 (factorial_post k)))
           s_alloc
           (wp_post_mono
             (Alloc (Val (natV 1)))
             alloc_post
             (\lam vloc =>
-              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+              wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
                 (factorial_post k))
             s_after_alloc)
 	    \in
@@ -740,26 +715,26 @@
 	        (mkProperPure (\Sigma))
 	        (wp (Alloc (Val (natV 1)))
 	          (\lam vloc =>
-	            wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+	            wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
 	              (factorial_post k)))
 	        (wp (factorial_call_body_at k) (factorial_post k))
 	        s_alloc_then
 	        (properUPred_ent_trans
 	          (wp (Alloc (Val (natV 1)))
 	            (\lam vloc =>
-	              wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))) (Val vloc))
+	              wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
 	                (factorial_post k)))
-	          (wp (App (Val (LamV "l" (App (App fact_body (Val (natV k))) (Var "l"))))
+	          (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName))))
 	                (Alloc (Val (natV 1))))
 	            (factorial_post k))
 	          (wp (factorial_call_body_at k) (factorial_post k))
 	          (wp_bind_app_r
-	            (LamV "l" (App (App fact_body (Val (natV k))) (Var "l")))
+	            (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))
 	            (Alloc (Val (natV 1)))
 	            (factorial_post k))
 	          (wp_lam_expr_app_arg_to
-	            "l"
-	            (App (App fact_body (Val (natV k))) (Var "l"))
+	            lName
+	            (App (App fact_body (Val (natV k))) (Var lName))
             (Alloc (Val (natV 1)))
             (factorial_post k)))
 
@@ -775,7 +750,7 @@
   =>
     \let
       | M => HeapCMRA Loc cnt Value
-      | hfun : Value => LamV "k" factorial_call_body
+      | hfun : Value => LamV kName factorial_call_body
       | Phi : Value -> ProperUPred M =>
         \lam h => mkProperForall Nat (\lam k =>
           ht (mkProperPure (\Sigma))
@@ -797,7 +772,7 @@
           (Phi hfun)
           (wp factorial_prog Phi)
           phi_hfun
-          (wp_lam "k" factorial_call_body Phi)
+          (wp_lam kName factorial_call_body Phi)
     \in
       \lam n a hv _ =>
         \lam m m_le_n a' hv_core_a' _ =>

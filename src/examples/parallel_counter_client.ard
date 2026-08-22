@@ -1,0 +1,576 @@
+\import Logic
+\import Paths
+\import Arith.Nat
+\import Data.Or
+\import iris.algebra.cmra
+\import iris.algebra.dfrac
+\import iris.algebra.frac
+\import iris.algebra.gmap
+\import iris.algebra.gset
+\import iris.base_logic.upred
+\import iris.bi.interface
+\import iris.bi.big_op
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.ghost_map
+\import iris.base_logic.lib.invariants
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.fancy_updates_mask
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import iris.program_logic.adequacy
+\import iris.program_logic.iris_sigma
+\import iris_heap_lang.lang
+\import stdpp.coPset
+\import examples.parallel_counter
+\import examples.parallel_counter_ghost
+\import examples.parallel_counter_proof
+
+-- The proof-mode port uses this small family of structural BI lemmas in
+-- place of repeated `iFrame`/`iDestruct` permutations.
+\lemma sep_move_fourth_front {M : UCMRA}
+    (A B C D : ProperUPred M) :
+  properUPred_ent
+    (mkProperSep A (mkProperSep B (mkProperSep C D)))
+    (mkProperSep D (mkProperSep A (mkProperSep B C))) =>
+  properUPred_ent_trans
+    (mkProperSep A (mkProperSep B (mkProperSep C D)))
+    (mkProperSep A (mkProperSep B (mkProperSep D C)))
+    (mkProperSep D (mkProperSep A (mkProperSep B C)))
+    (sep_mono_r_ent A
+      (mkProperSep B (mkProperSep C D))
+      (mkProperSep B (mkProperSep D C))
+      (sep_mono_r_ent B (mkProperSep C D)
+        (mkProperSep D C) (sep_comm_ent C D)))
+    (sep_rotate_third_front A B D C)
+
+\lemma persistent_duplicate_ent {M : UCMRA} (P : ProperUPred M)
+    (persistent : properUPred_ent P (mkProperPersistently P)) :
+  properUPred_ent P (mkProperSep P P) =>
+  properUPred_ent_trans P (mkProperPersistently P)
+    (mkProperSep P P) persistent
+    (properUPred_ent_trans (mkProperPersistently P)
+      (mkProperSep (mkProperPersistently P) (mkProperPersistently P))
+      (mkProperSep P P) (persistently_dup_ent P)
+      (properUPred_ent_trans
+        (mkProperSep (mkProperPersistently P) (mkProperPersistently P))
+        (mkProperSep P (mkProperPersistently P)) (mkProperSep P P)
+        (sep_mono_l_ent (mkProperPersistently P) P
+          (mkProperPersistently P) (persistently_elim_ent P))
+        (sep_mono_r_ent P (mkProperPersistently P) P
+          (persistently_elim_ent P))))
+
+-- Attach two freely derivable assertions between an existing head and tail.
+\lemma sep_attach_two_middle {M : UCMRA}
+    (P Q R T : ProperUPred M)
+    (makeQ : properUPred_ent mkProperEmp Q)
+    (makeR : properUPred_ent mkProperEmp R) :
+  properUPred_ent (mkProperSep P T)
+    (mkProperSep P (mkProperSep Q (mkProperSep R T))) =>
+  \let
+    | S0 => mkProperSep P T
+    | S1 => mkProperSep S0 Q
+    | S2 => mkProperSep P (mkProperSep T Q)
+    | S3 => mkProperSep P (mkProperSep Q T)
+    | S4 => mkProperSep S3 R
+    | S5 => mkProperSep P (mkProperSep (mkProperSep Q T) R)
+    | S6 => mkProperSep P (mkProperSep Q (mkProperSep T R))
+    | Goal => mkProperSep P (mkProperSep Q (mkProperSep R T))
+  \in properUPred_ent_trans S0 S1 Goal
+      (attach_valid_r_ent S0 Q makeQ)
+      (properUPred_ent_trans S1 S2 Goal
+        (sep_assoc_l_ent P T Q)
+        (properUPred_ent_trans S2 S3 Goal
+          (sep_mono_r_ent P (mkProperSep T Q)
+            (mkProperSep Q T) (sep_comm_ent T Q))
+          (properUPred_ent_trans S3 S4 Goal
+            (attach_valid_r_ent S3 R makeR)
+            (properUPred_ent_trans S4 S5 Goal
+              (sep_assoc_l_ent P (mkProperSep Q T) R)
+              (properUPred_ent_trans S5 S6 Goal
+                (sep_mono_r_ent P
+                  (mkProperSep (mkProperSep Q T) R)
+                  (mkProperSep Q (mkProperSep T R))
+                  (sep_assoc_l_ent Q T R))
+                (sep_mono_r_ent P
+                  (mkProperSep Q (mkProperSep T R))
+                  (mkProperSep Q (mkProperSep R T))
+                  (sep_mono_r_ent Q (mkProperSep T R)
+                    (mkProperSep R T) (sep_comm_ent T R))))))))
+
+-- Reorder A,B,C,D,E,F,G,H into A,E,G,C | B,F,H,D.
+\lemma sep_client_reorder8 {M : UCMRA}
+    (A B C D E F G H : ProperUPred M) :
+  properUPred_ent
+    (mkProperSep A (mkProperSep B (mkProperSep C (mkProperSep D
+      (mkProperSep E (mkProperSep F (mkProperSep G H)))))))
+    (mkProperSep
+      (mkProperSep A (mkProperSep E (mkProperSep G C)))
+      (mkProperSep B (mkProperSep F (mkProperSep H D)))) =>
+  \let
+    | S0 => mkProperSep A (mkProperSep B (mkProperSep C (mkProperSep D
+        (mkProperSep E (mkProperSep F (mkProperSep G H))))))
+    | S1 => mkProperSep A (mkProperSep B (mkProperSep C (mkProperSep E
+        (mkProperSep D (mkProperSep F (mkProperSep G H))))))
+    | S2 => mkProperSep A (mkProperSep B (mkProperSep E (mkProperSep C
+        (mkProperSep D (mkProperSep F (mkProperSep G H))))))
+    | S3 => mkProperSep A (mkProperSep E (mkProperSep B (mkProperSep C
+        (mkProperSep D (mkProperSep F (mkProperSep G H))))))
+    | S4 => mkProperSep A (mkProperSep E (mkProperSep B (mkProperSep C
+        (mkProperSep D (mkProperSep G (mkProperSep F H))))))
+    | S5 => mkProperSep A (mkProperSep E (mkProperSep B (mkProperSep C
+        (mkProperSep G (mkProperSep D (mkProperSep F H))))))
+    | S6 => mkProperSep A (mkProperSep E (mkProperSep B (mkProperSep G
+        (mkProperSep C (mkProperSep D (mkProperSep F H))))))
+    | S7 => mkProperSep A (mkProperSep E (mkProperSep G (mkProperSep B
+        (mkProperSep C (mkProperSep D (mkProperSep F H))))))
+    | S8 => mkProperSep A (mkProperSep E (mkProperSep G (mkProperSep C
+        (mkProperSep B (mkProperSep D (mkProperSep F H))))))
+    | S9 => mkProperSep A (mkProperSep E (mkProperSep G (mkProperSep C
+        (mkProperSep B (mkProperSep F (mkProperSep D H))))))
+    | S10 => mkProperSep A (mkProperSep E (mkProperSep G (mkProperSep C
+        (mkProperSep B (mkProperSep F (mkProperSep H D))))))
+    | Target => mkProperSep
+        (mkProperSep A (mkProperSep E (mkProperSep G C)))
+        (mkProperSep B (mkProperSep F (mkProperSep H D)))
+    | h01 : properUPred_ent S0 S1 =>
+        sep_mono_r_ent A _ _
+          (sep_mono_r_ent B _ _
+            (sep_mono_r_ent C _ _
+              (sep_swap_ent D E (mkProperSep F (mkProperSep G H)))))
+    | h12 : properUPred_ent S1 S2 =>
+        sep_mono_r_ent A _ _
+          (sep_mono_r_ent B _ _
+            (sep_swap_ent C E
+              (mkProperSep D (mkProperSep F (mkProperSep G H)))))
+    | h23 : properUPred_ent S2 S3 =>
+        sep_mono_r_ent A _ _
+          (sep_swap_ent B E
+            (mkProperSep C (mkProperSep D
+              (mkProperSep F (mkProperSep G H)))))
+    | h34 : properUPred_ent S3 S4 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent B _ _ (sep_mono_r_ent C _ _
+            (sep_mono_r_ent D _ _ (sep_swap_ent F G H)))))
+    | h45 : properUPred_ent S4 S5 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent B _ _ (sep_mono_r_ent C _ _
+            (sep_swap_ent D G (mkProperSep F H)))))
+    | h56 : properUPred_ent S5 S6 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent B _ _
+            (sep_swap_ent C G (mkProperSep D (mkProperSep F H)))))
+    | h67 : properUPred_ent S6 S7 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_swap_ent B G
+            (mkProperSep C (mkProperSep D (mkProperSep F H)))))
+    | h78 : properUPred_ent S7 S8 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent G _ _
+            (sep_swap_ent B C (mkProperSep D (mkProperSep F H)))))
+    | h89 : properUPred_ent S8 S9 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent G _ _ (sep_mono_r_ent C _ _
+            (sep_mono_r_ent B _ _ (sep_swap_ent D F H)))))
+    | h910 : properUPred_ent S9 S10 =>
+        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+          (sep_mono_r_ent G _ _ (sep_mono_r_ent C _ _
+            (sep_mono_r_ent B _ _ (sep_mono_r_ent F _ _
+              (sep_comm_ent D H))))))
+    | grouped : properUPred_ent S10 Target =>
+        properUPred_ent_trans S10
+          (mkProperSep A (mkProperSep E
+            (mkProperSep (mkProperSep G C)
+              (mkProperSep B (mkProperSep F (mkProperSep H D))))))
+          Target
+          (sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
+            (sep_assoc_r_ent G C
+              (mkProperSep B (mkProperSep F (mkProperSep H D))))))
+          (properUPred_ent_trans
+            (mkProperSep A (mkProperSep E
+              (mkProperSep (mkProperSep G C)
+                (mkProperSep B (mkProperSep F (mkProperSep H D))))))
+            (mkProperSep A
+              (mkProperSep (mkProperSep E (mkProperSep G C))
+                (mkProperSep B (mkProperSep F (mkProperSep H D)))))
+            Target
+            (sep_mono_r_ent A _ _
+              (sep_assoc_r_ent E (mkProperSep G C)
+                (mkProperSep B (mkProperSep F (mkProperSep H D)))))
+            (sep_assoc_r_ent A (mkProperSep E (mkProperSep G C))
+              (mkProperSep B (mkProperSep F (mkProperSep H D)))))
+  \in properUPred_ent_trans S0 S1 Target h01
+      (properUPred_ent_trans S1 S2 Target h12
+        (properUPred_ent_trans S2 S3 Target h23
+          (properUPred_ent_trans S3 S4 Target h34
+            (properUPred_ent_trans S4 S5 Target h45
+              (properUPred_ent_trans S5 S6 Target h56
+                (properUPred_ent_trans S6 S7 Target h67
+                  (properUPred_ent_trans S7 S8 Target h78
+                    (properUPred_ent_trans S8 S9 Target h89
+                      (properUPred_ent_trans S9 S10 Target h910 grouped)))))))))
+
+\lemma msc_client_ready_parallel_pre {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
+    (gamM gamD : gname) (base : Nat) (c h1 h2 : Value) :
+  \let
+    | Public => msc_client_public H G gam gamM gamD base
+    | C => msc_is_counter H G gam c
+    | H1 => msc_handle G gam h1
+    | H2 => msc_handle G gam h2
+    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+    | Ready => mkProperSep Public (mkProperSep E1 E2)
+    | Frame => mkProperSep C (mkProperSep H1 H2)
+    | Pre1 => mkProperSep Public (mkProperSep C (mkProperSep H1 E1))
+    | Pre2 => mkProperSep Public (mkProperSep C (mkProperSep H2 E2))
+  \in properUPred_ent (mkProperSep Ready Frame)
+      (mkProperSep Pre1 Pre2) =>
+  \let
+    | Public => msc_client_public H G gam gamM gamD base
+    | C => msc_is_counter H G gam c
+    | H1 => msc_handle G gam h1
+    | H2 => msc_handle G gam h2
+    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+    | Elems => mkProperSep E1 E2
+    | Handles => mkProperSep H1 H2
+    | Ready => mkProperSep Public Elems
+    | Frame => mkProperSep C Handles
+    | Public2 => mkProperSep Public Public
+    | C2 => mkProperSep C C
+    | D0 => mkProperSep (mkProperSep Public2 Elems)
+        (mkProperSep C2 Handles)
+    | Flat => mkProperSep Public (mkProperSep Public
+        (mkProperSep E1 (mkProperSep E2 (mkProperSep C
+          (mkProperSep C (mkProperSep H1 H2))))))
+    | Pre1 => mkProperSep Public (mkProperSep C (mkProperSep H1 E1))
+    | Pre2 => mkProperSep Public (mkProperSep C (mkProperSep H2 E2))
+    | duplicatePublic : properUPred_ent Ready
+        (mkProperSep Public2 Elems) =>
+        sep_mono_l_ent Public Public2 Elems
+          (inv_dup_ent H.iris_wsat msc_clientN
+            (msc_client_inv G gam gamM gamD base))
+    | duplicateCounter : properUPred_ent Frame
+        (mkProperSep C2 Handles) =>
+        sep_mono_l_ent C C2 Handles
+          (persistent_duplicate_ent C
+            (msc_is_counter_persistent H G gam c))
+    | duplicated : properUPred_ent (mkProperSep Ready Frame) D0 =>
+        properUPred_ent_trans (mkProperSep Ready Frame)
+          (mkProperSep (mkProperSep Public2 Elems) Frame) D0
+          (sep_mono_l_ent Ready (mkProperSep Public2 Elems) Frame
+            duplicatePublic)
+          (sep_mono_r_ent (mkProperSep Public2 Elems) Frame
+            (mkProperSep C2 Handles) duplicateCounter)
+    | flat0 => mkProperSep Public2
+        (mkProperSep Elems (mkProperSep C2 Handles))
+    | flat1 => mkProperSep Public
+        (mkProperSep Public (mkProperSep Elems (mkProperSep C2 Handles)))
+    | flat2 => mkProperSep Public
+        (mkProperSep Public
+          (mkProperSep E1 (mkProperSep E2 (mkProperSep C2 Handles))))
+    | flatten : properUPred_ent D0 Flat =>
+        properUPred_ent_trans D0 flat0 Flat
+          (sep_assoc_l_ent Public2 Elems (mkProperSep C2 Handles))
+          (properUPred_ent_trans flat0 flat1 Flat
+            (sep_assoc_l_ent Public Public
+              (mkProperSep Elems (mkProperSep C2 Handles)))
+            (properUPred_ent_trans flat1 flat2 Flat
+              (sep_mono_r_ent Public _ _ (sep_mono_r_ent Public _ _
+                (sep_assoc_l_ent E1 E2 (mkProperSep C2 Handles))))
+              (sep_mono_r_ent Public _ _ (sep_mono_r_ent Public _ _
+                (sep_mono_r_ent E1 _ _ (sep_mono_r_ent E2 _ _
+                  (sep_assoc_l_ent C C Handles)))))))
+  \in properUPred_ent_trans (mkProperSep Ready Frame) D0
+      (mkProperSep Pre1 Pre2) duplicated
+      (properUPred_ent_trans D0 Flat (mkProperSep Pre1 Pre2) flatten
+        (sep_client_reorder8 Public Public E1 E2 C C H1 H2))
+
+\lemma msc_client_read_post_result {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
+    (base : Nat) (c h1 h2 returned : Value) :
+  properUPred_ent
+    (wp_frame_post
+      (msc_read_post H G gam c (msc_client_read_Q G gam base))
+      (mkProperSep (msc_handle G gam h1) (msc_handle G gam h2))
+      returned)
+    (mkProperPure (returned = natV (base Nat.+ 4))) =>
+  \lam n x hx hpost => \case hpost \with {
+    | inP (_, _, _, hread, _) => \case hread \with {
+      | inP (total, hbody) => \case hbody \with {
+        | inP (_, _, _, hreturned, hrest) => \case hrest \with {
+          | inP (_, _, _, _, hq) => \case hq \with {
+            | inP (_, _, _, htotal, _) => hreturned *> pmap natV htotal
+          }
+        }
+      }
+    }
+  }
+
+\lemma msc_two_incr_twice_read_result_spec {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (gam : msc_name)
+    (gamM gamD : gname) (base : Nat) (c h1 h2 : Value) :
+  \let
+    | Public => msc_client_public H G gam gamM gamD base
+    | C => msc_is_counter H G gam c
+    | H1 => msc_handle G gam h1
+    | H2 => msc_handle G gam h2
+    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+    | Pre1 => mkProperSep Public (mkProperSep C (mkProperSep H1 E1))
+    | Pre2 => mkProperSep Public (mkProperSep C (mkProperSep H2 E2))
+  \in properUPred_ent (mkProperSep Pre1 Pre2)
+      (wp H mscE
+        (app3 (Val msc_two_incr_twice_read)
+          (Val c) (Val h1) (Val h2))
+        (\lam returned =>
+          mkProperPure (returned = natV (base Nat.+ 4)))) =>
+  \let
+    | Public => msc_client_public H G gam gamM gamD base
+    | C => msc_is_counter H G gam c
+    | H1 => msc_handle G gam h1
+    | H2 => msc_handle G gam h2
+    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+    | Pre1 => mkProperSep Public (mkProperSep C (mkProperSep H1 E1))
+    | Pre2 => mkProperSep Public (mkProperSep C (mkProperSep H2 E2))
+    | Pre => mkProperSep Pre1 Pre2
+    | Q : Nat -> iProp S => msc_client_read_Q G gam base
+    | Handles => mkProperSep H1 H2
+    | RichPost => wp_frame_post (msc_read_post H G gam c Q) Handles
+    | ResultPost : Value -> iProp S => \lam returned =>
+        mkProperPure (returned = natV (base Nat.+ 4))
+    | Program => app3 (Val msc_two_incr_twice_read)
+        (Val c) (Val h1) (Val h2)
+    | rich : properUPred_ent Pre (wp H mscE Program RichPost) =>
+        msc_two_incr_twice_read_spec H G SG FPI gam gamM gamD
+          base c h1 h2
+  \in properUPred_ent_trans Pre (wp H mscE Program RichPost)
+      (wp H mscE Program ResultPost) rich
+      (wp_mono H mscE Program RichPost ResultPost (\lam returned =>
+        msc_client_read_post_result H G gam base c h1 h2 returned))
+
+\lemma msc_initialized_client_spec {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (gam : msc_name)
+    (base : Nat) (c h1 h2 : Value) :
+  properUPred_ent
+    (mkProperSep (msc_is_counter H G gam c)
+      (mkProperSep (msc_handle G gam h1)
+        (mkProperSep (msc_handle G gam h2)
+          (msc_counter_frag G gam qp_one base))))
+    (wp H mscE
+      (app3 (Val msc_two_incr_twice_read)
+        (Val c) (Val h1) (Val h2))
+      (\lam returned =>
+        mkProperPure (returned = natV (base Nat.+ 4)))) =>
+  \let
+    | C => msc_is_counter H G gam c
+    | H1 => msc_handle G gam h1
+    | H2 => msc_handle G gam h2
+    | Frag => msc_counter_frag G gam qp_one base
+    | Frame => mkProperSep C (mkProperSep H1 H2)
+    | Source => mkProperSep C (mkProperSep H1 (mkProperSep H2 Frag))
+    | Program => app3 (Val msc_two_incr_twice_read)
+        (Val c) (Val h1) (Val h2)
+    | ResultPost : Value -> iProp S => \lam returned =>
+        mkProperPure (returned = natV (base Nat.+ 4))
+    | Goal => wp H mscE Program ResultPost
+    | gamD => gam.msc_model_name
+    | ReadyExists => mkProperExist gname (\lam gamM =>
+        msc_client_ready H G gam gamM gamD base)
+    | setup : properUPred_ent Frag
+        (mkProperFUpd H.iris_wsat mscE mscE ReadyExists) =>
+        msc_client_setup H G gam gamD base
+    | moveFrag : properUPred_ent Source (mkProperSep Frag Frame) =>
+        sep_move_fourth_front C H1 H2 Frag
+    | setupFramed : properUPred_ent (mkProperSep Frag Frame)
+        (mkProperFUpd H.iris_wsat mscE mscE
+          (mkProperSep ReadyExists Frame)) =>
+        properUPred_ent_trans (mkProperSep Frag Frame)
+          (mkProperSep
+            (mkProperFUpd H.iris_wsat mscE mscE ReadyExists) Frame)
+          (mkProperFUpd H.iris_wsat mscE mscE
+            (mkProperSep ReadyExists Frame))
+          (sep_mono_l_ent Frag
+            (mkProperFUpd H.iris_wsat mscE mscE ReadyExists) Frame setup)
+          (fupd_frame_r H.iris_wsat mscE mscE ReadyExists Frame)
+    | run : properUPred_ent (mkProperSep ReadyExists Frame) Goal =>
+        sep_exist_l_elim
+          (\lam gamM => msc_client_ready H G gam gamM gamD base)
+          Frame Goal (\lam gamM =>
+            \let
+              | Public => msc_client_public H G gam gamM gamD base
+              | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+              | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+              | Ready => mkProperSep Public (mkProperSep E1 E2)
+              | Pre1 => mkProperSep Public
+                  (mkProperSep C (mkProperSep H1 E1))
+              | Pre2 => mkProperSep Public
+                  (mkProperSep C (mkProperSep H2 E2))
+              | Pre => mkProperSep Pre1 Pre2
+            \in properUPred_ent_trans (mkProperSep Ready Frame) Pre Goal
+                (msc_client_ready_parallel_pre H G gam gamM gamD
+                  base c h1 h2)
+                (msc_two_incr_twice_read_result_spec H G SG FPI gam
+                  gamM gamD base c h1 h2))
+    | updated : properUPred_ent
+        (mkProperFUpd H.iris_wsat mscE mscE
+          (mkProperSep ReadyExists Frame))
+        (mkProperFUpd H.iris_wsat mscE mscE Goal) =>
+        fupd_mono H.iris_wsat mscE mscE
+          (mkProperSep ReadyExists Frame) Goal run
+  \in properUPred_ent_trans Source (mkProperSep Frag Frame) Goal moveFrag
+      (properUPred_ent_trans (mkProperSep Frag Frame)
+        (mkProperFUpd H.iris_wsat mscE mscE
+          (mkProperSep ReadyExists Frame)) Goal setupFramed
+        (properUPred_ent_trans
+          (mkProperFUpd H.iris_wsat mscE mscE
+            (mkProperSep ReadyExists Frame))
+          (mkProperFUpd H.iris_wsat mscE mscE Goal) Goal updated
+          (fupd_wp H mscE Program ResultPost)))
+
+-- Consume the concrete two-cell constructor post and run the full client.
+-- The constructor's size equation justifies the two public handle values;
+-- handles are persistent pure capabilities, so no array ownership is forged.
+\lemma msc_new_counter_two_client_spec {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (c : Value) :
+  properUPred_ent (msc_new_counter_post H G 2 c)
+    (wp H mscE
+      (app3 (Val msc_two_incr_twice_read)
+        (Val c) (Val (natV 0)) (Val (natV 1)))
+      (\lam returned => mkProperPure (returned = natV 4))) =>
+  \let
+    | Goal => wp H mscE
+        (app3 (Val msc_two_incr_twice_read)
+          (Val c) (Val (natV 0)) (Val (natV 1)))
+        (\lam returned => mkProperPure (returned = natV 4))
+    | Body : msc_name -> iProp S => \lam gam =>
+        mkProperSep (mkProperPure (gam.msc_size = 2))
+          (mkProperSep (msc_is_counter H G gam c)
+            (mkProperSep (msc_handles G gam)
+              (msc_counter_frag G gam qp_one 0)))
+    | perGam : \Pi (gam : msc_name) -> properUPred_ent (Body gam) Goal =>
+        \lam gam =>
+          \let
+            | C => msc_is_counter H G gam c
+            | AllHandles => msc_handles G gam
+            | Frag => msc_counter_frag G gam qp_one 0
+            | H0 => msc_handle G gam (natV 0)
+            | H1 => msc_handle G gam (natV 1)
+            | Spatial => mkProperSep C (mkProperSep AllHandles Frag)
+            | Core => mkProperSep C Frag
+            | Ready => mkProperSep C (mkProperSep H0 (mkProperSep H1 Frag))
+          \in pure_sep_l_elim (gam.msc_size = 2) Spatial Goal
+              (\lam hsize =>
+                \let
+                  | h0bound : nat_lt 0 gam.msc_size =>
+                      transport (\lam z => nat_lt 0 z) (inv hsize)
+                        (nat_suc_le_add_suc 0 1)
+                  | h1bound : nat_lt 1 gam.msc_size =>
+                      transport (\lam z => nat_lt 1 z) (inv hsize)
+                        (nat_suc_le_add_suc 1 0)
+                  | discardAll : properUPred_ent Spatial Core =>
+                      sep_mono_r_ent C (mkProperSep AllHandles Frag) Frag
+                        (sep_elim_r_ent AllHandles Frag)
+                  | addHandles : properUPred_ent Core Ready =>
+                      sep_attach_two_middle C H0 H1 Frag
+                        (msc_handle_nat_intro G gam 0 h0bound)
+                        (msc_handle_nat_intro G gam 1 h1bound)
+                \in properUPred_ent_trans Spatial Core Goal discardAll
+                    (properUPred_ent_trans Core Ready Goal addHandles
+                      (msc_initialized_client_spec H G SG FPI gam 0
+                        c (natV 0) (natV 1))))
+  \in exist_elim_ent Body Goal perGam
+
+\lemma msc_closed_client_subst (c : Value) :
+  subst nC c
+    (app3 (Val msc_two_incr_twice_read)
+      (Var nC) (Val (natV 0)) (Val (natV 1))) =
+  app3 (Val msc_two_incr_twice_read)
+    (Val c) (Val (natV 0)) (Val (natV 1)) =>
+  \case nameDecEq nC nC \as d, idp : nameDecEq nC nC = d
+  \return subst nC c
+      (app3 (Val msc_two_incr_twice_read)
+        (Var nC) (Val (natV 0)) (Val (natV 1))) =
+    app3 (Val msc_two_incr_twice_read)
+      (Val c) (Val (natV 0)) (Val (natV 1))
+  \with {
+    | inl _, _ => idp
+    | inr neq, _ => absurd (neq idp)
+  }
+
+-- End-to-end WP of the actual closed heap-language source program.
+\lemma msc_closed_client_wp {S : gFunctors}
+    (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) :
+  properUPred_ent mkProperEmp
+    (wp H coPset_universe msc_closed_client
+      (\lam returned => mkProperPure (returned = natV 4))) =>
+  \let
+    | Constructor => App (Val msc_new_counter) (Val (natV 2))
+    | Body => app3 (Val msc_two_incr_twice_read)
+        (Var nC) (Val (natV 0)) (Val (natV 1))
+    | ResultPost : Value -> iProp S => \lam returned =>
+        mkProperPure (returned = natV 4)
+    | NewPost : Value -> iProp S => msc_new_counter_post H G 2
+    | constructorWP : properUPred_ent mkProperEmp
+        (wp H coPset_universe Constructor NewPost) =>
+        msc_new_counter_spec H G 2 (1, idp)
+    | continue : \Pi (c : Value) -> properUPred_ent (NewPost c)
+        (wp H coPset_universe (subst nC c Body) ResultPost) =>
+        \lam c => transport
+          (\lam e => properUPred_ent (NewPost c)
+            (wp H coPset_universe e ResultPost))
+          (inv (msc_closed_client_subst c))
+          (msc_new_counter_two_client_spec H G SG FPI c)
+    | sequenced : properUPred_ent mkProperEmp
+        (wp H coPset_universe Constructor
+          (\lam c => wp H coPset_universe (subst nC c Body) ResultPost)) =>
+        properUPred_ent_trans mkProperEmp
+          (wp H coPset_universe Constructor NewPost)
+          (wp H coPset_universe Constructor
+            (\lam c => wp H coPset_universe
+              (subst nC c Body) ResultPost)) constructorWP
+          (wp_mono H coPset_universe Constructor NewPost
+            (\lam c => wp H coPset_universe
+              (subst nC c Body) ResultPost) continue)
+  \in properUPred_ent_trans mkProperEmp
+      (wp H coPset_universe Constructor
+        (\lam c => wp H coPset_universe (subst nC c Body) ResultPost))
+      (wp H coPset_universe msc_closed_client ResultPost) sequenced
+      (wp_letE H coPset_universe nC Constructor Body ResultPost)
+
+-- Concrete signature and initial machine state for the closed example.
+\func msc_clientSigma : gFunctors =>
+  gFunctors_app (irisSigma natCountable)
+    (gFunctors_app mscSigma spawnSigma)
+
+\func msc_client_pre : irisGpreS natCountable msc_clientSigma =>
+  subG_irisGpreS
+    (subG_app_l (subG_refl (irisSigma natCountable)))
+
+\func msc_client_ghost : mscG msc_clientSigma =>
+  subG_mscG
+    (subG_app_r (subG_app_l (subG_refl mscSigma)))
+
+\func msc_client_spawn : spawnG msc_clientSigma =>
+  subG_spawnG
+    (subG_app_r (subG_app_r (subG_refl spawnSigma)))
+
+\func msc_empty_state : State natCountable \cowith
+  | heap => gempty
+  | usedProph => gset_empty
+
+-- Closed adequacy: every terminating execution returns four, and every
+-- thread in every reachable pool is a value or can take another step.
+\func msc_closed_client_adequate :
+  Adequate msc_closed_client msc_empty_state
+    (\lam returned _ => returned = natV 4) =>
+  wp_adequacy_with_fork msc_client_pre msc_closed_client
+    (\lam returned => returned = natV 4) msc_empty_state
+    (\lam H FPI =>
+      msc_closed_client_wp H msc_client_ghost msc_client_spawn FPI)

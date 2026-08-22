@@ -247,6 +247,41 @@
       ((inG_unfold i).ofe_mor_ne n (cmra_transport i.inG_prf a) (cmra_transport i.inG_prf b)
           (cmra_transport_ne i.inG_prf n a b h))
 
+\lemma cmra_transport_discrete_own {A B : CMRA.{0}} (p : A = B)
+    (a : A.E) (ha : Discrete {A} a) :
+  Discrete {B} (cmra_transport p a) \elim p
+  | idp => ha
+
+\lemma own_val_discrete {S : gFunctors} {A : CMRA.{0}}
+    (i : inG S A) (a : A.E) (ha : Discrete {A} a) :
+  Discrete {inG_apply_pre i} (own_val i a) =>
+  \let
+    | x => cmra_transport i.inG_prf a
+    | hx : Discrete {inG_apply_iProp i} x =>
+        cmra_transport_discrete_own i.inG_prf a ha
+    | mapped : Discrete {inG_apply_pre i}
+        ((inG_unfold i).ofe_mor_car x) =>
+        ofe_retract_discrete (inG_unfold i) (inG_fold i)
+          (inG_fold_unfold i) (inG_unfold_fold i) x hx
+  \in discrete_path (inv (own_val_peval i a)) mapped
+
+\lemma iRes_singleton_discrete {S : gFunctors} {A : CMRA.{0}}
+    (i : inG S A) (gam : gname) (a : A.E) (ha : Discrete {A} a) :
+  Discrete {iResUR S} (iRes_singleton i gam a) =>
+  discrete_fun_singleton_discrete fin_eq_dec {iResB S} i.inG_id
+    (gsingleton gam (own_val i a))
+    (gmap_singleton_discrete gam (own_val i a)
+      (own_val_discrete i a ha))
+    (\lam _ => gmap_empty_discrete)
+
+-- Public Iris ownership timelessness for discrete camera elements.
+\lemma own_timeless {S : gFunctors} {A : CMRA.{0}}
+    (i : inG S A) (gam : gname) (a : A.E) (ha : Discrete {A} a) :
+  properUPred_ent (mkProperLater (own i gam a))
+    (mkProperExceptZero (own i gam a)) =>
+  ownM_timeless {iResUR S} (iRes_singleton i gam a)
+    (iRes_singleton_discrete i gam a ha)
+
 \lemma iRes_singleton_dist {S : gFunctors} {A : CMRA.{0}} (i : inG S A) (gam : gname)
                            (n : Nat) (a b : A.E) (h : A.dist n a b)
   : (iResUR S).dist n (iRes_singleton i gam a) (iRes_singleton i gam b)

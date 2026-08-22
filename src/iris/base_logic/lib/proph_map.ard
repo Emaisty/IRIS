@@ -4,6 +4,7 @@
 \import Data.Maybe
 \import Data.Or
 \import Paths
+\import Paths.Meta
 \import Arith.Rat
 \import iris_heap_lang.lang
 \import iris.algebra.gmap
@@ -72,9 +73,11 @@
     (p : ProphId) (value : ProphPayload)
   : proph_list_resolves ((p, value) :: observations) p
       = value :: proph_list_resolves observations p =>
-  \case Pos_eq_dec p p \with {
-    | yes _ => idp
-    | no ne => absurd (ne idp)
+  \case Pos_eq_dec p p \as d, idp : Pos_eq_dec p p = d
+    \return proph_list_resolves ((p, value) :: observations) p =
+      value :: proph_list_resolves observations p \with {
+    | yes _, h => rewrite h idp
+    | no ne, _ => absurd (ne idp)
   }
 
 \lemma proph_resolves_insert (R : ProphMap)
@@ -84,18 +87,20 @@
   : ProphResolvesInList
       (ginsert p (proph_list_resolves observations p) R) observations =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp =>
-          \let same : proph_list_resolves observations p = resolves =>
-              pmap
-                (\case __ \with {
-                  | nothing => proph_list_resolves observations p
-                  | just xs => xs
-                })
-                (inv (glookup_insert_eq p
-                  (proph_list_resolves observations p) R) *> hlookup)
-          \in inv same
-      }
+    | yes eq =>
+      transport (\lam q' => resolves = proph_list_resolves observations q') eq
+        (\let same : proph_list_resolves observations p = resolves =>
+            pmap
+              (\case __ \with {
+                | nothing => proph_list_resolves observations p
+                | just xs => xs
+              })
+              (inv (glookup_insert_eq p
+                (proph_list_resolves observations p) R) *>
+                transport (\lam q' => glookup (ginsert p
+                  (proph_list_resolves observations p) R) q' = just resolves)
+                  (inv eq) hlookup)
+         \in inv same)
     | no ne => hR q resolves
         (inv (glookup_insert_ne p q
           (proph_list_resolves observations p) R ne) *> hlookup)
@@ -108,9 +113,9 @@
       (ginsert p (proph_list_resolves observations p) R)
       (pinsert p () used) =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp => plookup_insert_eq p () used
-      }
+    | yes eq => transport
+        (\lam q' => plookup (pinsert p () used) q' = just ()) eq
+        (plookup_insert_eq p () used)
     | no ne => plookup_insert_ne p q () used ne *> hR q resolves
         (inv (glookup_insert_ne p q
           (proph_list_resolves observations p) R ne) *> hlookup)
@@ -120,9 +125,11 @@
     (p q : ProphId) (value : ProphPayload) (ne : Not (p = q))
   : proph_list_resolves ((p, value) :: observations) q
       = proph_list_resolves observations q =>
-  \case Pos_eq_dec q p \with {
-    | yes eq => absurd (ne (inv eq))
-    | no _ => idp
+  \case Pos_eq_dec q p \as d, idp : Pos_eq_dec q p = d
+    \return proph_list_resolves ((p, value) :: observations) q =
+      proph_list_resolves observations q \with {
+    | yes eq, _ => absurd (ne (inv eq))
+    | no _, h => rewrite h idp
   }
 
 \lemma proph_resolves_cons_update (R : ProphMap)
@@ -132,18 +139,20 @@
   : ProphResolvesInList
       (ginsert p (proph_list_resolves observations p) R) observations =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp =>
-          \let same : proph_list_resolves observations p = resolves =>
-              pmap
-                (\case __ \with {
-                  | nothing => proph_list_resolves observations p
-                  | just xs => xs
-                })
-                (inv (glookup_insert_eq p
-                  (proph_list_resolves observations p) R) *> hlookup)
-          \in inv same
-      }
+    | yes eq =>
+      transport (\lam q' => resolves = proph_list_resolves observations q') eq
+        (\let same : proph_list_resolves observations p = resolves =>
+            pmap
+              (\case __ \with {
+                | nothing => proph_list_resolves observations p
+                | just xs => xs
+              })
+              (inv (glookup_insert_eq p
+                (proph_list_resolves observations p) R) *>
+                transport (\lam q' => glookup (ginsert p
+                  (proph_list_resolves observations p) R) q' = just resolves)
+                  (inv eq) hlookup)
+         \in inv same)
     | no ne =>
         \let oldLookup : glookup R q = just resolves =>
             inv (glookup_insert_ne p q
@@ -317,7 +326,7 @@
                   M.cmra_validN_ne n x
                     (M.op apure (M.op aauth afrag)) dauthfrag hx
               | hauthfrag_valid : M.validN n (M.op aauth afrag) =>
-                  M.cmra_validN_op_r n apure (M.op aauth afrag) hx_regroup
+                  cmra_validN_op_r {M} n apure (M.op aauth afrag) hx_regroup
               | hauthfrag : (mkProperSep (gen_heap_interp H R)
                   (proph H p resolves)).upred_holds n
                   (M.op aauth afrag) =>
@@ -408,8 +417,22 @@
                         (proph H p resolves)))
                     (mkProperSep (gen_heap_interp H R)
                       (proph H p resolves))
-                    (sep_assoc_r_ent _ _ _)
-                    (sep_elim_r_ent _ _) n x hx fixedSource
+                    (sep_assoc_l_ent
+                      (mkProperPure
+                        (\Sigma
+                          (ProphResolvesInList R
+                            ((p, value) :: futureObservations))
+                          (ProphDomSubset R used)))
+                      (gen_heap_interp H R)
+                      (proph H p resolves))
+                    (sep_elim_r_ent
+                      (mkProperPure
+                        (\Sigma
+                          (ProphResolvesInList R
+                            ((p, value) :: futureObservations))
+                          (ProphDomSubset R used)))
+                      (mkProperSep (gen_heap_interp H R)
+                        (proph H p resolves))) n x hx fixedSource
               | R' : ProphMap => ginsert p remaining R
               | newPure : \Sigma
                   (ProphResolvesInList R' futureObservations)

@@ -1,0 +1,44 @@
+\import Arith.Nat
+\import Data.List
+\import iris.algebra.gmap
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.ghost_map
+\import iris.base_logic.lib.mono_nat
+\import iris.base_logic.lib.saved_pred
+\import examples.parallel_counter_model
+
+-- The four ghost resources used by the modular sharded counter, in the same
+-- order as Rocq's `mscΣ`.
+\func mscSigma : gFunctors =>
+  gFunctors_app msc_modelSigma
+    (gFunctors_app mono_natSigma
+      (gFunctors_app
+        (ghost_mapSigma Nat natCountable (\Sigma Nat gname))
+        (savedPredSigma Nat)))
+
+-- The request-map component is intentionally pre-allocation: its concrete
+-- name is allocated during counter initialization and stored in `msc_name`.
+\record mscG (S : gFunctors)
+  | msc_modelG : mscModelG S
+  | msc_mono_natG : mono_natG S
+  | msc_request_mapG :
+      ghost_mapGpreS Nat natCountable (\Sigma Nat gname) S
+  | msc_saved_predG : savedPredG S Nat
+
+\func subG_mscG {S : gFunctors} (h : subG mscSigma S) : mscG S \cowith
+  | msc_modelG => subG_mscModelG (subG_inv_l h)
+  | msc_mono_natG => subG_mono_natG (subG_inv_l (subG_inv_r h))
+  | msc_request_mapG =>
+      subG_ghost_mapGpreS
+        (subG_inv_l (subG_inv_r (subG_inv_r h)))
+  | msc_saved_predG =>
+      subG_savedPredG (subG_inv_r (subG_inv_r (subG_inv_r h)))
+
+-- Names and immutable shape information shared by all counter assertions.
+\record msc_name
+  | msc_model_name : gname
+  | msc_size : Nat
+  | msc_shard_names : List gname
+  | msc_request_name : gname
+

@@ -1032,6 +1032,54 @@
         <=-refl
   }
 
+-- Eliminate a disjunction while retaining a shared spatial frame.  Proof
+-- mode performs this distribution implicitly when destructing an `iOr`.
+\lemma sep_or_l_elim {M : UCMRA} (P Q R Z : ProperUPred M)
+    (hP : properUPred_ent (mkProperSep P R) Z)
+    (hQ : properUPred_ent (mkProperSep Q R) Z) :
+  properUPred_ent (mkProperSep (mkProperOr P Q) R) Z =>
+  \let
+    | W => mkProperWand R Z
+    | choose : properUPred_ent (mkProperOr P Q) W =>
+        (BIuPredMixin M).bi_mixin_or_elim P Q W
+          (wand_intro_ent P R Z hP) (wand_intro_ent Q R Z hQ)
+  \in properUPred_ent_trans (mkProperSep (mkProperOr P Q) R)
+      (mkProperSep W R) Z
+      (sep_mono_l_ent (mkProperOr P Q) W R choose)
+      (wand_elim_ent R Z)
+
+-- Löb induction for concrete uPreds.  At index zero the premise `▷ P` is
+-- trivial; at `suc n` the induction hypothesis supplies `P` at index `n`.
+-- This is the term-mode counterpart of proof mode's `iLöb` and is needed by
+-- recursive polling loops such as heap_lang `join`.
+\lemma lob_ent {M : UCMRA} (P : ProperUPred M)
+    (step : properUPred_ent (mkProperLater P) P) :
+  properUPred_ent mkProperEmp P =>
+  \lam n x hv _ => lob_at n x hv
+  \where {
+    \func lob_at (n : Nat) (x : M.E) (hv : M.validN n x) :
+      P.upred_holds n x \elim n
+      | 0 => step 0 x hv ()
+      | suc k => step (suc k) x hv
+          (lob_at k x (M.cmra_validN_le (suc k) k x hv (n<=sucn k)))
+  }
+
+\lemma lob_wand_apply_ent {M : UCMRA} (K P : ProperUPred M)
+    (step : properUPred_ent
+      (mkProperSep (mkProperLater (mkProperWand K P)) K) P) :
+  properUPred_ent K P =>
+  \let
+    | W => mkProperWand K P
+    | makeStep : properUPred_ent (mkProperLater W) W =>
+        wand_intro_ent (mkProperLater W) K P step
+    | getW : properUPred_ent mkProperEmp W => lob_ent W makeStep
+  \in properUPred_ent_trans K (mkProperSep mkProperEmp K) P
+      ((BIuPredMixin M).bi_mixin_emp_sep_1 K)
+      (properUPred_ent_trans (mkProperSep mkProperEmp K)
+        (mkProperSep W K) P
+        (sep_mono_l_ent mkProperEmp W K getW)
+        (wand_elim_ent K P))
+
 \lemma forall_intro_ent {M : UCMRA} {T : \Set0} (X : ProperUPred M)
     (Phi : T -> ProperUPred M)
     (h : \Pi (t : T) -> properUPred_ent X (Phi t))
@@ -1859,6 +1907,96 @@
         (mkProperExceptZero (mkProperSep P C')) body)
       (fupd_except_0 W E (coPset_difference E (nclose N))
         (mkProperSep P C')))
+
+-- Open a timeless invariant, perform a basic ghost update, and close it
+-- again.  This packages the standard proof-mode `iInv`/`iMod` pattern used
+-- by client protocols that do not themselves execute a physical step.
+\lemma inv_timeless_bupd_update {S : gFunctors} (W : wsatGS S)
+    (E : coPset) (N : Namespace) (P X Y : iProp S)
+    (hNE : coPSubset (nclose N) E) (hT : Timeless P)
+    (step : properUPred_ent (mkProperSep P X)
+      (mkProperBUpd (mkProperSep P Y))) :
+  properUPred_ent
+    (mkProperSep (inv W N P) X)
+    (mkProperFUpd W E E Y) =>
+  \let
+    | D => coPset_difference E (nclose N)
+    | Close => mkProperWand P (mkProperFUpd W D E mkProperEmp)
+    | OpenBody => mkProperSep (mkProperSep P Close) X
+    | Ready => mkProperSep (mkProperSep P X) Close
+    | Updated => mkProperSep (mkProperSep P Y) Close
+    | open : properUPred_ent (mkProperSep (inv W N P) X)
+        (mkProperFUpd W E D OpenBody) =>
+        properUPred_ent_trans (mkProperSep (inv W N P) X)
+          (mkProperSep
+            (mkProperFUpd W E D (mkProperSep P Close)) X)
+          (mkProperFUpd W E D OpenBody)
+          (sep_mono_l_ent (inv W N P)
+            (mkProperFUpd W E D (mkProperSep P Close)) X
+            (inv_acc_timeless W E N P hNE hT))
+          (fupd_frame_r W E D (mkProperSep P Close) X)
+    | arrangeOpen : properUPred_ent OpenBody Ready =>
+        properUPred_ent_trans OpenBody
+          (mkProperSep P (mkProperSep Close X)) Ready
+          (sep_assoc_l_ent P Close X)
+          (properUPred_ent_trans
+            (mkProperSep P (mkProperSep Close X))
+            (mkProperSep P (mkProperSep X Close)) Ready
+            (sep_mono_r_ent P (mkProperSep Close X)
+              (mkProperSep X Close) (sep_comm_ent Close X))
+            (sep_assoc_r_ent P X Close))
+    | update : properUPred_ent Ready (mkProperBUpd Updated) =>
+        properUPred_ent_trans Ready
+          (mkProperSep (mkProperBUpd (mkProperSep P Y)) Close)
+          (mkProperBUpd Updated)
+          (sep_mono_l_ent (mkProperSep P X)
+            (mkProperBUpd (mkProperSep P Y)) Close step)
+          (bupd_frame_r (mkProperSep P Y) Close)
+    | closeBody : properUPred_ent Updated
+        (mkProperFUpd W D E Y) =>
+        properUPred_ent_trans Updated
+          (mkProperSep Close (mkProperSep P Y))
+          (mkProperFUpd W D E Y)
+          (sep_comm_ent (mkProperSep P Y) Close)
+          (properUPred_ent_trans
+            (mkProperSep Close (mkProperSep P Y))
+            (mkProperSep (mkProperSep Close P) Y)
+            (mkProperFUpd W D E Y)
+            (sep_assoc_r_ent Close P Y)
+            (properUPred_ent_trans
+              (mkProperSep (mkProperSep Close P) Y)
+              (mkProperSep (mkProperFUpd W D E mkProperEmp) Y)
+              (mkProperFUpd W D E Y)
+              (sep_mono_l_ent (mkProperSep Close P)
+                (mkProperFUpd W D E mkProperEmp) Y
+                (wand_elim_ent P (mkProperFUpd W D E mkProperEmp)))
+              (properUPred_ent_trans
+                (mkProperSep (mkProperFUpd W D E mkProperEmp) Y)
+                (mkProperFUpd W D E (mkProperSep mkProperEmp Y))
+                (mkProperFUpd W D E Y)
+                (fupd_frame_r W D E mkProperEmp Y)
+                (fupd_mono W D E (mkProperSep mkProperEmp Y) Y
+                  (sep_elim_r_ent mkProperEmp Y)))))
+    | inner : properUPred_ent OpenBody (mkProperFUpd W D E Y) =>
+        properUPred_ent_trans OpenBody Ready
+          (mkProperFUpd W D E Y) arrangeOpen
+          (properUPred_ent_trans Ready (mkProperBUpd Updated)
+            (mkProperFUpd W D E Y) update
+            (properUPred_ent_trans (mkProperBUpd Updated)
+              (mkProperBUpd (mkProperFUpd W D E Y))
+              (mkProperFUpd W D E Y)
+              (bupd_mono Updated (mkProperFUpd W D E Y) closeBody)
+              (bupd_fupd_flatten W D E Y)))
+  \in properUPred_ent_trans
+      (mkProperSep (inv W N P) X)
+      (mkProperFUpd W E D OpenBody)
+      (mkProperFUpd W E E Y) open
+      (properUPred_ent_trans
+        (mkProperFUpd W E D OpenBody)
+        (mkProperFUpd W E D (mkProperFUpd W D E Y))
+        (mkProperFUpd W E E Y)
+        (fupd_mono W E D OpenBody (mkProperFUpd W D E Y) inner)
+        (fupd_trans W E D E Y))
 
 
 -- =================================================================================

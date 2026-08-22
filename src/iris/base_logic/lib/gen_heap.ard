@@ -3,6 +3,7 @@
 \import Set
 \import Data.Maybe
 \import Data.Or
+\import Data.List
 \import Arith.Nat
 \import Arith.Rat
 \import iris.algebra.ofe
@@ -11,11 +12,14 @@
 \import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.own
 \import iris.bi.updates
+\import iris.bi.big_op
 \import stdpp.pmap
 \import iris.algebra.gmap
 \import iris.algebra.frac
 \import iris.algebra.dfrac
 \import iris.algebra.agree
+\import iris.algebra.view
+\import iris.algebra.prod
 \import iris.base_logic.lib.gfunctors
 \import iris.algebra.lib.gmap_view
 \import iris.algebra.lib.gmap_view_functor
@@ -91,6 +95,161 @@
 \func pointsto_full {L V : \Set0} {cnt : Countable L}
     {S : gFunctors} (H : gen_heapGS L cnt V S) (l : L) (v : V)
   : iProp S => pointsto H l (DfracOwn qp_one) v
+
+\lemma gen_heap_frag_discrete {L V : \Set0} {cnt : Countable L}
+    (l : L) (dq : Dfrac) (v : V) :
+  Discrete {gen_heapR L cnt V} (gen_heap_frag l dq v) =>
+  view_frag_discrete
+    {GmapOFE L cnt (gen_heapV V)}
+    {gmap_view_fragUR L cnt (gen_heapV V)}
+    (gsingleton l (dq, to_agree v))
+    (gmap_singleton_discrete
+      {L} {cnt} {ProdCMRA DfracCMRA (AgreeCMRA (DiscreteOFE V))}
+      l (dq, to_agree v)
+      (\lam (p : (ProdCMRA DfracCMRA
+                    (AgreeCMRA (DiscreteOFE V))).E)
+          (hd : (ProdCMRA DfracCMRA
+                    (AgreeCMRA (DiscreteOFE V))).dist 0
+                    (dq, to_agree v) p) =>
+        (discrete_dist_to_eq Dfrac 0 dq p.1 hd.1,
+         to_agree_discrete v (discreteOFE_discrete V v) p.2 hd.2)))
+
+-- Heap points-to assertions are timeless because their gmap-view fragment is
+-- discrete.  This is the instance used by atomic invariant opening.
+\lemma pointsto_timeless {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (l : L) (dq : Dfrac) (v : V) :
+  properUPred_ent (mkProperLater (pointsto H l dq v))
+    (mkProperExceptZero (pointsto H l dq v)) =>
+  own_timeless H.gen_heap_inG H.gen_heap_name (gen_heap_frag l dq v)
+    (gen_heap_frag_discrete l dq v)
+
+\lemma pointsto_full_timeless {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S) (l : L) (v : V) :
+  properUPred_ent (mkProperLater (pointsto_full H l v))
+    (mkProperExceptZero (pointsto_full H l v)) =>
+  pointsto_timeless H l (DfracOwn qp_one) v
+
+-- Contiguous uniform ownership, parameterized by the successor operation on
+-- locations.  Heap-lang arrays instantiate [next] with Nat's [suc].
+\func pointsto_block {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (n : Nat) (v : V) : iProp S \elim n
+  | 0 => mkProperEmp
+  | suc n => mkProperSep (pointsto_full H l v)
+      (pointsto_block H next (next l) n v)
+
+-- List-valued array ownership.  Unlike [pointsto_block], this connective can
+-- describe cells after different threads have updated different indices.
+\func pointsto_array {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (vs : List V) : iProp S \elim vs
+  | nil => mkProperEmp
+  | :: v vs => mkProperSep (pointsto_full H l v)
+      (pointsto_array H next (next l) vs)
+
+\func pointsto_array_rest {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (prefix suffix : List V) : iProp S
+    \elim prefix
+  | nil => pointsto_array H next (next l) suffix
+  | :: v prefix => mkProperSep (pointsto_full H l v)
+      (pointsto_array_rest H next (next l) prefix suffix)
+
+\func pointsto_array_index_loc {L : \Set0}
+    (next : L -> L) (l : L) (i : Nat) : L \elim i
+  | 0 => l
+  | suc i => pointsto_array_index_loc next (next l) i
+
+-- Split a distinguished cell out of a list-valued array.  The companion
+-- insertion lemma below reassembles the same prefix and suffix with a new
+-- cell value; together they are the term-mode form of big_sepL_insert_acc.
+\lemma pointsto_array_extract {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (prefix : List V) (v : V)
+    (suffix : List V) :
+  properUPred_ent
+    (pointsto_array H next l (prefix ++ v :: suffix))
+    (mkProperSep
+      (pointsto_full H (pointsto_array_index_loc next l (length prefix)) v)
+      (pointsto_array_rest H next l prefix suffix))
+  \elim prefix
+  | nil => properUPred_ent_refl
+      (mkProperSep (pointsto_full H l v)
+        (pointsto_array H next (next l) suffix))
+  | :: w prefix => properUPred_ent_trans
+      (mkProperSep (pointsto_full H l w)
+        (pointsto_array H next (next l) (prefix ++ v :: suffix)))
+      (mkProperSep (pointsto_full H l w)
+        (mkProperSep
+          (pointsto_full H
+            (pointsto_array_index_loc next (next l) (length prefix)) v)
+          (pointsto_array_rest H next (next l) prefix suffix)))
+      (mkProperSep
+        (pointsto_full H
+          (pointsto_array_index_loc next (next l) (length prefix)) v)
+        (mkProperSep (pointsto_full H l w)
+          (pointsto_array_rest H next (next l) prefix suffix)))
+      (sep_mono_r_ent (pointsto_full H l w)
+        (pointsto_array H next (next l) (prefix ++ v :: suffix))
+        (mkProperSep
+          (pointsto_full H
+            (pointsto_array_index_loc next (next l) (length prefix)) v)
+          (pointsto_array_rest H next (next l) prefix suffix))
+        (pointsto_array_extract H next (next l) prefix v suffix))
+      (sep_swap_ent (pointsto_full H l w)
+        (pointsto_full H
+          (pointsto_array_index_loc next (next l) (length prefix)) v)
+        (pointsto_array_rest H next (next l) prefix suffix))
+
+\lemma pointsto_array_insert {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (prefix : List V) (old new : V)
+    (suffix : List V) :
+  properUPred_ent
+    (mkProperSep
+      (pointsto_full H (pointsto_array_index_loc next l (length prefix)) new)
+      (pointsto_array_rest H next l prefix suffix))
+    (pointsto_array H next l (prefix ++ new :: suffix))
+  \elim prefix
+  | nil => properUPred_ent_refl
+      (mkProperSep (pointsto_full H l new)
+        (pointsto_array H next (next l) suffix))
+  | :: w prefix => properUPred_ent_trans
+      (mkProperSep
+        (pointsto_full H
+          (pointsto_array_index_loc next (next l) (length prefix)) new)
+        (mkProperSep (pointsto_full H l w)
+          (pointsto_array_rest H next (next l) prefix suffix)))
+      (mkProperSep (pointsto_full H l w)
+        (mkProperSep
+          (pointsto_full H
+            (pointsto_array_index_loc next (next l) (length prefix)) new)
+          (pointsto_array_rest H next (next l) prefix suffix)))
+      (mkProperSep (pointsto_full H l w)
+        (pointsto_array H next (next l) (prefix ++ new :: suffix)))
+      (sep_swap_ent
+        (pointsto_full H
+          (pointsto_array_index_loc next (next l) (length prefix)) new)
+        (pointsto_full H l w)
+        (pointsto_array_rest H next (next l) prefix suffix))
+      (sep_mono_r_ent (pointsto_full H l w)
+        (mkProperSep
+          (pointsto_full H
+            (pointsto_array_index_loc next (next l) (length prefix)) new)
+          (pointsto_array_rest H next (next l) prefix suffix))
+        (pointsto_array H next (next l) (prefix ++ new :: suffix))
+        (pointsto_array_insert H next (next l) prefix old new suffix))
+
+\lemma pointsto_block_replicate {L V : \Set0} {cnt : Countable L}
+    {S : gFunctors} (H : gen_heapGS L cnt V S)
+    (next : L -> L) (l : L) (n : Nat) (v : V)
+  : pointsto_block H next l n v =
+      pointsto_array H next l (replicate n v)
+  \elim n
+  | 0 => idp
+  | suc n => pmap (mkProperSep (pointsto_full H l v))
+      (pointsto_block_replicate H next (next l) n v)
 
 -- A singleton Agree element is valid at every step index.  Keeping this
 -- elementary fact here prevents allocation proofs from unfolding AgreeCMRA.

@@ -27,6 +27,61 @@
   | decode_encode (x : A) : decode (encode x) = just x
   | encode_inj (x y : A) : encode x = encode y -> x = y
 
+-- The counter development uses natural request identifiers as finite-map keys.
+-- Encode n as the unary positive number 2^n.  This is deliberately simple:
+-- countability only needs an injection into Pos, not a compact encoding.
+\func nat_eq_dec (n m : Nat) : Dec (n = m) \elim n, m
+  | 0, 0 => yes idp
+  | 0, suc _ => no (\lam e => \case e \with {})
+  | suc _, 0 => no (\lam e => \case e \with {})
+  | suc n, suc m => \case nat_eq_dec n m \with {
+    | yes e => yes (pmap suc e)
+    | no ne => no (\lam e => ne (pmap nat_pred e))
+  }
+  \where {
+    \func nat_pred (n : Nat) : Nat \elim n
+      | 0 => 0
+      | suc n => n
+  }
+
+\func nat_encode (n : Nat) : Pos \elim n
+  | 0 => xH
+  | suc n => xO (nat_encode n)
+
+\func nat_decode (p : Pos) : Maybe Nat \elim p
+  | xH => just 0
+  | xO p => \case nat_decode p \with {
+    | nothing => nothing
+    | just n => just (suc n)
+  }
+  | xI _ => nothing
+
+\lemma nat_decode_encode (n : Nat) : nat_decode (nat_encode n) = just n \elim n
+  | 0 => idp
+  | suc n => pmap
+      (\lam o => \case o \with { | nothing => nothing | just k => just (suc k) })
+      (nat_decode_encode n)
+
+\lemma nat_encode_inj (n m : Nat) (h : nat_encode n = nat_encode m) : n = m
+\elim n, m
+  | 0, 0 => idp
+  | 0, suc _ => \case h \with {}
+  | suc _, 0 => \case h \with {}
+  | suc n, suc m => pmap suc (nat_encode_inj n m (pmap nat_pos_pred h))
+  \where {
+    \func nat_pos_pred (p : Pos) : Pos \elim p
+      | xH => xH
+      | xO p => p
+      | xI p => p
+  }
+
+\instance natCountable : Countable Nat
+  | decideEq => nat_eq_dec
+  | encode => nat_encode
+  | decode => nat_decode
+  | decode_encode => nat_decode_encode
+  | encode_inj => nat_encode_inj
+
 
 -- =================================================================================
 -- Option CMRA
@@ -631,6 +686,16 @@
 
 \func gdelete {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (m : Gmap K cnt A) : Gmap K cnt A =>
   gpartial_alter (\lam _ => nothing) k m
+
+\lemma glookup_delete_eq {K : \Set} {cnt : Countable K} {A : \Set}
+    (k : K) (m : Gmap K cnt A) :
+  glookup (gdelete k m) k = nothing =>
+  glookup_partial_alter_eq (\lam _ => nothing) k m
+
+\lemma glookup_delete_ne {K : \Set} {cnt : Countable K} {A : \Set}
+    (k k' : K) (m : Gmap K cnt A) (ne : Not (k = k')) :
+  glookup (gdelete k m) k' = glookup m k' =>
+  glookup_partial_alter_ne (\lam _ => nothing) k k' m ne
 
 \func gsingleton {K : \Set} {cnt : Countable K} {A : \Set} (k : K) (x : A) : Gmap K cnt A =>
   ginsert k x gempty
@@ -1882,3 +1947,92 @@
       | nothing => nothing
       | just p  => just p.2
     })
+
+-- The empty finite map is discrete even when its value OFE is not: a map
+-- at distance zero from it cannot contain any key.
+\lemma gmap_empty_discrete {K : \Set} {cnt : Countable K} {A : OFE} :
+  Discrete {GmapOFE K cnt A} (gempty {K} {cnt} {A.E}) =>
+  \lam m hd k =>
+    \case glookup m k \as o, idp : glookup m k = o
+    \return (OptionOFE A).equiv
+      (glookup (gempty {K} {cnt} {A.E}) k) (glookup m k)
+    \with {
+      | nothing, hm => transport2 (\lam u v => (OptionOFE A).equiv u v)
+          (inv (glookup_empty k)) (inv hm) ()
+      | just a, hm => \case transport2
+          (\lam u v => (OptionOFE A).dist 0 u v)
+          (glookup_empty k) hm (hd k) \with {}
+    }
+
+-- A finite map is discrete when every value in the value OFE is discrete.
+-- Gmap equivalence is pointwise, so this does not require induction over the
+-- Patricia-tree representation.
+\lemma gmap_discrete {K : \Set} {cnt : Countable K} {A : OFE}
+    (hA : OFEDiscrete A) (m : Gmap K cnt A.E) :
+  Discrete {GmapOFE K cnt A} m =>
+  \lam m' hd k => \case glookup m k \as ox, idp : glookup m k = ox
+    \return (OptionOFE A).equiv (glookup m k) (glookup m' k)
+  \with {
+    | nothing, em =>
+      \case glookup m' k \as oy, idp : glookup m' k = oy
+        \return (OptionOFE A).equiv (glookup m k) (glookup m' k)
+      \with {
+        | nothing, em' => transport2
+            (\lam u v => (OptionOFE A).equiv u v) (inv em) (inv em') ()
+        | just y, em' => \case transport2
+            (\lam u v => (OptionOFE A).dist 0 u v) em em' (hd k) \with {}
+      }
+    | just x, em =>
+      \case glookup m' k \as oy, idp : glookup m' k = oy
+        \return (OptionOFE A).equiv (glookup m k) (glookup m' k)
+      \with {
+        | nothing, em' => \case transport2
+            (\lam u v => (OptionOFE A).dist 0 u v) em em' (hd k) \with {}
+        | just y, em' => transport2
+            (\lam u v => (OptionOFE A).equiv u v) (inv em) (inv em')
+            (hA x y (transport2
+              (\lam u v => (OptionOFE A).dist 0 u v) em em' (hd k)))
+      }
+  }
+
+-- A singleton finite map is discrete exactly when its stored value is.  No
+-- global discreteness assumption on the value OFE is needed, which is
+-- important for higher-order Iris resource families.
+\lemma gmap_singleton_discrete {K : \Set} {cnt : Countable K} {A : OFE}
+    (k : K) (x : A.E) (hx : Discrete {A} x) :
+  Discrete {GmapOFE K cnt A} (gsingleton {K} {cnt} k x) =>
+  \lam m hd j => \case EqDecision.decideEq {cnt} j k \with {
+    | yes e =>
+      \let
+        | atj : glookup (gsingleton {K} {cnt} k x) j = just x =>
+            transport (\lam z => glookup (gsingleton k x) z = just x)
+              (inv e) (glookup_singleton_eq k x)
+      \in \case glookup m j \as o, idp : glookup m j = o
+        \return (OptionOFE A).equiv
+          (glookup (gsingleton k x) j) (glookup m j)
+        \with {
+          | nothing, hm => \case transport2
+              (\lam u v => (OptionOFE A).dist 0 u v)
+              atj hm (hd j) \with {}
+          | just y, hm => transport2
+              (\lam u v => (OptionOFE A).equiv u v)
+              (inv atj) (inv hm)
+              (hx y (transport2
+                (\lam u v => (OptionOFE A).dist 0 u v)
+                atj hm (hd j)))
+        }
+    | no ne =>
+      \let absent : glookup (gsingleton {K} {cnt} k x) j = nothing =>
+        glookup_singleton_ne k j x (\lam p => ne (inv p))
+      \in \case glookup m j \as o, idp : glookup m j = o
+        \return (OptionOFE A).equiv
+          (glookup (gsingleton k x) j) (glookup m j)
+        \with {
+          | nothing, hm => transport2
+              (\lam u v => (OptionOFE A).equiv u v)
+              (inv absent) (inv hm) ()
+          | just y, hm => \case transport2
+              (\lam u v => (OptionOFE A).dist 0 u v)
+              absent hm (hd j) \with {}
+        }
+  }
