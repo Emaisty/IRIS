@@ -44,6 +44,8 @@ public final class ProofModeExtension extends DefaultArendExtension {
     contributor.declare(module, new ModulePath("iris", "proofmode", "core"));
     contributor.declare(module, new ModulePath("iris", "base_logic", "upred"));
     contributor.declare(module, new ModulePath("iris", "bi", "updates"));
+    contributor.declare(module,
+        new ModulePath("iris", "base_logic", "lib", "fancy_updates"));
     contributor.declare(module, new ModulePath("iris", "base_logic", "lib", "invariants"));
     contributor.declare(module, new ModulePath("stdpp", "namespaces"));
     contributor.declare(module, new ModulePath("iris_heap_lang", "lang"));

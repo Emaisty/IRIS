@@ -108,6 +108,11 @@ final class IntrosMeta extends ExactMeta {
     var arguments = explicitArguments(contextData);
     ConcreteExpression next = arguments.get(1);
 
+    if (contextData.getExpectedType() == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "iIntros has no expected proof-mode goal", contextData.getMarker()));
+      return null;
+    }
     CoreExpression expected = dereference(typechecker, contextData.getExpectedType());
     if (!(expected instanceof CoreFunCallExpression goal)
         || goal.getDefinition() != envsEntails

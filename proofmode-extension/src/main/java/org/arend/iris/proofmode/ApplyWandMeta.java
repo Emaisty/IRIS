@@ -20,6 +20,9 @@ final class ApplyWandMeta extends ExactMeta {
   @Dependency(name = "pm_apply_wand")
   private ArendRef pmApplyWand;
 
+  @Dependency(name = "pm_apply_wand_intuitionistic")
+  private ArendRef pmApplyWandIntuitionistic;
+
   @Dependency(name = "properUPred_ent_refl")
   private ArendRef entailmentRefl;
 
@@ -34,11 +37,6 @@ final class ApplyWandMeta extends ExactMeta {
     if (requested == null) return null;
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
-    if (resolved.persistent()) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "Applying intuitionistic hypotheses is not implemented yet", contextData.getMarker()));
-      return null;
-    }
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression wand)
@@ -64,7 +62,8 @@ final class ApplyWandMeta extends ExactMeta {
     args.add(factory.arg(factory.core(codomain.computeTyped()), false));
     args.add(factory.arg(refl, true));
     args.add(factory.arg(explicitArguments(contextData).get(1), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmApplyWand), args),
+    return typechecker.typecheck(factory.app(factory.ref(resolved.persistent()
+            ? pmApplyWandIntuitionistic : pmApplyWand), args),
         contextData.getExpectedType());
   }
 }

@@ -10,7 +10,12 @@
 \import iris.base_logic.notation
 \import iris.bi.big_op
 \import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.wsat
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.fancy_updates
 \import iris.base_logic.lib.invariants (lob_wand_apply_ent, sep_or_l_elim)
+\import stdpp.coPset
 
 -- Proof-mode identifiers deliberately avoid semantic String.  The extension
 -- turns quoted UTF-16 code units into this representation before elaboration.
@@ -1057,6 +1062,56 @@
       (sep_comm_ent (P -∗ Q) P)
       ((BIuPredMixin M).bi_mixin_wand_elim P Q)) next
 
+-- Applying an intuitionistic resource keeps the complete persistent
+-- environment available to the argument proof.  The reuse is justified by
+-- duplicating that environment in Arend, rather than by the extension.
+\lemma pm_apply_intuitionistic_resource {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {T P Q : ProperUPred M}
+    (convert : selection.persistent_prop ⊢ T)
+    (eliminate : (T ∗ P) ⊢ Q)
+    (next : envs_entails envs P)
+  : envs_entails envs Q =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | S => pm_of_env envs.spatial
+    | selected => selection.persistent_prop
+    | rest => pm_of_persistent_env selection.persistent_rest
+    | extract : I ⊢ T =>
+        properUPred_ent_trans I ((<#> selected) ∗ rest) T
+          selection.persistent_selection_sound
+          (properUPred_ent_trans ((<#> selected) ∗ rest)
+            (<#> selected) T
+            (sep_elim_l_ent (<#> selected) rest)
+            (properUPred_ent_trans (<#> selected) selected T
+              (pm_persistently_elim selected) convert))
+    | expose : (of_envs envs) ⊢ (T ∗ (of_envs envs)) =>
+        properUPred_ent_trans (I ∗ S) ((I ∗ I) ∗ S)
+          (T ∗ (I ∗ S))
+          (sep_mono_l_ent I (I ∗ I) S
+            (pm_persistent_env_dup envs.intuitionistic))
+          (properUPred_ent_trans ((I ∗ I) ∗ S)
+            (I ∗ (I ∗ S)) (T ∗ (I ∗ S))
+            (sep_assoc_l_ent I I S)
+            (sep_mono_l_ent I T (I ∗ S) extract))
+  \in properUPred_ent_trans (of_envs envs)
+      (T ∗ (of_envs envs)) Q expose
+      (properUPred_ent_trans (T ∗ (of_envs envs))
+        (T ∗ P) Q
+        (sep_mono_r_ent T (of_envs envs) P next)
+        eliminate)
+
+\lemma pm_apply_wand_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {P Q : ProperUPred M}
+    (is_wand : selection.persistent_prop ⊢ (P -∗ Q))
+    (next : envs_entails envs P)
+  : envs_entails envs Q =>
+  pm_apply_intuitionistic_resource selection is_wand
+    (properUPred_ent_trans ((P -∗ Q) ∗ P) (P ∗ (P -∗ Q)) Q
+      (sep_comm_ent (P -∗ Q) P)
+      ((BIuPredMixin M).bi_mixin_wand_elim P Q)) next
+
 \lemma pm_specialize_spatial {M : UCMRA} {env : PMEnv M}
     (wand_selection : PMSelection env)
     (argument_selection : PMSelection wand_selection.selected_rest)
@@ -1148,6 +1203,53 @@
         is_wand is_argument))
     next
 
+\lemma pm_specialize_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (wand_selection : PMPersistentSelection envs.intuitionistic)
+    (argument_selection : PMSelection envs.spatial)
+    (name : PMName) {P Q R : ProperUPred M}
+    (is_wand : wand_selection.persistent_prop ⊢ (P -∗ Q))
+    (is_argument : argument_selection.selected_prop ⊢ P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc argument_selection.selected_rest name Q
+      }) R)
+  : envs_entails envs R =>
+  \let
+    | split : PMSplit envs.spatial =>
+        \new PMSplit envs.spatial {
+          | split_left => pm_snoc pm_empty nil
+              argument_selection.selected_prop
+          | split_right => argument_selection.selected_rest
+          | split_sound => properUPred_ent_trans
+              (pm_of_env envs.spatial)
+              (argument_selection.selected_prop ∗
+                pm_of_env argument_selection.selected_rest)
+              ((pm_of_env (pm_snoc pm_empty nil
+                  argument_selection.selected_prop)) ∗
+                pm_of_env argument_selection.selected_rest)
+              argument_selection.selection_sound
+              (sep_mono_l_ent argument_selection.selected_prop
+                (pm_of_env (pm_snoc pm_empty nil
+                  argument_selection.selected_prop))
+                (pm_of_env argument_selection.selected_rest)
+                ((BIuPredMixin M).bi_mixin_emp_sep_1
+                  argument_selection.selected_prop))
+        }
+    | argument_env : PMEnvs M => \new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc pm_empty nil
+            argument_selection.selected_prop
+      }
+    | argument_selection' : PMSelection argument_env.spatial =>
+        pm_select_here pm_empty nil argument_selection.selected_prop
+    | prove : envs_entails argument_env Q =>
+        pm_apply_wand_intuitionistic {M} {argument_env}
+          wand_selection is_wand
+          (pm_ent_apply {M} {argument_env} is_argument
+            (pm_exact_spatial argument_env argument_selection'))
+  \in pm_assert split name prove next
+
 \lemma pm_rewrite {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) {P Q : ProperUPred M}
     (is_equality : selection.selected_prop ⊢
@@ -1218,6 +1320,67 @@
           (sep_assoc_l_ent (pm_of_persistent_env envs.intuitionistic)
             (pm_of_env selection.selected_rest) P))
         next))
+
+\lemma pm_fupd {S : gFunctors} (W : wsatGS S)
+    (E1 E2 E3 : coPset) {envs : PMEnvs (iResUR S)}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P Q : iProp S}
+    (is_update : selection.selected_prop ⊢
+      (mkProperFUpd W E1 E2 P))
+    (next : envs_entails
+      (\new PMEnvs (iResUR S) {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) (mkProperFUpd W E2 E3 Q))
+  : envs_entails envs (mkProperFUpd W E1 E3 Q) =>
+  \let
+    | Persistent => pm_of_persistent_env envs.intuitionistic
+    | Spatial => pm_of_env selection.selected_rest
+    | Frame => Persistent ∗ Spatial
+    | updateFrame : (mkProperFUpd W E1 E2 P ∗ Frame) ⊢
+        (mkProperFUpd W E1 E2 (P ∗ Frame)) =>
+      fupd_frame_r W E1 E2 P Frame
+    | next' : (P ∗ Frame) ⊢ (mkProperFUpd W E2 E3 Q) =>
+      properUPred_ent_trans (P ∗ Frame)
+        (Persistent ∗ (Spatial ∗ P))
+        (mkProperFUpd W E2 E3 Q)
+        (properUPred_ent_trans (P ∗ Frame)
+          (Frame ∗ P) (Persistent ∗ (Spatial ∗ P))
+          (sep_comm_ent P Frame)
+          (sep_assoc_l_ent Persistent Spatial P))
+        next
+    | finish : (mkProperFUpd W E1 E2 P ∗ Frame) ⊢
+        (mkProperFUpd W E1 E3 Q) =>
+      properUPred_ent_trans (mkProperFUpd W E1 E2 P ∗ Frame)
+        (mkProperFUpd W E1 E2 (P ∗ Frame))
+        (mkProperFUpd W E1 E3 Q) updateFrame
+        (properUPred_ent_trans
+          (mkProperFUpd W E1 E2 (P ∗ Frame))
+          (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E3 Q))
+          (mkProperFUpd W E1 E3 Q)
+          (fupd_mono W E1 E2 (P ∗ Frame)
+            (mkProperFUpd W E2 E3 Q) next')
+          (fupd_trans W E1 E2 E3 Q))
+  \in properUPred_ent_trans (of_envs envs)
+      (mkProperFUpd W E1 E2 P ∗ Frame)
+      (mkProperFUpd W E1 E3 Q)
+      (properUPred_ent_trans (of_envs envs)
+        (Persistent ∗
+          (mkProperFUpd W E1 E2 P ∗ Spatial))
+        (mkProperFUpd W E1 E2 P ∗ Frame)
+        (sep_mono_r_ent Persistent
+          (pm_of_env envs.spatial)
+          (mkProperFUpd W E1 E2 P ∗ Spatial)
+          (properUPred_ent_trans
+            (pm_of_env envs.spatial)
+            (selection.selected_prop ∗ Spatial)
+            (mkProperFUpd W E1 E2 P ∗ Spatial)
+            selection.selection_sound
+            (sep_mono_l_ent selection.selected_prop
+              (mkProperFUpd W E1 E2 P) Spatial is_update)))
+        (sep_swap_ent Persistent
+          (mkProperFUpd W E1 E2 P) Spatial))
+      finish
 
 \lemma pm_lob {M : UCMRA} {envs : PMEnvs M} (name : PMName)
     {P : ProperUPred M}

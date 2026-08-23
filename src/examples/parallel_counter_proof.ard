@@ -52,8 +52,8 @@
 \import examples.parallel_counter_model
 \import examples.parallel_counter_ghost
 \import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
-  iAssumption, iSplitL, iAssert, iEmpIntro, iNext, iSpecialize,
-  iExists, iPureIntro, iRewrite,
+  iAssumption, iApply, iSplitL, iRight, iAssert, iEmpIntro, iNext,
+  iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
   wp_apply, wp_smart_apply, wp_bind, wp_pures)
 
 -- The exclusive token used by the Rocq spawn/join library.  It remains a
@@ -543,88 +543,29 @@
     | ChildE => letE nR (App (Val f) (Val unitV))
         (Store (Val (LitV (LitLoc l)))
           (Pair (Val (boolV true)) (Var nR)))
-    | ChildPre => Inv ∗ FWP
-    | ParentPre => Tok ∗ Inv
     | ParentWP => WP H coPset_universe (Val (LitV (LitLoc l)))
         (spawn_post H SG Psi)
     | ForkPost : Value -> iProp S => \lam _ => ParentWP
-    | duplicated : (Inv ∗ (Tok ∗ FWP)) ⊢
-        ((Inv ∗ (Tok ∗ FWP)) ∗ Inv) =>
-        persistent_consequence_frame_ent
-          (Inv ∗ (Tok ∗ FWP)) Inv
-          (properUPred_ent_trans
-            (Inv ∗ (Tok ∗ FWP)) Inv
-            (<#> Inv)
-            (sep_elim_l_ent Inv (Tok ∗ FWP))
-            (inv_persistent H.iris_wsat spawnN
-              (spawn_inv H SG gam l Psi)))
-    | arrange : ((Inv ∗ (Tok ∗ FWP)) ∗ Inv) ⊢
-        (ParentPre ∗ ChildPre) =>
-        properUPred_ent_trans
-          ((Inv ∗ (Tok ∗ FWP)) ∗ Inv)
-          (Inv ∗ (Tok ∗ (Inv ∗ FWP)))
-          (ParentPre ∗ ChildPre)
-          (properUPred_ent_trans
-            ((Inv ∗ (Tok ∗ FWP)) ∗ Inv)
-            (Inv ∗ ((Tok ∗ FWP) ∗ Inv))
-            (Inv ∗ (Tok ∗ (Inv ∗ FWP)))
-            (sep_assoc_l_ent Inv (Tok ∗ FWP) Inv)
-            (sep_mono_r_ent Inv ((Tok ∗ FWP) ∗ Inv)
-              (Tok ∗ (Inv ∗ FWP))
-              (properUPred_ent_trans
-                ((Tok ∗ FWP) ∗ Inv)
-                (Tok ∗ (FWP ∗ Inv))
-                (Tok ∗ (Inv ∗ FWP))
-                (sep_assoc_l_ent Tok FWP Inv)
-                (sep_mono_r_ent Tok (FWP ∗ Inv)
-                  (Inv ∗ FWP) (sep_comm_ent FWP Inv)))))
-          (properUPred_ent_trans
-            (Inv ∗ (Tok ∗ ChildPre))
-            (Tok ∗ (Inv ∗ ChildPre))
-            (ParentPre ∗ ChildPre)
-            (sep_swap_ent Inv Tok ChildPre)
-            (sep_assoc_r_ent Tok Inv ChildPre))
-    | parent : ParentPre ⊢ ParentWP =>
-        properUPred_ent_trans ParentPre
-          (spawn_post H SG Psi (LitV (LitLoc l))) ParentWP
-          (spawn_post_intro H SG gam l Psi)
-          (wp_value_intro H coPset_universe (LitV (LitLoc l))
-            (spawn_post H SG Psi))
-    | child : ChildPre ⊢
-        (WP H coPset_universe ChildE H.iris_fork_post) =>
-        spawn_child H SG FPI gam l Psi f
-    | forked : (ParentPre ∗ ChildPre) ⊢
-        (WP H coPset_universe (Fork ChildE) ForkPost) =>
-        properUPred_ent_trans (ParentPre ∗ ChildPre)
-          (ParentWP ∗
-            (WP H coPset_universe ChildE H.iris_fork_post))
-          (WP H coPset_universe (Fork ChildE) ForkPost)
-          (properUPred_ent_trans (ParentPre ∗ ChildPre)
-            (ParentWP ∗ ChildPre)
-            (ParentWP ∗
-              (WP H coPset_universe ChildE H.iris_fork_post))
-            (sep_mono_l_ent ParentPre ParentWP ChildPre parent)
-            (sep_mono_r_ent ParentWP ChildPre
-              (WP H coPset_universe ChildE H.iris_fork_post) child))
-          (wp_fork H coPset_universe ChildE ForkPost)
-  \in properUPred_ent_trans
-      (Inv ∗ (Tok ∗ FWP))
-      (ParentPre ∗ ChildPre)
-      (WP H coPset_universe
-        (seqE (Fork ChildE) (Val (LitV (LitLoc l))))
-        (spawn_post H SG Psi))
-      (properUPred_ent_trans
-        (Inv ∗ (Tok ∗ FWP))
-        ((Inv ∗ (Tok ∗ FWP)) ∗ Inv)
-        (ParentPre ∗ ChildPre) duplicated arrange)
-      (properUPred_ent_trans (ParentPre ∗ ChildPre)
-        (WP H coPset_universe (Fork ChildE) ForkPost)
+    | proof : (Inv ∗ (Tok ∗ FWP)) ⊢
         (WP H coPset_universe
           (seqE (Fork ChildE) (Val (LitV (LitLoc l))))
-          (spawn_post H SG Psi)) forked
-        (pm_wp_let H coPset_universe nIgnore (Fork ChildE)
-          (Val (LitV (LitLoc l))) (spawn_post H SG Psi)))
-
+          (spawn_post H SG Psi)) =>
+      ipm $ iIntros "HInv HRest" $
+        iDestruct "HRest" "HTok HFWP" $
+        iDestruct "HInv" "#HInv"
+          (inv_persistent H.iris_wsat spawnN
+            (spawn_inv H SG gam l Psi)) $
+        wp_apply (pm_wp_let H coPset_universe nIgnore (Fork ChildE)
+          (Val (LitV (LitLoc l))) (spawn_post H SG Psi)) $
+        wp_apply (wp_fork H coPset_universe ChildE ForkPost) $
+        iSplitL "HTok"
+          (wp_apply (wp_value_intro H coPset_universe
+            (LitV (LitLoc l)) (spawn_post H SG Psi)) $
+            wp_apply (spawn_post_intro H SG gam l Psi) $
+              iFrame "HTok" $ iExact "HInv")
+          (wp_apply (spawn_child H SG FPI gam l Psi f) $
+            iFrame "HInv" $ iExact "HFWP")
+  \in proof
 \lemma spawn_allocate_inv_run {S : gFunctors}
     (H : irisGS natCountable S) (SG : spawnG S)
     (FPI : ForkPostInhabited H) (gam : gname) (l : Loc)
@@ -984,64 +925,26 @@
     | Closed => mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp
     | Continue => WP H coPset_universe
         (join_continue l spawn_pendingV) Psi
-    | ready : ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
-          (Close ∗ R)) ⊢
-        ((Close ∗ LaterBody) ∗ R) =>
-        properUPred_ent_trans
-          ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
-            (Close ∗ R))
-          (Close ∗
-            ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗ R))
-          ((Close ∗ LaterBody) ∗ R)
-          (sep_swap_ent (pointsto_full H.iris_gen_heap l spawn_pendingV)
-            Close R)
-          (properUPred_ent_trans
-            (Close ∗
-              ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗ R))
-            (Close ∗ (LaterBody ∗ R))
-            ((Close ∗ LaterBody) ∗ R)
-            (sep_mono_r_ent Close
-              ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗ R)
-              (LaterBody ∗ R)
-              (sep_mono_l_ent
-                (pointsto_full H.iris_gen_heap l spawn_pendingV)
-                LaterBody R
-                (properUPred_ent_trans
-                  (pointsto_full H.iris_gen_heap l spawn_pendingV)
-                  Body LaterBody (spawn_inv_initial H SG gam l Psi)
-                  (proper_later_intro Body))))
-            (sep_assoc_r_ent Close LaterBody R))
-    | closeFrame : ((Close ∗ LaterBody) ∗ R) ⊢
-        (mkProperFUpd H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ R)) =>
-        properUPred_ent_trans
-          ((Close ∗ LaterBody) ∗ R)
-          (Closed ∗ R)
-          (mkProperFUpd H.iris_wsat D coPset_universe
-            (mkProperEmp ∗ R))
-          (sep_mono_l_ent (Close ∗ LaterBody) Closed R
-            (wand_elim_ent LaterBody Closed))
-          (fupd_frame_r H.iris_wsat D coPset_universe mkProperEmp R)
-    | recurse : (mkProperEmp ∗ R) ⊢ P =>
-        properUPred_ent_trans (mkProperEmp ∗ R) R P
-          (sep_elim_r_ent mkProperEmp R)
-          (wand_elim_ent Base P)
-  \in properUPred_ent_trans
-      ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
-        (Close ∗ R))
-      ((Close ∗ LaterBody) ∗ R)
-      (mkProperFUpd H.iris_wsat D coPset_universe Continue) ready
-      (properUPred_ent_trans
-        ((Close ∗ LaterBody) ∗ R)
-        (mkProperFUpd H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ R))
-        (mkProperFUpd H.iris_wsat D coPset_universe Continue)
-        closeFrame
-        (fupd_mono H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ R) Continue
-          (properUPred_ent_trans (mkProperEmp ∗ R) P Continue
-            recurse (join_pending_continue H coPset_universe l Psi))))
 
+    | proof :
+        ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+          (Close ∗ R)) ⊢
+        (mkProperFUpd H.iris_wsat D coPset_universe Continue) =>
+      ipm $ iIntros "HPoint HRest" $
+        iDestruct "HRest" "HClose HR" $
+        iDestruct "HR" "HW HBase" $
+        iAssert "HLaterBody" "HPoint" LaterBody
+          (iNext $
+            wp_apply (spawn_inv_initial H SG gam l Psi) $
+              iExact "HPoint")
+          (iAssert "HClosed" "HClose HLaterBody" Closed
+            (iApply "HClose" $ iExact "HLaterBody")
+            (iMod "HClosed" "HEmp" $
+              wp_apply (fupd_intro H.iris_wsat coPset_universe Continue) $
+              wp_apply (join_pending_continue
+                H coPset_universe l Psi) $
+              iApply "HW" $ iExact "HBase"))
+  \in proof
 \lemma join_done_result_exact {S : gFunctors}
     (H : irisGS natCountable S) (SG : spawnG S)
     (gam : gname) (l : Loc) (Psi : Value -> iProp S) (v : Value) :
@@ -1067,96 +970,37 @@
         (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
     | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
     | Tok => spawn_tok SG gam
-    | Base => Tok ∗ Inv
-    | P => WP H coPset_universe
-        (App (Val join) (Val (LitV (LitLoc l)))) Psi
-    | W => Base -∗ P
-    | Point => pointsto_full H.iris_gen_heap l (spawn_doneV v)
     | LaterBody => |> Body
     | Closed => mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp
     | Continue => WP H coPset_universe
         (join_continue l (spawn_doneV v)) Psi
-    | Source => Point ∗
-        ((Psi v) ∗ (Close ∗ (W ∗ Base)))
-    | Flat => Point ∗ ((Psi v) ∗
-        (Close ∗ (W ∗ (Tok ∗ Inv))))
-    | TokFront => Tok ∗ (Point ∗
-        ((Psi v) ∗ (Close ∗ (W ∗ Inv))))
-    | BodyRest => (Point ∗ Tok) ∗
-        ((Psi v) ∗ (Close ∗ (W ∗ Inv)))
-    | LaterRest => LaterBody ∗
-        ((Psi v) ∗ (Close ∗ (W ∗ Inv)))
-    | PsiClose => (Psi v) ∗
-        (Close ∗ (LaterBody ∗ (W ∗ Inv)))
-    | PsiClosedBody => (Psi v) ∗ (Close ∗ LaterBody)
-    | Ready => (Close ∗ LaterBody) ∗ (Psi v)
-    | flatten : Source ⊢ Flat => properUPred_ent_refl Source
-    | moveTok : Flat ⊢ TokFront =>
-        sep_move_fifth_front Point (Psi v) Close W Tok Inv
-    | pairTok : TokFront ⊢ BodyRest =>
-        properUPred_ent_trans TokFront
-          ((Tok ∗ Point) ∗
-            ((Psi v) ∗ (Close ∗ (W ∗ Inv))))
-          BodyRest
-          (sep_assoc_r_ent Tok Point
-            ((Psi v) ∗ (Close ∗ (W ∗ Inv))))
-          (sep_mono_l_ent (Tok ∗ Point)
-            (Point ∗ Tok)
-            ((Psi v) ∗ (Close ∗ (W ∗ Inv)))
-            (sep_comm_ent Tok Point))
-    | makeBody : BodyRest ⊢ LaterRest =>
-        sep_mono_l_ent (Point ∗ Tok) LaterBody
-          ((Psi v) ∗ (Close ∗ (W ∗ Inv)))
-          (properUPred_ent_trans (Point ∗ Tok) Body LaterBody
-            (spawn_inv_done_token H SG gam l Psi v)
-            (proper_later_intro Body))
-    | reorder : LaterRest ⊢ PsiClose =>
-        properUPred_ent_trans LaterRest
-          ((Psi v) ∗
-            (LaterBody ∗ (Close ∗ (W ∗ Inv))))
-          PsiClose
-          (sep_swap_ent LaterBody (Psi v)
-            (Close ∗ (W ∗ Inv)))
-          (sep_mono_r_ent (Psi v)
-            (LaterBody ∗ (Close ∗ (W ∗ Inv)))
-            (Close ∗ (LaterBody ∗ (W ∗ Inv)))
-            (sep_swap_ent LaterBody Close (W ∗ Inv)))
-    | discard : PsiClose ⊢ PsiClosedBody =>
-        sep_mono_r_ent (Psi v)
-          (Close ∗ (LaterBody ∗ (W ∗ Inv)))
-          (Close ∗ LaterBody)
-          (sep_mono_r_ent Close
-            (LaterBody ∗ (W ∗ Inv)) LaterBody
-            (sep_elim_l_ent LaterBody (W ∗ Inv)))
-    | ready : Source ⊢ Ready =>
-        properUPred_ent_trans Source Flat Ready flatten
-          (properUPred_ent_trans Flat TokFront Ready moveTok
-            (properUPred_ent_trans TokFront BodyRest Ready pairTok
-              (properUPred_ent_trans BodyRest LaterRest Ready makeBody
-                (properUPred_ent_trans LaterRest PsiClose Ready reorder
-                  (properUPred_ent_trans PsiClose PsiClosedBody Ready discard
-                    (sep_comm_ent (Psi v) (Close ∗ LaterBody)))))))
-    | closeFrame : Ready ⊢
-        (mkProperFUpd H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ (Psi v))) =>
-        properUPred_ent_trans Ready (Closed ∗ (Psi v))
-          (mkProperFUpd H.iris_wsat D coPset_universe
-            (mkProperEmp ∗ (Psi v)))
-          (sep_mono_l_ent (Close ∗ LaterBody) Closed (Psi v)
-            (wand_elim_ent LaterBody Closed))
-          (fupd_frame_r H.iris_wsat D coPset_universe mkProperEmp (Psi v))
-  \in properUPred_ent_trans Source Ready
-      (mkProperFUpd H.iris_wsat D coPset_universe Continue) ready
-      (properUPred_ent_trans Ready
-        (mkProperFUpd H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ (Psi v)))
-        (mkProperFUpd H.iris_wsat D coPset_universe Continue) closeFrame
-        (fupd_mono H.iris_wsat D coPset_universe
-          (mkProperEmp ∗ (Psi v)) Continue
-          (properUPred_ent_trans (mkProperEmp ∗ (Psi v))
-            (Psi v) Continue (sep_elim_r_ent mkProperEmp (Psi v))
-            (join_done_continue H coPset_universe l Psi v))))
 
+    | proof :
+        (pointsto_full H.iris_gen_heap l (spawn_doneV v) ∗
+          (Psi v ∗ (Close ∗
+            ((Tok ∗ Inv -∗
+              WP H coPset_universe
+                (App (Val join) (Val (LitV (LitLoc l)))) Psi) ∗
+              (Tok ∗ Inv))))) ⊢
+        mkProperFUpd H.iris_wsat D coPset_universe
+          (WP H coPset_universe (join_continue l (spawn_doneV v)) Psi) =>
+      ipm $ iIntros "HPoint HRest" $
+    iDestruct "HRest" "HPsi HRest" $
+    iDestruct "HRest" "HClose HRest" $
+    iDestruct "HRest" "HW HBase" $
+    iDestruct "HBase" "HTok HInv" $
+    iAssert "HLaterBody" "HPoint HTok" LaterBody
+      (iNext $
+        wp_apply (spawn_inv_done_token H SG gam l Psi v) $
+          iFrame "HPoint" $ iExact "HTok")
+      (iAssert "HClosed" "HClose HLaterBody" Closed
+        (iApply "HClose" $ iExact "HLaterBody")
+        (iMod "HClosed" "HEmp" $
+          wp_apply (fupd_intro H.iris_wsat coPset_universe Continue) $
+          wp_apply (join_done_continue
+            H coPset_universe l Psi v) $
+          iExact "HPsi"))
+  \in proof
 \lemma join_done_token_exact {S : gFunctors}
     (H : irisGS natCountable S) (SG : spawnG S)
     (gam : gname) (l : Loc) (Psi : Value -> iProp S) (v : Value)
@@ -1366,98 +1210,36 @@
     | After => StateP ∗ Rest
     | Phi : Value -> iProp S => \lam loaded =>
         WP H coPset_universe (join_continue l loaded) Psi
-    | Source => ((Point ∗ (|> StateP)) ∗ Close) ∗ K
-    | S1 => (Point ∗ (|> StateP)) ∗
-        (Close ∗ K)
-    | S2 => Point ∗
-        ((|> StateP) ∗ (Close ∗ K))
-    | S3 => Point ∗
-        ((|> StateP) ∗
-          ((|> Close) ∗
-            ((|> W) ∗ (|> Base))))
-    | S4 => Point ∗
-        ((|> StateP) ∗
-          ((|> Close) ∗
-            (|> (W ∗ Base))))
-    | S5 => Point ∗
-        ((|> StateP) ∗
-          (|> (Close ∗ (W ∗ Base))))
-    | Ready => Point ∗ (|> After)
-    | arrange : Source ⊢ Ready =>
-        properUPred_ent_trans Source S1 Ready
-          (sep_assoc_l_ent (Point ∗ (|> StateP)) Close K)
-          (properUPred_ent_trans S1 S2 Ready
-            (sep_assoc_l_ent Point (|> StateP)
-              (Close ∗ K))
-            (properUPred_ent_trans S2 S3 Ready
-              (sep_mono_r_ent Point
-                ((|> StateP) ∗ (Close ∗ K))
-                ((|> StateP) ∗
-                  ((|> Close) ∗
-                    ((|> W) ∗ (|> Base))))
-                (sep_mono_r_ent (|> StateP)
-                  (Close ∗ K)
-                  ((|> Close) ∗
-                    ((|> W) ∗ (|> Base)))
-                  (properUPred_ent_trans (Close ∗ K)
-                    (Close ∗
-                      ((|> W) ∗ (|> Base)))
-                    ((|> Close) ∗
-                      ((|> W) ∗ (|> Base)))
-                    (sep_mono_r_ent Close K
-                      ((|> W) ∗ (|> Base))
-                      (sep_mono_r_ent (|> W) Base
-                        (|> Base) (proper_later_intro Base)))
-                    (sep_mono_l_ent Close (|> Close)
-                      ((|> W) ∗ (|> Base))
-                      (proper_later_intro Close)))))
-              (properUPred_ent_trans S3 S4 Ready
-                (sep_mono_r_ent Point
-                  ((|> StateP) ∗
-                    ((|> Close) ∗
-                      ((|> W) ∗ (|> Base))))
-                  ((|> StateP) ∗
-                    ((|> Close) ∗
-                      (|> (W ∗ Base))))
-                  (sep_mono_r_ent (|> StateP)
-                    ((|> Close) ∗
-                      ((|> W) ∗ (|> Base)))
-                    ((|> Close) ∗
-                      (|> (W ∗ Base)))
-                    (sep_mono_r_ent (|> Close)
-                      ((|> W) ∗ (|> Base))
-                      (|> (W ∗ Base))
-                      (proper_later_sep_2 W Base))))
-                (properUPred_ent_trans S4 S5 Ready
-                  (sep_mono_r_ent Point
-                    ((|> StateP) ∗
-                      ((|> Close) ∗
-                        (|> (W ∗ Base))))
-                    ((|> StateP) ∗
-                      (|> (Close ∗ (W ∗ Base))))
-                    (sep_mono_r_ent (|> StateP)
-                      ((|> Close) ∗
-                        (|> (W ∗ Base)))
-                      (|> (Close ∗ (W ∗ Base)))
-                      (proper_later_sep_2 Close (W ∗ Base))))
-                  (sep_mono_r_ent Point
-                    ((|> StateP) ∗
-                      (|> (Close ∗ (W ∗ Base))))
-                    (|> After)
-                    (proper_later_sep_2 StateP Rest))))))
-    | load : Ready ⊢
+    | proof : (((Point ∗ (|> StateP)) ∗ Close) ∗ K) ⊢
         (WP H D (Load (Val (LitV (LitLoc l))))
           (\lam loaded => mkProperFUpd H.iris_wsat D coPset_universe
             (Phi loaded))) =>
-        wp_load_later_frame H D l (DfracOwn qp_one) lv After
-          (\lam loaded => mkProperFUpd H.iris_wsat D coPset_universe
-            (Phi loaded))
-          (join_load_transition H SG gam l Psi lv)
-  \in properUPred_ent_trans Source Ready
-      (WP H D (Load (Val (LitV (LitLoc l))))
-        (\lam loaded => mkProperFUpd H.iris_wsat D coPset_universe
-          (Phi loaded))) arrange load
-
+      ipm $ iIntros "HPSC HK" $
+        iDestruct "HPSC" "HPS HClose" $
+        iDestruct "HPS" "HPoint HLaterState" $
+        iDestruct "HK" "HLaterW HBase" $
+        iAssert "HLaterClose" "HClose" (|> Close)
+          (iNext $ iExact "HClose")
+          (iAssert "HLaterBase" "HBase" (|> Base)
+            (iNext $ iExact "HBase")
+            (wp_apply (wp_load_later_frame H D l
+              (DfracOwn qp_one) lv After
+              (\lam loaded =>
+                mkProperFUpd H.iris_wsat D coPset_universe (Phi loaded))
+              (join_load_transition H SG gam l Psi lv)) $
+              iSplitL "HPoint"
+                (iExact "HPoint")
+                (wp_apply (proper_later_sep_2 StateP Rest) $
+                  iSplitL "HLaterState"
+                    (iExact "HLaterState")
+                    (wp_apply (proper_later_sep_2 Close (W ∗ Base)) $
+                      iSplitL "HLaterClose"
+                        (iExact "HLaterClose")
+                        (wp_apply (proper_later_sep_2 W Base) $
+                          iSplitL "HLaterW"
+                            (iExact "HLaterW")
+                            (iExact "HLaterBase"))))))
+  \in proof
 \lemma join_load_wp {S : gFunctors}
     (H : irisGS natCountable S) (SG : spawnG S)
     (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
@@ -2198,105 +1980,36 @@
     | A => msc_counter_auth G gam (suc n)
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | QR => Q (suc n)
-    | OldPure => mkProperPure {iResUR S} (nat_lt n (suc n))
-    | NewPure => mkProperPure {iResUR S} (suc n <= suc n)
     | Shift => mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
         (A ∗ QR)
-    | Wd => <#>
-        ((A ∗ P) -∗ Shift)
-    | Source0 => A ∗
-        (Saved ∗ (P ∗ (Wd ∗ OldPure)))
-    | Source1 => A ∗
-        (Saved ∗ (P ∗ Wd))
-    | Source2 => Saved ∗ (A ∗ (P ∗ Wd))
-    | Source3 => Saved ∗ ((A ∗ P) ∗ Wd)
-    | Source4 => Saved ∗ (Wd ∗ (A ∗ P))
-    | Arranged => (Wd ∗ (A ∗ P)) ∗ Saved
-    | dropPure : Source0 ⊢ Source1 =>
-        sep_mono_r_ent A
-          (Saved ∗ (P ∗ (Wd ∗ OldPure)))
-          (Saved ∗ (P ∗ Wd))
-          (sep_mono_r_ent Saved (P ∗ (Wd ∗ OldPure))
-            (P ∗ Wd)
-            (sep_mono_r_ent P (Wd ∗ OldPure) Wd
-              (sep_elim_l_ent Wd OldPure)))
-    | arrange : Source1 ⊢ Arranged =>
-        properUPred_ent_trans Source1 Source2 Arranged
-          (sep_swap_ent A Saved (P ∗ Wd))
-          (properUPred_ent_trans Source2 Source3 Arranged
-            (sep_mono_r_ent Saved (A ∗ (P ∗ Wd))
-              ((A ∗ P) ∗ Wd)
-              (sep_assoc_r_ent A P Wd))
-            (properUPred_ent_trans Source3 Source4 Arranged
-              (sep_mono_r_ent Saved ((A ∗ P) ∗ Wd)
-                (Wd ∗ (A ∗ P))
-                (sep_comm_ent (A ∗ P) Wd))
-              (sep_comm_ent Saved (Wd ∗ (A ∗ P)))))
-    | invoke : Arranged ⊢ (Shift ∗ Saved) =>
-        sep_mono_l_ent (Wd ∗ (A ∗ P)) Shift Saved
-          (persistently_wand_elim_ent (A ∗ P) Shift)
-    | framed : (Shift ∗ Saved) ⊢
-        (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          ((A ∗ QR) ∗ Saved)) =>
-        fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
-          (A ∗ QR) Saved
-    | qPure : QR ⊢ (QR ∗ NewPure) =>
-        properUPred_ent_trans QR (NewPure ∗ QR)
-          (QR ∗ NewPure)
-          (pure_intro_sep_ent (suc n <= suc n) <=-refl QR)
-          (sep_comm_ent NewPure QR)
-    | DoneBody => Saved ∗ (QR ∗ NewPure)
-    | Done => msc_read_done G (suc n) (suc n) gamQ
     | State => msc_read_state H G gam (suc n) (suc n, gamQ)
-    | Finish0 => A ∗ (QR ∗ Saved)
-    | Finish1 => A ∗ (Saved ∗ QR)
-    | Finish2 => A ∗ DoneBody
-    | Finish3 => A ∗ Done
     | finish : ((A ∗ QR) ∗ Saved) ⊢
-        (A ∗ State) =>
-        properUPred_ent_trans ((A ∗ QR) ∗ Saved)
-          Finish0 (A ∗ State)
-          (sep_assoc_l_ent A QR Saved)
-          (properUPred_ent_trans Finish0 Finish1 (A ∗ State)
-            (sep_mono_r_ent A (QR ∗ Saved)
-              (Saved ∗ QR) (sep_comm_ent QR Saved))
-            (properUPred_ent_trans Finish1 Finish2 (A ∗ State)
-              (sep_mono_r_ent A (Saved ∗ QR) DoneBody
-                (sep_mono_r_ent Saved QR (QR ∗ NewPure) qPure))
-              (properUPred_ent_trans Finish2 Finish3 (A ∗ State)
-                (sep_mono_r_ent A DoneBody Done
-                  (exist1_intro_ent (\lam R =>
-                    (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded R) ∗
-                      ((R (suc n)) ∗ NewPure)) Q))
-                (sep_mono_r_ent A Done State
-                  (or_intro_r_ent
-                    (msc_read_pending H G gam (suc n) (suc n) gamQ)
-                    Done)))))
-    | finishF : (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          ((A ∗ QR) ∗ Saved)) ⊢
-        (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          (A ∗ State)) =>
-        fupd_mono H.iris_wsat msc_open_mask msc_open_mask
-          ((A ∗ QR) ∗ Saved) (A ∗ State) finish
-  \in properUPred_ent_trans Source0 Source1
-      (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-        (A ∗ State))
-      dropPure
-      (properUPred_ent_trans Source1 Arranged
-        (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          (A ∗ State))
-        arrange
-        (properUPred_ent_trans Arranged (Shift ∗ Saved)
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (A ∗ State))
-          invoke
-          (properUPred_ent_trans (Shift ∗ Saved)
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-              ((A ∗ QR) ∗ Saved))
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-              (A ∗ State))
-            framed finishF)))
-
+        (A ∗
+          ((msc_read_pending H G gam (suc n) (suc n) gamQ) ∨
+            (msc_read_done G (suc n) (suc n) gamQ))) =>
+        ipm $ iIntros "HAQR HSaved" $
+          iDestruct "HAQR" "HA HQR" $
+          iSplitL "HA" (iExact "HA")
+            (iRight $
+              iExists Q (\lam R =>
+                (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded R) ∗
+                  ((R (suc n)) ∗
+                    (mkProperPure (suc n <= suc n)))) $
+              iFrame "HSaved" $
+              iSplitL "HQR" (iExact "HQR")
+                (iPureIntro $ <=-refl))
+  \in ipm $ iIntros "HA HRest" $
+      iDestruct "HRest" "HSaved HRest" $
+      iDestruct "HRest" "HP HRest" $
+      iDestruct "HRest" "HWd HOldPure" $
+      iDestruct "HWd" "#HW" $
+      iAssert "HShift" "HA HP" Shift
+        (iApply "HW" $ iFrame "HA" $ iExact "HP")
+        (wp_apply (fupd_mono H.iris_wsat msc_open_mask msc_open_mask
+          ((A ∗ QR) ∗ Saved) (A ∗ State) finish) $
+          wp_apply (fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
+            (A ∗ QR) Saved) $
+          iFrame "HShift" $ iExact "HSaved")
 \lemma msc_pending_wait {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (n r : Nat) (gamQ : gname)
@@ -2493,76 +2206,32 @@
       | R => msc_read_state H G gam n entry.2
       | R' => msc_read_state H G gam (suc n) entry.2
       | Rs => big_sepL (\lam e => msc_read_state H G gam n e.2) entries
-      | Rs' => big_sepL (\lam e => msc_read_state H G gam (suc n) e.2) entries
-      | Source => A ∗ (R ∗ Rs)
-      | Swapped => R ∗ (A ∗ Rs)
-      | FirstIn => (A ∗ Rs) ∗ R
-      | FirstOut => (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (A ∗ Rs')) ∗ R
-      | FirstFramed => mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          ((A ∗ Rs') ∗ R)
-      | SecondIn => (A ∗ R) ∗ Rs'
-      | SecondOut => (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (A ∗ R')) ∗ Rs'
-      | SecondFramed => mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          ((A ∗ R') ∗ Rs')
-      | TargetBody => A ∗ (R' ∗ Rs')
-      | first : Source ⊢ FirstFramed =>
-          properUPred_ent_trans Source FirstIn FirstFramed
-            (properUPred_ent_trans Source Swapped FirstIn
-              (sep_swap_ent A R Rs)
-              (sep_comm_ent R (A ∗ Rs)))
-            (properUPred_ent_trans FirstIn FirstOut FirstFramed
-              (sep_mono_l_ent (A ∗ Rs)
+      | Rs' => big_sepL (\lam e =>
+          msc_read_state H G gam (suc n) e.2) entries
+      | Target => A ∗ (R' ∗ Rs')
+      | proof : (A ∗ (R ∗ Rs)) ⊢
+          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Target) =>
+        ipm $ iIntros "HA HRest" $
+          iDestruct "HRest" "HR HRs" $
+          iAssert "HAdvanceRest" "HA HRs"
+            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
+              (A ∗ Rs'))
+            (wp_apply (msc_read_states_list_advance
+              H G gam n entries) $
+              iFrame "HA" $ iExact "HRs")
+            (iMod "HAdvanceRest" "HRest'" $
+              iDestruct "HRest'" "HA HRs'" $
+              iAssert "HAdvanceHead" "HA HR"
                 (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-                  (A ∗ Rs')) R
-                (msc_read_states_list_advance H G gam n entries))
-              (fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
-                (A ∗ Rs') R))
-      | second : ((A ∗ Rs') ∗ R) ⊢
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody) =>
-          properUPred_ent_trans ((A ∗ Rs') ∗ R)
-            SecondIn
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-            (properUPred_ent_trans ((A ∗ Rs') ∗ R)
-              (A ∗ (Rs' ∗ R)) SecondIn
-              (sep_assoc_l_ent A Rs' R)
-              (properUPred_ent_trans (A ∗ (Rs' ∗ R))
-                (A ∗ (R ∗ Rs')) SecondIn
-                (sep_mono_r_ent A (Rs' ∗ R)
-                  (R ∗ Rs') (sep_comm_ent Rs' R))
-                (sep_assoc_r_ent A R Rs')))
-            (properUPred_ent_trans SecondIn SecondOut
-              (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-              (sep_mono_l_ent (A ∗ R)
-                (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-                  (A ∗ R')) Rs'
-                (msc_read_state_advance H G gam n entry.2))
-              (properUPred_ent_trans SecondOut SecondFramed
-                (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-                (fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
-                  (A ∗ R') Rs')
-                (fupd_mono H.iris_wsat msc_open_mask msc_open_mask
-                  ((A ∗ R') ∗ Rs') TargetBody
-                  (sep_assoc_l_ent A R' Rs'))))
-      | nested : FirstFramed ⊢
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)) =>
-          fupd_mono H.iris_wsat msc_open_mask msc_open_mask
-            ((A ∗ Rs') ∗ R)
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-            second
-    \in properUPred_ent_trans Source FirstFramed
-        (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-        first
-        (properUPred_ent_trans FirstFramed
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody))
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask TargetBody)
-          nested
-          (fupd_trans H.iris_wsat msc_open_mask msc_open_mask
-            msc_open_mask TargetBody))
-
+                  (A ∗ R'))
+                (wp_apply (msc_read_state_advance
+                  H G gam n entry.2) $
+                  iFrame "HA" $ iExact "HR")
+                (iMod "HAdvanceHead" "HHead'" $
+                  iDestruct "HHead'" "HA HR'" $
+                  wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
+                  iFrame "HA" $ iFrame "HR'" $ iExact "HRs'"))
+    \in proof
 \lemma msc_read_states_advance {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (n : Nat)
@@ -2736,83 +2405,40 @@
     | Rest => big_sepM (gdelete id requests) (\lam _ request =>
         msc_read_state H G gam total request)
     | Core => Map ∗ Elem
-    | Tail => Saved ∗ States
-    | Source => Saved ∗ (Elem ∗ (Map ∗ States))
-    | S1 => Elem ∗ (Saved ∗ (Map ∗ States))
-    | S2 => Elem ∗ (Map ∗ (Saved ∗ States))
-    | S3 => (Elem ∗ Map) ∗ Tail
-    | Arranged => Core ∗ Tail
-    | arrange : Source ⊢ Arranged =>
-        properUPred_ent_trans Source S1 Arranged
-          (sep_swap_ent Saved Elem (Map ∗ States))
-          (properUPred_ent_trans S1 S2 Arranged
-            (sep_mono_r_ent Elem
-              (Saved ∗ (Map ∗ States))
-              (Map ∗ (Saved ∗ States))
-              (sep_swap_ent Saved Map States))
-            (properUPred_ent_trans S2 S3 Arranged
-              (sep_assoc_r_ent Elem Map Tail)
-              (sep_mono_l_ent (Elem ∗ Map) Core Tail
-                (sep_comm_ent Elem Map))))
     | lookup => glookup requests id = just (r, gamQ)
-    | WithCoreLookup => ((mkProperPure lookup) ∗ Core) ∗ Tail
-    | WithLookup => (mkProperPure lookup) ∗ Arranged
-    | retainLookup : Arranged ⊢ WithLookup =>
-        properUPred_ent_trans Arranged WithCoreLookup WithLookup
-          (sep_mono_l_ent Core ((mkProperPure lookup) ∗ Core) Tail
-            (pure_consequence_frame_ent Core lookup
-              (ghost_map_lookup (msc_requestGS G gam) requests id (r, gamQ))))
-          (sep_assoc_l_ent (mkProperPure lookup) Core Tail)
-    | target => |==>
-        ((Map' ∗ Rest) ∗ (|> (Q r)))
-    | perLookup : lookup -> Arranged ⊢ target => \lam hlookup =>
-        \let
-          | Tail' => Saved ∗ (State ∗ Rest)
-          | Split => Core ∗ Tail'
-          | StateRest => (Saved ∗ State) ∗ Rest
-          | Ready => Core ∗ ((|> (Q r)) ∗ Rest)
-          | Updated => (|==> Map') ∗
-              ((|> (Q r)) ∗ Rest)
-          | Framed => |==>
-              (Map' ∗ ((|> (Q r)) ∗ Rest))
-          | finalArrange : (Map' ∗ ((|> (Q r)) ∗ Rest)) ⊢
-              ((Map' ∗ Rest) ∗ (|> (Q r))) =>
-              properUPred_ent_trans
-                (Map' ∗ ((|> (Q r)) ∗ Rest))
-                ((|> (Q r)) ∗ (Map' ∗ Rest))
-                ((Map' ∗ Rest) ∗ (|> (Q r)))
-                (sep_swap_ent Map' (|> (Q r)) Rest)
-                (sep_comm_ent (|> (Q r)) (Map' ∗ Rest))
-        \in properUPred_ent_trans Arranged Split target
-          (sep_mono_r_ent Core Tail Tail'
-            (sep_mono_r_ent Saved States (State ∗ Rest)
-              (big_sepM_delete requests
-                (\lam _ request => msc_read_state H G gam total request)
-                id (r, gamQ) hlookup).1))
-          (properUPred_ent_trans Split Ready target
-            (properUPred_ent_trans Split (Core ∗ StateRest) Ready
-              (sep_mono_r_ent Core Tail' StateRest
-                (sep_assoc_r_ent Saved State Rest))
-              (sep_mono_r_ent Core StateRest
-                ((|> (Q r)) ∗ Rest)
-                (sep_mono_l_ent (Saved ∗ State)
-                  (|> (Q r)) Rest
-                  (msc_read_state_take H G gam total r gamQ Q hrtotal))))
-            (properUPred_ent_trans Ready Updated target
-              (sep_mono_l_ent Core (|==> Map')
-                ((|> (Q r)) ∗ Rest)
-                (ghost_map_delete (msc_requestGS G gam)
-                  requests id (r, gamQ)))
-              (properUPred_ent_trans Updated Framed target
-                (bupd_frame_r Map' ((|> (Q r)) ∗ Rest))
-                (bupd_mono
-                  (Map' ∗ ((|> (Q r)) ∗ Rest))
-                  ((Map' ∗ Rest) ∗ (|> (Q r)))
-                  finalArrange))))
-  \in properUPred_ent_trans Source WithLookup target
-      (properUPred_ent_trans Source Arranged WithLookup arrange retainLookup)
-      (pure_sep_l_elim lookup Arranged target perLookup)
-
+  \in ipm $ iIntros "HSaved HRest" $
+      iDestruct "HRest" "HElem HRest" $
+      iDestruct "HRest" "HMap HStates" $
+      iAssert "HLookupCore" "HMap HElem"
+        ((mkProperPure lookup) ∗ Core)
+        (wp_apply (pure_consequence_frame_ent Core lookup
+          (ghost_map_lookup (msc_requestGS G gam)
+            requests id (r, gamQ))) $
+          iFrame "HMap" $ iExact "HElem")
+        (iDestruct "HLookupCore" "HLookup HCore" $
+          iDestruct "HCore" "HMap HElem" $
+          iDestruct "HLookup" "%" $ \lam hlookup =>
+            iAssert "HStateRest" "HStates" (State ∗ Rest)
+              (wp_apply ((big_sepM_delete requests
+                (\lam _ request =>
+                  msc_read_state H G gam total request)
+                id (r, gamQ) hlookup).1) $
+                iExact "HStates")
+              (iDestruct "HStateRest" "HState HRest" $
+                iAssert "HQR" "HSaved HState" (|> (Q r))
+                  (wp_apply (msc_read_state_take H G gam
+                    total r gamQ Q hrtotal) $
+                    iFrame "HSaved" $ iExact "HState")
+                  (iAssert "HUpdate" "HMap HElem" (|==> Map')
+                    (wp_apply (ghost_map_delete
+                      (msc_requestGS G gam)
+                      requests id (r, gamQ)) $
+                      iFrame "HMap" $ iExact "HElem")
+                    (iMod "HUpdate" "HMap'" $
+                      iModIntro $
+                      iSplitL "HMap' HRest"
+                        (iFrame "HMap'" $ iExact "HRest")
+                        (iExact "HQR")))))
 \lemma msc_pending_intro {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (total r : Nat) (gamQ : gname) (P : iProp S)
@@ -3688,21 +3314,9 @@
         w.incr_name qp_one w.incr_old
     | MonoRest => msc_mono_rest G w.incr_prefix w.incr_name_prefix
         w.incr_suffix w.incr_name_suffix
-    | FocusedShards => (Now ∗ ArrayRest) ∗ (Mono ∗ MonoRest)
-    | Tail => (Mono ∗ MonoRest) ∗ Requests
-    | Tail' => Mono ∗ (MonoRest ∗ Requests)
-    | Core0 => Auth ∗
-        ((Cells ∗ Monos) ∗ Requests)
-    | Core1 => Auth ∗ (FocusedShards ∗ Requests)
-    | Core2 => Auth ∗ ((Now ∗ ArrayRest) ∗ Tail)
-    | Core3 => (Now ∗ ArrayRest) ∗
-        (Auth ∗ Tail)
-    | Core4 => Now ∗
-        (ArrayRest ∗ (Auth ∗ Tail))
-    | Core5 => Now ∗
-        (Auth ∗ (ArrayRest ∗ Tail))
+    | Core0 => Auth ∗ ((Cells ∗ Monos) ∗ Requests)
     | Target => Now ∗
-        (Auth ∗ (ArrayRest ∗ Tail'))
+        (Auth ∗ (ArrayRest ∗ (Mono ∗ (MonoRest ∗ Requests))))
     | cells : Cells ⊢ (Now ∗ ArrayRest) =>
         transport (\lam values => (pointsto_array H.iris_gen_heap suc a values) ⊢
           (Now ∗ ArrayRest))
@@ -3728,46 +3342,20 @@
         msc_mono_auths_extract G w.incr_prefix w.incr_name_prefix
           w.incr_old w.incr_name w.incr_suffix w.incr_name_suffix
           (w.incr_prefix_len *> inv w.incr_name_prefix_len)
-    | focusShards : (Cells ∗ Monos) ⊢
-        FocusedShards =>
-        properUPred_ent_trans (Cells ∗ Monos)
-          ((Now ∗ ArrayRest) ∗ Monos) FocusedShards
-          (sep_mono_l_ent Cells (Now ∗ ArrayRest) Monos cells)
-          (sep_mono_r_ent (Now ∗ ArrayRest) Monos
-            (Mono ∗ MonoRest) monos)
-    | step01 : Core0 ⊢ Core1 =>
-        sep_mono_r_ent Auth ((Cells ∗ Monos) ∗ Requests)
-          (FocusedShards ∗ Requests)
-          (sep_mono_l_ent (Cells ∗ Monos) FocusedShards Requests
-            focusShards)
-    | step12 : Core1 ⊢ Core2 =>
-        sep_mono_r_ent Auth (FocusedShards ∗ Requests)
-          ((Now ∗ ArrayRest) ∗ Tail)
-          (sep_assoc_l_ent (Now ∗ ArrayRest)
-            (Mono ∗ MonoRest) Requests)
-    | step23 : Core2 ⊢ Core3 =>
-        sep_swap_ent Auth (Now ∗ ArrayRest) Tail
-    | step34 : Core3 ⊢ Core4 =>
-        sep_assoc_l_ent Now ArrayRest (Auth ∗ Tail)
-    | step45 : Core4 ⊢ Core5 =>
-        sep_mono_r_ent Now
-          (ArrayRest ∗ (Auth ∗ Tail))
-          (Auth ∗ (ArrayRest ∗ Tail))
-          (sep_swap_ent ArrayRest Auth Tail)
-    | step5T : Core5 ⊢ Target =>
-        sep_mono_r_ent Now
-          (Auth ∗ (ArrayRest ∗ Tail))
-          (Auth ∗ (ArrayRest ∗ Tail'))
-          (sep_mono_r_ent Auth (ArrayRest ∗ Tail)
-            (ArrayRest ∗ Tail')
-            (sep_mono_r_ent ArrayRest Tail Tail'
-              (sep_assoc_l_ent Mono MonoRest Requests)))
-  \in properUPred_ent_trans Core0 Core1 Target step01
-      (properUPred_ent_trans Core1 Core2 Target step12
-        (properUPred_ent_trans Core2 Core3 Target step23
-          (properUPred_ent_trans Core3 Core4 Target step34
-            (properUPred_ent_trans Core4 Core5 Target step45 step5T))))
-
+    | proof : Core0 ⊢ Target =>
+      ipm $ iIntros "HAuth HRest" $
+        iDestruct "HRest" "HShards HRequests" $
+        iDestruct "HShards" "HCells HMonos" $
+        iAssert "HCellsFocused" "HCells" (Now ∗ ArrayRest)
+          (wp_apply cells $ iExact "HCells")
+          (iAssert "HMonosFocused" "HMonos" (Mono ∗ MonoRest)
+            (wp_apply monos $ iExact "HMonos")
+            (iDestruct "HCellsFocused" "HNow HArrayRest" $
+              iDestruct "HMonosFocused" "HMono HMonoRest" $
+              iFrame "HNow" $ iFrame "HAuth" $
+                iFrame "HArrayRest" $ iFrame "HMono" $
+                  iFrame "HMonoRest" $ iExact "HRequests"))
+  \in proof
 \lemma msc_inv_incr_split {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a i : Nat) (hi : nat_lt i gam.msc_size) :
@@ -3960,31 +3548,13 @@
     | Monos => msc_mono_auths G NextNs gam.msc_shard_names
     | Auth => msc_counter_auth G gam NextTotal
     | Requests => msc_requests H G gam NextTotal w.incr_requests
-    | Tail => Mono ∗ (MonoRest ∗ Requests)
-    | Tail' => (Mono ∗ MonoRest) ∗ Requests
-    | Source => Cell ∗
-        (Auth ∗ (ArrayRest ∗ Tail))
-    | S1 => Auth ∗
-        (Cell ∗ (ArrayRest ∗ Tail))
-    | S2 => Auth ∗
-        ((Cell ∗ ArrayRest) ∗ Tail)
-    | S3 => Auth ∗
-        ((Cell ∗ ArrayRest) ∗ Tail')
-    | S4 => Auth ∗
-        (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-    | S5 => Auth ∗
-        (Array ∗ (MonosD ∗ Requests))
-    | Core => Auth ∗ ((Array ∗ Monos) ∗ Requests)
-    | Body => msc_inv_body_names H G gam a NextNs
-        gam.msc_shard_names w.incr_requests
     | cellLoc : pointsto_array_index_loc suc a
           (length w.incr_prefix) = a Nat.+ i =>
         pointsto_array_index_suc_add a (length w.incr_prefix) *>
           pmap (a Nat.+) w.incr_prefix_len
     | arrayInsert : (Cell ∗ ArrayRest) ⊢ Array =>
-        transport (\lam loc => ((pointsto_full H.iris_gen_heap loc (natV (suc w.incr_old))) ∗
-              ArrayRest) ⊢
-            Array)
+        transport (\lam loc => ((pointsto_full H.iris_gen_heap loc
+              (natV (suc w.incr_old))) ∗ ArrayRest) ⊢ Array)
           cellLoc
           (transport (\lam values => ((pointsto_full H.iris_gen_heap
                   (pointsto_array_index_loc suc a (length w.incr_prefix))
@@ -4011,81 +3581,44 @@
         transport (\lam names => MonosD ⊢
           (msc_mono_auths G NextNs names))
           (inv w.incr_names_eq) (properUPred_ent_refl MonosD)
-    | step01 : Source ⊢ S1 =>
-        sep_swap_ent Cell Auth (ArrayRest ∗ Tail)
-    | step12 : S1 ⊢ S2 =>
-        sep_mono_r_ent Auth
-          (Cell ∗ (ArrayRest ∗ Tail))
-          ((Cell ∗ ArrayRest) ∗ Tail)
-          (sep_assoc_r_ent Cell ArrayRest Tail)
-    | step23 : S2 ⊢ S3 =>
-        sep_mono_r_ent Auth
-          ((Cell ∗ ArrayRest) ∗ Tail)
-          ((Cell ∗ ArrayRest) ∗ Tail')
-          (sep_mono_r_ent (Cell ∗ ArrayRest) Tail Tail'
-            (sep_assoc_r_ent Mono MonoRest Requests))
-    | step34 : S3 ⊢ S4 =>
-        sep_mono_r_ent Auth
-          ((Cell ∗ ArrayRest) ∗ Tail')
-          (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-          (sep_mono_l_ent (Cell ∗ ArrayRest) Array Tail' arrayInsert)
-    | step45 : S4 ⊢ S5 =>
-        sep_mono_r_ent Auth
-          (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-          (Array ∗ (MonosD ∗ Requests))
-          (sep_mono_r_ent Array
-            ((Mono ∗ MonoRest) ∗ Requests)
-            (MonosD ∗ Requests)
-            (sep_mono_l_ent (Mono ∗ MonoRest) MonosD Requests
-              monoInsert))
-    | step5C : S5 ⊢ Core =>
-        sep_mono_r_ent Auth (Array ∗ (MonosD ∗ Requests))
-          ((Array ∗ Monos) ∗ Requests)
-          (properUPred_ent_trans
-            (Array ∗ (MonosD ∗ Requests))
-            (Array ∗ (Monos ∗ Requests))
-            ((Array ∗ Monos) ∗ Requests)
-            (sep_mono_r_ent Array (MonosD ∗ Requests)
-              (Monos ∗ Requests)
-              (sep_mono_l_ent MonosD Monos Requests monosNames))
-            (sep_assoc_r_ent Array Monos Requests))
-    | coreBody : Core ⊢ Body =>
-        \let
-          | nextLen : length NextNs = gam.msc_size =>
-              list_insert_length w.incr_prefix w.incr_suffix
-                w.incr_old (suc w.incr_old) *> w.incr_ns_len
-          | namesLen : length gam.msc_shard_names = gam.msc_size =>
-              pmap length w.incr_names_eq *> w.incr_names_len
-          | WithNames => (mkProperPure {iResUR S}
-                (length gam.msc_shard_names = gam.msc_size)) ∗ Core
-        \in properUPred_ent_trans Core WithNames Body
-          (pure_intro_sep_ent
-            (length gam.msc_shard_names = gam.msc_size) namesLen Core)
-          (pure_intro_sep_ent (length NextNs = gam.msc_size)
-            nextLen WithNames)
-    | sourceCore : Source ⊢ Core =>
-        properUPred_ent_trans Source S1 Core step01
-          (properUPred_ent_trans S1 S2 Core step12
-            (properUPred_ent_trans S2 S3 Core step23
-              (properUPred_ent_trans S3 S4 Core step34
-                (properUPred_ent_trans S4 S5 Core step45 step5C))))
-    | bodyInv : Body ⊢ (msc_inv H G gam a) =>
-        properUPred_ent_trans Body
-          (mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
-            (\lam requests => msc_inv_body_names H G gam a NextNs
-              gam.msc_shard_names requests))
-          (msc_inv H G gam a)
-          (exist_intro_ent (\lam requests =>
-            msc_inv_body_names H G gam a NextNs
-              gam.msc_shard_names requests) w.incr_requests)
-          (exist_intro_ent (\lam ns =>
-            mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
-              (\lam requests => msc_inv_body_names H G gam a ns
-                gam.msc_shard_names requests)) NextNs)
-  \in properUPred_ent_trans Source Core (msc_inv H G gam a)
-      sourceCore (properUPred_ent_trans Core Body
-        (msc_inv H G gam a) coreBody bodyInv)
-
+    | nextLen : length NextNs = gam.msc_size =>
+        list_insert_length w.incr_prefix w.incr_suffix
+          w.incr_old (suc w.incr_old) *> w.incr_ns_len
+    | namesLen : length gam.msc_shard_names = gam.msc_size =>
+        pmap length w.incr_names_eq *> w.incr_names_len
+  \in ipm $ iIntros "HCell HRest" $
+      iDestruct "HRest" "HAuth HRest" $
+      iDestruct "HRest" "HArrayRest HRest" $
+      iDestruct "HRest" "HMono HRest" $
+      iDestruct "HRest" "HMonoRest HRequests" $
+      iAssert "HArray" "HCell HArrayRest" Array
+        (wp_apply arrayInsert $
+          iFrame "HCell" $ iExact "HArrayRest")
+        (iAssert "HMonosD" "HMono HMonoRest" MonosD
+          (wp_apply monoInsert $
+            iFrame "HMono" $ iExact "HMonoRest")
+          (iAssert "HMonos" "HMonosD" Monos
+            (wp_apply monosNames $ iExact "HMonosD")
+            (wp_apply (exist_intro_ent (\lam ns =>
+              mkProperExist
+                (Gmap Nat natCountable (\Sigma Nat gname))
+                (\lam requests => msc_inv_body_names H G gam a ns
+                  gam.msc_shard_names requests)) NextNs) $
+              wp_apply (exist_intro_ent (\lam requests =>
+                msc_inv_body_names H G gam a NextNs
+                  gam.msc_shard_names requests) w.incr_requests) $
+              wp_apply (pure_intro_sep_ent
+                (length NextNs = gam.msc_size) nextLen
+                ((mkProperPure
+                    (length gam.msc_shard_names = gam.msc_size)) ∗
+                  (Auth ∗ ((Array ∗ Monos) ∗ Requests)))) $
+              wp_apply (pure_intro_sep_ent
+                (length gam.msc_shard_names = gam.msc_size) namesLen
+                (Auth ∗ ((Array ∗ Monos) ∗ Requests))) $
+              iFrame "HAuth" $
+                iSplitL "HArray HMonos"
+                  (iFrame "HArray" $ iExact "HMonos")
+                  (iExact "HRequests"))))
 -- Reinsert an unchanged focused shard after an atomic load.  This is the
 -- inverse direction of `msc_incr_focus_resources`; unlike increment rebuild,
 -- neither the list total nor the mono authority changes.
@@ -4111,30 +3644,13 @@
     | Monos => msc_mono_auths G Ns gam.msc_shard_names
     | Auth => msc_counter_auth G gam Total
     | Requests => msc_requests H G gam Total w.incr_requests
-    | Tail => Mono ∗ (MonoRest ∗ Requests)
-    | Tail' => (Mono ∗ MonoRest) ∗ Requests
-    | Source => Cell ∗
-        (Auth ∗ (ArrayRest ∗ Tail))
-    | S1 => Auth ∗
-        (Cell ∗ (ArrayRest ∗ Tail))
-    | S2 => Auth ∗
-        ((Cell ∗ ArrayRest) ∗ Tail)
-    | S3 => Auth ∗
-        ((Cell ∗ ArrayRest) ∗ Tail')
-    | S4 => Auth ∗
-        (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-    | S5 => Auth ∗
-        (Array ∗ (MonosD ∗ Requests))
-    | Core => Auth ∗ ((Array ∗ Monos) ∗ Requests)
-    | Body => msc_inv_body_names H G gam a Ns
-        gam.msc_shard_names w.incr_requests
     | cellLoc : pointsto_array_index_loc suc a
           (length w.incr_prefix) = a Nat.+ i =>
         pointsto_array_index_suc_add a (length w.incr_prefix) *>
           pmap (a Nat.+) w.incr_prefix_len
     | arrayInsert : (Cell ∗ ArrayRest) ⊢ Array =>
-        transport (\lam loc => ((pointsto_full H.iris_gen_heap loc (natV w.incr_old)) ∗
-              ArrayRest) ⊢ Array)
+        transport (\lam loc => ((pointsto_full H.iris_gen_heap loc
+              (natV w.incr_old)) ∗ ArrayRest) ⊢ Array)
           cellLoc
           (transport (\lam values => ((pointsto_full H.iris_gen_heap
                   (pointsto_array_index_loc suc a (length w.incr_prefix))
@@ -4161,78 +3677,41 @@
         transport (\lam names => MonosD ⊢
           (msc_mono_auths G Ns names))
           (inv w.incr_names_eq) (properUPred_ent_refl MonosD)
-    | step01 : Source ⊢ S1 =>
-        sep_swap_ent Cell Auth (ArrayRest ∗ Tail)
-    | step12 : S1 ⊢ S2 =>
-        sep_mono_r_ent Auth
-          (Cell ∗ (ArrayRest ∗ Tail))
-          ((Cell ∗ ArrayRest) ∗ Tail)
-          (sep_assoc_r_ent Cell ArrayRest Tail)
-    | step23 : S2 ⊢ S3 =>
-        sep_mono_r_ent Auth
-          ((Cell ∗ ArrayRest) ∗ Tail)
-          ((Cell ∗ ArrayRest) ∗ Tail')
-          (sep_mono_r_ent (Cell ∗ ArrayRest) Tail Tail'
-            (sep_assoc_r_ent Mono MonoRest Requests))
-    | step34 : S3 ⊢ S4 =>
-        sep_mono_r_ent Auth
-          ((Cell ∗ ArrayRest) ∗ Tail')
-          (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-          (sep_mono_l_ent (Cell ∗ ArrayRest) Array Tail' arrayInsert)
-    | step45 : S4 ⊢ S5 =>
-        sep_mono_r_ent Auth
-          (Array ∗ ((Mono ∗ MonoRest) ∗ Requests))
-          (Array ∗ (MonosD ∗ Requests))
-          (sep_mono_r_ent Array
-            ((Mono ∗ MonoRest) ∗ Requests)
-            (MonosD ∗ Requests)
-            (sep_mono_l_ent (Mono ∗ MonoRest) MonosD Requests
-              monoInsert))
-    | step5C : S5 ⊢ Core =>
-        sep_mono_r_ent Auth (Array ∗ (MonosD ∗ Requests))
-          ((Array ∗ Monos) ∗ Requests)
-          (properUPred_ent_trans
-            (Array ∗ (MonosD ∗ Requests))
-            (Array ∗ (Monos ∗ Requests))
-            ((Array ∗ Monos) ∗ Requests)
-            (sep_mono_r_ent Array (MonosD ∗ Requests)
-              (Monos ∗ Requests)
-              (sep_mono_l_ent MonosD Monos Requests monosNames))
-            (sep_assoc_r_ent Array Monos Requests))
-    | coreBody : Core ⊢ Body =>
-        \let
-          | namesLen : length gam.msc_shard_names = gam.msc_size =>
-              pmap length w.incr_names_eq *> w.incr_names_len
-          | WithNames => (mkProperPure {iResUR S}
-                (length gam.msc_shard_names = gam.msc_size)) ∗ Core
-        \in properUPred_ent_trans Core WithNames Body
-          (pure_intro_sep_ent
-            (length gam.msc_shard_names = gam.msc_size) namesLen Core)
-          (pure_intro_sep_ent (length Ns = gam.msc_size)
-            w.incr_ns_len WithNames)
-    | sourceCore : Source ⊢ Core =>
-        properUPred_ent_trans Source S1 Core step01
-          (properUPred_ent_trans S1 S2 Core step12
-            (properUPred_ent_trans S2 S3 Core step23
-              (properUPred_ent_trans S3 S4 Core step34
-                (properUPred_ent_trans S4 S5 Core step45 step5C))))
-    | bodyInv : Body ⊢ (msc_inv H G gam a) =>
-        properUPred_ent_trans Body
-          (mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
-            (\lam requests => msc_inv_body_names H G gam a Ns
-              gam.msc_shard_names requests))
-          (msc_inv H G gam a)
-          (exist_intro_ent (\lam requests =>
-            msc_inv_body_names H G gam a Ns
-              gam.msc_shard_names requests) w.incr_requests)
-          (exist_intro_ent (\lam ns =>
-            mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
-              (\lam requests => msc_inv_body_names H G gam a ns
-                gam.msc_shard_names requests)) Ns)
-  \in properUPred_ent_trans Source Core (msc_inv H G gam a)
-      sourceCore (properUPred_ent_trans Core Body
-        (msc_inv H G gam a) coreBody bodyInv)
-
+    | namesLen : length gam.msc_shard_names = gam.msc_size =>
+        pmap length w.incr_names_eq *> w.incr_names_len
+  \in ipm $ iIntros "HCell HRest" $
+      iDestruct "HRest" "HAuth HRest" $
+      iDestruct "HRest" "HArrayRest HRest" $
+      iDestruct "HRest" "HMono HRest" $
+      iDestruct "HRest" "HMonoRest HRequests" $
+      iAssert "HArray" "HCell HArrayRest" Array
+        (wp_apply arrayInsert $
+          iFrame "HCell" $ iExact "HArrayRest")
+        (iAssert "HMonosD" "HMono HMonoRest" MonosD
+          (wp_apply monoInsert $
+            iFrame "HMono" $ iExact "HMonoRest")
+          (iAssert "HMonos" "HMonosD" Monos
+            (wp_apply monosNames $ iExact "HMonosD")
+            (wp_apply (exist_intro_ent (\lam ns =>
+              mkProperExist
+                (Gmap Nat natCountable (\Sigma Nat gname))
+                (\lam requests => msc_inv_body_names H G gam a ns
+                  gam.msc_shard_names requests)) Ns) $
+              wp_apply (exist_intro_ent (\lam requests =>
+                msc_inv_body_names H G gam a Ns
+                  gam.msc_shard_names requests) w.incr_requests) $
+              wp_apply (pure_intro_sep_ent
+                (length Ns = gam.msc_size) w.incr_ns_len
+                ((mkProperPure
+                    (length gam.msc_shard_names = gam.msc_size)) ∗
+                  (Auth ∗ ((Array ∗ Monos) ∗ Requests)))) $
+              wp_apply (pure_intro_sep_ent
+                (length gam.msc_shard_names = gam.msc_size) namesLen
+                (Auth ∗ ((Array ∗ Monos) ∗ Requests))) $
+              iFrame "HAuth" $
+                iSplitL "HArray HMonos"
+                  (iFrame "HArray" $ iExact "HMonos")
+                  (iExact "HRequests"))))
 \func msc_load_post {S : gFunctors} (G : mscG S)
     (name : gname) (lower : Nat) (returned : Value) : iProp S =>
   mkProperExist Nat (\lam n =>
@@ -4258,6 +3737,7 @@
     | Mono => mono_nat_auth_own G.msc_mono_natG
         w.incr_name qp_one w.incr_old
     | LB0 => msc_shard_lb G name lower
+    | NamedLB => msc_shard_lb G w.incr_name lower
     | Current => msc_shard_lb G name w.incr_old
     | Bound => mkProperPure (lower <= w.incr_old)
     | Source => After ∗ LB0
@@ -4268,88 +3748,81 @@
     | ArrayTail => (pointsto_array_rest H.iris_gen_heap suc a
           (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗ MonoTail
     | monoOf : After ⊢ Mono =>
-        properUPred_ent_trans After ArrayTail Mono
-          (sep_elim_r_ent (msc_counter_auth G gam (msc_incr_total w))
-            ArrayTail)
-          (properUPred_ent_trans ArrayTail MonoTail Mono
-            (sep_elim_r_ent
-              (pointsto_array_rest H.iris_gen_heap suc a
-                (map natV w.incr_prefix) (map natV w.incr_suffix))
-              MonoTail)
-            (sep_elim_l_ent Mono
-              ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                  w.incr_suffix w.incr_name_suffix) ∗
-                (msc_requests H G gam (msc_incr_total w)
-                  w.incr_requests))))
+        (ipm $ iIntros "HAuth HArrayTail" $
+          iDestruct "HArrayTail" "HArrayRest HMonoTail" $
+          iDestruct "HMonoTail" "HMono HRest" $ iExact "HMono" :
+          ((msc_counter_auth G gam (msc_incr_total w)) ∗ ArrayTail) ⊢ Mono)
     | currentOf : After ⊢ Current =>
-        properUPred_ent_trans After Mono Current monoOf
-          (transport (\lam nm => Mono ⊢
-              (msc_shard_lb G nm w.incr_old))
-            rw.2
-            (mono_nat_lb_own_get G.msc_mono_natG
-              w.incr_name qp_one w.incr_old))
+        ipm $ iIntros "HAfter" $
+          wp_apply (transport (\lam nm => Mono ⊢
+                (msc_shard_lb G nm w.incr_old))
+              rw.2
+              (mono_nat_lb_own_get G.msc_mono_natG
+                w.incr_name qp_one w.incr_old)) $
+          wp_apply monoOf $ iExact "HAfter"
     | currentPersistent : After ⊢
         (<#> Current) =>
-        properUPred_ent_trans After Current
-          (<#> Current) currentOf
-          (mono_nat_lb_own_persistent G.msc_mono_natG
-            name w.incr_old)
+        ipm $ iIntros "HAfter" $
+          wp_apply (mono_nat_lb_own_persistent G.msc_mono_natG
+            name w.incr_old) $
+          wp_apply currentOf $ iExact "HAfter"
     | sourceCurrent : Source ⊢
         (Source ∗ Current) =>
         persistent_consequence_frame_ent Source Current
-          (properUPred_ent_trans Source After
-            (<#> Current)
-            (sep_elim_l_ent After LB0) currentPersistent)
+          (ipm $ iIntros "HAfter HLB0" $
+            wp_apply currentPersistent $ iExact "HAfter")
+    | renameLB : LB0 ⊢ NamedLB =>
+        transport (\lam nm => LB0 ⊢
+            (msc_shard_lb G nm lower))
+          (inv rw.2) (properUPred_ent_refl LB0)
+    | validLB : (Mono ∗ NamedLB) ⊢
+        (mkProperPure
+          (\Sigma (qp_one.qp_val RatField.<= RatField.ide)
+            (lower <= w.incr_old))) =>
+        mono_nat_lb_own_valid G.msc_mono_natG
+          w.incr_name qp_one w.incr_old lower
+    | projectBound :
+        (mkProperPure
+          (\Sigma (qp_one.qp_val RatField.<= RatField.ide)
+            (lower <= w.incr_old))) ⊢ Bound =>
+        \lam _ _ _ h => h.2
     | boundOf : Source ⊢ Bound =>
-        properUPred_ent_trans Source
-          (Mono ∗
-            (msc_shard_lb G w.incr_name lower)) Bound
-          (properUPred_ent_trans Source (Mono ∗ LB0)
-            (Mono ∗
-              (msc_shard_lb G w.incr_name lower))
-            (sep_mono_l_ent After Mono LB0 monoOf)
-            (sep_mono_r_ent Mono LB0
-              (msc_shard_lb G w.incr_name lower)
-              (transport (\lam nm => LB0 ⊢
-                  (msc_shard_lb G nm lower))
-                (inv rw.2)
-                (properUPred_ent_refl LB0))))
-          (properUPred_ent_trans
-            (Mono ∗
-              (msc_shard_lb G w.incr_name lower))
-            (mkProperPure
-              (\Sigma (qp_one.qp_val RatField.<= RatField.ide)
-                (lower <= w.incr_old))) Bound
-            (mono_nat_lb_own_valid G.msc_mono_natG
-              w.incr_name qp_one w.incr_old lower)
-            (\lam _ _ _ h => h.2))
+        ipm $ iIntros "HAfter HLB0" $
+          iAssert "HMono" "HAfter" Mono
+            (wp_apply monoOf $ iExact "HAfter")
+            (iAssert "HNamedLB" "HLB0" NamedLB
+              (wp_apply renameLB $ iExact "HLB0")
+              (wp_apply projectBound $
+                wp_apply validLB $
+                wp_apply (properUPred_ent_refl (Mono ∗ NamedLB)) $
+                iFrame "HMono" $ iExact "HNamedLB"))
     | withBound : (Source ∗ Current) ⊢
         (Bound ∗ (Source ∗ Current)) =>
         pure_consequence_frame_ent (Source ∗ Current)
           (lower <= w.incr_old)
-          (properUPred_ent_trans (Source ∗ Current)
-            Source Bound
-            (sep_elim_l_ent Source Current) boundOf)
-    | Arranged0 => (Source ∗ Current) ∗ Bound
-    | Arranged1 => Source ∗ (Current ∗ Bound)
-    | Arranged2 => After ∗
-        (LB0 ∗ (Current ∗ Bound))
+          (ipm $ iIntros "HSource HCurrent" $
+            wp_apply boundOf $ iExact "HSource")
     | Target => After ∗ (Current ∗ Bound)
-  \in properUPred_ent_trans Source
-      (Source ∗ Current) Target sourceCurrent
-      (properUPred_ent_trans (Source ∗ Current)
-        (Bound ∗ (Source ∗ Current)) Target withBound
-        (properUPred_ent_trans
-          (Bound ∗ (Source ∗ Current)) Arranged0 Target
-          (sep_comm_ent Bound (Source ∗ Current))
-          (properUPred_ent_trans Arranged0 Arranged1 Target
-            (sep_assoc_l_ent Source Current Bound)
-            (properUPred_ent_trans Arranged1 Arranged2 Target
-              (sep_assoc_l_ent After LB0 (Current ∗ Bound))
-              (sep_mono_r_ent After
-                (LB0 ∗ (Current ∗ Bound))
-                (Current ∗ Bound)
-                (sep_elim_r_ent LB0 (Current ∗ Bound)))))))
+  \in ipm $ iIntros "HAfter HLB0" $
+      iAssert "HSourceCurrent" "HAfter HLB0" (Source ∗ Current)
+        (wp_apply sourceCurrent $
+          wp_apply (properUPred_ent_refl Source) $
+          iFrame "HAfter" $ iExact "HLB0")
+        (iDestruct "HSourceCurrent" "HSource HCurrent" $
+          iDestruct "HSource" "HAfter HLB0" $
+          iAssert "HBounded" "HAfter HLB0 HCurrent"
+            (Bound ∗ (Source ∗ Current))
+            (wp_apply withBound $
+              wp_apply (properUPred_ent_refl (Source ∗ Current)) $
+              iSplitL "HAfter HLB0"
+                (wp_apply (properUPred_ent_refl Source) $
+                  iFrame "HAfter" $ iExact "HLB0")
+                (iExact "HCurrent"))
+            (iDestruct "HBounded" "HBound HSourceCurrent" $
+              iDestruct "HSourceCurrent" "HSource HCurrent" $
+              iDestruct "HSource" "HAfter HLB0" $
+              wp_apply (properUPred_ent_refl Target) $
+              iFrame "HAfter" $ iFrame "HCurrent" $ iExact "HBound"))
 
 \lemma msc_load_transition {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -4376,139 +3849,40 @@
     | Bound => mkProperPure (lower <= w.incr_old)
     | ResultResources => Current ∗ Bound
     | Post => msc_load_post G name lower (natV w.incr_old)
-    | Source => Cell ∗
-        (After ∗ (Close ∗ LB0))
     | FocusSource => After ∗ LB0
-    | Rest => Cell ∗ Close
-    | ReadyObserve => FocusSource ∗ Rest
-    | Observed => (After ∗ ResultResources) ∗ Rest
-    | O1 => After ∗ (ResultResources ∗ Rest)
-    | O2 => After ∗ (Rest ∗ ResultResources)
-    | O3 => (After ∗ Rest) ∗ ResultResources
-    | O4 => (Rest ∗ After) ∗ ResultResources
-    | O5 => (Cell ∗ (Close ∗ After)) ∗ ResultResources
-    | O6 => (Cell ∗ (After ∗ Close)) ∗ ResultResources
-    | ReadyClose => ((Cell ∗ After) ∗ Close) ∗ ResultResources
-    | WithInv => (Inv ∗ Close) ∗ ResultResources
-    | WithLater => (LaterInv ∗ Close) ∗ ResultResources
-    | Invoked => (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp) ∗
-        ResultResources
-    | Framed => mkProperFUpd H.iris_wsat msc_open_mask mscE
-        (mkProperEmp ∗ ResultResources)
-    | arrangeSource : Source ⊢ ReadyObserve =>
-        properUPred_ent_trans Source
-          (Cell ∗ (Close ∗ FocusSource)) ReadyObserve
-          (sep_mono_r_ent Cell
-            (After ∗ (Close ∗ LB0))
-            (Close ∗ FocusSource)
-            (sep_swap_ent After Close LB0))
-          (properUPred_ent_trans
-            (Cell ∗ (Close ∗ FocusSource))
-            (Rest ∗ FocusSource) ReadyObserve
-            (sep_assoc_r_ent Cell Close FocusSource)
-            (sep_comm_ent Rest FocusSource))
-    | observe : ReadyObserve ⊢ Observed =>
-        sep_mono_l_ent FocusSource
-          (After ∗ ResultResources) Rest
-          (msc_load_after_observe H G gam a i name lower rw)
-    | arrangeObserved : Observed ⊢ ReadyClose =>
-        properUPred_ent_trans Observed O1 ReadyClose
-          (sep_assoc_l_ent After ResultResources Rest)
-          (properUPred_ent_trans O1 O2 ReadyClose
-            (sep_mono_r_ent After
-              (ResultResources ∗ Rest)
-              (Rest ∗ ResultResources)
-              (sep_comm_ent ResultResources Rest))
-            (properUPred_ent_trans O2 O3 ReadyClose
-              (sep_assoc_r_ent After Rest ResultResources)
-              (properUPred_ent_trans O3 O4 ReadyClose
-                (sep_mono_l_ent (After ∗ Rest)
-                  (Rest ∗ After) ResultResources
-                  (sep_comm_ent After Rest))
-                (properUPred_ent_trans O4 O5 ReadyClose
-                  (sep_mono_l_ent (Rest ∗ After)
-                    (Cell ∗ (Close ∗ After))
-                    ResultResources
-                    (sep_assoc_l_ent Cell Close After))
-                  (properUPred_ent_trans O5 O6 ReadyClose
-                    (sep_mono_l_ent
-                      (Cell ∗ (Close ∗ After))
-                      (Cell ∗ (After ∗ Close))
-                      ResultResources
-                      (sep_mono_r_ent Cell
-                        (Close ∗ After)
-                        (After ∗ Close)
-                        (sep_comm_ent Close After)))
-                    (sep_mono_l_ent
-                      (Cell ∗ (After ∗ Close))
-                      ((Cell ∗ After) ∗ Close)
-                      ResultResources
-                      (sep_assoc_r_ent Cell After Close)))))))
-    | restore : ReadyClose ⊢ WithInv =>
-        sep_mono_l_ent
-          ((Cell ∗ After) ∗ Close)
-          (Inv ∗ Close) ResultResources
-          (sep_mono_l_ent (Cell ∗ After) Inv Close
-            (msc_incr_restore H G gam a i w))
-    | delay : WithInv ⊢ WithLater =>
-        sep_mono_l_ent (Inv ∗ Close)
-          (LaterInv ∗ Close) ResultResources
-          (sep_mono_l_ent Inv LaterInv Close (proper_later_intro Inv))
-    | invoke : WithLater ⊢ Invoked =>
-        sep_mono_l_ent (LaterInv ∗ Close)
-          (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-          ResultResources
-          (properUPred_ent_trans (LaterInv ∗ Close)
-            (Close ∗ LaterInv)
-            (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-            (sep_comm_ent LaterInv Close)
-            (wand_elim_ent LaterInv
-              (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)))
-    | frame : Invoked ⊢ Framed =>
-        fupd_frame_r H.iris_wsat msc_open_mask mscE
-          mkProperEmp ResultResources
     | makePost : (mkProperEmp ∗ ResultResources) ⊢ Post =>
-        properUPred_ent_trans
-          (mkProperEmp ∗ ResultResources) ResultResources Post
-          (sep_elim_r_ent mkProperEmp ResultResources)
-          (properUPred_ent_trans ResultResources
-            ((mkProperPure (natV w.incr_old = natV w.incr_old)) ∗
-              ResultResources) Post
-            (pure_intro_sep_ent
-              (natV w.incr_old = natV w.incr_old) idp ResultResources)
-            (exist_intro_ent (\lam n =>
-              (mkProperPure (natV w.incr_old = natV n)) ∗
-                ((msc_shard_lb G name n) ∗
-                  (mkProperPure (lower <= n)))) w.incr_old))
-    | close : Source ⊢
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE Post) =>
-        properUPred_ent_trans Source ReadyObserve
-          (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)
-          arrangeSource
-          (properUPred_ent_trans ReadyObserve Observed
-            (mkProperFUpd H.iris_wsat msc_open_mask mscE Post) observe
-            (properUPred_ent_trans Observed ReadyClose
-              (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)
-              arrangeObserved
-              (properUPred_ent_trans ReadyClose WithInv
-                (mkProperFUpd H.iris_wsat msc_open_mask mscE Post) restore
-                (properUPred_ent_trans WithInv WithLater
-                  (mkProperFUpd H.iris_wsat msc_open_mask mscE Post) delay
-                  (properUPred_ent_trans WithLater Invoked
-                    (mkProperFUpd H.iris_wsat msc_open_mask mscE Post) invoke
-                    (properUPred_ent_trans Invoked Framed
-                      (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)
-                      frame
-                      (fupd_mono H.iris_wsat msc_open_mask mscE
-                        (mkProperEmp ∗ ResultResources) Post
-                        makePost)))))))
-  \in properUPred_ent_trans Source
-      (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)
-      (|==>
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE Post))
-      close
-      (bupd_intro
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE Post))
+        ipm $ iIntros "HEmp HResult" $
+          iDestruct "HResult" "HCurrent HBound" $
+          iExists w.incr_old (\lam n =>
+            (mkProperPure (natV w.incr_old = natV n)) ∗
+              ((msc_shard_lb G name n) ∗
+                (mkProperPure (lower <= n)))) $
+          iSplitL "" (iPureIntro $ idp)
+            (iFrame "HCurrent" $ iExact "HBound")
+  \in ipm $ iIntros "HCell HRest" $
+      iDestruct "HRest" "HAfter HCloseLB" $
+      iDestruct "HCloseLB" "HClose HLB0" $
+      wp_apply (bupd_intro
+        (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)) $
+      iAssert "HObserved" "HAfter HLB0" (After ∗ ResultResources)
+        (wp_apply (msc_load_after_observe H G gam a i name lower rw) $
+          wp_apply (properUPred_ent_refl FocusSource) $
+          iFrame "HAfter" $ iExact "HLB0")
+        (iDestruct "HObserved" "HAfter HResult" $
+          iAssert "HInv" "HCell HAfter" Inv
+            (wp_apply (msc_incr_restore H G gam a i w) $
+              wp_apply (properUPred_ent_refl (Cell ∗ After)) $
+              iFrame "HCell" $ iExact "HAfter")
+            (iAssert "HLater" "HInv" LaterInv
+              (iNext $ iExact "HInv")
+              (iSpecialize "HClose" "HLater" "HUpdate" $
+                wp_apply (fupd_mono H.iris_wsat msc_open_mask mscE
+                  (mkProperEmp ∗ ResultResources) Post makePost) $
+                wp_apply (fupd_frame_r H.iris_wsat msc_open_mask mscE
+                  mkProperEmp ResultResources) $
+                iSplitL "HUpdate"
+                  (iExact "HUpdate")
+                  (iExact "HResult"))))
 
 \lemma msc_load_opened {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -5226,167 +4600,29 @@
       (A ∗ (B ∗ D))) ⊢
     ((A ∗ (B ∗
         (C ∗ (D ∗ E)))) ∗ X) =>
-  \let
-    | S0 => (C ∗ (E ∗ X)) ∗
-        (A ∗ (B ∗ D))
-    | S1 => (A ∗ (B ∗ D)) ∗
-        (C ∗ (E ∗ X))
-    | S2 => A ∗
-        ((B ∗ D) ∗
-          (C ∗ (E ∗ X)))
-    | S3 => A ∗ (B ∗
-        (D ∗ (C ∗ (E ∗ X))))
-    | S4 => A ∗ (B ∗
-        (C ∗ (D ∗ (E ∗ X))))
-    | S5 => A ∗ (B ∗
-        (C ∗ ((D ∗ E) ∗ X)))
-    | S6 => A ∗ (B ∗
-        ((C ∗ (D ∗ E)) ∗ X))
-    | S7 => A ∗
-        ((B ∗
-          (C ∗ (D ∗ E))) ∗ X)
-    | Target => (A ∗ (B ∗
-          (C ∗ (D ∗ E)))) ∗ X
-  \in properUPred_ent_trans S0 S1 Target
-      (sep_comm_ent (C ∗ (E ∗ X))
-        (A ∗ (B ∗ D)))
-      (properUPred_ent_trans S1 S2 Target
-        (sep_assoc_l_ent A (B ∗ D)
-          (C ∗ (E ∗ X)))
-        (properUPred_ent_trans S2 S3 Target
-          (sep_mono_r_ent A
-            ((B ∗ D) ∗
-              (C ∗ (E ∗ X)))
-            (B ∗
-              (D ∗ (C ∗ (E ∗ X))))
-            (sep_assoc_l_ent B D (C ∗ (E ∗ X))))
-          (properUPred_ent_trans S3 S4 Target
-            (sep_mono_r_ent A
-              (B ∗
-                (D ∗ (C ∗ (E ∗ X))))
-              (B ∗
-                (C ∗ (D ∗ (E ∗ X))))
-              (sep_mono_r_ent B
-                (D ∗ (C ∗ (E ∗ X)))
-                (C ∗ (D ∗ (E ∗ X)))
-                (sep_swap_ent D C (E ∗ X))))
-            (properUPred_ent_trans S4 S5 Target
-              (sep_mono_r_ent A
-                (B ∗
-                  (C ∗ (D ∗ (E ∗ X))))
-                (B ∗
-                  (C ∗ ((D ∗ E) ∗ X)))
-                (sep_mono_r_ent B
-                  (C ∗ (D ∗ (E ∗ X)))
-                  (C ∗ ((D ∗ E) ∗ X))
-                  (sep_mono_r_ent C
-                    (D ∗ (E ∗ X))
-                    ((D ∗ E) ∗ X)
-                    (sep_assoc_r_ent D E X))))
-              (properUPred_ent_trans S5 S6 Target
-                (sep_mono_r_ent A
-                  (B ∗
-                    (C ∗ ((D ∗ E) ∗ X)))
-                  (B ∗
-                    ((C ∗ (D ∗ E)) ∗ X))
-                  (sep_mono_r_ent B
-                    (C ∗ ((D ∗ E) ∗ X))
-                    ((C ∗ (D ∗ E)) ∗ X)
-                    (sep_assoc_r_ent C (D ∗ E) X)))
-                (properUPred_ent_trans S6 S7 Target
-                  (sep_mono_r_ent A
-                    (B ∗
-                      ((C ∗ (D ∗ E)) ∗ X))
-                    ((B ∗
-                      (C ∗ (D ∗ E))) ∗ X)
-                    (sep_assoc_r_ent B
-                      (C ∗ (D ∗ E)) X))
-                  (sep_assoc_r_ent A
-                    (B ∗ (C ∗ (D ∗ E))) X)))))))
-
+  ipm $ iIntros "HCEX HABD" $
+    iDestruct "HCEX" "HC HEX" $
+    iDestruct "HEX" "HE HX" $
+    iDestruct "HABD" "HA HBD" $
+    iDestruct "HBD" "HB HD" $
+    iSplitL "HA HB HC HD HE"
+      (iFrame "HA" $ iFrame "HB" $ iFrame "HC" $
+        iFrame "HD" $ iExact "HE")
+      (iExact "HX")
 \lemma msc_read_extract_body {M : UCMRA}
     (A B C D E X : ProperUPred M) :
   ((A ∗ (B ∗
         (C ∗ (D ∗ E)))) ∗ X) ⊢
     ((C ∗ (E ∗ X)) ∗
       (A ∗ (B ∗ D))) =>
-  \let
-    | S0 => (A ∗ (B ∗
-          (C ∗ (D ∗ E)))) ∗ X
-    | S1 => A ∗
-        ((B ∗
-          (C ∗ (D ∗ E))) ∗ X)
-    | S2 => A ∗ (B ∗
-        ((C ∗ (D ∗ E)) ∗ X))
-    | S3 => A ∗ (B ∗
-        (C ∗ ((D ∗ E) ∗ X)))
-    | S4 => A ∗ (B ∗
-        (C ∗ (D ∗ (E ∗ X))))
-    | S5 => A ∗ (B ∗
-        (D ∗ (C ∗ (E ∗ X))))
-    | S6 => A ∗
-        ((B ∗ D) ∗
-          (C ∗ (E ∗ X)))
-    | S7 => (A ∗ (B ∗ D)) ∗
-        (C ∗ (E ∗ X))
-    | Target => (C ∗ (E ∗ X)) ∗
-        (A ∗ (B ∗ D))
-  \in properUPred_ent_trans S0 S1 Target
-      (sep_assoc_l_ent A
-        (B ∗ (C ∗ (D ∗ E))) X)
-      (properUPred_ent_trans S1 S2 Target
-        (sep_mono_r_ent A
-          ((B ∗
-            (C ∗ (D ∗ E))) ∗ X)
-          (B ∗
-            ((C ∗ (D ∗ E)) ∗ X))
-          (sep_assoc_l_ent B (C ∗ (D ∗ E)) X))
-        (properUPred_ent_trans S2 S3 Target
-          (sep_mono_r_ent A
-            (B ∗
-              ((C ∗ (D ∗ E)) ∗ X))
-            (B ∗
-              (C ∗ ((D ∗ E) ∗ X)))
-            (sep_mono_r_ent B
-              ((C ∗ (D ∗ E)) ∗ X)
-              (C ∗ ((D ∗ E) ∗ X))
-              (sep_assoc_l_ent C (D ∗ E) X)))
-          (properUPred_ent_trans S3 S4 Target
-            (sep_mono_r_ent A
-              (B ∗
-                (C ∗ ((D ∗ E) ∗ X)))
-              (B ∗
-                (C ∗ (D ∗ (E ∗ X))))
-              (sep_mono_r_ent B
-                (C ∗ ((D ∗ E) ∗ X))
-                (C ∗ (D ∗ (E ∗ X)))
-                (sep_mono_r_ent C
-                  ((D ∗ E) ∗ X)
-                  (D ∗ (E ∗ X))
-                  (sep_assoc_l_ent D E X))))
-            (properUPred_ent_trans S4 S5 Target
-              (sep_mono_r_ent A
-                (B ∗
-                  (C ∗ (D ∗ (E ∗ X))))
-                (B ∗
-                  (D ∗ (C ∗ (E ∗ X))))
-                (sep_mono_r_ent B
-                  (C ∗ (D ∗ (E ∗ X)))
-                  (D ∗ (C ∗ (E ∗ X)))
-                  (sep_swap_ent C D (E ∗ X))))
-              (properUPred_ent_trans S5 S6 Target
-                (sep_mono_r_ent A
-                  (B ∗
-                    (D ∗ (C ∗ (E ∗ X))))
-                  ((B ∗ D) ∗
-                    (C ∗ (E ∗ X)))
-                  (sep_assoc_r_ent B D (C ∗ (E ∗ X))))
-                (properUPred_ent_trans S6 S7 Target
-                  (sep_assoc_r_ent A (B ∗ D)
-                    (C ∗ (E ∗ X)))
-                  (sep_comm_ent (A ∗ (B ∗ D))
-                    (C ∗ (E ∗ X)))))))))
-
+  ipm $ iIntros "HABCDE HX" $
+    iDestruct "HABCDE" "HA HBCDE" $
+    iDestruct "HBCDE" "HB HCDE" $
+    iDestruct "HCDE" "HC HDE" $
+    iDestruct "HDE" "HD HE" $
+    iSplitL "HC HE HX"
+      (iFrame "HC" $ iFrame "HE" $ iExact "HX")
+      (iFrame "HA" $ iFrame "HB" $ iExact "HD")
 \lemma msc_read_register_or_keep {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a predicted : Nat) (gamQ : gname) (w : msc_read_witness gam)
@@ -5562,183 +4798,28 @@
       (D ∗ (E ∗ F))) ⊢
     ((B ∗ F) ∗
       (C ∗ (A ∗ (D ∗ E)))) =>
-  \let
-    | S0 => (A ∗ (B ∗ C)) ∗
-        (D ∗ (E ∗ F))
-    | Flat => A ∗ (B ∗
-        (C ∗ (D ∗ (E ∗ F))))
-    | Swapped => A ∗ (B ∗
-        (C ∗ (D ∗ (F ∗ E))))
-    | FFront => F ∗ (A ∗
-        (B ∗ (C ∗ (D ∗ E))))
-    | AFront => A ∗ (F ∗
-        (B ∗ (C ∗ (D ∗ E))))
-    | BF => A ∗ (B ∗
-        (F ∗ (C ∗ (D ∗ E))))
-    | Grouped => A ∗
-        ((B ∗ F) ∗ (C ∗ (D ∗ E)))
-    | Moved => (B ∗ F) ∗
-        (A ∗ (C ∗ (D ∗ E)))
-    | Target => (B ∗ F) ∗
-        (C ∗ (A ∗ (D ∗ E)))
-    | flatten : S0 ⊢ Flat =>
-        properUPred_ent_trans S0
-          (A ∗
-            ((B ∗ C) ∗
-              (D ∗ (E ∗ F)))) Flat
-          (sep_assoc_l_ent A (B ∗ C)
-            (D ∗ (E ∗ F)))
-          (sep_mono_r_ent A
-            ((B ∗ C) ∗
-              (D ∗ (E ∗ F)))
-            (B ∗
-              (C ∗ (D ∗ (E ∗ F))))
-            (sep_assoc_l_ent B C (D ∗ (E ∗ F))))
-  \in properUPred_ent_trans S0 Flat Target flatten
-      (properUPred_ent_trans Flat Swapped Target
-        (sep_mono_r_ent A
-          (B ∗
-            (C ∗ (D ∗ (E ∗ F))))
-          (B ∗
-            (C ∗ (D ∗ (F ∗ E))))
-          (sep_mono_r_ent B
-            (C ∗ (D ∗ (E ∗ F)))
-            (C ∗ (D ∗ (F ∗ E)))
-            (sep_mono_r_ent C
-              (D ∗ (E ∗ F))
-              (D ∗ (F ∗ E))
-              (sep_mono_r_ent D (E ∗ F)
-                (F ∗ E) (sep_comm_ent E F)))))
-        (properUPred_ent_trans Swapped FFront Target
-          (sep_move_fifth_front A B C D F E)
-          (properUPred_ent_trans FFront AFront Target
-            (sep_swap_ent F A
-              (B ∗ (C ∗ (D ∗ E))))
-            (properUPred_ent_trans AFront BF Target
-              (sep_mono_r_ent A
-                (F ∗
-                  (B ∗ (C ∗ (D ∗ E))))
-                (B ∗
-                  (F ∗ (C ∗ (D ∗ E))))
-                (sep_swap_ent F B (C ∗ (D ∗ E))))
-              (properUPred_ent_trans BF Grouped Target
-                (sep_mono_r_ent A
-                  (B ∗
-                    (F ∗ (C ∗ (D ∗ E))))
-                  ((B ∗ F) ∗
-                    (C ∗ (D ∗ E)))
-                  (sep_assoc_r_ent B F (C ∗ (D ∗ E))))
-                (properUPred_ent_trans Grouped Moved Target
-                  (sep_swap_ent A (B ∗ F)
-                    (C ∗ (D ∗ E)))
-                  (sep_mono_r_ent (B ∗ F)
-                    (A ∗ (C ∗ (D ∗ E)))
-                    (C ∗ (A ∗ (D ∗ E)))
-                    (sep_swap_ent A C (D ∗ E)))))))))
-
+  ipm $ iIntros "HABC HDEF" $
+    iDestruct "HABC" "HA HBC" $
+    iDestruct "HBC" "HB HC" $
+    iDestruct "HDEF" "HD HEF" $
+    iDestruct "HEF" "HE HF" $
+    iSplitL "HB HF"
+      (iFrame "HB" $ iExact "HF")
+      (iFrame "HC" $ iFrame "HA" $ iFrame "HD" $ iExact "HE")
 \lemma msc_read_stage_close {M : UCMRA}
     (A B C D E F : ProperUPred M) :
   ((A ∗ B) ∗
       (C ∗ (D ∗ (E ∗ F)))) ⊢
     ((A ∗ E) ∗
       (F ∗ (C ∗ (D ∗ B)))) =>
-  \let
-    | S0 => (A ∗ B) ∗
-        (C ∗ (D ∗ (E ∗ F)))
-    | Flat => A ∗ (B ∗
-        (C ∗ (D ∗ (E ∗ F))))
-    | EFront => E ∗ (A ∗
-        (B ∗ (C ∗ (D ∗ F))))
-    | AFront => A ∗ (E ∗
-        (B ∗ (C ∗ (D ∗ F))))
-    | S1 => A ∗ (E ∗
-        (B ∗ (C ∗ (F ∗ D))))
-    | S2 => A ∗ (E ∗
-        (B ∗ (F ∗ (C ∗ D))))
-    | S3 => A ∗ (E ∗
-        (F ∗ (B ∗ (C ∗ D))))
-    | S4 => A ∗ (E ∗
-        (F ∗ (C ∗ (B ∗ D))))
-    | S5 => A ∗ (E ∗
-        (F ∗ (C ∗ (D ∗ B))))
-    | Target => (A ∗ E) ∗
-        (F ∗ (C ∗ (D ∗ B)))
-    | flatten : S0 ⊢ Flat =>
-        sep_assoc_l_ent A B
-          (C ∗ (D ∗ (E ∗ F)))
-  \in properUPred_ent_trans S0 Flat Target flatten
-      (properUPred_ent_trans Flat EFront Target
-        (sep_move_fifth_front A B C D E F)
-        (properUPred_ent_trans EFront AFront Target
-          (sep_swap_ent E A
-            (B ∗ (C ∗ (D ∗ F))))
-          (properUPred_ent_trans AFront S1 Target
-            (sep_mono_r_ent A
-              (E ∗
-                (B ∗ (C ∗ (D ∗ F))))
-              (E ∗
-                (B ∗ (C ∗ (F ∗ D))))
-              (sep_mono_r_ent E
-                (B ∗ (C ∗ (D ∗ F)))
-                (B ∗ (C ∗ (F ∗ D)))
-                (sep_mono_r_ent B
-                  (C ∗ (D ∗ F))
-                  (C ∗ (F ∗ D))
-                  (sep_mono_r_ent C (D ∗ F)
-                    (F ∗ D) (sep_comm_ent D F)))))
-            (properUPred_ent_trans S1 S2 Target
-              (sep_mono_r_ent A
-                (E ∗
-                  (B ∗ (C ∗ (F ∗ D))))
-                (E ∗
-                  (B ∗ (F ∗ (C ∗ D))))
-                (sep_mono_r_ent E
-                  (B ∗ (C ∗ (F ∗ D)))
-                  (B ∗ (F ∗ (C ∗ D)))
-                  (sep_mono_r_ent B
-                    (C ∗ (F ∗ D))
-                    (F ∗ (C ∗ D))
-                    (sep_swap_ent C F D))))
-              (properUPred_ent_trans S2 S3 Target
-                (sep_mono_r_ent A
-                  (E ∗
-                    (B ∗ (F ∗ (C ∗ D))))
-                  (E ∗
-                    (F ∗ (B ∗ (C ∗ D))))
-                  (sep_mono_r_ent E
-                    (B ∗ (F ∗ (C ∗ D)))
-                    (F ∗ (B ∗ (C ∗ D)))
-                    (sep_swap_ent B F (C ∗ D))))
-                (properUPred_ent_trans S3 S4 Target
-                  (sep_mono_r_ent A
-                    (E ∗
-                      (F ∗ (B ∗ (C ∗ D))))
-                    (E ∗
-                      (F ∗ (C ∗ (B ∗ D))))
-                    (sep_mono_r_ent E
-                      (F ∗ (B ∗ (C ∗ D)))
-                      (F ∗ (C ∗ (B ∗ D)))
-                      (sep_mono_r_ent F
-                        (B ∗ (C ∗ D))
-                        (C ∗ (B ∗ D))
-                        (sep_swap_ent B C D))))
-                  (properUPred_ent_trans S4 S5 Target
-                    (sep_mono_r_ent A
-                      (E ∗
-                        (F ∗ (C ∗ (B ∗ D))))
-                      (E ∗
-                        (F ∗ (C ∗ (D ∗ B))))
-                      (sep_mono_r_ent E
-                        (F ∗ (C ∗ (B ∗ D)))
-                        (F ∗ (C ∗ (D ∗ B)))
-                        (sep_mono_r_ent F
-                          (C ∗ (B ∗ D))
-                          (C ∗ (D ∗ B))
-                          (sep_mono_r_ent C (B ∗ D)
-                            (D ∗ B) (sep_comm_ent B D)))))
-                    (sep_assoc_r_ent A E
-                      (F ∗
-                        (C ∗ (D ∗ B)))))))))))
+  ipm $ iIntros "HAB HCDEF" $
+    iDestruct "HAB" "HA HB" $
+    iDestruct "HCDEF" "HC HDEF" $
+    iDestruct "HDEF" "HD HEF" $
+    iDestruct "HEF" "HE HF" $
+    iSplitL "HA HE"
+      (iFrame "HA" $ iExact "HE")
+      (iFrame "HF" $ iFrame "HC" $ iFrame "HD" $ iExact "HB")
 
 \func msc_read_new_raw {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5801,241 +4882,17 @@
       (D ∗ (E ∗ (F ∗ (G ∗ H))))) ⊢
     ((C ∗ (G ∗ H)) ∗
       (A ∗ (B ∗ (D ∗ (E ∗ F))))) =>
-  \let
-    | R0 => A ∗ (B ∗
-        (C ∗ (D ∗
-          (E ∗ (F ∗ (G ∗ H))))))
-    | R1 => C ∗ (A ∗ (B ∗
-        (D ∗ (E ∗ (F ∗ (G ∗ H))))))
-    | R2 => C ∗ (A ∗ (B ∗
-        (D ∗ (E ∗ (G ∗ (F ∗ H))))))
-    | R3 => C ∗ (A ∗ (B ∗
-        (D ∗ (G ∗ (E ∗ (F ∗ H))))))
-    | R4 => C ∗ (A ∗ (B ∗
-        (G ∗ (D ∗ (E ∗ (F ∗ H))))))
-    | R5 => C ∗ (A ∗ (G ∗
-        (B ∗ (D ∗ (E ∗ (F ∗ H))))))
-    | R6 => C ∗ (G ∗ (A ∗
-        (B ∗ (D ∗ (E ∗ (F ∗ H))))))
-    | R7 => C ∗ (G ∗ (A ∗
-        (B ∗ (D ∗ (E ∗ (H ∗ F))))))
-    | R8 => C ∗ (G ∗ (A ∗
-        (B ∗ (D ∗ (H ∗ (E ∗ F))))))
-    | R9 => C ∗ (G ∗ (A ∗
-        (B ∗ (H ∗ (D ∗ (E ∗ F))))))
-    | R10 => C ∗ (G ∗ (A ∗
-        (H ∗ (B ∗ (D ∗ (E ∗ F))))))
-    | R11 => C ∗ (G ∗ (H ∗
-        (A ∗ (B ∗ (D ∗ (E ∗ F))))))
-    | R12 => C ∗ ((G ∗ H) ∗
-        (A ∗ (B ∗ (D ∗ (E ∗ F)))))
-    | Target => (C ∗ (G ∗ H)) ∗
-        (A ∗ (B ∗ (D ∗ (E ∗ F))))
-    | flatten : ((A ∗ (B ∗ C)) ∗
-          (D ∗ (E ∗ (F ∗ (G ∗ H))))) ⊢
-        R0 =>
-        properUPred_ent_trans
-          ((A ∗ (B ∗ C)) ∗
-            (D ∗ (E ∗ (F ∗ (G ∗ H)))))
-          (A ∗ ((B ∗ C) ∗
-            (D ∗ (E ∗ (F ∗ (G ∗ H))))))
-          R0
-          (sep_assoc_l_ent A (B ∗ C)
-            (D ∗ (E ∗ (F ∗ (G ∗ H)))))
-          (sep_mono_r_ent A
-            ((B ∗ C) ∗
-              (D ∗ (E ∗ (F ∗ (G ∗ H)))))
-            (B ∗ (C ∗
-              (D ∗ (E ∗ (F ∗ (G ∗ H))))))
-            (sep_assoc_l_ent B C
-              (D ∗ (E ∗ (F ∗ (G ∗ H))))))
-    | moveC : R0 ⊢ R1 =>
-        sep_rotate_third_front A B C
-          (D ∗ (E ∗ (F ∗ (G ∗ H))))
-    | swapFG : R1 ⊢ R2 =>
-        sep_mono_r_ent C
-          (A ∗ (B ∗
-            (D ∗ (E ∗ (F ∗ (G ∗ H))))))
-          (A ∗ (B ∗
-            (D ∗ (E ∗ (G ∗ (F ∗ H))))))
-          (sep_mono_r_ent A
-            (B ∗
-              (D ∗ (E ∗ (F ∗ (G ∗ H)))))
-            (B ∗
-              (D ∗ (E ∗ (G ∗ (F ∗ H)))))
-            (sep_mono_r_ent B
-              (D ∗ (E ∗ (F ∗ (G ∗ H))))
-              (D ∗ (E ∗ (G ∗ (F ∗ H))))
-              (sep_mono_r_ent D
-                (E ∗ (F ∗ (G ∗ H)))
-                (E ∗ (G ∗ (F ∗ H)))
-                (sep_mono_r_ent E
-                  (F ∗ (G ∗ H))
-                  (G ∗ (F ∗ H))
-                  (sep_swap_ent F G H)))))
-    | swapEG : R2 ⊢ R3 =>
-        sep_mono_r_ent C (A ∗ (B ∗
-          (D ∗ (E ∗ (G ∗ (F ∗ H))))))
-          (A ∗ (B ∗
-            (D ∗ (G ∗ (E ∗ (F ∗ H))))))
-          (sep_mono_r_ent A
-            (B ∗
-              (D ∗ (E ∗ (G ∗ (F ∗ H)))))
-            (B ∗
-              (D ∗ (G ∗ (E ∗ (F ∗ H)))))
-            (sep_mono_r_ent B
-              (D ∗ (E ∗ (G ∗ (F ∗ H))))
-              (D ∗ (G ∗ (E ∗ (F ∗ H))))
-              (sep_mono_r_ent D
-                (E ∗ (G ∗ (F ∗ H)))
-                (G ∗ (E ∗ (F ∗ H)))
-                (sep_swap_ent E G (F ∗ H)))))
-    | swapDG : R3 ⊢ R4 =>
-        sep_mono_r_ent C (A ∗ (B ∗
-          (D ∗ (G ∗ (E ∗ (F ∗ H))))))
-          (A ∗ (B ∗
-            (G ∗ (D ∗ (E ∗ (F ∗ H))))))
-          (sep_mono_r_ent A
-            (B ∗
-              (D ∗ (G ∗ (E ∗ (F ∗ H)))))
-            (B ∗
-              (G ∗ (D ∗ (E ∗ (F ∗ H)))))
-            (sep_mono_r_ent B
-              (D ∗ (G ∗ (E ∗ (F ∗ H))))
-              (G ∗ (D ∗ (E ∗ (F ∗ H))))
-              (sep_swap_ent D G (E ∗ (F ∗ H)))))
-    | swapBG : R4 ⊢ R5 =>
-        sep_mono_r_ent C
-          (A ∗ (B ∗
-            (G ∗ (D ∗ (E ∗ (F ∗ H))))))
-          (A ∗ (G ∗
-            (B ∗ (D ∗ (E ∗ (F ∗ H))))))
-          (sep_mono_r_ent A
-            (B ∗
-              (G ∗ (D ∗ (E ∗ (F ∗ H)))))
-            (G ∗
-              (B ∗ (D ∗ (E ∗ (F ∗ H)))))
-            (sep_swap_ent B G
-              (D ∗ (E ∗ (F ∗ H)))))
-    | swapAG : R5 ⊢ R6 =>
-        sep_mono_r_ent C
-          (A ∗ (G ∗
-            (B ∗ (D ∗ (E ∗ (F ∗ H))))))
-          (G ∗ (A ∗
-            (B ∗ (D ∗ (E ∗ (F ∗ H))))))
-          (sep_swap_ent A G
-            (B ∗ (D ∗ (E ∗ (F ∗ H)))))
-    | swapFH : R6 ⊢ R7 =>
-        sep_mono_r_ent C (G ∗ (A ∗ (B ∗
-          (D ∗ (E ∗ (F ∗ H))))))
-          (G ∗ (A ∗ (B ∗
-            (D ∗ (E ∗ (H ∗ F))))))
-          (sep_mono_r_ent G
-            (A ∗ (B ∗
-              (D ∗ (E ∗ (F ∗ H)))))
-            (A ∗ (B ∗
-              (D ∗ (E ∗ (H ∗ F)))))
-            (sep_mono_r_ent A
-              (B ∗ (D ∗ (E ∗ (F ∗ H))))
-              (B ∗ (D ∗ (E ∗ (H ∗ F))))
-              (sep_mono_r_ent B
-                (D ∗ (E ∗ (F ∗ H)))
-                (D ∗ (E ∗ (H ∗ F)))
-                (sep_mono_r_ent D
-                  (E ∗ (F ∗ H))
-                  (E ∗ (H ∗ F))
-                  (sep_mono_r_ent E (F ∗ H)
-                    (H ∗ F) (sep_comm_ent F H))))))
-    | swapEH : R7 ⊢ R8 =>
-        sep_mono_r_ent C (G ∗ (A ∗ (B ∗
-          (D ∗ (E ∗ (H ∗ F))))))
-          (G ∗ (A ∗ (B ∗
-            (D ∗ (H ∗ (E ∗ F))))))
-          (sep_mono_r_ent G (A ∗ (B ∗
-            (D ∗ (E ∗ (H ∗ F)))))
-            (A ∗ (B ∗
-              (D ∗ (H ∗ (E ∗ F)))))
-            (sep_mono_r_ent A
-              (B ∗ (D ∗ (E ∗ (H ∗ F))))
-              (B ∗ (D ∗ (H ∗ (E ∗ F))))
-              (sep_mono_r_ent B
-                (D ∗ (E ∗ (H ∗ F)))
-                (D ∗ (H ∗ (E ∗ F)))
-                (sep_mono_r_ent D
-                  (E ∗ (H ∗ F))
-                  (H ∗ (E ∗ F))
-                  (sep_swap_ent E H F)))))
-    | swapDH : R8 ⊢ R9 =>
-        sep_mono_r_ent C (G ∗ (A ∗ (B ∗
-          (D ∗ (H ∗ (E ∗ F))))))
-          (G ∗ (A ∗ (B ∗
-            (H ∗ (D ∗ (E ∗ F))))))
-          (sep_mono_r_ent G (A ∗ (B ∗
-            (D ∗ (H ∗ (E ∗ F)))))
-            (A ∗ (B ∗
-              (H ∗ (D ∗ (E ∗ F)))))
-            (sep_mono_r_ent A
-              (B ∗ (D ∗ (H ∗ (E ∗ F))))
-              (B ∗ (H ∗ (D ∗ (E ∗ F))))
-              (sep_mono_r_ent B
-                (D ∗ (H ∗ (E ∗ F)))
-                (H ∗ (D ∗ (E ∗ F)))
-                (sep_swap_ent D H (E ∗ F)))))
-    | swapBH : R9 ⊢ R10 =>
-        sep_mono_r_ent C (G ∗ (A ∗
-          (B ∗ (H ∗ (D ∗ (E ∗ F))))))
-          (G ∗ (A ∗
-            (H ∗ (B ∗ (D ∗ (E ∗ F))))))
-          (sep_mono_r_ent G
-            (A ∗
-              (B ∗ (H ∗ (D ∗ (E ∗ F)))))
-            (A ∗
-              (H ∗ (B ∗ (D ∗ (E ∗ F)))))
-            (sep_mono_r_ent A
-              (B ∗ (H ∗ (D ∗ (E ∗ F))))
-              (H ∗ (B ∗ (D ∗ (E ∗ F))))
-              (sep_swap_ent B H (D ∗ (E ∗ F)))))
-    | swapAH : R10 ⊢ R11 =>
-        sep_mono_r_ent C
-          (G ∗ (A ∗
-            (H ∗ (B ∗ (D ∗ (E ∗ F))))))
-          (G ∗ (H ∗
-            (A ∗ (B ∗ (D ∗ (E ∗ F))))))
-          (sep_mono_r_ent G
-            (A ∗
-              (H ∗ (B ∗ (D ∗ (E ∗ F)))))
-            (H ∗
-              (A ∗ (B ∗ (D ∗ (E ∗ F)))))
-            (sep_swap_ent A H (B ∗ (D ∗ (E ∗ F)))))
-    | groupGH : R11 ⊢ R12 =>
-        sep_mono_r_ent C
-          (G ∗ (H ∗
-            (A ∗ (B ∗ (D ∗ (E ∗ F))))))
-          ((G ∗ H) ∗
-            (A ∗ (B ∗ (D ∗ (E ∗ F)))))
-          (sep_assoc_r_ent G H
-            (A ∗ (B ∗ (D ∗ (E ∗ F)))))
-    | groupC : R12 ⊢ Target =>
-        sep_assoc_r_ent C (G ∗ H)
-          (A ∗ (B ∗ (D ∗ (E ∗ F))))
-  \in properUPred_ent_trans
-      ((A ∗ (B ∗ C)) ∗
-        (D ∗ (E ∗ (F ∗ (G ∗ H)))))
-      R0 Target flatten
-      (properUPred_ent_trans R0 R1 Target moveC
-        (properUPred_ent_trans R1 R2 Target swapFG
-          (properUPred_ent_trans R2 R3 Target swapEG
-            (properUPred_ent_trans R3 R4 Target swapDG
-              (properUPred_ent_trans R4 R5 Target swapBG
-                (properUPred_ent_trans R5 R6 Target swapAG
-                  (properUPred_ent_trans R6 R7 Target swapFH
-                    (properUPred_ent_trans R7 R8 Target swapEH
-                      (properUPred_ent_trans R8 R9 Target swapDH
-                        (properUPred_ent_trans R9 R10 Target swapBH
-                          (properUPred_ent_trans R10 R11 Target swapAH
-                            (properUPred_ent_trans R11 R12 Target
-                              groupGH groupC))))))))))))
-
+  ipm $ iIntros "HABC HDEFGH" $
+    iDestruct "HABC" "HA HBC" $
+    iDestruct "HBC" "HB HC" $
+    iDestruct "HDEFGH" "HD HEFGH" $
+    iDestruct "HEFGH" "HE HFGH" $
+    iDestruct "HFGH" "HF HGH" $
+    iDestruct "HGH" "HG HH" $
+    iSplitL "HC HG HH"
+      (iFrame "HC" $ iFrame "HG" $ iExact "HH")
+      (iFrame "HA" $ iFrame "HB" $ iFrame "HD" $
+        iFrame "HE" $ iExact "HF")
 \func msc_read_prepared {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (w : msc_read_witness gam) (gamQ : gname)
@@ -6974,105 +5831,43 @@
         ((mkProperPure (length gam.msc_shard_names = gam.msc_size)) ∗
           ((msc_counter_auth G gam (nat_sum final.read_initial)) ∗
             (msc_shards H G a final.read_initial gam.msc_shard_names)))
-    | Source => Saved ∗
-        (Elem ∗ (LBs ∗ Body))
     | Bound => mkProperPure {iResUR S}
         (Actual <= nat_sum final.read_initial)
-    | Target => |==>
-        ((msc_inv H G gam a) ∗
-          (|> (Q Actual)))
-    | deriveBound : Source ⊢ Bound =>
-        properUPred_ent_trans Source (LBs ∗ Body) Bound
-          (properUPred_ent_trans Source
-            (Elem ∗ (LBs ∗ Body))
-            (LBs ∗ Body)
-            (sep_elim_r_ent Saved
-              (Elem ∗ (LBs ∗ Body)))
-            (sep_elim_r_ent Elem (LBs ∗ Body)))
-          (msc_read_scan_final_bound H G gam a reads final)
-    | withBound : Source ⊢ (Bound ∗ Source) =>
-        pure_consequence_frame_ent Source
-          (Actual <= nat_sum final.read_initial) deriveBound
-    | perBound : Actual <= nat_sum final.read_initial ->
-        Source ⊢ Target => \lam hbound =>
-        \let
-          | Ready => Fixed ∗
-              (Saved ∗ (Elem ∗ Requests))
-          | Updated => Fixed ∗
-              (|==>
-                (Requests' ∗ (|> (Q Actual))))
-          | Framed => |==>
-              (Fixed ∗
-                (Requests' ∗ (|> (Q Actual))))
-          | arrange : Source ⊢ Ready =>
-              properUPred_ent_trans Source
-                (Saved ∗
-                  (Elem ∗ (Fixed ∗ Requests))) Ready
-                (sep_mono_r_ent Saved
-                  (Elem ∗ (LBs ∗ Body))
-                  (Elem ∗ (Fixed ∗ Requests))
-                  (sep_mono_r_ent Elem (LBs ∗ Body)
-                    (Fixed ∗ Requests)
-                    (properUPred_ent_trans
-                      (LBs ∗ Body)
-                      (LBs ∗ (Fixed ∗ Requests))
-                      (Fixed ∗ Requests)
-                      (sep_mono_r_ent LBs Body
-                        (Fixed ∗ Requests)
-                        (msc_read_after_focus_requests H G gam a final))
-                      (sep_elim_r_ent LBs
-                        (Fixed ∗ Requests)))))
-                (properUPred_ent_trans
-                  (Saved ∗
-                    (Elem ∗ (Fixed ∗ Requests)))
-                  (Saved ∗
-                    (Fixed ∗ (Elem ∗ Requests))) Ready
-                  (sep_mono_r_ent Saved
-                    (Elem ∗ (Fixed ∗ Requests))
-                    (Fixed ∗ (Elem ∗ Requests))
-                    (sep_swap_ent Elem Fixed Requests))
-                  (sep_swap_ent Saved Fixed
-                    (Elem ∗ Requests)))
-          | update : Ready ⊢ Framed =>
-              properUPred_ent_trans Ready Updated Framed
-                (sep_mono_r_ent Fixed
-                  (Saved ∗ (Elem ∗ Requests))
-                  (|==>
-                    (Requests' ∗ (|> (Q Actual))))
-                  (msc_request_take H G gam
-                    (nat_sum final.read_initial) Actual gamQ id
-                    final.read_requests Q hbound))
-                (bupd_frame_l {UPredBiBUpd (iResUR S)} Fixed
-                  (Requests' ∗ (|> (Q Actual))))
-          | finish : (Fixed ∗
-                (Requests' ∗ (|> (Q Actual)))) ⊢
-              ((msc_inv H G gam a) ∗
-                (|> (Q Actual))) =>
-              properUPred_ent_trans
-                (Fixed ∗
-                  (Requests' ∗ (|> (Q Actual))))
-                ((Fixed ∗ Requests') ∗
-                  (|> (Q Actual)))
-                ((msc_inv H G gam a) ∗
-                  (|> (Q Actual)))
-                (sep_assoc_r_ent Fixed Requests'
-                  (|> (Q Actual)))
-                (sep_mono_l_ent (Fixed ∗ Requests')
-                  (msc_inv H G gam a) (|> (Q Actual))
-                  (msc_read_rebuild_focused H G gam a final
-                    (gdelete id final.read_requests)))
-        \in properUPred_ent_trans Source Ready Target arrange
-            (properUPred_ent_trans Ready Framed Target update
-              (bupd_mono
-                (Fixed ∗
-                  (Requests' ∗ (|> (Q Actual))))
-                ((msc_inv H G gam a) ∗
-                  (|> (Q Actual))) finish))
-  \in properUPred_ent_trans Source (Bound ∗ Source) Target
-      withBound
-      (pure_sep_l_elim (Actual <= nat_sum final.read_initial)
-        Source Target perBound)
-
+    | Source => Saved ∗ (Elem ∗ (LBs ∗ Body))
+    | Target => (msc_inv H G gam a) ∗ (|> (Q Actual))
+    | proof : Source ⊢ (|==> Target) =>
+      ipm $ iIntros "HSaved HRest" $
+        iDestruct "HRest" "HElem HRest" $
+        iDestruct "HRest" "HLBs HBody" $
+        iAssert "HBoundResources" "HLBs HBody"
+          (Bound ∗ (LBs ∗ Body))
+          (wp_apply (pure_consequence_frame_ent (LBs ∗ Body)
+            (Actual <= nat_sum final.read_initial)
+            (msc_read_scan_final_bound H G gam a reads final)) $
+            iFrame "HLBs" $ iExact "HBody")
+          (iDestruct "HBoundResources" "HBound HResources" $
+            iDestruct "HResources" "HLBs HBody" $
+            iDestruct "HBound" "%" $ \lam hbound =>
+              iAssert "HFocused" "HBody" (Fixed ∗ Requests)
+                (wp_apply (msc_read_after_focus_requests
+                  H G gam a final) $ iExact "HBody")
+                (iDestruct "HFocused" "HFixed HRequests" $
+                  iAssert "HUpdate" "HSaved HElem HRequests"
+                    (|==> (Requests' ∗ (|> (Q Actual))))
+                    (wp_apply (msc_request_take H G gam
+                      (nat_sum final.read_initial) Actual gamQ id
+                      final.read_requests Q hbound) $
+                      iFrame "HSaved" $ iFrame "HElem" $
+                        iExact "HRequests")
+                    (iMod "HUpdate" "HResult" $
+                      iDestruct "HResult" "HRequests' HLaterQ" $
+                      iModIntro $
+                      iSplitL "HFixed HRequests'"
+                        (wp_apply (msc_read_rebuild_focused H G gam a final
+                          (gdelete id final.read_requests)) $
+                          iFrame "HFixed" $ iExact "HRequests'")
+                        (iExact "HLaterQ"))))
+  \in proof
 \lemma msc_read_stage_resolve_finish {M : UCMRA}
     (Body Close Public Saved Elem LBs : ProperUPred M) :
   (Body ∗
@@ -7082,113 +5877,15 @@
     ((Saved ∗
         (Elem ∗ (LBs ∗ Body))) ∗
       (Close ∗ Public)) =>
-  \let
-    | Tail0 => Elem ∗ LBs
-    | S0 => Body ∗
-        (Close ∗
-          (Public ∗ (Saved ∗ Tail0)))
-    | S1 => Body ∗
-        (Saved ∗
-          (Close ∗ (Public ∗ Tail0)))
-    | S2 => Saved ∗
-        (Body ∗
-          (Close ∗ (Public ∗ Tail0)))
-    | Tail1 => Close ∗ (Public ∗ LBs)
-    | S3 => Saved ∗
-        (Body ∗ (Elem ∗ Tail1))
-    | S4 => Saved ∗
-        (Elem ∗ (Body ∗ Tail1))
-    | Tail2 => Body ∗
-        (Close ∗ (Public ∗ LBs))
-    | Tail3 => Body ∗
-        (Close ∗ (LBs ∗ Public))
-    | Tail4 => Body ∗
-        (LBs ∗ (Close ∗ Public))
-    | Tail5 => LBs ∗
-        (Body ∗ (Close ∗ Public))
-    | S5 => Saved ∗ (Elem ∗ Tail5)
-    | S6 => Saved ∗
-        (Elem ∗
-          ((LBs ∗ Body) ∗
-            (Close ∗ Public)))
-    | S7 => Saved ∗
-        ((Elem ∗ (LBs ∗ Body)) ∗
-          (Close ∗ Public))
-    | Target => (Saved ∗
-          (Elem ∗ (LBs ∗ Body))) ∗
-        (Close ∗ Public)
-  \in properUPred_ent_trans S0 S1 Target
-      (sep_mono_r_ent Body
-        (Close ∗
-          (Public ∗ (Saved ∗ Tail0)))
-        (Saved ∗
-          (Close ∗ (Public ∗ Tail0)))
-        (sep_rotate_third_front Close Public Saved Tail0))
-      (properUPred_ent_trans S1 S2 Target
-        (sep_swap_ent Body Saved
-          (Close ∗ (Public ∗ Tail0)))
-        (properUPred_ent_trans S2 S3 Target
-          (sep_mono_r_ent Saved
-            (Body ∗
-              (Close ∗ (Public ∗ Tail0)))
-            (Body ∗ (Elem ∗ Tail1))
-            (sep_mono_r_ent Body
-              (Close ∗ (Public ∗ (Elem ∗ LBs)))
-              (Elem ∗ Tail1)
-              (sep_rotate_third_front Close Public Elem LBs)))
-          (properUPred_ent_trans S3 S4 Target
-            (sep_mono_r_ent Saved
-              (Body ∗ (Elem ∗ Tail1))
-              (Elem ∗ (Body ∗ Tail1))
-              (sep_swap_ent Body Elem Tail1))
-            (properUPred_ent_trans S4 S5 Target
-              (sep_mono_r_ent Saved
-                (Elem ∗ Tail2)
-                (Elem ∗ Tail5)
-                (sep_mono_r_ent Elem Tail2 Tail5
-                  (properUPred_ent_trans Tail2 Tail3 Tail5
-                    (sep_mono_r_ent Body
-                      (Close ∗ (Public ∗ LBs))
-                      (Close ∗ (LBs ∗ Public))
-                      (sep_mono_r_ent Close
-                        (Public ∗ LBs)
-                        (LBs ∗ Public)
-                        (sep_comm_ent Public LBs)))
-                    (properUPred_ent_trans Tail3 Tail4 Tail5
-                      (sep_mono_r_ent Body
-                        (Close ∗ (LBs ∗ Public))
-                        (LBs ∗ (Close ∗ Public))
-                        (sep_swap_ent Close LBs Public))
-                      (sep_swap_ent Body LBs
-                        (Close ∗ Public))))))
-              (properUPred_ent_trans S5 S6 Target
-                (sep_mono_r_ent Saved
-                  (Elem ∗
-                    (LBs ∗
-                      (Body ∗ (Close ∗ Public))))
-                  (Elem ∗
-                    ((LBs ∗ Body) ∗
-                      (Close ∗ Public)))
-                  (sep_mono_r_ent Elem
-                    (LBs ∗
-                      (Body ∗ (Close ∗ Public)))
-                    ((LBs ∗ Body) ∗
-                      (Close ∗ Public))
-                    (sep_assoc_r_ent LBs Body
-                      (Close ∗ Public))))
-                (properUPred_ent_trans S6 S7 Target
-                  (sep_mono_r_ent Saved
-                    (Elem ∗
-                      ((LBs ∗ Body) ∗
-                        (Close ∗ Public)))
-                    ((Elem ∗ (LBs ∗ Body)) ∗
-                      (Close ∗ Public))
-                    (sep_assoc_r_ent Elem (LBs ∗ Body)
-                      (Close ∗ Public)))
-                  (sep_assoc_r_ent Saved
-                    (Elem ∗ (LBs ∗ Body))
-                    (Close ∗ Public))))))))
-
+  ipm $ iIntros "HBody HRest" $
+    iDestruct "HRest" "HClose HRest" $
+    iDestruct "HRest" "HPublic HRest" $
+    iDestruct "HRest" "HSaved HRest" $
+    iDestruct "HRest" "HElem HLBs" $
+    iSplitL "HSaved HElem HLBs HBody"
+      (iFrame "HSaved" $ iFrame "HElem" $
+        iFrame "HLBs" $ iExact "HBody")
+      (iFrame "HClose" $ iExact "HPublic")
 \lemma msc_read_close_registered {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a actual : Nat) (Q : Nat -> iProp S) :
@@ -9153,61 +7850,18 @@
     (T ∗
       (S ∗
         ((U ∗ Q) ∗ R))) =>
-  \let
-    | A0 => ((P ∗ Q) ∗
-          (R ∗ (S ∗ T))) ∗ U
-    | A1 => (Q ∗ (R ∗ (S ∗ T))) ∗ U
-    | QR => Q ∗ R
-    | ST => S ∗ T
-    | TS => T ∗ S
-    | A2 => (QR ∗ ST) ∗ U
-    | A3 => QR ∗ (ST ∗ U)
-    | A4 => ST ∗ (QR ∗ U)
-    | A5 => ST ∗ (U ∗ QR)
-    | A6 => TS ∗ (U ∗ QR)
-    | A7 => T ∗ (S ∗ (U ∗ QR))
-    | A8 => T ∗
-        (S ∗ ((U ∗ Q) ∗ R))
-    | drop : A0 ⊢ A1 =>
-        sep_mono_l_ent
-          ((P ∗ Q) ∗
-            (R ∗ (S ∗ T)))
-          (Q ∗ (R ∗ (S ∗ T))) U
-          (sep_mono_l_ent (P ∗ Q) Q
-            (R ∗ (S ∗ T))
-            (sep_elim_r_ent P Q))
-    | group : A1 ⊢ A2 =>
-        sep_mono_l_ent
-          (Q ∗ (R ∗ ST))
-          (QR ∗ ST) U
-          (sep_assoc_r_ent Q R ST)
-    | rotate : A2 ⊢ A4 =>
-        properUPred_ent_trans A2 A3 A4
-          (sep_assoc_l_ent QR ST U)
-          (sep_swap_ent QR ST U)
-    | swapRight : A4 ⊢ A5 =>
-        sep_mono_r_ent ST (QR ∗ U)
-          (U ∗ QR) (sep_comm_ent QR U)
-    | swapLeft : A5 ⊢ A6 =>
-        sep_mono_l_ent ST TS (U ∗ QR)
-          (sep_comm_ent S T)
-    | associateLeft : A6 ⊢ A7 =>
-        sep_assoc_l_ent T S (U ∗ QR)
-    | associateRight : A7 ⊢ A8 =>
-        sep_mono_r_ent T
-          (S ∗ (U ∗ QR))
-          (S ∗ ((U ∗ Q) ∗ R))
-          (sep_mono_r_ent S (U ∗ QR)
-            ((U ∗ Q) ∗ R)
-            (sep_assoc_r_ent U Q R))
-  \in properUPred_ent_trans A0 A1 A8 drop
-      (properUPred_ent_trans A1 A2 A8 group
-        (properUPred_ent_trans A2 A4 A8 rotate
-          (properUPred_ent_trans A4 A5 A8 swapRight
-            (properUPred_ent_trans A5 A6 A8 swapLeft
-              (properUPred_ent_trans A6 A7 A8 associateLeft
-                associateRight)))))
-
+  ipm $ iIntros "HPQR HU" $
+    iDestruct "HPQR" "HPQ HRST" $
+    iDestruct "HPQ" "HP HQ" $
+    iDestruct "HRST" "HR HST" $
+    iDestruct "HST" "HS HT" $
+    iSplitL "HT"
+      (iExact "HT")
+      (iSplitL "HS"
+        (iExact "HS")
+        (iSplitL "HU HQ"
+          (iFrame "HU" $ iExact "HQ")
+          (iExact "HR")))
 \func msc_initial_fixed {S : gFunctors} (G : mscG S)
     (gam : msc_name) (T : Nat) : iProp S =>
   ((mkProperPure (length gam.msc_shard_names = T)) ∗
@@ -11308,43 +9962,7 @@
     | A12 => ghost_map_auth GM qp_one m12
     | C => msc_counter_auth G gam total
     | F => msc_counter_frag G gam qp_one (base Nat.+ k1 Nat.+ k2)
-    | CF => C ∗ F
-    | Source => (A ∗ (E1 ∗ E2)) ∗ CF
-    | Ready1 => (A ∗ E1) ∗ (E2 ∗ CF)
-    | After1 => A1 ∗ (E2 ∗ CF)
-    | Ready2 => (A1 ∗ E2) ∗ CF
-    | After2 => A12 ∗ CF
-    | first : Ready1 ⊢ (|==> After1) =>
-        properUPred_ent_trans Ready1
-          ((|==> A1) ∗ (E2 ∗ CF))
-          (|==> After1)
-          (sep_mono_l_ent (A ∗ E1) (|==> A1)
-            (E2 ∗ CF) (ghost_map_delete GM m 1 (2, gamD)))
-          (bupd_frame_r A1 (E2 ∗ CF))
-    | second : Ready2 ⊢ (|==> After2) =>
-        properUPred_ent_trans Ready2
-          ((|==> A12) ∗ CF)
-          (|==> After2)
-          (sep_mono_l_ent (A1 ∗ E2) (|==> A12) CF
-            (ghost_map_delete GM m1 2 (2, gamD)))
-          (bupd_frame_r A12 CF)
-    | deleted : Source ⊢ (|==> After2) =>
-        properUPred_ent_trans Source Ready1 (|==> After2)
-          (properUPred_ent_trans Source
-            (((A ∗ E1) ∗ E2) ∗ CF) Ready1
-            (sep_mono_l_ent (A ∗ (E1 ∗ E2))
-              ((A ∗ E1) ∗ E2) CF
-              (sep_assoc_r_ent A E1 E2))
-            (sep_assoc_l_ent (A ∗ E1) E2 CF))
-          (properUPred_ent_trans Ready1
-            (|==> (|==> After2)) (|==> After2)
-            (properUPred_ent_trans Ready1 (|==> After1)
-              (|==> (|==> After2)) first
-              (bupd_mono After1 (|==> After2)
-                (properUPred_ent_trans After1 Ready2
-                  (|==> After2)
-                  (sep_assoc_r_ent A1 E2 CF) second)))
-            (bupd_trans After2))
+    | Source => (A ∗ (E1 ∗ E2)) ∗ (C ∗ F)
     | absent1 : glookup m12 1 = nothing =>
         glookup_delete_ne 2 1 m1 nat_two_ne_one *>
           glookup_delete_eq 1 m
@@ -11379,7 +9997,7 @@
     | indexEq : base Nat.+ k1 Nat.+ k2 = base Nat.+ 4 =>
         pmap (\lam z => base Nat.+ z Nat.+ k2) hk1 *>
           pmap (\lam z => base Nat.+ 2 Nat.+ z) hk2
-    | makeQ : CF ⊢
+    | makeQ : (C ∗ F) ⊢
         (C ∗ (msc_client_read_Q G gam base total)) =>
         sep_mono_r_ent C F (msc_client_read_Q G gam base total)
           (transport
@@ -11389,25 +10007,27 @@
             (inv indexEq)
             (pure_intro_sep_ent (total = base Nat.+ 4) totalEq
               (msc_counter_frag G gam qp_one (base Nat.+ 4))))
-    | finish : After2 ⊢
-        ((msc_client_inv G gam gamM gamD base) ∗
-          (C ∗ (msc_client_read_Q G gam base total))) =>
-        properUPred_ent_trans After2
-          ((msc_client_inv G gam gamM gamD base) ∗ CF)
-          ((msc_client_inv G gam gamM gamD base) ∗
-            (C ∗ (msc_client_read_Q G gam base total)))
-          (sep_mono_l_ent A12
-            (msc_client_inv G gam gamM gamD base) CF makeDone)
-          (sep_mono_r_ent (msc_client_inv G gam gamM gamD base) CF
-            (C ∗ (msc_client_read_Q G gam base total)) makeQ)
-  \in properUPred_ent_trans Source (|==> After2)
-      (|==>
-        ((msc_client_inv G gam gamM gamD base) ∗
-          (C ∗ (msc_client_read_Q G gam base total))))
-      deleted (bupd_mono After2
-        ((msc_client_inv G gam gamM gamD base) ∗
-          (C ∗ (msc_client_read_Q G gam base total))) finish)
-
+    | Target => (msc_client_inv G gam gamM gamD base) ∗
+        (C ∗ (msc_client_read_Q G gam base total))
+    | proof : Source ⊢ (|==> Target) =>
+      ipm $ iIntros "HMapElems HCounter" $
+        iDestruct "HMapElems" "HMap HElems" $
+        iDestruct "HElems" "HE1 HE2" $
+        iDestruct "HCounter" "HC HF" $
+        iAssert "HDelete1" "HMap HE1" (|==> A1)
+          (wp_apply (ghost_map_delete GM m 1 (2, gamD)) $
+            iFrame "HMap" $ iExact "HE1")
+          (iMod "HDelete1" "HMap1" $
+            iAssert "HDelete2" "HMap1 HE2" (|==> A12)
+              (wp_apply (ghost_map_delete GM m1 2 (2, gamD)) $
+                iFrame "HMap1" $ iExact "HE2")
+              (iMod "HDelete2" "HMap12" $
+                iModIntro $
+                iSplitL "HMap12"
+                  (wp_apply makeDone $ iExact "HMap12")
+                  (wp_apply makeQ $
+                    iFrame "HC" $ iExact "HF")))
+  \in proof
 \lemma msc_client_read_pending_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
     (base total : Nat) :
@@ -11708,103 +10328,14 @@
       (E ∗ F)) ⊢
     ((A ∗ (B ∗ (D ∗ F))) ∗
       (C ∗ E)) =>
-  \let
-    | S0 => (A ∗ (B ∗ (C ∗ D))) ∗
-        (E ∗ F)
-    | S1 => A ∗
-        ((B ∗ (C ∗ D)) ∗ (E ∗ F))
-    | S2 => A ∗ (B ∗
-        ((C ∗ D) ∗ (E ∗ F)))
-    | S3 => A ∗ (B ∗
-        (C ∗ (D ∗ (E ∗ F))))
-    | S4 => A ∗ (B ∗
-        (D ∗ (C ∗ (E ∗ F))))
-    | S5 => A ∗ (B ∗
-        (D ∗ (C ∗ (F ∗ E))))
-    | S6 => A ∗ (B ∗
-        (D ∗ (F ∗ (C ∗ E))))
-    | S7 => A ∗ (B ∗
-        ((D ∗ F) ∗ (C ∗ E)))
-    | S8 => A ∗
-        ((B ∗ (D ∗ F)) ∗ (C ∗ E))
-    | S9 => (A ∗ (B ∗ (D ∗ F))) ∗
-        (C ∗ E)
-  \in properUPred_ent_trans S0 S1 S9
-      (sep_assoc_l_ent A (B ∗ (C ∗ D))
-        (E ∗ F))
-      (properUPred_ent_trans S1 S2 S9
-        (sep_mono_r_ent A
-          ((B ∗ (C ∗ D)) ∗ (E ∗ F))
-          (B ∗
-            ((C ∗ D) ∗ (E ∗ F)))
-          (sep_assoc_l_ent B (C ∗ D) (E ∗ F)))
-        (properUPred_ent_trans S2 S3 S9
-          (sep_mono_r_ent A
-            (B ∗
-              ((C ∗ D) ∗ (E ∗ F)))
-            (B ∗
-              (C ∗ (D ∗ (E ∗ F))))
-            (sep_mono_r_ent B
-              ((C ∗ D) ∗ (E ∗ F))
-              (C ∗ (D ∗ (E ∗ F)))
-              (sep_assoc_l_ent C D (E ∗ F))))
-          (properUPred_ent_trans S3 S4 S9
-            (sep_mono_r_ent A
-              (B ∗
-                (C ∗ (D ∗ (E ∗ F))))
-              (B ∗
-                (D ∗ (C ∗ (E ∗ F))))
-              (sep_mono_r_ent B
-                (C ∗ (D ∗ (E ∗ F)))
-                (D ∗ (C ∗ (E ∗ F)))
-                (sep_swap_ent C D (E ∗ F))))
-            (properUPred_ent_trans S4 S5 S9
-              (sep_mono_r_ent A
-                (B ∗
-                  (D ∗ (C ∗ (E ∗ F))))
-                (B ∗
-                  (D ∗ (C ∗ (F ∗ E))))
-                (sep_mono_r_ent B
-                  (D ∗ (C ∗ (E ∗ F)))
-                  (D ∗ (C ∗ (F ∗ E)))
-                  (sep_mono_r_ent D
-                    (C ∗ (E ∗ F))
-                    (C ∗ (F ∗ E))
-                    (sep_mono_r_ent C (E ∗ F)
-                      (F ∗ E) (sep_comm_ent E F)))))
-              (properUPred_ent_trans S5 S6 S9
-                (sep_mono_r_ent A
-                  (B ∗
-                    (D ∗ (C ∗ (F ∗ E))))
-                  (B ∗
-                    (D ∗ (F ∗ (C ∗ E))))
-                  (sep_mono_r_ent B
-                    (D ∗ (C ∗ (F ∗ E)))
-                    (D ∗ (F ∗ (C ∗ E)))
-                    (sep_mono_r_ent D
-                      (C ∗ (F ∗ E))
-                      (F ∗ (C ∗ E))
-                      (sep_swap_ent C F E))))
-                (properUPred_ent_trans S6 S7 S9
-                  (sep_mono_r_ent A
-                    (B ∗
-                      (D ∗ (F ∗ (C ∗ E))))
-                    (B ∗
-                      ((D ∗ F) ∗ (C ∗ E)))
-                    (sep_mono_r_ent B
-                      (D ∗ (F ∗ (C ∗ E)))
-                      ((D ∗ F) ∗ (C ∗ E))
-                      (sep_assoc_r_ent D F (C ∗ E))))
-                  (properUPred_ent_trans S7 S8 S9
-                    (sep_mono_r_ent A
-                      (B ∗
-                        ((D ∗ F) ∗ (C ∗ E)))
-                      ((B ∗ (D ∗ F)) ∗
-                        (C ∗ E))
-                      (sep_assoc_r_ent B (D ∗ F)
-                        (C ∗ E)))
-                    (sep_assoc_r_ent A (B ∗ (D ∗ F))
-                      (C ∗ E)))))))))
+  ipm $ iIntros "HABCD HEF" $
+    iDestruct "HABCD" "HA HBCD" $
+    iDestruct "HBCD" "HB HCD" $
+    iDestruct "HCD" "HC HD" $
+    iDestruct "HEF" "HE HF" $
+    iSplitL "HA HB HD HF"
+      (iFrame "HA" $ iFrame "HB" $ iFrame "HD" $ iExact "HF")
+      (iFrame "HC" $ iExact "HE")
 
 \lemma msc_parallel_then_read {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)

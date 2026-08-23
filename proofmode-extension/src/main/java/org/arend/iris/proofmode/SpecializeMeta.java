@@ -23,6 +23,9 @@ final class SpecializeMeta extends ExactMeta {
   @Dependency(name = "pm_specialize")
   private ArendRef pmSpecialize;
 
+  @Dependency(name = "pm_specialize_intuitionistic")
+  private ArendRef pmSpecializeIntuitionistic;
+
   @Dependency(name = "pm_delete")
   private ArendRef pmDelete;
 
@@ -61,11 +64,6 @@ final class SpecializeMeta extends ExactMeta {
 
     ResolvedSelection wandSelection = resolveNamed(typechecker, contextData, wandName);
     if (wandSelection == null) return null;
-    if (wandSelection.persistent()) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "iSpecialize expected a spatial wand hypothesis", contextData.getMarker()));
-      return null;
-    }
     CoreExpression wandProposition = weakHead(typechecker,
         wandSelection.selection().proposition());
     if (!(wandProposition instanceof CoreFunCallExpression wand)
@@ -87,15 +85,19 @@ final class SpecializeMeta extends ExactMeta {
     if (spatial == null) return null;
 
     var factory = contextData.getFactory();
-    var deleteArgs = new ArrayList<ConcreteArgument>();
-    deleteArgs.add(factory.arg(factory.hole(), false));
-    deleteArgs.add(factory.arg(name(contextData, wandName), true));
-    deleteArgs.add(factory.arg(factory.core(spatial.computeTyped()), true));
-    TypedExpression remaining = typechecker.typecheck(
-        factory.app(factory.ref(pmDelete), deleteArgs), null);
-    if (remaining == null) return null;
+    CoreExpression argumentEnvironment = spatial;
+    if (!wandSelection.persistent()) {
+      var deleteArgs = new ArrayList<ConcreteArgument>();
+      deleteArgs.add(factory.arg(factory.hole(), false));
+      deleteArgs.add(factory.arg(name(contextData, wandName), true));
+      deleteArgs.add(factory.arg(factory.core(spatial.computeTyped()), true));
+      TypedExpression remaining = typechecker.typecheck(
+          factory.app(factory.ref(pmDelete), deleteArgs), null);
+      if (remaining == null) return null;
+      argumentEnvironment = remaining.getExpression();
+    }
     BuiltSelection argumentSelection = selection(typechecker, contextData,
-        remaining.getExpression(), argumentName, false);
+        argumentEnvironment, argumentName, false);
     if (argumentSelection == null) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "No spatial proof-mode hypothesis named '" + argumentName + "'",
@@ -116,6 +118,12 @@ final class SpecializeMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
+    if (wandSelection.persistent() && resultName.equals(wandName)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "iSpecialize cannot replace a reusable intuitionistic wand",
+          contextData.getMarker()));
+      return null;
+    }
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -129,7 +137,8 @@ final class SpecializeMeta extends ExactMeta {
     args.add(factory.arg(refl(contextData, wandProposition), true));
     args.add(factory.arg(refl(contextData, argumentProposition), true));
     args.add(factory.arg(explicitArguments(contextData).get(3), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmSpecialize), args),
+    return typechecker.typecheck(factory.app(factory.ref(wandSelection.persistent()
+            ? pmSpecializeIntuitionistic : pmSpecialize), args),
         contextData.getExpectedType());
   }
 }

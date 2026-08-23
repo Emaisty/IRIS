@@ -12,7 +12,9 @@
 \import iris.algebra.coPset
 \import iris.base_logic.lib.gfunctors
 \import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.wsat
 \import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.fancy_updates_mask (fupd_intro)
 \import iris.base_logic.lib.invariants
 \import stdpp.coPset
 \import iris.program_logic.weakestpre \hiding (wp_value)
@@ -224,10 +226,30 @@
   : ((P -∗ Q) ∗ P) ⊢ Q =>
   ipm $ iIntros "HW HP" $ iApply "HW" $ iExact "HP"
 
+\lemma proofmode_apply_intuitionistic_reuse {M : UCMRA}
+    (P Q : ProperUPred M) :
+  ((<#> (P -∗ Q)) ∗ (P ∗ P)) ⊢ (Q ∗ Q) =>
+  ipm $ iIntros "HPersistent HPP" $
+    iDestruct "HPersistent" "#HW" $
+    iDestruct "HPP" "HP1 HP2" $
+    iSplitL "HP1"
+      (iApply "HW" $ iExact "HP1")
+      (iApply "HW" $ iExact "HP2")
+
 \lemma proofmode_specialize {M : UCMRA} (P Q R : ProperUPred M)
   : (((P -∗ Q) ∗ P) ∗ R) ⊢ (Q ∗ R) =>
   ipm $ iIntros "HPAIR HR" $ iDestruct "HPAIR" "HW HP" $
     iSpecialize "HW" "HP" "HQ" $ iFrame "HQ" $ iExact "HR"
+
+\lemma proofmode_specialize_intuitionistic_reuse {M : UCMRA}
+    (P Q : ProperUPred M) :
+  ((<#> (P -∗ Q)) ∗ (P ∗ P)) ⊢ (Q ∗ Q) =>
+  ipm $ iIntros "HPersistent HPP" $
+    iDestruct "HPersistent" "#HW" $
+    iDestruct "HPP" "HP1 HP2" $
+    iSpecialize "HW" "HP1" "HQ1" $
+    iSpecialize "HW" "HP2" "HQ2" $
+    iFrame "HQ1" $ iExact "HQ2"
 
 \lemma proofmode_rewrite {M : UCMRA} (P Q : ProperUPred M)
   : ((mkProperInternalEq {M} {UPredOFE M} P Q) ∗ Q) ⊢ P =>
@@ -253,6 +275,21 @@
   : ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
   ipm $ iIntros "HU HE" $ iMod "HU" "HP" $
     iModIntro $ iExact "HP"
+
+\lemma proofmode_fupd_mod {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P : iProp S)
+  : ((mkProperFUpd W E1 E2 P) ∗ mkProperEmp) ⊢
+      (mkProperFUpd W E1 E2 P) =>
+  ipm $ iIntros "HU HE" $ iMod "HU" "HP" $
+    wp_apply (fupd_intro W E2 P) $ iExact "HP"
+
+\func proofmode_fupd_mod_mask_mismatch_fails {S : gFunctors}
+    (W : wsatGS S) (E1 E2 E3 : coPset) (P : iProp S) : \Sigma =>
+  fails
+    (ipm $ iIntros "HU HE" $ iMod "HU" "HP" $
+      wp_apply (fupd_intro W E2 P) $ iExact "HP" :
+      ((mkProperFUpd W E1 E2 P) ∗ mkProperEmp) ⊢
+        (mkProperFUpd W E1 E3 P))
 
 \lemma proofmode_split_l {M : UCMRA} (P Q R : ProperUPred M)
   : (P ∗ (Q ∗ R)) ⊢ ((P ∗ R) ∗ Q) =>
@@ -451,7 +488,19 @@
 \func proofmode_duplicate_intro_fails {M : UCMRA} (P Q : ProperUPred M)
   : \Sigma => fails (ipm $ iIntros "H H" $ iExact "H" : (P ∗ Q) ⊢ P)
 
+\func proofmode_intro_without_goal_fails {M : UCMRA}
+    (P Q : ProperUPred M) : \Sigma =>
+  fails (ipm $ wp_apply (properUPred_ent_refl (P ∗ Q)) $
+    iIntros "HP HQ" $ iExact "HP" : (P ∗ Q) ⊢ P)
+
 \func proofmode_specialize_mismatch_fails {M : UCMRA}
     (P Q R : ProperUPred M) : \Sigma =>
   fails (ipm $ iIntros "HW HR" $
     iSpecialize "HW" "HR" "HQ" $ iExact "HQ" : ((P -∗ Q) ∗ R) ⊢ Q)
+
+\func proofmode_specialize_intuitionistic_overwrite_fails {M : UCMRA}
+    (P Q : ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HPersistent HP" $
+    iDestruct "HPersistent" "#HW" $
+    iSpecialize "HW" "HP" "HW" $ iExact "HW" :
+      ((<#> (P -∗ Q)) ∗ P) ⊢ Q)
