@@ -44,6 +44,7 @@
 \import iris_heap_lang.lang
 \import iris_heap_lang.lang_ectx
 \import iris_heap_lang.lang_subst
+\import iris.proofmode.heap_lang (pm_wp_let)
 \import stdpp.coPset
 \import stdpp.namespaces
 \import stdpp.pmap (xH, xO, xI, pos_len, pos_pad, pos_pad_len, pmap_depth', plookup', plookup'_beyond_depth)
@@ -51,8 +52,9 @@
 \import examples.parallel_counter_model
 \import examples.parallel_counter_ghost
 \import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
-  iAssumption, iSplitL, iAssert, iNext, iSpecialize, iExists, iPureIntro, iRewrite,
-  wp_apply, wp_bind, wp_pures)
+  iAssumption, iSplitL, iAssert, iEmpIntro, iNext, iSpecialize,
+  iExists, iPureIntro, iRewrite,
+  wp_apply, wp_smart_apply, wp_bind, wp_pures)
 
 -- The exclusive token used by the Rocq spawn/join library.  It remains a
 -- separate functor requirement, since heap state and counter ghost state can
@@ -477,7 +479,7 @@
         (WP H coPset_universe Call FramedPost)
         (WP H coPset_universe Call Continue) framed
         (wp_mono H coPset_universe Call FramedPost Continue next))
-      (wp_letE H coPset_universe nR Call StoreBody H.iris_fork_post)
+      (pm_wp_let H coPset_universe nR Call StoreBody H.iris_fork_post)
 
 \func spawn_post {S : gFunctors} (H : irisGS natCountable S)
     (SG : spawnG S) (Psi : Value -> iProp S) (returned : Value) : iProp S =>
@@ -620,7 +622,7 @@
         (WP H coPset_universe
           (seqE (Fork ChildE) (Val (LitV (LitLoc l))))
           (spawn_post H SG Psi)) forked
-        (wp_letE H coPset_universe nIgnore (Fork ChildE)
+        (pm_wp_let H coPset_universe nIgnore (Fork ChildE)
           (Val (LitV (LitLoc l))) (spawn_post H SG Psi)))
 
 \lemma spawn_allocate_inv_run {S : gFunctors}
@@ -868,7 +870,7 @@
             (WP H coPset_universe AllocE FramedPost)
             (WP H coPset_universe AllocE Continue) allocated
             (wp_mono H coPset_universe AllocE FramedPost Continue continue))
-          (wp_letE H coPset_universe nHandle AllocE
+          (pm_wp_let H coPset_universe nHandle AllocE
             (seqE
               (Fork (letE nR (App (Val f) (Val unitV))
                 (Store (Var nHandle)
@@ -1537,7 +1539,7 @@
           (WP H coPset_universe
             (Load (Val (LitV (LitLoc l)))) Phi)
           (WP H coPset_universe (join_loop l) Psi) load
-          (wp_letE H coPset_universe nCell
+          (pm_wp_let H coPset_universe nCell
             (Load (Val (LitV (LitLoc l))))
             (If (Fst (Var nCell)) (Snd (Var nCell))
               (App (Val join) (Val (LitV (LitLoc l))))) Psi)
@@ -1668,7 +1670,7 @@
               joined (wp_mono H coPset_universe JoinCall JoinPost
                 (\lam v1 => WP H coPset_universe
                   (Pair (Val v1) (Val v2)) Post) next))
-            (wp_letE H coPset_universe nX JoinCall
+            (pm_wp_let H coPset_universe nX JoinCall
               (Pair (Var nX) (Val v2)) Post)
     | rightFramed : (Handle ∗ (WP H coPset_universe RightCall Psi2)) ⊢
         (WP H coPset_universe RightCall RightPost) =>
@@ -1704,7 +1706,7 @@
           (\lam v2 => WP H coPset_universe
             (letE nX JoinCall (Pair (Var nX) (Val v2))) Post)
           nextRight))
-      (wp_letE H coPset_universe nY RightCall
+      (pm_wp_let H coPset_universe nY RightCall
         (letE nX JoinCall (Pair (Var nX) (Var nY))) Post)
 
 \lemma par_after_spawn {S : gFunctors}
@@ -1831,7 +1833,7 @@
             (letE nY (App (Val f2) (Val unitV))
               (letE nX (App (Val join) (Val returned))
                 (Pair (Var nX) (Var nY)))) Post) next))
-      (wp_letE H coPset_universe nHandle SpawnCall
+      (pm_wp_let H coPset_universe nHandle SpawnCall
         (letE nY (App (Val f2) (Val unitV))
           (letE nX (App (Val join) (Var nHandle))
             (Pair (Var nX) (Var nY)))) Post)
@@ -3046,39 +3048,8 @@
             (A ∗ (Q r))))
     | States => big_sepM requests (\lam _ request =>
         msc_read_state H G gam r request)
-    | Input0 => Saved ∗ (W ∗ P)
-    | Input1 => W ∗ (P ∗ Saved)
-    | X => (P ∗ Saved) ∗ States
-    | Tail0 => Input0 ∗ States
-    | Tail1 => W ∗ X
-    | Source => A ∗ (Map ∗ Tail0)
-    | S1 => A ∗ (Map ∗ Tail1)
-    | S2 => A ∗ (W ∗ (Map ∗ X))
-    | S3 => W ∗ (A ∗ (Map ∗ X))
     | Frame => Saved ∗ (Map ∗ States)
-    | Rest0 => A ∗ (Map ∗ X)
-    | Rest1 => A ∗ (Map ∗
-        (P ∗ (Saved ∗ States)))
-    | Rest2 => A ∗ (P ∗
-        (Map ∗ (Saved ∗ States)))
-    | Rest3 => A ∗ (P ∗ Frame)
-    | Rest4 => (A ∗ P) ∗ Frame
-    | Ready => W ∗ Rest4
-    | SplitReady => (W ∗ (A ∗ P)) ∗ Frame
-    | FirstUpdated => (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-          (A ∗ (Q r))) ∗ Frame
-    | FirstFramed => mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-        ((A ∗ (Q r)) ∗ Frame)
     | Body0 => (A ∗ (Q r)) ∗ Frame
-    | B1 => A ∗ ((Q r) ∗ Frame)
-    | B2 => A ∗ (Saved ∗
-        ((Q r) ∗ (Map ∗ States)))
-    | B3 => A ∗ (Saved ∗
-        (Map ∗ ((Q r) ∗ States)))
-    | B4 => A ∗ (Map ∗
-        (Saved ∗ ((Q r) ∗ States)))
-    | Prepared0 => A ∗ (Map ∗
-        ((Saved ∗ (Q r)) ∗ States))
     | State => msc_read_state H G gam r (r, gamQ)
     | Prepared => A ∗ (Map ∗
         (State ∗ States))
@@ -3088,142 +3059,52 @@
     | Exists => mkProperExist Nat (\lam j => A ∗
         ((msc_requests H G gam r (ginsert j (r, gamQ) requests)) ∗
           (ghost_map_elem (msc_requestGS G gam) j (r, gamQ))))
-    | inputArrange : Input0 ⊢ Input1 =>
-        properUPred_ent_trans Input0 (W ∗ (Saved ∗ P)) Input1
-          (sep_swap_ent Saved W P)
-          (sep_mono_r_ent W (Saved ∗ P)
-            (P ∗ Saved) (sep_comm_ent Saved P))
-    | sourceStep1 : Source ⊢ S1 =>
-        sep_mono_r_ent A (Map ∗ Tail0)
-          (Map ∗ Tail1)
-          (sep_mono_r_ent Map Tail0 Tail1
-            (properUPred_ent_trans Tail0 (Input1 ∗ States) Tail1
-              (sep_mono_l_ent Input0 Input1 States inputArrange)
-              (sep_assoc_l_ent W (P ∗ Saved) States)))
-    | rest01 : Rest0 ⊢ Rest1 =>
-        sep_mono_r_ent A (Map ∗ X)
-          (Map ∗ (P ∗ (Saved ∗ States)))
-          (sep_mono_r_ent Map X
-            (P ∗ (Saved ∗ States))
-            (sep_assoc_l_ent P Saved States))
-    | rest12 : Rest1 ⊢ Rest2 =>
-        sep_mono_r_ent A
-          (Map ∗ (P ∗ (Saved ∗ States)))
-          (P ∗ (Map ∗ (Saved ∗ States)))
-          (sep_swap_ent Map P (Saved ∗ States))
-    | rest23 : Rest2 ⊢ Rest3 =>
-        sep_mono_r_ent A
-          (P ∗ (Map ∗ (Saved ∗ States)))
-          (P ∗ Frame)
-          (sep_mono_r_ent P
-            (Map ∗ (Saved ∗ States)) Frame
-            (sep_swap_ent Map Saved States))
-    | rest34 : Rest3 ⊢ Rest4 => sep_assoc_r_ent A P Frame
-    | rest02 : Rest0 ⊢ Rest2 =>
-        properUPred_ent_trans Rest0 Rest1 Rest2 rest01 rest12
-    | rest04 : Rest0 ⊢ Rest4 =>
-        properUPred_ent_trans Rest0 Rest2 Rest4 rest02
-          (properUPred_ent_trans Rest2 Rest3 Rest4 rest23 rest34)
-    | source12 : S1 ⊢ S2 =>
-        sep_mono_r_ent A (Map ∗ Tail1)
-          (W ∗ (Map ∗ X)) (sep_swap_ent Map W X)
-    | source23 : S2 ⊢ S3 => sep_swap_ent A W (Map ∗ X)
-    | source3Ready : S3 ⊢ Ready =>
-        sep_mono_r_ent W Rest0 Rest4 rest04
-    | sourceReadySplit : Ready ⊢ SplitReady =>
-        sep_assoc_r_ent W (A ∗ P) Frame
-    | source2Split : S2 ⊢ SplitReady =>
-        properUPred_ent_trans S2 S3 SplitReady source23
-          (properUPred_ent_trans S3 Ready SplitReady source3Ready sourceReadySplit)
-    | sourceRest : S1 ⊢ SplitReady =>
-        properUPred_ent_trans S1 S2 SplitReady source12 source2Split
-    | sourceArrange : Source ⊢ SplitReady =>
-        properUPred_ent_trans Source S1 SplitReady sourceStep1 sourceRest
-    | body01 : Body0 ⊢ B1 => sep_assoc_l_ent A (Q r) Frame
-    | body12 : B1 ⊢ B2 =>
-        sep_mono_r_ent A ((Q r) ∗ Frame)
-          (Saved ∗ ((Q r) ∗ (Map ∗ States)))
-          (sep_swap_ent (Q r) Saved (Map ∗ States))
-    | body23 : B2 ⊢ B3 =>
-        sep_mono_r_ent A
-          (Saved ∗ ((Q r) ∗ (Map ∗ States)))
-          (Saved ∗ (Map ∗ ((Q r) ∗ States)))
-          (sep_mono_r_ent Saved
-            ((Q r) ∗ (Map ∗ States))
-            (Map ∗ ((Q r) ∗ States))
-            (sep_swap_ent (Q r) Map States))
-    | body34 : B3 ⊢ B4 =>
-        sep_mono_r_ent A
-          (Saved ∗ (Map ∗ ((Q r) ∗ States)))
-          (Map ∗ (Saved ∗ ((Q r) ∗ States)))
-          (sep_swap_ent Saved Map ((Q r) ∗ States))
-    | body4Prepared0 : B4 ⊢ Prepared0 =>
-        sep_mono_r_ent A
-          (Map ∗ (Saved ∗ ((Q r) ∗ States)))
-          (Map ∗ ((Saved ∗ (Q r)) ∗ States))
-          (sep_mono_r_ent Map
-            (Saved ∗ ((Q r) ∗ States))
-            ((Saved ∗ (Q r)) ∗ States)
-            (sep_assoc_r_ent Saved (Q r) States))
-    | bodyPrepared : Prepared0 ⊢ Prepared =>
-        sep_mono_r_ent A
-          (Map ∗ ((Saved ∗ (Q r)) ∗ States))
-          (Map ∗ (State ∗ States))
-          (sep_mono_r_ent Map
-            ((Saved ∗ (Q r)) ∗ States)
-            (State ∗ States)
-            (sep_mono_l_ent (Saved ∗ (Q r)) State States
-              (msc_done_intro H G gam r r gamQ Q <=-refl)))
-    | body02 : Body0 ⊢ B2 =>
-        properUPred_ent_trans Body0 B1 B2 body01 body12
-    | body24 : B2 ⊢ B4 =>
-        properUPred_ent_trans B2 B3 B4 body23 body34
-    | body0Prepared0 : Body0 ⊢ Prepared0 =>
-        properUPred_ent_trans Body0 B2 Prepared0 body02
-          (properUPred_ent_trans B2 B4 Prepared0 body24 body4Prepared0)
     | bodyArrange : Body0 ⊢ Prepared =>
-        properUPred_ent_trans Body0 Prepared0 Prepared body0Prepared0 bodyPrepared
+        ipm $ iIntros "HAQ HFrame" $
+          iDestruct "HAQ" "HA HQ" $
+          iDestruct "HFrame" "HSaved HMapStates" $
+          iDestruct "HMapStates" "HMap HStates" $
+          iAssert "HState" "HSaved HQ" State
+            (wp_apply (msc_done_intro H G gam r r gamQ Q <=-refl) $
+              wp_apply (properUPred_ent_refl (Saved ∗ (Q r))) $
+              iFrame "HSaved" $ iExact "HQ")
+            (wp_apply (properUPred_ent_refl Prepared) $
+              iFrame "HA" $ iFrame "HMap" $
+              iFrame "HState" $ iExact "HStates")
     | continue : Body0 ⊢
         (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists) =>
-        properUPred_ent_trans Body0 Prepared
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-          bodyArrange
-          (properUPred_ent_trans Prepared (|==> Result)
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-            (msc_request_insert H G gam A r requests id r gamQ fresh)
-            (properUPred_ent_trans (|==> Result)
-              (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Result)
-              (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-              (bupd_fupd H.iris_wsat msc_open_mask Result)
-              (fupd_mono H.iris_wsat msc_open_mask msc_open_mask Result Exists
-                (exist_intro_ent (\lam j => A ∗
-                  ((msc_requests H G gam r
-                      (ginsert j (r, gamQ) requests)) ∗
-                    (ghost_map_elem (msc_requestGS G gam) j (r, gamQ)))) id))))
-  \in properUPred_ent_trans Source SplitReady
-      (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-      sourceArrange
-      (properUPred_ent_trans SplitReady FirstUpdated
+        ipm $ iIntros "HAQ HFrame" $
+          wp_apply (fupd_mono H.iris_wsat msc_open_mask msc_open_mask
+            Result Exists
+            (exist_intro_ent (\lam j => A ∗
+              ((msc_requests H G gam r
+                  (ginsert j (r, gamQ) requests)) ∗
+                (ghost_map_elem (msc_requestGS G gam) j (r, gamQ)))) id)) $
+          wp_apply (bupd_fupd H.iris_wsat msc_open_mask Result) $
+          wp_apply (msc_request_insert H G gam A r requests id r gamQ fresh) $
+          wp_apply bodyArrange $
+          wp_apply (properUPred_ent_refl Body0) $
+          iFrame "HAQ" $ iExact "HFrame"
+  \in ipm $ iIntros "HA HRest" $
+      iDestruct "HRest" "HMap HTail" $
+      iDestruct "HTail" "HInput HStates" $
+      iDestruct "HInput" "HSaved HWP" $
+      iDestruct "HWP" "HW HP" $
+      wp_apply (fupd_trans H.iris_wsat msc_open_mask msc_open_mask
+        msc_open_mask Exists) $
+      wp_apply (fupd_mono H.iris_wsat msc_open_mask msc_open_mask Body0
         (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-        (sep_mono_l_ent (W ∗ (A ∗ P))
+        continue) $
+      wp_apply (fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
+        (A ∗ (Q r)) Frame) $
+      iSplitL "HW HA HP"
+        (wp_apply (persistently_wand_elim_ent (A ∗ P)
           (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            (A ∗ (Q r))) Frame
-          (persistently_wand_elim_ent (A ∗ P)
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-              (A ∗ (Q r)))))
-        (properUPred_ent_trans FirstUpdated FirstFramed
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-          (fupd_frame_r H.iris_wsat msc_open_mask msc_open_mask
-            (A ∗ (Q r)) Frame)
-          (properUPred_ent_trans FirstFramed
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-              (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists))
-            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-            (fupd_mono H.iris_wsat msc_open_mask msc_open_mask Body0
-              (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists)
-              continue)
-            (fupd_trans H.iris_wsat msc_open_mask msc_open_mask
-              msc_open_mask Exists))))
+            (A ∗ (Q r)))) $
+          wp_apply (properUPred_ent_refl (W ∗ (A ∗ P))) $
+          iFrame "HW" $ iFrame "HA" $ iExact "HP")
+        (wp_apply (properUPred_ent_refl Frame) $
+          iFrame "HSaved" $ iFrame "HMap" $ iExact "HStates")
 
 -- Rocq `msc_request_register`, with the spatial context grouped to expose the
 -- exact state consumed by the two arithmetic branches.
@@ -4760,48 +4641,6 @@
                 (Val (LitV (LitLoc a))) (Val (natV T))
                 (Var nNextI) (Var nNextAcc)))))) => idp
 
--- Call-by-value let sequencing, derived once so the operation proofs can
--- follow the source program instead of repeating the Lam/App plumbing.
-\lemma wp_letE {S : gFunctors} (H : irisGS natCountable S)
-    (E : coPset) (x : Name) (rhs body : Expr)
-    (Phi : Value -> iProp S) :
-  (WP H E rhs (\lam v => WP H E (subst x v body) Phi)) ⊢
-    (WP H E (letE x rhs body) Phi) =>
-  \let
-    | LamV0 => LamV x body
-    | AppPost : Value -> iProp S => \lam v =>
-        WP H E (App (Val LamV0) (Val v)) Phi
-    | LamPost : Value -> iProp S => \lam vf =>
-        WP H E (App (Val vf) rhs) Phi
-    | specialize : \Pi (v : Value) -> (WP H E (subst x v body) Phi) ⊢ (AppPost v) =>
-        \lam v => wp_lam_beta H E x body v Phi
-    | rhsToApp : (WP H E rhs (\lam v => WP H E (subst x v body) Phi)) ⊢
-        (WP H E (App (Val LamV0) rhs) Phi) =>
-        properUPred_ent_trans
-          (WP H E rhs (\lam v => WP H E (subst x v body) Phi))
-          (WP H E rhs AppPost)
-          (WP H E (App (Val LamV0) rhs) Phi)
-          (wp_mono H E rhs
-            (\lam v => WP H E (subst x v body) Phi) AppPost specialize)
-          (wp_bind_app_r H E LamV0 rhs Phi)
-    | exposeLam : (WP H E (App (Val LamV0) rhs) Phi) ⊢
-        (WP H E (letE x rhs body) Phi) =>
-        properUPred_ent_trans
-          (WP H E (App (Val LamV0) rhs) Phi)
-          (WP H E (Val LamV0) LamPost)
-          (WP H E (letE x rhs body) Phi)
-          (wp_value_intro H E LamV0 LamPost)
-          (properUPred_ent_trans
-            (WP H E (Val LamV0) LamPost)
-            (WP H E (Lam x body) LamPost)
-            (WP H E (letE x rhs body) Phi)
-            (wp_lam_expr H E x body LamPost)
-            (wp_bind_app_l H E (Lam x body) rhs Phi))
-  \in properUPred_ent_trans
-      (WP H E rhs (\lam v => WP H E (subst x v body) Phi))
-      (WP H E (App (Val LamV0) rhs) Phi)
-      (WP H E (letE x rhs body) Phi) rhsToApp exposeLam
-
 -- Four beta steps expose one iteration of the concrete recursive scan.
 \lemma msc_sum_loop_unfold_wp {S : gFunctors}
     (H : irisGS natCountable S) (a T i acc : Nat)
@@ -4811,108 +4650,10 @@
       (app4 (Val msc_sum_loop)
         (Val (LitV (LitLoc a))) (Val (natV T))
         (Val (natV i)) (Val (natV acc))) Phi) =>
-  \let
-    | A => LitV (LitLoc a)
-    | VT => natV T
-    | VI => natV i
-    | VAcc => natV acc
-    | Iter : Expr -> Expr -> Expr -> Expr -> Expr -> Expr =>
-        \lam sum av tv iv accv =>
-          If (NatEq iv tv) accv
-            (letE nL (LocAdd av iv)
-              (letE nN (Load (Var nL))
-                (letE nNextI (NatAdd iv (Val (natV 1)))
-                  (letE nNextAcc (NatAdd accv (Var nN))
-                    (app4 sum av tv
-                      (Var nNextI) (Var nNextAcc))))))
-    | Core => msc_sum_loop_unfold a T i acc
-    | AccBody => msc_sum_loop_unfold_acc a T i
-    | LamAcc => LamV nAcc AccBody
-    | BodyI => Lam nAcc
-        (Iter (Val msc_sum_loop) (Val A) (Val VT)
-          (Var nI) (Var nAcc))
-    | LamI => LamV nI BodyI
-    | BodyT => Lam nI (Lam nAcc
-        (Iter (Val msc_sum_loop) (Val A) (Var nT)
-          (Var nI) (Var nAcc)))
-    | LamT => LamV nT BodyT
-    | BodyRec => Lam nT (Lam nI (Lam nAcc
-        (Iter (Var nSum) (Var nA) (Var nT)
-          (Var nI) (Var nAcc))))
-    | F1 => App (Val msc_sum_loop) (Val A)
-    | F2 => App F1 (Val VT)
-    | F3 => App F2 (Val VI)
-    | PsiAcc : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) (Val VAcc)) Phi
-    | PsiI : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) (Val VI)) PsiAcc
-    | PsiT : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) (Val VT)) PsiI
-    | accBeta : (WP H mscE Core Phi) ⊢
-        (PsiAcc LamAcc) =>
-        wp_lam_beta H mscE nAcc AccBody VAcc Phi
-    | accLam : (WP H mscE Core Phi) ⊢
-        (WP H mscE (Lam nAcc AccBody) PsiAcc) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE (Val LamAcc) PsiAcc)
-          (WP H mscE (Lam nAcc AccBody) PsiAcc)
-          (properUPred_ent_trans (WP H mscE Core Phi)
-            (PsiAcc LamAcc) (WP H mscE (Val LamAcc) PsiAcc)
-            accBeta (wp_value_intro H mscE LamAcc PsiAcc))
-          (wp_lam_expr H mscE nAcc AccBody PsiAcc)
-    | iBeta : (WP H mscE Core Phi) ⊢
-        (PsiI LamI) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE (Lam nAcc AccBody) PsiAcc)
-          (PsiI LamI) accLam
-          (wp_lam_beta H mscE nI BodyI VI PsiAcc)
-    | iLam : (WP H mscE Core Phi) ⊢
-        (WP H mscE (Lam nI BodyI) PsiI) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (PsiI LamI)
-          (WP H mscE (Lam nI BodyI) PsiI)
-          iBeta
-          (properUPred_ent_trans (PsiI LamI)
-            (WP H mscE (Val LamI) PsiI)
-            (WP H mscE (Lam nI BodyI) PsiI)
-            (wp_value_intro H mscE LamI PsiI)
-            (wp_lam_expr H mscE nI BodyI PsiI))
-    | tBeta : (WP H mscE Core Phi) ⊢
-        (PsiT LamT) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE (Lam nI BodyI) PsiI)
-          (PsiT LamT) iLam
-          (wp_lam_beta H mscE nT BodyT VT PsiI)
-    | tLam : (WP H mscE Core Phi) ⊢
-        (WP H mscE (Lam nT BodyT) PsiT) =>
-        properUPred_ent_trans (WP H mscE Core Phi) (PsiT LamT)
-          (WP H mscE (Lam nT BodyT) PsiT)
-          tBeta
-          (properUPred_ent_trans (PsiT LamT)
-            (WP H mscE (Val LamT) PsiT)
-            (WP H mscE (Lam nT BodyT) PsiT)
-            (wp_value_intro H mscE LamT PsiT)
-            (wp_lam_expr H mscE nT BodyT PsiT))
-    | recBeta : (WP H mscE Core Phi) ⊢
-        (WP H mscE F1 PsiT) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE (Lam nT BodyT) PsiT)
-          (WP H mscE F1 PsiT) tLam
-          (wp_rec_beta H mscE nSum nA BodyRec A PsiT)
-    | f2 : (WP H mscE Core Phi) ⊢
-        (WP H mscE F2 PsiI) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE F1 PsiT) (WP H mscE F2 PsiI) recBeta
-          (wp_bind_app_l H mscE F1 (Val VT) PsiI)
-    | f3 : (WP H mscE Core Phi) ⊢
-        (WP H mscE F3 PsiAcc) =>
-        properUPred_ent_trans (WP H mscE Core Phi)
-          (WP H mscE F2 PsiI) (WP H mscE F3 PsiAcc) f2
-          (wp_bind_app_l H mscE F2 (Val VI) PsiAcc)
-  \in properUPred_ent_trans (WP H mscE Core Phi)
-      (WP H mscE F3 PsiAcc)
-      (WP H mscE (App F3 (Val VAcc)) Phi) f3
-      (wp_bind_app_l H mscE F3 (Val VAcc) Phi)
+  ipm $ iIntros "HCore" $
+    wp_bind $ wp_bind $ wp_bind $
+    wp_pures $ wp_pures $ wp_pures $ wp_pures $
+    iExact "HCore"
 
 \func append_snoc_cons {A : \Type} (prefix suffix : List A) (x : A) :
   (prefix ++ x :: nil) ++ suffix = prefix ++ x :: suffix \elim prefix
@@ -4950,12 +4691,12 @@
     | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
         (msc_inv H G gam a)
     | Head => msc_shard_lb G name n
-    | TailExists => mkProperExist (List Nat) (\lam reads =>
+    | TailBody : List Nat -> iProp S => \lam reads =>
         (mkProperPure
             (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))) ∗
           ((mkProperPure (length reads = length names)) ∗
             ((mkProperPure (nat_sum lowerTail <= nat_sum reads)) ∗
-              (msc_lbs G reads names))))
+              (msc_lbs G reads names)))
     | AllBody : List Nat -> iProp S => \lam reads =>
         (mkProperPure
             (v = natV (acc Nat.+ nat_sum reads))) ∗
@@ -4963,115 +4704,24 @@
             ((mkProperPure
                 (nat_sum (lowerHead :: lowerTail) <= nat_sum reads)) ∗
               (msc_lbs G reads (name :: names))))
-    | AllExists => mkProperExist (List Nat) AllBody
-    | one : \Pi (reads : List Nat) -> (((mkProperPure
-              (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))) ∗
-            ((mkProperPure (length reads = length names)) ∗
-              ((mkProperPure (nat_sum lowerTail <= nat_sum reads)) ∗
-                (msc_lbs G reads names)))) ∗ Head) ⊢
-        AllExists =>
-        \lam reads =>
-          \let
-            | PV => mkProperPure {iResUR S}
-                (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))
-            | PL => mkProperPure {iResUR S}
-                (length reads = length names)
-            | PB => mkProperPure {iResUR S}
-                (nat_sum lowerTail <= nat_sum reads)
-            | Tail => msc_lbs G reads names
-            | Spatial => Head ∗ Tail
-            | Prepared => PV ∗
-                (PL ∗ (PB ∗ Spatial))
-            | arrange : ((PV ∗ (PL ∗ (PB ∗ Tail))) ∗
-                  Head) ⊢ Prepared =>
-                properUPred_ent_trans
-                  ((PV ∗ (PL ∗ (PB ∗ Tail))) ∗
-                    Head)
-                  (PV ∗
-                    ((PL ∗ (PB ∗ Tail)) ∗ Head))
-                  Prepared
-                  (sep_assoc_l_ent PV (PL ∗ (PB ∗ Tail)) Head)
-                  (sep_mono_r_ent PV
-                    ((PL ∗ (PB ∗ Tail)) ∗ Head)
-                    (PL ∗ (PB ∗ Spatial))
-                    (properUPred_ent_trans
-                      ((PL ∗ (PB ∗ Tail)) ∗ Head)
-                      (PL ∗
-                        ((PB ∗ Tail) ∗ Head))
-                      (PL ∗ (PB ∗ Spatial))
-                      (sep_assoc_l_ent PL (PB ∗ Tail) Head)
-                      (sep_mono_r_ent PL
-                        ((PB ∗ Tail) ∗ Head)
-                        (PB ∗ Spatial)
-                        (properUPred_ent_trans
-                          ((PB ∗ Tail) ∗ Head)
-                          (PB ∗ (Tail ∗ Head))
-                          (PB ∗ Spatial)
-                          (sep_assoc_l_ent PB Tail Head)
-                          (sep_mono_r_ent PB (Tail ∗ Head) Spatial
-                            (sep_comm_ent Tail Head))))))
-            | NewBound => mkProperPure {iResUR S}
-                (nat_sum (lowerHead :: lowerTail) <= nat_sum (n :: reads))
-            | NewLen => mkProperPure {iResUR S}
-                (length (n :: reads) = length (name :: names))
-            | NewVal => mkProperPure {iResUR S}
-                (v = natV (acc Nat.+ nat_sum (n :: reads)))
-            | pack : (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads)) ->
-                (length reads = length names) ->
-                (nat_sum lowerTail <= nat_sum reads) ->
-                Spatial ⊢ AllExists =>
-                \lam hv hlen hbound =>
-                  properUPred_ent_trans Spatial
-                    (NewBound ∗ Spatial) AllExists
-                    (pure_intro_sep_ent
-                      (nat_sum (lowerHead :: lowerTail) <=
-                        nat_sum (n :: reads))
-                      (NatSemiring.<=_+ headLe hbound) Spatial)
-                    (properUPred_ent_trans
-                      (NewBound ∗ Spatial)
-                      (NewLen ∗ (NewBound ∗ Spatial))
-                      AllExists
-                      (pure_intro_sep_ent
-                        (length (n :: reads) = length (name :: names))
-                        (pmap suc hlen) (NewBound ∗ Spatial))
-                      (properUPred_ent_trans
-                        (NewLen ∗ (NewBound ∗ Spatial))
-                        (NewVal ∗
-                          (NewLen ∗
-                            (NewBound ∗ Spatial)))
-                        AllExists
-                        (pure_intro_sep_ent
-                          (v = natV (acc Nat.+ nat_sum (n :: reads)))
-                          (hv *> pmap natV NatSemiring.+-assoc)
-                          (NewLen ∗
-                            (NewBound ∗ Spatial)))
-                        (exist_intro_ent AllBody (n :: reads))))
-            | conclude : Prepared ⊢ AllExists =>
-                pure_sep_l_elim
-                  (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))
-                  (PL ∗ (PB ∗ Spatial)) AllExists
-                  (\lam hv => pure_sep_l_elim
-                    (length reads = length names)
-                    (PB ∗ Spatial) AllExists
-                    (\lam hlen => pure_sep_l_elim
-                      (nat_sum lowerTail <= nat_sum reads)
-                      Spatial AllExists (pack hv hlen)))
-          \in properUPred_ent_trans
-              ((PV ∗ (PL ∗ (PB ∗ Tail))) ∗ Head)
-              Prepared AllExists arrange conclude
-    | attachHead : (TailExists ∗ Head) ⊢ AllExists =>
-        sep_exist_l_elim (\lam reads =>
-          (mkProperPure
-              (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))) ∗
-            ((mkProperPure (length reads = length names)) ∗
-              ((mkProperPure (nat_sum lowerTail <= nat_sum reads)) ∗
-                (msc_lbs G reads names)))) Head AllExists one
-  \in properUPred_ent_trans
-      ((Inv ∗ TailExists) ∗ Head)
-      (Inv ∗ (TailExists ∗ Head))
-      (Inv ∗ AllExists)
-      (sep_assoc_l_ent Inv TailExists Head)
-      (sep_mono_r_ent Inv (TailExists ∗ Head) AllExists attachHead)
+  \in ipm $ iIntros "HPost HHead" $
+      iDestruct "HPost" "HInv HTailExists" $
+      iFrame "HInv" $
+      iDestruct "HTailExists" "HTail" TailBody $ \lam reads =>
+      iDestruct "HTail" "HVal HRest" $
+      iDestruct "HVal" "%" $ \lam hv =>
+      iDestruct "HRest" "HLen HRest" $
+      iDestruct "HLen" "%" $ \lam hlen =>
+      iDestruct "HRest" "HBound HTail" $
+      iDestruct "HBound" "%" $ \lam hbound =>
+      iExists (n :: reads) AllBody $
+      iSplitL ""
+        (iPureIntro $ hv *> pmap natV NatSemiring.+-assoc)
+        (iSplitL ""
+          (iPureIntro $ pmap suc hlen)
+          (iSplitL ""
+            (iPureIntro $ NatSemiring.<=_+ headLe hbound)
+            (iFrame "HHead" $ iExact "HTail")))
 
 \lemma msc_sum_loop_suffix_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -5092,89 +4742,7 @@
       \let
         | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
             (msc_inv H G gam a)
-        | Pre => Inv ∗ mkProperEmp
         | Post => msc_sum_post H G gam a nil nil acc
-        | BodyNil => (mkProperPure {iResUR S}
-              (natV acc = natV (acc Nat.+ nat_sum nil))) ∗
-            ((mkProperPure {iResUR S} (length (nil {Nat}) = length (nil {gname}))) ∗
-              ((mkProperPure {iResUR S}
-                  (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                (msc_lbs G (nil {Nat}) (nil {gname}))))
-        | bound : mkProperEmp ⊢
-            ((mkProperPure {iResUR S}
-                (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-              (msc_lbs G (nil {Nat}) (nil {gname}))) =>
-            pure_intro_sep_ent (nat_sum nil <= nat_sum (nil {Nat}))
-              zero<=_ (msc_lbs G (nil {Nat}) (nil {gname}))
-        | len : mkProperEmp ⊢
-            ((mkProperPure {iResUR S}
-                (length (nil {Nat}) = length (nil {gname}))) ∗
-              ((mkProperPure {iResUR S}
-                  (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                (msc_lbs G (nil {Nat}) (nil {gname})))) =>
-            properUPred_ent_trans mkProperEmp
-              ((mkProperPure {iResUR S}
-                  (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                (msc_lbs G (nil {Nat}) (nil {gname})))
-              ((mkProperPure {iResUR S}
-                  (length (nil {Nat}) = length (nil {gname}))) ∗
-                ((mkProperPure {iResUR S}
-                    (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                  (msc_lbs G (nil {Nat}) (nil {gname})))) bound
-              (pure_intro_sep_ent
-                (length (nil {Nat}) = length (nil {gname})) idp
-                ((mkProperPure {iResUR S}
-                    (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                  (msc_lbs G (nil {Nat}) (nil {gname}))))
-        | body : mkProperEmp ⊢ BodyNil =>
-            properUPred_ent_trans mkProperEmp
-              ((mkProperPure {iResUR S}
-                  (length (nil {Nat}) = length (nil {gname}))) ∗
-                ((mkProperPure {iResUR S}
-                    (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                  (msc_lbs G (nil {Nat}) (nil {gname}))))
-              BodyNil len
-              (pure_intro_sep_ent
-                (natV acc = natV (acc Nat.+ nat_sum nil)) idp
-                ((mkProperPure {iResUR S}
-                    (length (nil {Nat}) = length (nil {gname}))) ∗
-                  ((mkProperPure {iResUR S}
-                      (nat_sum nil <= nat_sum (nil {Nat}))) ∗
-                    (msc_lbs G (nil {Nat}) (nil {gname})))))
-        | existsNil : mkProperEmp ⊢
-            (mkProperExist (List Nat) (\lam reads =>
-              (mkProperPure
-                  (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
-                ((mkProperPure (length reads = length (nil {gname}))) ∗
-                  ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
-                    (msc_lbs G reads (nil {gname})))))) =>
-            properUPred_ent_trans mkProperEmp BodyNil
-              (mkProperExist (List Nat) (\lam reads =>
-                (mkProperPure
-                    (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
-                  ((mkProperPure (length reads = length (nil {gname}))) ∗
-                    ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
-                      (msc_lbs G reads (nil {gname}))))))
-              body
-              (exist_intro_ent (\lam reads =>
-                (mkProperPure
-                    (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
-                  ((mkProperPure (length reads = length (nil {gname}))) ∗
-                    ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
-                      (msc_lbs G reads (nil {gname}))))) (nil {Nat}))
-        | postAt : Pre ⊢ (Post (natV acc)) =>
-            sep_mono_r_ent Inv mkProperEmp
-              (mkProperExist (List Nat) (\lam reads =>
-                (mkProperPure
-                    (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
-                  ((mkProperPure (length reads = length (nil {gname}))) ∗
-                    ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
-                      (msc_lbs G reads (nil {gname})))))) existsNil
-        | value : Pre ⊢
-            (WP H mscE (Val (natV acc)) Post) =>
-            properUPred_ent_trans Pre (Post (natV acc))
-              (WP H mscE (Val (natV acc)) Post) postAt
-              (wp_value_intro H mscE (natV acc) Post)
         | indexEq : length prefix = gam.msc_size => inv sizeEq
         | Then => Val (natV acc)
         | Else => letE nL
@@ -5192,38 +4760,30 @@
             (Val (natV gam.msc_size))
         | CondPost : Value -> iProp S => \lam v =>
             WP H mscE (If (Val v) Then Else) Post
-        | afterIf : Pre ⊢
-            (WP H mscE (If (Val (boolV true)) Then Else) Post) =>
-            properUPred_ent_trans Pre (WP H mscE Then Post)
-              (WP H mscE (If (Val (boolV true)) Then Else) Post)
-              value (wp_if_true H mscE Then Else Post)
-        | afterEq : Pre ⊢
-            (WP H mscE Cond CondPost) =>
-            properUPred_ent_trans Pre
-              (WP H mscE (Val (boolV true)) CondPost)
-              (WP H mscE Cond CondPost)
-              (properUPred_ent_trans Pre
-                (WP H mscE (If (Val (boolV true)) Then Else) Post)
-                (WP H mscE (Val (boolV true)) CondPost)
-                afterIf (wp_value_intro H mscE (boolV true) CondPost))
-              (wp_nat_eq_true H mscE (length prefix)
-                gam.msc_size indexEq CondPost)
-        | core : Pre ⊢
-            (WP H mscE
-              (If Cond Then Else) Post) =>
-            properUPred_ent_trans Pre (WP H mscE Cond CondPost)
-              (WP H mscE (If Cond Then Else) Post)
-              afterEq (wp_bind_if H mscE Cond Then Else Post)
-      \in properUPred_ent_trans Pre
-          (WP H mscE
-            (msc_sum_loop_unfold a gam.msc_size (length prefix) acc) Post)
-          (WP H mscE
-            (app4 (Val msc_sum_loop)
-              (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
-              (Val (natV (length prefix))) (Val (natV acc))) Post)
-          core
-          (msc_sum_loop_unfold_wp H a gam.msc_size
-            (length prefix) acc Post)
+        | ResultBody : List Nat -> iProp S => \lam reads =>
+            (mkProperPure
+                (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
+              ((mkProperPure (length reads = length (nil {gname}))) ∗
+                ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
+                  (msc_lbs G reads (nil {gname}))))
+        | PostAt => Inv ∗ mkProperExist (List Nat) ResultBody
+      \in ipm $ iIntros "HInv HEmp" $
+          wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size
+            (length prefix) acc Post) $
+          wp_bind $
+          wp_apply (wp_nat_eq_true H mscE (length prefix)
+            gam.msc_size indexEq CondPost) $
+          wp_apply (wp_value_intro H mscE (boolV true) CondPost) $
+          wp_apply (wp_if_true H mscE Then Else Post) $
+          wp_apply (wp_value_intro H mscE (natV acc) Post) $
+          wp_apply (properUPred_ent_refl PostAt) $
+          iFrame "HInv" $
+          iExists (nil {Nat}) ResultBody $
+          iSplitL "" (iPureIntro $ idp)
+            (iSplitL "" (iPureIntro $ idp)
+              (iSplitL "" (iPureIntro $ zero<=_)
+                (wp_apply (properUPred_ent_refl
+                  (mkProperEmp {iResUR S})) $ iEmpIntro)))
   | nil, :: _ _ => \lam n x hx h => \case h \with {
       | inP (_, _, _, _, impossible) => \case impossible \with {}
     }
@@ -5293,27 +4853,15 @@
                 | ih : Rest ⊢ (WP H mscE Call TailPhi) =>
                     msc_sum_loop_suffix_wp H G gam a (acc Nat.+ n)
                       nextPrefix names lowerTail namesEqTail sizeEqTail
-                | headWP : (Head ∗ Rest) ⊢
-                    (Head ∗ (WP H mscE Call TailPhi)) =>
-                    sep_mono_r_ent Head Rest (WP H mscE Call TailPhi) ih
-                | framed : (Head ∗ Rest) ⊢
-                    (WP H mscE Call
-                      (wp_frame_post TailPhi Head)) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      ((WP H mscE Call TailPhi) ∗ Head)
-                      (WP H mscE Call (wp_frame_post TailPhi Head))
-                      (properUPred_ent_trans (Head ∗ Rest)
-                        (Head ∗ (WP H mscE Call TailPhi))
-                        ((WP H mscE Call TailPhi) ∗ Head)
-                        headWP
-                        (sep_comm_ent Head (WP H mscE Call TailPhi)))
-                      (wp_frame_r H mscE Call TailPhi Head)
-              \in properUPred_ent_trans (Head ∗ Rest)
-                  (WP H mscE Call (wp_frame_post TailPhi Head))
-                  (WP H mscE Call Post) framed
-                  (wp_mono H mscE Call (wp_frame_post TailPhi Head) Post
+              \in ipm $ iIntros "HHead HRest" $
+                  wp_apply (wp_mono H mscE Call
+                    (wp_frame_post TailPhi Head) Post
                     (\lam v => msc_sum_post_prepend H G gam a acc n lowerHead
-                      lowerTail name names v headLe))
+                      lowerTail name names v headLe)) $
+                  wp_apply (wp_frame_r H mscE Call TailPhi Head) $
+                  iSplitL "HRest"
+                    (wp_apply ih $ iExact "HRest")
+                    (iExact "HHead")
         | afterN : \Pi (n : Nat) -> lowerHead <= n -> ((msc_shard_lb G name n) ∗ Rest) ⊢
             (WP H mscE (subst nN (natV n) BodyN) Post) =>
             \lam n headLe =>
@@ -5338,269 +4886,110 @@
                           (Val (natV ix))
                           (Val (natV (acc Nat.+ n)))) Post))
                       (inv callIndexEq) (recurFor n headLe)
-                | accValue : (Head ∗ Rest) ⊢
-                    (WP H mscE (Val (natV (acc Nat.+ n)))
-                      (\lam v => WP H mscE
-                        (subst nNextAcc v AccBody) Post)) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      (WP H mscE CallComputed Post)
-                      (WP H mscE (Val (natV (acc Nat.+ n)))
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                      recurseComputed
-                      (wp_value_intro H mscE (natV (acc Nat.+ n))
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                | accAdd : (Head ∗ Rest) ⊢
-                    (WP H mscE
-                      (NatAdd (Val (natV acc)) (Val (natV n)))
-                      (\lam v => WP H mscE
-                        (subst nNextAcc v AccBody) Post)) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      (WP H mscE (Val (natV (acc Nat.+ n)))
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                      (WP H mscE
-                        (NatAdd (Val (natV acc)) (Val (natV n)))
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                      accValue
-                      (wp_nat_add H mscE acc n
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                | accLet : (Head ∗ Rest) ⊢
-                    (WP H mscE
-                      (letE nNextAcc
-                        (NatAdd (Val (natV acc)) (Val (natV n))) AccBody)
-                      Post) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      (WP H mscE
-                        (NatAdd (Val (natV acc)) (Val (natV n)))
-                        (\lam v => WP H mscE
-                          (subst nNextAcc v AccBody) Post))
-                      (WP H mscE
-                        (letE nNextAcc
-                          (NatAdd (Val (natV acc)) (Val (natV n))) AccBody)
-                        Post) accAdd
-                      (wp_letE H mscE nNextAcc
-                        (NatAdd (Val (natV acc)) (Val (natV n)))
-                        AccBody Post)
                 | NextIBody => letE nNextAcc
                     (NatAdd (Val (natV acc)) (Val (natV n)))
                     (app4 (Val msc_sum_loop)
                       (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
                       (Var nNextI) (Var nNextAcc))
-                | iValue : (Head ∗ Rest) ⊢
-                    (WP H mscE (Val (natV (index Nat.+ 1)))
-                      (\lam v => WP H mscE
-                        (subst nNextI v NextIBody) Post)) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      (WP H mscE
-                        (subst nNextI (natV (index Nat.+ 1)) NextIBody) Post)
-                      (WP H mscE (Val (natV (index Nat.+ 1)))
-                        (\lam v => WP H mscE
-                          (subst nNextI v NextIBody) Post))
-                      accLet
-                      (wp_value_intro H mscE (natV (index Nat.+ 1))
-                        (\lam v => WP H mscE
-                          (subst nNextI v NextIBody) Post))
-                | iAdd : (Head ∗ Rest) ⊢
-                    (WP H mscE
-                      (NatAdd (Val (natV index)) (Val (natV 1)))
-                      (\lam v => WP H mscE
-                        (subst nNextI v NextIBody) Post)) =>
-                    properUPred_ent_trans (Head ∗ Rest)
-                      (WP H mscE (Val (natV (index Nat.+ 1)))
-                        (\lam v => WP H mscE
-                          (subst nNextI v NextIBody) Post))
-                      (WP H mscE
-                        (NatAdd (Val (natV index)) (Val (natV 1)))
-                        (\lam v => WP H mscE
-                          (subst nNextI v NextIBody) Post))
-                      iValue
-                      (wp_nat_add H mscE index 1
-                        (\lam v => WP H mscE
-                          (subst nNextI v NextIBody) Post))
-              \in properUPred_ent_trans (Head ∗ Rest)
-                  (WP H mscE
+              \in ipm $ iIntros "HHead HRest" $
+                  wp_apply (pm_wp_let H mscE nNextI
                     (NatAdd (Val (natV index)) (Val (natV 1)))
+                    NextIBody Post) $
+                  wp_apply (wp_nat_add H mscE index 1
                     (\lam v => WP H mscE
-                      (subst nNextI v NextIBody) Post))
-                  (WP H mscE (subst nN (natV n) BodyN) Post)
-                  iAdd
-                  (wp_letE H mscE nNextI
-                    (NatAdd (Val (natV index)) (Val (natV 1)))
-                    NextIBody Post)
+                      (subst nNextI v NextIBody) Post)) $
+                  wp_apply (wp_value_intro H mscE
+                    (natV (index Nat.+ 1))
+                    (\lam v => WP H mscE
+                      (subst nNextI v NextIBody) Post)) $
+                  wp_apply (pm_wp_let H mscE nNextAcc
+                    (NatAdd (Val (natV acc)) (Val (natV n)))
+                    AccBody Post) $
+                  wp_apply (wp_nat_add H mscE acc n
+                    (\lam v => WP H mscE
+                      (subst nNextAcc v AccBody) Post)) $
+                  wp_apply (wp_value_intro H mscE
+                    (natV (acc Nat.+ n))
+                    (\lam v => WP H mscE
+                      (subst nNextAcc v AccBody) Post)) $
+                  wp_apply recurseComputed $
+                  wp_apply (properUPred_ent_refl (Head ∗ Rest)) $
+                  iFrame "HHead" $ iExact "HRest"
         | loadContinue : \Pi (v : Value) -> ((LoadPost v) ∗ Rest) ⊢
             (WP H mscE (subst nN v BodyN) Post) =>
-            \lam v => sep_exist_l_elim
-              (\lam n => (mkProperPure (v = natV n)) ∗
-                ((msc_shard_lb G name n) ∗
-                  (mkProperPure (lowerHead <= n))))
-              Rest (WP H mscE (subst nN v BodyN) Post)
-              (\lam n =>
-                \let
-                  | PEq => mkProperPure {iResUR S} (v = natV n)
-                  | Head => msc_shard_lb G name n
-                  | PBound => mkProperPure {iResUR S} (lowerHead <= n)
-                  | Prepared => PEq ∗
-                      (PBound ∗ (Head ∗ Rest))
-                  | arrange : ((PEq ∗ (Head ∗ PBound)) ∗ Rest) ⊢
-                      Prepared =>
-                      properUPred_ent_trans
-                        ((PEq ∗ (Head ∗ PBound)) ∗ Rest)
-                        (PEq ∗
-                          ((Head ∗ PBound) ∗ Rest))
-                        Prepared
-                        (sep_assoc_l_ent PEq (Head ∗ PBound) Rest)
-                        (sep_mono_r_ent PEq
-                          ((Head ∗ PBound) ∗ Rest)
-                          (PBound ∗ (Head ∗ Rest))
-                          (properUPred_ent_trans
-                            ((Head ∗ PBound) ∗ Rest)
-                            (Head ∗ (PBound ∗ Rest))
-                            (PBound ∗ (Head ∗ Rest))
-                            (sep_assoc_l_ent Head PBound Rest)
-                            (sep_swap_ent Head PBound Rest)))
-                  | conclude : Prepared ⊢
-                      (WP H mscE (subst nN v BodyN) Post) =>
-                      pure_sep_l_elim (v = natV n)
-                        (PBound ∗ (Head ∗ Rest))
-                        (WP H mscE (subst nN v BodyN) Post)
-                        (\lam heq => pure_sep_l_elim (lowerHead <= n)
-                          (Head ∗ Rest)
-                          (WP H mscE (subst nN v BodyN) Post)
-                          (\lam hbound => transport (\lam vv =>
-                            (Head ∗ Rest) ⊢
-                              (WP H mscE (subst nN vv BodyN) Post))
-                            (inv heq) (afterN n hbound)))
-                \in properUPred_ent_trans
-                    ((PEq ∗ (Head ∗ PBound)) ∗ Rest)
-                    Prepared (WP H mscE (subst nN v BodyN) Post)
-                    arrange conclude)
-        | dupInv : Inv ⊢ (Inv ∗ Inv) =>
-            persistent_consequence_frame_ent Inv Inv
-              (inv_persistent H.iris_wsat mscN (msc_inv H G gam a))
-        | splitPre : Pre ⊢
-            ((Inv ∗ Head0) ∗ Rest) =>
-            properUPred_ent_trans Pre
-              ((Inv ∗ Inv) ∗ (Head0 ∗ Tail))
-              ((Inv ∗ Head0) ∗ Rest)
-              (sep_mono_l_ent Inv (Inv ∗ Inv)
-                (Head0 ∗ Tail) dupInv)
-              (properUPred_ent_trans
-                ((Inv ∗ Inv) ∗ (Head0 ∗ Tail))
-                (Inv ∗
-                  (Inv ∗ (Head0 ∗ Tail)))
-                ((Inv ∗ Head0) ∗ Rest)
-                (sep_assoc_l_ent Inv Inv (Head0 ∗ Tail))
-                (properUPred_ent_trans
-                  (Inv ∗
-                    (Inv ∗ (Head0 ∗ Tail)))
-                  (Inv ∗ (Head0 ∗ Rest))
-                  ((Inv ∗ Head0) ∗ Rest)
-                  (sep_mono_r_ent Inv (Inv ∗ (Head0 ∗ Tail))
-                    (Head0 ∗ Rest) (sep_swap_ent Inv Head0 Tail))
-                  (sep_assoc_r_ent Inv Head0 Rest)))
+            \lam v =>
+              \let
+                | Witness : Nat -> iProp S => \lam n =>
+                    (mkProperPure (v = natV n)) ∗
+                      ((msc_shard_lb G name n) ∗
+                        (mkProperPure (lowerHead <= n)))
+              \in ipm $ iIntros "HLoad HRest" $
+                  iDestruct "HLoad" "HWitness" Witness $ \lam n =>
+                  iDestruct "HWitness" "HEq HHeadBound" $
+                  iDestruct "HEq" "%" $ \lam heq =>
+                  iDestruct "HHeadBound" "HHead HBound" $
+                  iDestruct "HBound" "%" $ \lam hbound =>
+                  wp_apply (transport (\lam vv =>
+                    ((msc_shard_lb G name n) ∗ Rest) ⊢
+                      (WP H mscE (subst nN vv BodyN) Post))
+                    (inv heq) (afterN n hbound)) $
+                  wp_apply (properUPred_ent_refl
+                    ((msc_shard_lb G name n) ∗ Rest)) $
+                  iFrame "HHead" $ iExact "HRest"
         | loadSpec : (Inv ∗ Head0) ⊢
             (WP H mscE LoadExpr LoadPost) =>
             msc_load_shard_wp H G gam a index prefix name names lowerHead
               namesEq idp hi
         | framedLoad : Pre ⊢
             (WP H mscE LoadExpr (wp_frame_post LoadPost Rest)) =>
-            properUPred_ent_trans Pre
-              ((WP H mscE LoadExpr LoadPost) ∗ Rest)
-              (WP H mscE LoadExpr (wp_frame_post LoadPost Rest))
-              (properUPred_ent_trans Pre
-                ((Inv ∗ Head0) ∗ Rest)
-                ((WP H mscE LoadExpr LoadPost) ∗ Rest)
-                splitPre
-                (sep_mono_l_ent (Inv ∗ Head0)
-                  (WP H mscE LoadExpr LoadPost) Rest loadSpec))
-              (wp_frame_r H mscE LoadExpr LoadPost Rest)
-        | loadWP : Pre ⊢
-            (WP H mscE LoadExpr
-              (\lam v => WP H mscE (subst nN v BodyN) Post)) =>
-            properUPred_ent_trans Pre
-              (WP H mscE LoadExpr (wp_frame_post LoadPost Rest))
-              (WP H mscE LoadExpr
-                (\lam v => WP H mscE (subst nN v BodyN) Post))
-              framedLoad
-              (wp_mono H mscE LoadExpr (wp_frame_post LoadPost Rest)
-                (\lam v => WP H mscE (subst nN v BodyN) Post)
-                loadContinue)
+            ipm $ iIntros "HInv HResources" $
+              iDestruct "HResources" "HHead HTail" $
+              iDestruct "HInv" "#HInv"
+                (inv_persistent H.iris_wsat mscN (msc_inv H G gam a)) $
+              wp_apply (wp_frame_r H mscE LoadExpr LoadPost Rest) $
+              iSplitL "HHead"
+                (wp_apply loadSpec $
+                  wp_apply (properUPred_ent_refl (Inv ∗ Head0)) $
+                  iFrame "HInv" $ iExact "HHead")
+                (wp_apply (properUPred_ent_refl Rest) $
+                  iFrame "HInv" $ iExact "HTail")
         | loadLet : Pre ⊢
             (WP H mscE (letE nN LoadExpr BodyN) Post) =>
-            properUPred_ent_trans Pre
-              (WP H mscE LoadExpr
-                (\lam v => WP H mscE (subst nN v BodyN) Post))
-              (WP H mscE (letE nN LoadExpr BodyN) Post)
-              loadWP (wp_letE H mscE nN LoadExpr BodyN Post)
+            ipm $ iIntros "HInv HResources" $
+              wp_apply (pm_wp_let H mscE nN LoadExpr BodyN Post) $
+              wp_apply (wp_mono H mscE LoadExpr
+                (wp_frame_post LoadPost Rest)
+                (\lam v => WP H mscE (subst nN v BodyN) Post)
+                loadContinue) $
+              wp_apply framedLoad $
+              wp_apply (properUPred_ent_refl Pre) $
+              iFrame "HInv" $ iExact "HResources"
         | LocBody => letE nN (Load (Var nL)) BodyN
-        | locValue : Pre ⊢
-            (WP H mscE (Val LocV)
-              (\lam v => WP H mscE (subst nL v LocBody) Post)) =>
-            properUPred_ent_trans Pre
-              (WP H mscE (subst nL LocV LocBody) Post)
-              (WP H mscE (Val LocV)
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
-              loadLet
-              (wp_value_intro H mscE LocV
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
-        | locWP : Pre ⊢
-            (WP H mscE
-              (LocAdd (Val (LitV (LitLoc a))) (Val (natV index)))
-              (\lam v => WP H mscE (subst nL v LocBody) Post)) =>
-            properUPred_ent_trans Pre
-              (WP H mscE (Val LocV)
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
-              (WP H mscE
-                (LocAdd (Val (LitV (LitLoc a))) (Val (natV index)))
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
-              locValue
-              (wp_loc_add H mscE a index
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
         | elseWP : Pre ⊢ (WP H mscE Else Post) =>
-            properUPred_ent_trans Pre
-              (WP H mscE
+            ipm $ iIntros "HInv HResources" $
+              wp_apply (pm_wp_let H mscE nL
                 (LocAdd (Val (LitV (LitLoc a))) (Val (natV index)))
-                (\lam v => WP H mscE (subst nL v LocBody) Post))
-              (WP H mscE Else Post) locWP
-              (wp_letE H mscE nL
-                (LocAdd (Val (LitV (LitLoc a))) (Val (natV index)))
-                LocBody Post)
-        | afterIf : Pre ⊢
-            (WP H mscE (If (Val (boolV false)) Then Else) Post) =>
-            properUPred_ent_trans Pre (WP H mscE Else Post)
-              (WP H mscE (If (Val (boolV false)) Then Else) Post)
-              elseWP (wp_if_false H mscE Then Else Post)
+                LocBody Post) $
+              wp_apply (wp_loc_add H mscE a index
+                (\lam v => WP H mscE (subst nL v LocBody) Post)) $
+              wp_apply (wp_value_intro H mscE LocV
+                (\lam v => WP H mscE (subst nL v LocBody) Post)) $
+              wp_apply loadLet $
+              wp_apply (properUPred_ent_refl Pre) $
+              iFrame "HInv" $ iExact "HResources"
         | CondPost : Value -> iProp S => \lam v =>
             WP H mscE (If (Val v) Then Else) Post
-        | condValue : Pre ⊢
-            (WP H mscE (Val (boolV false)) CondPost) =>
-            properUPred_ent_trans Pre
-              (WP H mscE (If (Val (boolV false)) Then Else) Post)
-              (WP H mscE (Val (boolV false)) CondPost)
-              afterIf (wp_value_intro H mscE (boolV false) CondPost)
-        | condWP : Pre ⊢ (WP H mscE Cond CondPost) =>
-            properUPred_ent_trans Pre
-              (WP H mscE (Val (boolV false)) CondPost)
-              (WP H mscE Cond CondPost) condValue
-              (wp_nat_eq_false H mscE index gam.msc_size indexNe CondPost)
-        | core : Pre ⊢
-            (WP H mscE (If Cond Then Else) Post) =>
-            properUPred_ent_trans Pre (WP H mscE Cond CondPost)
-              (WP H mscE (If Cond Then Else) Post) condWP
-              (wp_bind_if H mscE Cond Then Else Post)
-      \in properUPred_ent_trans Pre
-          (WP H mscE
-            (msc_sum_loop_unfold a gam.msc_size index acc) Post)
-          (WP H mscE
-            (app4 (Val msc_sum_loop)
-              (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
-              (Val (natV index)) (Val (natV acc))) Post)
-          core
-          (msc_sum_loop_unfold_wp H a gam.msc_size index acc Post)
+      \in ipm $ iIntros "HInv HRest" $
+          iDestruct "HRest" "HHead HTail" $
+          wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size index acc Post) $
+          wp_bind $
+          wp_apply (wp_nat_eq_false H mscE index gam.msc_size
+            indexNe CondPost) $
+          wp_apply (wp_value_intro H mscE (boolV false) CondPost) $
+          wp_apply (wp_if_false H mscE Then Else Post) $
+          wp_apply elseWP $
+          wp_apply (properUPred_ent_refl Pre) $
+          iFrame "HInv" $ iFrame "HHead" $ iExact "HTail"
 -- The invariant witnesses retained across the atomic NewProph step.  Unlike
 -- the shard-focused witnesses above, a read keeps the complete array and all
 -- monotone authorities: the following scan only needs a persistent snapshot.
@@ -7390,46 +6779,25 @@
     | LBs => msc_lbs G w.read_initial gam.msc_shard_names
     | Case => msc_read_case G gam (msc_proph_total resolves)
         (nat_sum w.read_initial) gamQ P
-    | Eq => mkProperPure {iResUR S}
-        (LitV (LitProphecy p) = LitV (LitProphecy p))
-    | Source => (Inv ∗ Saved) ∗
-        (Eq ∗ ((Token ∗ LBs) ∗ Case))
-    | NoEq => (Inv ∗ Saved) ∗
-        ((Token ∗ LBs) ∗ Case)
-    | PreScan => (Inv ∗ LBs) ∗
-        (Saved ∗ (Token ∗ Case))
     | Rest => Saved ∗ (Token ∗ Case)
     | SumPhi => msc_sum_post H G gam a w.read_initial
         gam.msc_shard_names 0
     | Call => app4 (Val msc_sum_loop)
         (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
         (Val (natV 0)) (Val (natV 0))
-    | dropEq : Source ⊢ NoEq =>
-        sep_mono_r_ent (Inv ∗ Saved)
-          (Eq ∗ ((Token ∗ LBs) ∗ Case))
-          ((Token ∗ LBs) ∗ Case)
-          (sep_elim_r_ent Eq ((Token ∗ LBs) ∗ Case))
-    | arrange : NoEq ⊢ PreScan =>
-        msc_read_stage_scan Inv Saved Token LBs Case
     | scan : (Inv ∗ LBs) ⊢
         (WP H mscE Call SumPhi) =>
         msc_sum_loop_suffix_wp H G gam a 0 nil gam.msc_shard_names
           w.read_initial idp (Paths.inv w.read_names_len)
-    | framed : PreScan ⊢
-        (WP H mscE Call (wp_frame_post SumPhi Rest)) =>
-        properUPred_ent_trans PreScan
-          ((WP H mscE Call SumPhi) ∗ Rest)
-          (WP H mscE Call (wp_frame_post SumPhi Rest))
-          (sep_mono_l_ent (Inv ∗ LBs)
-            (WP H mscE Call SumPhi) Rest scan)
-          (wp_frame_r H mscE Call SumPhi Rest)
-  \in properUPred_ent_trans Source NoEq
-      (WP H mscE Call
-        (msc_read_scan_post H G gam a w gamQ P Q p resolves)) dropEq
-      (properUPred_ent_trans NoEq PreScan
-        (WP H mscE Call
-          (msc_read_scan_post H G gam a w gamQ P Q p resolves)) arrange
-        framed)
+  \in ipm $ iIntros "HInvSaved HRest" $
+      iDestruct "HInvSaved" "HInv HSaved" $
+      iDestruct "HRest" "HEq HResources" $
+      iDestruct "HResources" "HTokenLBs HCase" $
+      iDestruct "HTokenLBs" "HToken HLBs" $
+      wp_apply (wp_frame_r H mscE Call SumPhi Rest) $
+      iSplitL "HInv HLBs"
+        (wp_apply scan $ iFrame "HInv" $ iExact "HLBs")
+        (iFrame "HSaved" $ iFrame "HToken" $ iExact "HCase")
 
 \lemma msc_read_after_monos {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -8468,95 +7836,31 @@
         (msc_inv H G gam a)
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | Token => proph H.iris_proph_map p resolves
+    | Pred => mkProperPure {iResUR S}
+        (initial <= msc_proph_total resolves)
     | Bound => mkProperPure {iResUR S} (initial <= nat_sum reads)
     | LBs => msc_lbs G reads gam.msc_shard_names
-    | Common => Inv ∗
-        (Saved ∗ (Token ∗ (Bound ∗ LBs)))
     | ElemF : Nat -> iProp S => \lam id =>
         ghost_map_elem (msc_requestGS G gam) id
           (msc_proph_total resolves, gamQ)
     | Elems => mkProperExist Nat ElemF
-    | Registered => msc_read_registered G gam
-        (msc_proph_total resolves) initial gamQ
-    | Goal => WP H mscE
-        (seqE
-          (resolveProphE (Val (LitV (LitProphecy p)))
-            (Val (natV (nat_sum reads))))
-          (Val (natV (nat_sum reads))))
-        (msc_read_core_post H G gam a Q)
-    | stripPred : Registered ⊢ Elems =>
-        pure_sep_l_elim (initial <= msc_proph_total resolves)
-          Elems Elems (\lam _ => properUPred_ent_refl Elems)
-    | expose : (Registered ∗ Common) ⊢
-        (Elems ∗ Common) =>
-        sep_mono_l_ent Registered Elems Common stripPred
-    | perId : \Pi (id : Nat) ->
-        ((ElemF id) ∗ Common) ⊢ Goal =>
-        \lam id =>
-          \let
-            | Elem => ElemF id
-            | Inner0 => Elem ∗
-                (Inv ∗
-                  (Saved ∗
-                    (Token ∗ (Bound ∗ LBs))))
-            | Inner1 => Elem ∗
-                (Inv ∗
-                  (Saved ∗ (Token ∗ LBs)))
-            | Ordered => Inv ∗
-                (Elem ∗ (Saved ∗ (Token ∗ LBs)))
-            | Inner => Saved ∗
-                (Token ∗ (Elem ∗ LBs))
-            | Ready => Inv ∗ (Inv ∗ Inner)
-            | dropBound : Inner0 ⊢ Inner1 =>
-                sep_mono_r_ent Elem
-                  (Inv ∗
-                    (Saved ∗
-                      (Token ∗ (Bound ∗ LBs))))
-                  (Inv ∗
-                    (Saved ∗ (Token ∗ LBs)))
-                  (sep_mono_r_ent Inv
-                    (Saved ∗
-                      (Token ∗ (Bound ∗ LBs)))
-                    (Saved ∗ (Token ∗ LBs))
-                    (sep_mono_r_ent Saved
-                      (Token ∗ (Bound ∗ LBs))
-                      (Token ∗ LBs)
-                      (sep_mono_r_ent Token (Bound ∗ LBs) LBs
-                        (pure_sep_l_elim (initial <= nat_sum reads) LBs LBs
-                          (\lam _ => properUPred_ent_refl LBs)))))
-            | putInvFirst : Inner1 ⊢ Ordered =>
-                sep_swap_ent Elem Inv
-                  (Saved ∗ (Token ∗ LBs))
-            | reorderInner : (Elem ∗ (Saved ∗ (Token ∗ LBs))) ⊢
-                Inner =>
-                properUPred_ent_trans
-                  (Elem ∗ (Saved ∗ (Token ∗ LBs)))
-                  (Saved ∗ (Elem ∗ (Token ∗ LBs)))
-                  Inner
-                  (sep_swap_ent Elem Saved (Token ∗ LBs))
-                  (sep_mono_r_ent Saved
-                    (Elem ∗ (Token ∗ LBs))
-                    (Token ∗ (Elem ∗ LBs))
-                    (sep_swap_ent Elem Token LBs))
-            | duplicate : Ordered ⊢ Ready =>
-                properUPred_ent_trans Ordered
-                  (Inv ∗ Inner) Ready
-                  (sep_mono_r_ent Inv
-                    (Elem ∗ (Saved ∗ (Token ∗ LBs)))
-                    Inner reorderInner)
-                  (properUPred_ent_trans (Inv ∗ Inner)
-                    ((Inv ∗ Inv) ∗ Inner) Ready
-                    (sep_mono_l_ent Inv (Inv ∗ Inv) Inner
-                      (inv_dup_ent H.iris_wsat mscN (msc_inv H G gam a)))
-                    (sep_assoc_l_ent Inv Inv Inner))
-          \in properUPred_ent_trans Inner0 Inner1 Goal dropBound
-              (properUPred_ent_trans Inner1 Ordered Goal putInvFirst
-                (properUPred_ent_trans Ordered Ready Goal duplicate
-                  (msc_read_registered_sequence_wp H G gam a reads gamQ id
-                    Q p resolves)))
-  \in properUPred_ent_trans (Registered ∗ Common)
-      (Elems ∗ Common) Goal expose
-      (sep_exist_l_elim ElemF Common Goal perId)
+  \in ipm $ iIntros "HRegistered HCommon" $
+      iDestruct "HRegistered" "HPred HElems" Pred Elems $
+      iDestruct "HPred" "%" $ \lam _ =>
+      iDestruct "HElems" "HElem" ElemF $ \lam id =>
+      iDestruct "HCommon" "HInv HRest" $
+      iDestruct "HRest" "HSaved HRest" $
+      iDestruct "HRest" "HToken HBoundLBs" $
+      iDestruct "HBoundLBs" "HBound HLBs" $
+      iDestruct "HBound" "%" $ \lam _ =>
+      iAssert "HInvPair" "HInv" (Inv ∗ Inv)
+        (wp_apply (inv_dup_ent H.iris_wsat mscN (msc_inv H G gam a)) $
+          iExact "HInv")
+        (iDestruct "HInvPair" "HInv1 HInv2" $
+          wp_apply (msc_read_registered_sequence_wp H G gam a reads gamQ id
+            Q p resolves) $
+          iFrame "HInv1" $ iFrame "HInv2" $ iFrame "HSaved" $
+          iFrame "HToken" $ iFrame "HElem" $ iExact "HLBs")
 
 \lemma msc_read_unregistered_scan_branch {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -8582,85 +7886,15 @@
         (nat_lt (msc_proph_total resolves) initial)
     | Token => proph H.iris_proph_map p resolves
     | Bound => mkProperPure {iResUR S} (initial <= nat_sum reads)
-    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | LBs => msc_lbs G reads gam.msc_shard_names
-    | Flat => Pred ∗ (P ∗
-        (Inv ∗
-          (Saved ∗
-            (Token ∗ (Bound ∗ LBs)))))
-    | TokenFront => Token ∗ (Pred ∗
-        (P ∗
-          (Inv ∗
-            (Saved ∗ (Bound ∗ LBs)))))
-    | BoundFront => Token ∗ (Bound ∗
-        (Pred ∗
-          (P ∗ (Inv ∗ (Saved ∗ LBs)))))
-    | Ready => Token ∗ (Bound ∗ Pred)
-    | Source => (Pred ∗ P) ∗
-        (Inv ∗
-          (Saved ∗
-            (Token ∗ (Bound ∗ LBs))))
-    | flatten : Source ⊢ Flat =>
-        sep_assoc_l_ent Pred P
-          (Inv ∗
-            (Saved ∗
-              (Token ∗ (Bound ∗ LBs))))
-    | moveToken : Flat ⊢ TokenFront =>
-        sep_move_fifth_front Pred P Inv Saved Token
-          (Bound ∗ LBs)
-    | moveBound : TokenFront ⊢ BoundFront =>
-        sep_mono_r_ent Token
-          (Pred ∗
-            (P ∗
-              (Inv ∗ (Saved ∗ (Bound ∗ LBs)))))
-          (Bound ∗
-            (Pred ∗
-              (P ∗ (Inv ∗ (Saved ∗ LBs)))))
-          (sep_move_fifth_front Pred P Inv Saved Bound LBs)
-    | discard : BoundFront ⊢ Ready =>
-        sep_mono_r_ent Token
-          (Bound ∗
-            (Pred ∗
-              (P ∗ (Inv ∗ (Saved ∗ LBs)))))
-          (Bound ∗ Pred)
-          (sep_mono_r_ent Bound
-            (Pred ∗
-              (P ∗ (Inv ∗ (Saved ∗ LBs))))
-            Pred
-            (sep_elim_l_ent Pred
-              (P ∗ (Inv ∗ (Saved ∗ LBs)))))
-  \in properUPred_ent_trans Source Flat
-      (WP H mscE
-        (seqE
-          (resolveProphE (Val (LitV (LitProphecy p)))
-            (Val (natV (nat_sum reads))))
-          (Val (natV (nat_sum reads))))
-        (msc_read_core_post H G gam a Q)) flatten
-      (properUPred_ent_trans Flat TokenFront
-        (WP H mscE
-          (seqE
-            (resolveProphE (Val (LitV (LitProphecy p)))
-              (Val (natV (nat_sum reads))))
-            (Val (natV (nat_sum reads))))
-          (msc_read_core_post H G gam a Q)) moveToken
-        (properUPred_ent_trans TokenFront BoundFront
-          (WP H mscE
-            (seqE
-              (resolveProphE (Val (LitV (LitProphecy p)))
-                (Val (natV (nat_sum reads))))
-              (Val (natV (nat_sum reads))))
-            (msc_read_core_post H G gam a Q)) moveBound
-          (properUPred_ent_trans BoundFront Ready
-            (WP H mscE
-              (seqE
-                (resolveProphE (Val (LitV (LitProphecy p)))
-                  (Val (natV (nat_sum reads))))
-                (Val (natV (nat_sum reads))))
-              (msc_read_core_post H G gam a Q)) discard
-            (msc_read_unregistered_sequence_wp H G gam a initial
-              (nat_sum reads) Q p resolves))))
+  \in ipm $ iIntros "HUnregistered HCommon" $
+      iDestruct "HUnregistered" "HPred HP" Pred P $
+      iDestruct "HCommon" "HInv HRest" $
+      iDestruct "HRest" "HSaved HRest" $
+      iDestruct "HRest" "HToken HBoundLBs" $
+      iDestruct "HBoundLBs" "HBound HLBs" $
+      wp_apply (msc_read_unregistered_sequence_wp H G gam a initial
+        (nat_sum reads) Q p resolves) $
+      iFrame "HToken" $ iFrame "HBound" $ iExact "HPred"
 
 \lemma msc_read_after_scan_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -8744,70 +7978,11 @@
           (resolveProphE (Val (LitV (LitProphecy p))) (Var nR))
           (Var nR)))
       (msc_read_core_post H G gam a Q)) =>
-  \let
-    | Call => app4 (Val msc_sum_loop)
-        (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
-        (Val (natV 0)) (Val (natV 0))
-    | Body => seqE
-        (resolveProphE (Val (LitV (LitProphecy p))) (Var nR))
-        (Var nR)
-    | Post => msc_read_core_post H G gam a Q
-    | ScanPost => msc_read_scan_post H G gam a w gamQ P Q p resolves
-    | scan : (((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-              (msc_inv H G gam a)) ∗
-            (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q)) ∗
-          ((mkProperPure
-              (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-            (((proph H.iris_proph_map p resolves) ∗
-                (msc_lbs G w.read_initial gam.msc_shard_names)) ∗
-              (msc_read_case G gam (msc_proph_total resolves)
-                (nat_sum w.read_initial) gamQ P)))) ⊢
-        (WP H mscE Call ScanPost) =>
-        msc_read_scan_wp H G gam a w gamQ P Q p resolves
-    | continue : \Pi (result : Value) -> (ScanPost result) ⊢
-        (WP H mscE (subst nR result Body) Post) =>
-        \lam result => msc_read_after_scan_wp H G gam a w gamQ P Q p
-          resolves result
-    | scanned : (((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-              (msc_inv H G gam a)) ∗
-            (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q)) ∗
-          ((mkProperPure
-              (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-            (((proph H.iris_proph_map p resolves) ∗
-                (msc_lbs G w.read_initial gam.msc_shard_names)) ∗
-              (msc_read_case G gam (msc_proph_total resolves)
-                (nat_sum w.read_initial) gamQ P)))) ⊢
-        (WP H mscE Call (\lam result =>
-          WP H mscE (subst nR result Body) Post)) =>
-        properUPred_ent_trans
-          (((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-                (msc_inv H G gam a)) ∗
-              (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q)) ∗
-            ((mkProperPure
-                (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-              (((proph H.iris_proph_map p resolves) ∗
-                  (msc_lbs G w.read_initial gam.msc_shard_names)) ∗
-                (msc_read_case G gam (msc_proph_total resolves)
-                  (nat_sum w.read_initial) gamQ P))))
-          (WP H mscE Call ScanPost)
-          (WP H mscE Call (\lam result =>
-            WP H mscE (subst nR result Body) Post)) scan
-          (wp_mono H mscE Call ScanPost
-            (\lam result => WP H mscE (subst nR result Body) Post) continue)
-  \in properUPred_ent_trans
-      (((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-            (msc_inv H G gam a)) ∗
-          (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q)) ∗
-        ((mkProperPure
-            (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-          (((proph H.iris_proph_map p resolves) ∗
-              (msc_lbs G w.read_initial gam.msc_shard_names)) ∗
-            (msc_read_case G gam (msc_proph_total resolves)
-              (nat_sum w.read_initial) gamQ P))))
-      (WP H mscE Call (\lam result =>
-        WP H mscE (subst nR result Body) Post))
-      (WP H mscE (letE nR Call Body) Post) scanned
-      (wp_letE H mscE nR Call Body Post)
+  ipm $ wp_smart_apply
+    (msc_read_scan_wp H G gam a w gamQ P Q p resolves)
+    (\lam result => msc_read_after_scan_wp H G gam a w gamQ P Q p
+      resolves result) $
+    iAssumption
 
 \lemma msc_read_prepared_scan_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -8957,41 +8132,10 @@
                 (resolveProphE (Var nP) (Var nR))
                 (Var nR))))))
       (msc_read_core_post H G gam a Q)) =>
-  \let
-    | Pre => (iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-          (msc_inv H G gam a)) ∗
-        ((msc_read_shift H G gam P Q) ∗ P)
-    | Body => letE nA
-        (Fst (Val
-          (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
-        (letE nT
-          (Snd (Val
-            (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
-          (letE nR
-            (app4 (Val msc_sum_loop)
-              (Var nA) (Var nT) (Val (natV 0)) (Val (natV 0)))
-            (seqE (resolveProphE (Var nP) (Var nR)) (Var nR))))
-    | Post => msc_read_core_post H G gam a Q
-    | NewPost => msc_read_new_post H G gam a P Q
-    | start : Pre ⊢ (WP H mscE NewProph NewPost) =>
-        msc_read_start_new H G gam a P Q
-    | continue : \Pi (prophValue : Value) -> (NewPost prophValue) ⊢
-        (WP H mscE (subst nP prophValue Body) Post) =>
-        \lam prophValue => msc_read_after_new_wp H G gam a P Q prophValue
-    | newThenBody : Pre ⊢
-        (WP H mscE NewProph (\lam prophValue =>
-          WP H mscE (subst nP prophValue Body) Post)) =>
-        properUPred_ent_trans Pre (WP H mscE NewProph NewPost)
-          (WP H mscE NewProph (\lam prophValue =>
-            WP H mscE (subst nP prophValue Body) Post)) start
-          (wp_mono H mscE NewProph NewPost
-            (\lam prophValue => WP H mscE (subst nP prophValue Body) Post)
-            continue)
-  \in properUPred_ent_trans Pre
-      (WP H mscE NewProph (\lam prophValue =>
-        WP H mscE (subst nP prophValue Body) Post))
-      (WP H mscE (letE nP NewProph Body) Post) newThenBody
-      (wp_letE H mscE nP NewProph Body Post)
+  ipm $ wp_smart_apply (msc_read_start_new H G gam a P Q)
+    (\lam prophValue =>
+      msc_read_after_new_wp H G gam a P Q prophValue) $
+    iAssumption
 
 \lemma msc_read_specialized_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -9055,27 +8199,12 @@
     ((msc_is_counter H G gam c) ∗
       ((msc_read_shift H G gam P Q) ∗
         (P ∗ (msc_is_counter H G gam c)))) =>
-  \let
-    | Shift => msc_read_shift H G gam P Q
-    | Public => msc_is_counter H G gam c
-    | Source => Shift ∗ (Public ∗ P)
-    | WithCopy => Source ∗ Public
-    | Target => Public ∗
-        (Shift ∗ (P ∗ Public))
-    | sourceToPublic : Source ⊢ Public =>
-        ipm $ iIntros "HShift HRest" $
-          iDestruct "HRest" "HPublic HP" $ iExact "HPublic"
-    | copy : Source ⊢ WithCopy =>
-        persistent_consequence_frame_ent Source Public
-          (properUPred_ent_trans Source Public
-            (<#> Public) sourceToPublic
-            (msc_is_counter_persistent H G gam c))
-  \in properUPred_ent_trans Source WithCopy Target copy
-      (ipm $ iIntros "HSource HPublic2" $
-        iDestruct "HSource" "HShift HRest" $
-        iDestruct "HRest" "HPublic HP" $
-        iFrame "HPublic" $ iFrame "HShift" $
-        iFrame "HP" $ iExact "HPublic2")
+  ipm $ iIntros "HShift HRest" $
+    iDestruct "HRest" "HPublic HP" $
+    iDestruct "HPublic" "#HPublic"
+      (msc_is_counter_persistent H G gam c) $
+    iFrame "HPublic" $ iFrame "HShift" $
+    iFrame "HP" $ iExact "HPublic"
 
 \lemma msc_read_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -9087,76 +8216,44 @@
   \let
     | Shift => msc_read_shift H G gam P Q
     | Public => msc_is_counter H G gam c
-    | Source => Shift ∗ (Public ∗ P)
-    | Prepared => Public ∗
-        (Shift ∗ (P ∗ Public))
-    | Goal => WP H mscE (App (Val msc_read) (Val c))
-        (msc_read_post H G gam c Q)
+    | CounterV : Nat -> Value => \lam a =>
+        PairV (LitV (LitLoc a)) (natV gam.msc_size)
+    | Inv : Nat -> iProp S => \lam a =>
+        iris.base_logic.lib.invariants.inv H.iris_wsat mscN
+          (msc_inv H G gam a)
+    | CorePost : Nat -> Value -> iProp S => \lam a =>
+        msc_read_core_post H G gam a Q
     | CounterBody : Nat -> iProp S => \lam a =>
-        (mkProperPure
-            (c = PairV (LitV (LitLoc a)) (natV gam.msc_size))) ∗
-          (iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-            (msc_inv H G gam a))
-    | CounterRest => Shift ∗ (P ∗ Public)
-    | perCounter : \Pi (a : Nat) -> ((CounterBody a) ∗ CounterRest) ⊢ Goal =>
-        \lam a =>
-          \let
-            | CounterV => PairV (LitV (LitLoc a)) (natV gam.msc_size)
-            | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-                (msc_inv H G gam a)
-            | AfterPure => Inv ∗ CounterRest
-            | CorePre => Inv ∗ (Shift ∗ P)
-            | Ready => CorePre ∗ Public
-            | CorePost => msc_read_core_post H G gam a Q
-            | runConcrete : CorePre ⊢
-                (WP H mscE (App (Val msc_read) (Val CounterV)) CorePost) =>
-                msc_read_specialized_wp H G gam a P Q
-            | runFramed : Ready ⊢
-                (WP H mscE (App (Val msc_read) (Val CounterV))
-                  (wp_frame_post CorePost Public)) =>
-                ipm $ iIntros "HCore HPublic" $
-                  wp_apply (wp_frame_r H mscE
-                    (App (Val msc_read) (Val CounterV)) CorePost Public) $
-                  iSplitL "HCore"
-                    (wp_apply runConcrete $ iExact "HCore")
-                    (iExact "HPublic")
-            | finish : (WP H mscE (App (Val msc_read) (Val CounterV))
-                  (wp_frame_post CorePost Public)) ⊢
-                (WP H mscE (App (Val msc_read) (Val CounterV))
-                  (msc_read_post H G gam c Q)) =>
-                wp_mono H mscE (App (Val msc_read) (Val CounterV))
-                  (wp_frame_post CorePost Public)
-                  (msc_read_post H G gam c Q)
-                  (\lam v => msc_read_post_frame H G gam a c Q v)
-            | concrete : Ready ⊢
-                (WP H mscE (App (Val msc_read) (Val CounterV))
-                  (msc_read_post H G gam c Q)) =>
-                ipm $ wp_apply finish $ wp_apply runFramed $ iAssumption
-            | arrange : AfterPure ⊢ Ready =>
-                ipm $ iIntros "HInv HRest" $
-                  iDestruct "HRest" "HShift HPair" $
-                  iDestruct "HPair" "HP HPublic" $
-                  iSplitL "HInv HShift HP"
-                    (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
-                    (iExact "HPublic")
-            | afterEq : c = CounterV -> AfterPure ⊢ Goal =>
-                \lam counterEq => transport
-                  (\lam cv => AfterPure ⊢
-                    (WP H mscE (App (Val msc_read) (Val cv))
-                      (msc_read_post H G gam c Q)))
-                  (Paths.inv counterEq)
-                  (properUPred_ent_trans AfterPure Ready
-                    (WP H mscE (App (Val msc_read) (Val CounterV))
-                      (msc_read_post H G gam c Q)) arrange concrete)
-          \in properUPred_ent_trans
-              ((CounterBody a) ∗ CounterRest)
-              ((mkProperPure (c = CounterV)) ∗ AfterPure) Goal
-              (sep_assoc_l_ent (mkProperPure (c = CounterV)) Inv CounterRest)
-              (pure_sep_l_elim (c = CounterV) AfterPure Goal afterEq)
-    | prepared : Source ⊢ Prepared =>
-        msc_read_prepare_public H G gam c P Q
-  \in properUPred_ent_trans Source Prepared Goal prepared
-      (sep_exist_l_elim CounterBody CounterRest Goal perCounter)
+        (mkProperPure (c = CounterV a)) ∗ (Inv a)
+    | Goal : Value -> iProp S => \lam cv =>
+        WP H mscE (App (Val msc_read) (Val cv))
+          (msc_read_post H G gam c Q)
+    | run : \Pi (a : Nat) ->
+        (((Inv a) ∗ (Shift ∗ P)) ∗ Public) ⊢
+          (WP H mscE (App (Val msc_read) (Val (CounterV a)))
+            (msc_read_post H G gam c Q)) =>
+        \lam a => ipm $ iIntros "HCore HPublic" $
+          wp_smart_apply
+            (wp_frame_r H mscE
+              (App (Val msc_read) (Val (CounterV a)))
+              (CorePost a) Public)
+            (\lam v => msc_read_post_frame H G gam a c Q v) $
+          iSplitL "HCore"
+            (wp_apply (msc_read_specialized_wp H G gam a P Q) $
+              iExact "HCore")
+            (iExact "HPublic")
+  \in ipm $ iIntros "HShift HRest" $
+      iDestruct "HRest" "HPublic HP" $
+      iDestruct "HPublic" "#HPublic HCounterSource"
+        (msc_is_counter_persistent H G gam c) $
+      iDestruct "HCounterSource" "HCounter" CounterBody $ \lam a =>
+      iDestruct "HCounter" "HEq HInv" $
+      iDestruct "HEq" "%" $ \lam counterEq =>
+      iRewrite counterEq Goal $
+      wp_apply (run a) $
+      iSplitL "HInv HShift HP"
+        (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
+        (iExact "HPublic")
 
 \func msc_incr_result {S : gFunctors} (Q : Nat -> iProp S) : iProp S =>
   mkProperExist Nat Q
@@ -9904,28 +9001,16 @@
           (P ∗
             ((msc_is_counter H G gam c) ∗
               (msc_handle G gam h)))))) =>
-  \let
-    | VS => msc_incr_shift H G gam P Q
-    | C => msc_is_counter H G gam c
-    | Hd => msc_handle G gam h
-    | Source => VS ∗ (C ∗ (Hd ∗ P))
-    | Public => C ∗ Hd
-    | Target => C ∗ (Hd ∗
-        (VS ∗ (P ∗ Public)))
-  \in ipm $ iIntros "HShift HRest" $
+  ipm $ iIntros "HShift HRest" $
       iDestruct "HRest" "HCounter HRest" $
       iDestruct "HRest" "HHandle HP" $
-      iAssert "HCounterPersistent" "HCounter" (<#> C)
-        (wp_apply (msc_is_counter_persistent H G gam c) $
-          iExact "HCounter")
-        (iDestruct "HCounterPersistent" "#HCounter" $
-          iAssert "HHandlePersistent" "HHandle" (<#> Hd)
-            (wp_apply (msc_handle_persistent G gam h) $
-              iExact "HHandle")
-            (iDestruct "HHandlePersistent" "#HHandle" $
-              iFrame "HCounter" $ iFrame "HHandle" $
-                iFrame "HShift" $ iFrame "HP" $
-                  iFrame "HCounter" $ iExact "HHandle"))
+      iDestruct "HCounter" "#HCounter"
+        (msc_is_counter_persistent H G gam c) $
+      iDestruct "HHandle" "#HHandle"
+        (msc_handle_persistent G gam h) $
+      iFrame "HCounter" $ iFrame "HHandle" $
+      iFrame "HShift" $ iFrame "HP" $
+      iFrame "HCounter" $ iExact "HHandle"
 
 \lemma msc_incr_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -9940,119 +9025,59 @@
     | C => msc_is_counter H G gam c
     | Hd => msc_handle G gam h
     | Public => C ∗ Hd
-    | Prepared => C ∗
-        (Hd ∗ (VS ∗ (P ∗ Public)))
-    | Goal => WP H mscE (app2 (Val msc_incr) (Val c) (Val h))
-        (msc_incr_post H G gam c h Q)
+    | CounterV : Nat -> Value => \lam a =>
+        PairV (LitV (LitLoc a)) (natV gam.msc_size)
+    | HandleV : Nat -> Value => \lam i => natV i
+    | Inv : Nat -> iProp S => \lam a =>
+        iris.base_logic.lib.invariants.inv H.iris_wsat mscN
+          (msc_inv H G gam a)
     | CounterBody : Nat -> iProp S => \lam a =>
-        (mkProperPure
-            (c = PairV (LitV (LitLoc a)) (natV gam.msc_size))) ∗
-          (iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-            (msc_inv H G gam a))
-    | CounterRest => Hd ∗
-        (VS ∗ (P ∗ Public))
-    | perCounter : \Pi (a : Nat) -> ((CounterBody a) ∗ CounterRest) ⊢ Goal =>
-        \lam a =>
-          \let
-            | CounterV => PairV (LitV (LitLoc a)) (natV gam.msc_size)
-            | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-                (msc_inv H G gam a)
-            | Tail => VS ∗ (P ∗ Public)
-            | AfterCounterPure => Inv ∗ (Hd ∗ Tail)
-            | HandleReady => Hd ∗ (Inv ∗ Tail)
-            | HandleBody : Nat -> iProp S => \lam i =>
-                (mkProperPure (h = natV i)) ∗
-                  (mkProperPure (nat_lt i gam.msc_size))
-            | HandleRest => Inv ∗ Tail
-            | afterCounter : ((CounterBody a) ∗ CounterRest) ⊢
-                ((mkProperPure (c = CounterV)) ∗ AfterCounterPure) =>
-                ipm $ iIntros "HCounterBody HRest" $
-                  iDestruct "HCounterBody" "HEq HInv" $
-                  iFrame "HEq" $ iFrame "HInv" $ iExact "HRest"
-            | useCounterEq : (c = CounterV) -> AfterCounterPure ⊢ Goal => \lam eqC =>
-                \let
-                  | toHandle : AfterCounterPure ⊢ HandleReady =>
-                      ipm $ iIntros "HInv HHandleTail" $
-                        iDestruct "HHandleTail" "HHandle HTail" $
-                        iFrame "HHandle" $ iFrame "HInv" $ iExact "HTail"
-                  | perHandle : \Pi (i : Nat) -> ((HandleBody i) ∗ HandleRest) ⊢ Goal =>
-                      \lam i =>
-                        \let
-                          | HandleV => natV i
-                          | A0 => (HandleBody i) ∗ HandleRest
-                          | A1 => (mkProperPure (h = HandleV)) ∗
-                              ((mkProperPure (nat_lt i gam.msc_size)) ∗
-                                HandleRest)
-                          | useHandleEq : (h = HandleV) -> ((mkProperPure (nat_lt i gam.msc_size)) ∗
-                                HandleRest) ⊢ Goal => \lam eqH =>
-                              pure_sep_l_elim (nat_lt i gam.msc_size)
-                                HandleRest Goal (\lam hi =>
-                                  \let
-                                    | Core => Inv ∗
-                                        (VS ∗ P)
-                                    | Ready => Core ∗ Public
-                                    | Specialized => app2 (Val msc_incr)
-                                        (Val CounterV) (Val HandleV)
-                                    | CorePost => msc_incr_core_post Q
-                                    | PublicPost => msc_incr_post H G gam c h Q
-                                    | FramePost => wp_frame_post CorePost Public
-                                    | arrangeCore : HandleRest ⊢ Ready =>
-                                        ipm $ iIntros "HInv HTail" $
-                                          iDestruct "HTail" "HShift HRest" $
-                                          iDestruct "HRest" "HP HPublic" $
-                                          iSplitL "HInv HShift HP"
-                                            (iFrame "HInv" $ iFrame "HShift" $
-                                              iExact "HP")
-                                            (iExact "HPublic")
-                                    | framedWP : Ready ⊢
-                                        (WP H mscE Specialized FramePost) =>
-                                        properUPred_ent_trans Ready
-                                          ((WP H mscE Specialized CorePost) ∗ Public)
-                                          (WP H mscE Specialized FramePost)
-                                          (sep_mono_l_ent Core
-                                            (WP H mscE Specialized CorePost) Public
-                                            (msc_incr_specialized_wp H G gam
-                                              a i hi P Q))
-                                          (wp_frame_r H mscE Specialized
-                                            CorePost Public)
-                                    | postMono : (WP H mscE Specialized FramePost) ⊢
-                                        (WP H mscE Specialized PublicPost) =>
-                                        wp_mono H mscE Specialized FramePost
-                                          PublicPost (\lam v =>
-                                            msc_incr_post_frame H G gam c h Q v)
-                                    | specializedProgram : HandleRest ⊢
-                                        (WP H mscE Specialized PublicPost) =>
-                                        properUPred_ent_trans HandleRest Ready
-                                          (WP H mscE Specialized PublicPost)
-                                          arrangeCore
-                                          (properUPred_ent_trans Ready
-                                            (WP H mscE Specialized FramePost)
-                                            (WP H mscE Specialized PublicPost)
-                                            framedWP postMono)
-                                  \in transport2 (\lam cc hh => HandleRest ⊢
-                                      (WP H mscE
-                                        (app2 (Val msc_incr) (Val cc) (Val hh))
-                                        PublicPost))
-                                    (inv eqC) (inv eqH) specializedProgram)
-                        \in properUPred_ent_trans A0 A1 Goal
-                            (ipm $ iIntros "HHandleBody HRest" $
-                              iDestruct "HHandleBody" "HEq HBound" $
-                              iFrame "HEq" $ iFrame "HBound" $ iExact "HRest")
-                            (pure_sep_l_elim (h = HandleV)
-                              ((mkProperPure (nat_lt i gam.msc_size)) ∗
-                                HandleRest) Goal useHandleEq)
-                \in properUPred_ent_trans AfterCounterPure HandleReady Goal
-                    toHandle
-                    (sep_exist_l_elim HandleBody HandleRest Goal perHandle)
-          \in properUPred_ent_trans
-              ((CounterBody a) ∗ CounterRest)
-              ((mkProperPure (c = CounterV)) ∗ AfterCounterPure)
-              Goal afterCounter
-              (pure_sep_l_elim (c = CounterV) AfterCounterPure Goal useCounterEq)
-  \in properUPred_ent_trans
-      (VS ∗ (C ∗ (Hd ∗ P))) Prepared Goal
-      (msc_incr_prepare_public H G gam c h P Q)
-      (sep_exist_l_elim CounterBody CounterRest Goal perCounter)
+        (mkProperPure (c = CounterV a)) ∗ (Inv a)
+    | HandleBody : Nat -> iProp S => \lam i =>
+        (mkProperPure (h = HandleV i)) ∗
+          (mkProperPure (nat_lt i gam.msc_size))
+    | GoalC : Value -> iProp S => \lam cv =>
+        WP H mscE (app2 (Val msc_incr) (Val cv) (Val h))
+          (msc_incr_post H G gam c h Q)
+    | GoalH : Nat -> Value -> iProp S => \lam a hv =>
+        WP H mscE (app2 (Val msc_incr) (Val (CounterV a)) (Val hv))
+          (msc_incr_post H G gam c h Q)
+    | run : \Pi (a i : Nat) -> nat_lt i gam.msc_size ->
+        (((Inv a) ∗ (VS ∗ P)) ∗ Public) ⊢
+          (WP H mscE
+            (app2 (Val msc_incr) (Val (CounterV a)) (Val (HandleV i)))
+            (msc_incr_post H G gam c h Q)) =>
+        \lam a i hi => ipm $ iIntros "HCore HPublic" $
+          wp_smart_apply
+            (wp_frame_r H mscE
+              (app2 (Val msc_incr)
+                (Val (CounterV a)) (Val (HandleV i)))
+              (msc_incr_core_post Q) Public)
+            (\lam v => msc_incr_post_frame H G gam c h Q v) $
+          iSplitL "HCore"
+            (wp_apply (msc_incr_specialized_wp H G gam a i hi P Q) $
+              iExact "HCore")
+            (iExact "HPublic")
+  \in ipm $ iIntros "HShift HRest" $
+      iDestruct "HRest" "HCounter HRest" $
+      iDestruct "HRest" "HHandle HP" $
+      iDestruct "HCounter" "#HCounter HCounterSource"
+        (msc_is_counter_persistent H G gam c) $
+      iDestruct "HHandle" "#HHandle HHandleSource"
+        (msc_handle_persistent G gam h) $
+      iDestruct "HCounterSource" "HCounterBody" CounterBody $ \lam a =>
+      iDestruct "HCounterBody" "HEqC HInv" $
+      iDestruct "HHandleSource" "HHandleBody" HandleBody $ \lam i =>
+      iDestruct "HHandleBody" "HEqH HBound" $
+      iDestruct "HEqC" "%" $ \lam eqC =>
+      iDestruct "HEqH" "%" $ \lam eqH =>
+      iDestruct "HBound" "%" $ \lam hi =>
+      iRewrite eqC GoalC $
+      iRewrite eqH (GoalH a) $
+      wp_apply (run a i hi) $
+      iSplitL "HInv HShift HP"
+        (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
+        (iFrame "HCounter" $ iExact "HHandle")
 
 -- All non-physical resources created by `msc_new_counter`, packaged around
 -- one counter name.  Keeping this allocation independent of WP is useful for
@@ -10455,127 +9480,65 @@
         (msc_new_counter_post H G T
           (PairV (LitV (LitLoc a)) (natV T)))
     | finish : Mid ⊢ Target =>
-        exist_elim_ent (\lam gam =>
-          (mkProperPure (gam.msc_size = T)) ∗
-            ((msc_counter_frag G gam qp_one 0) ∗
-              (msc_inv H G gam a))) Target (\lam gam =>
         \let
-          | Size => mkProperPure {iResUR S} (gam.msc_size = T)
-          | Frag => msc_counter_frag G gam qp_one 0
-          | Body => msc_inv H G gam a
-          | Inv => iris.base_logic.lib.invariants.inv
-              H.iris_wsat mscN Body
-          | PairResult => PairV (LitV (LitLoc a)) (natV T)
-          | Source => Size ∗ (Frag ∗ Body)
-          | strip : Source ⊢ (Frag ∗ Body) =>
-              sep_elim_r_ent Size (Frag ∗ Body)
-          | enterLater : (Frag ∗ Body) ⊢
-              ((|> Body) ∗ Frag) =>
-              properUPred_ent_trans (Frag ∗ Body)
-                (Frag ∗ (|> Body))
-                ((|> Body) ∗ Frag)
-                (sep_mono_r_ent Frag Body (|> Body)
-                  (proper_later_intro Body))
-                (sep_comm_ent Frag (|> Body))
-          | allocate : ((|> Body) ∗ Frag) ⊢
-              (mkProperFUpd H.iris_wsat mscE mscE
-                (Inv ∗ Frag)) =>
-              properUPred_ent_trans
-                ((|> Body) ∗ Frag)
-                ((mkProperFUpd H.iris_wsat mscE mscE Inv) ∗ Frag)
-                (mkProperFUpd H.iris_wsat mscE mscE
-                  (Inv ∗ Frag))
-                (sep_mono_l_ent (|> Body)
-                  (mkProperFUpd H.iris_wsat mscE mscE Inv) Frag
-                  (inv_alloc H.iris_wsat mscN mscE Body))
-                (fupd_frame_r H.iris_wsat mscE mscE Inv Frag)
-          | counterIntro : gam.msc_size = T -> Inv ⊢
-              (msc_is_counter H G gam PairResult) =>
-              \lam hsize => properUPred_ent_trans Inv
-                ((mkProperPure
-                    (PairResult = PairV (LitV (LitLoc a))
-                      (natV gam.msc_size))) ∗ Inv)
-                (msc_is_counter H G gam PairResult)
-                (pure_intro_sep_ent
-                  (PairResult = PairV (LitV (LitLoc a))
-                    (natV gam.msc_size))
-                  (pmap (PairV (LitV (LitLoc a)))
-                    (pmap natV (inv hsize))) Inv)
-                (exist_intro_ent (\lam l => (mkProperPure
-                    (PairResult = PairV (LitV (LitLoc l))
-                      (natV gam.msc_size))) ∗
+          | Family : msc_name -> iProp S => \lam gam =>
+              (mkProperPure (gam.msc_size = T)) ∗
+                ((msc_counter_frag G gam qp_one 0) ∗
+                  (msc_inv H G gam a))
+        \in ipm $ iIntros "HMid" $
+          iDestruct "HMid" "HResources" Family $ \lam gam =>
+          \let
+            | Size => mkProperPure {iResUR S} (gam.msc_size = T)
+            | Frag => msc_counter_frag G gam qp_one 0
+            | Body => msc_inv H G gam a
+            | Inv => iris.base_logic.lib.invariants.inv
+                H.iris_wsat mscN Body
+            | PairResult => PairV (LitV (LitLoc a)) (natV T)
+            | Counter => msc_is_counter H G gam PairResult
+            | Handles => msc_handles G gam
+            | CounterFamily : Loc -> iProp S => \lam l =>
+                (mkProperPure
+                  (PairResult = PairV (LitV (LitLoc l))
+                    (natV gam.msc_size))) ∗
                   (iris.base_logic.lib.invariants.inv H.iris_wsat
-                    mscN (msc_inv H G gam l))) a)
-          | assemble : gam.msc_size = T -> (Inv ∗ Frag) ⊢
-              (msc_new_counter_post H G T PairResult) =>
-              \lam hsize =>
-                \let
-                  | Handles => msc_handles G gam
-                  | WithHandles => (msc_is_counter H G gam PairResult) ∗
-                      (Handles ∗ Frag)
-                  | WithSize => Size ∗ WithHandles
-                  | addHandles : (Inv ∗ Frag) ⊢
-                      (Inv ∗ (Handles ∗ Frag)) =>
-                      properUPred_ent_trans
-                        (Inv ∗ Frag)
-                        (Inv ∗ (Frag ∗ Handles))
-                        (Inv ∗ (Handles ∗ Frag))
-                        (sep_mono_r_ent Inv Frag
-                          (Frag ∗ Handles)
-                          (attach_valid_r_ent Frag Handles
-                            (msc_make_handles G gam)))
-                        (sep_mono_r_ent Inv
-                          (Frag ∗ Handles)
-                          (Handles ∗ Frag)
-                          (sep_comm_ent Frag Handles))
-                \in properUPred_ent_trans
-                    (Inv ∗ Frag)
-                    (Inv ∗ (Handles ∗ Frag))
-                    (msc_new_counter_post H G T PairResult) addHandles
-                    (properUPred_ent_trans
-                      (Inv ∗ (Handles ∗ Frag))
-                      WithHandles
-                      (msc_new_counter_post H G T PairResult)
-                      (sep_mono_l_ent Inv
-                        (msc_is_counter H G gam PairResult)
-                        (Handles ∗ Frag)
-                        (counterIntro hsize))
-                      (properUPred_ent_trans WithHandles WithSize
-                        (msc_new_counter_post H G T PairResult)
-                        (pure_intro_sep_ent (gam.msc_size = T) hsize
-                          WithHandles)
-                        (exist_intro_ent (\lam gam0 =>
-                          (mkProperPure (gam0.msc_size = T)) ∗
-                            ((msc_is_counter H G gam0 PairResult) ∗
-                              ((msc_handles G gam0) ∗
-                                (msc_counter_frag G gam0 qp_one 0)))) gam)))
-          | conclude : gam.msc_size = T -> Source ⊢
-              (mkProperFUpd H.iris_wsat mscE mscE
-                (msc_new_counter_post H G T PairResult)) =>
-              \lam hsize => properUPred_ent_trans Source
-                (Frag ∗ Body)
-                (mkProperFUpd H.iris_wsat mscE mscE
-                  (msc_new_counter_post H G T PairResult)) strip
-                (properUPred_ent_trans (Frag ∗ Body)
-                  ((|> Body) ∗ Frag)
-                  (mkProperFUpd H.iris_wsat mscE mscE
-                    (msc_new_counter_post H G T PairResult)) enterLater
-                  (properUPred_ent_trans
-                    ((|> Body) ∗ Frag)
-                    (mkProperFUpd H.iris_wsat mscE mscE
-                      (Inv ∗ Frag))
-                    (mkProperFUpd H.iris_wsat mscE mscE
-                      (msc_new_counter_post H G T PairResult)) allocate
-                    (fupd_mono H.iris_wsat mscE mscE
-                      (Inv ∗ Frag)
-                      (msc_new_counter_post H G T PairResult)
-                      (assemble hsize))))
-        \in \lam n x hx hsource => \case hsource \with {
-          | inP (_, _, _, hsize, _) => conclude hsize n x hx hsource
-        }
-      )
-  \in properUPred_ent_trans Initial Mid Target
-      (msc_initial_ghosts_array_to_frag_inv H G T a) finish
+                    mscN (msc_inv H G gam l))
+            | ResultFamily : msc_name -> iProp S => \lam gam0 =>
+                (mkProperPure (gam0.msc_size = T)) ∗
+                  ((msc_is_counter H G gam0 PairResult) ∗
+                    ((msc_handles G gam0) ∗
+                      (msc_counter_frag G gam0 qp_one 0)))
+            | counterIntro : gam.msc_size = T -> Inv ⊢ Counter =>
+                \lam hsize => ipm $ iIntros "HInv" $
+                  iExists a CounterFamily $
+                  iSplitL ""
+                    (iPureIntro $ pmap (PairV (LitV (LitLoc a)))
+                      (pmap natV (inv hsize)))
+                    (iExact "HInv")
+            | assemble : gam.msc_size = T -> (Inv ∗ Frag) ⊢
+                (msc_new_counter_post H G T PairResult) =>
+                \lam hsize => ipm $ iIntros "HInv HFrag" $
+                  wp_apply (exist1_intro_ent ResultFamily gam) $
+                  iSplitL "" (iPureIntro $ hsize)
+                    (iSplitL "HInv"
+                      (wp_apply (counterIntro hsize) $ iExact "HInv")
+                      (iSplitL ""
+                        (wp_apply (msc_make_handles G gam) $ iEmpIntro)
+                        (iExact "HFrag")))
+          \in iDestruct "HResources" "HSize HRest" $
+            iDestruct "HSize" "%" $ \lam hsize =>
+            iDestruct "HRest" "HFrag HBody" $
+            wp_apply (fupd_mono H.iris_wsat mscE mscE
+              (Inv ∗ Frag)
+              (msc_new_counter_post H G T PairResult)
+              (assemble hsize)) $
+            wp_apply (fupd_frame_r H.iris_wsat mscE mscE Inv Frag) $
+            iSplitL "HBody"
+              (wp_apply (inv_alloc H.iris_wsat mscN mscE Body) $
+                iNext $ iExact "HBody")
+              (iExact "HFrag")
+  \in ipm $ wp_apply finish $
+      wp_apply (msc_initial_ghosts_array_to_frag_inv H G T a) $
+      iAssumption
 
 \lemma msc_new_counter_with_ghosts {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (T : Nat)
@@ -10589,8 +9552,6 @@
   \let
     | Ghosts => msc_initial_ghosts G T
     | AllocExpr => AllocN (Val (natV T)) (Val (natV 0))
-    | PairBody => Pair (Var nA) (Val (natV T))
-    | LetLam => LamV nA PairBody
     | Post => msc_new_counter_post H G T
     | AllocPost : Value -> iProp S => \lam w =>
         mkProperExist Loc (\lam l =>
@@ -10598,133 +9559,53 @@
             (pointsto_block H.iris_gen_heap suc l T (natV 0)))
     | framedAlloc : Ghosts ⊢
         (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts)) =>
-        properUPred_ent_trans Ghosts
-          (Ghosts ∗ (WP H mscE AllocExpr AllocPost))
-          (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts))
-          (attach_valid_r_ent Ghosts (WP H mscE AllocExpr AllocPost)
-            (wp_allocN H mscE T (natV 0) positive))
-          (properUPred_ent_trans
-            (Ghosts ∗ (WP H mscE AllocExpr AllocPost))
-            ((WP H mscE AllocExpr AllocPost) ∗ Ghosts)
-            (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts))
-            (sep_comm_ent Ghosts (WP H mscE AllocExpr AllocPost))
-            (wp_frame_r H mscE AllocExpr AllocPost Ghosts))
+        ipm $
+          iAssert "HAlloc" "" (WP H mscE AllocExpr AllocPost)
+            (wp_apply (wp_allocN H mscE T (natV 0) positive) $ iEmpIntro)
+            (wp_apply (wp_frame_r H mscE AllocExpr AllocPost Ghosts) $
+              iFrame "HAlloc" $ iAssumption)
     | continue : \Pi (w : Value) -> (wp_frame_post AllocPost Ghosts w) ⊢
-        (WP H mscE (App (Val LetLam) (Val w)) Post) =>
-        \lam w => sep_exist_l_elim
-          (\lam l => (mkProperPure (w = LitV (LitLoc l))) ∧
-            (pointsto_block H.iris_gen_heap suc l T (natV 0)))
-          Ghosts (WP H mscE (App (Val LetLam) (Val w)) Post)
-          (\lam l =>
+        (WP H mscE (Pair (Val w) (Val (natV T))) Post) =>
+        \lam w =>
+          \let
+            | Witness : Loc -> iProp S => \lam l =>
+                (mkProperPure (w = LitV (LitLoc l))) ∧
+                  (pointsto_block H.iris_gen_heap suc l T (natV 0))
+          \in ipm $ iIntros "HAlloc HGhosts" $
+            iDestruct "HAlloc" "HWitness" Witness $ \lam l =>
             \let
               | locV => LitV (LitLoc l)
               | Block => pointsto_block H.iris_gen_heap suc l T (natV 0)
               | Array => pointsto_array H.iris_gen_heap suc l
                   (replicate T (natV 0))
               | Resources => Ghosts ∗ Array
-              | Source => ((mkProperPure (w = locV)) ∧ Block) ∗ Ghosts
-              | stripBlock : Source ⊢ Resources =>
-                  properUPred_ent_trans Source
-                    (Block ∗ Ghosts) Resources
-                    (sep_mono_l_ent
-                      ((mkProperPure (w = locV)) ∧ Block)
-                      Block Ghosts
-                      (and_elim_r_ent (mkProperPure (w = locV)) Block))
-                    (properUPred_ent_trans
-                      (Block ∗ Ghosts)
-                      (Ghosts ∗ Block) Resources
-                      (sep_comm_ent Block Ghosts)
-                      (sep_mono_r_ent Ghosts Block Array
-                        (transport (\lam A => Block ⊢ A)
-                          (pointsto_block_replicate
-                            H.iris_gen_heap suc l T (natV 0))
-                          (properUPred_ent_refl Block))))
+              | PairExpr => Pair (Val locV) (Val (natV T))
+              | Goal : Value -> iProp S => \lam z =>
+                  WP H mscE (Pair (Val z) (Val (natV T))) Post
+              | blockToArray : Block ⊢ Array =>
+                  transport (\lam A => Block ⊢ A)
+                    (pointsto_block_replicate
+                      H.iris_gen_heap suc l T (natV 0))
+                    (properUPred_ent_refl Block)
               | pairProgram : (Post (PairV locV (natV T))) ⊢
-                  (WP H mscE (App (Val LetLam) (Val locV)) Post) =>
-                  properUPred_ent_trans (Post (PairV locV (natV T)))
-                    (WP H mscE
-                      (Pair (Val locV) (Val (natV T))) Post)
-                    (WP H mscE (App (Val LetLam) (Val locV)) Post)
-                    (properUPred_ent_trans (Post (PairV locV (natV T)))
-                      (WP H mscE (Val (PairV locV (natV T))) Post)
-                      (WP H mscE
-                        (Pair (Val locV) (Val (natV T))) Post)
-                      (wp_value_intro H mscE (PairV locV (natV T)) Post)
-                      (wp_pair_values H mscE locV (natV T) Post))
-                    (wp_lam_beta H mscE nA PairBody locV Post)
-              | initialized : Resources ⊢
-                  (WP H mscE (App (Val LetLam) (Val locV)) Post) =>
-                  properUPred_ent_trans Resources
-                    (mkProperFUpd H.iris_wsat mscE mscE
-                      (Post (PairV locV (natV T))))
-                    (WP H mscE (App (Val LetLam) (Val locV)) Post)
-                    (msc_initialize_counter H G T l)
-                    (properUPred_ent_trans
-                      (mkProperFUpd H.iris_wsat mscE mscE
-                        (Post (PairV locV (natV T))))
-                      (mkProperFUpd H.iris_wsat mscE mscE
-                        (WP H mscE
-                          (App (Val LetLam) (Val locV)) Post))
-                      (WP H mscE
-                        (App (Val LetLam) (Val locV)) Post)
-                      (fupd_mono H.iris_wsat mscE mscE
-                        (Post (PairV locV (natV T)))
-                        (WP H mscE
-                          (App (Val LetLam) (Val locV)) Post)
-                        pairProgram)
-                      (fupd_wp H mscE
-                        (App (Val LetLam) (Val locV)) Post))
-              | conclude : w = locV -> Source ⊢
-                  (WP H mscE (App (Val LetLam) (Val w)) Post) =>
-                  \lam heq => properUPred_ent_trans Source Resources
-                    (WP H mscE (App (Val LetLam) (Val w)) Post)
-                    stripBlock
-                    (transport (\lam z => Resources ⊢
-                      (WP H mscE (App (Val LetLam) (Val z)) Post))
-                      (inv heq) initialized)
-            \in \lam n x hx hsource => conclude
-                (\case hsource \with {
-                  | inP (_, _, _, hand, _) => hand.1
-                }) n x hx hsource)
-    | allocToLet : (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts)) ⊢
-        (WP H mscE
-          (App (Val LetLam) AllocExpr) Post) =>
-        properUPred_ent_trans
-          (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts))
-          (WP H mscE AllocExpr (\lam w =>
-            WP H mscE (App (Val LetLam) (Val w)) Post))
-          (WP H mscE (App (Val LetLam) AllocExpr) Post)
-          (wp_mono H mscE AllocExpr
-            (wp_frame_post AllocPost Ghosts)
-            (\lam w => WP H mscE
-              (App (Val LetLam) (Val w)) Post) continue)
-          (wp_bind_app_r H mscE LetLam AllocExpr Post)
-    | surfaceLet : (WP H mscE (App (Val LetLam) AllocExpr) Post) ⊢
-        (WP H mscE (App (Lam nA PairBody) AllocExpr) Post) =>
-        \let
-          | LamPost : Value -> iProp S => \lam vf =>
-              WP H mscE (App (Val vf) AllocExpr) Post
-        \in properUPred_ent_trans
-            (WP H mscE (App (Val LetLam) AllocExpr) Post)
-            (WP H mscE (Val LetLam) LamPost)
-            (WP H mscE (App (Lam nA PairBody) AllocExpr) Post)
-            (wp_value_intro H mscE LetLam LamPost)
-            (properUPred_ent_trans
-              (WP H mscE (Val LetLam) LamPost)
-              (WP H mscE (Lam nA PairBody) LamPost)
-              (WP H mscE (App (Lam nA PairBody) AllocExpr) Post)
-              (wp_lam_expr H mscE nA PairBody LamPost)
-              (wp_bind_app_l H mscE (Lam nA PairBody)
-                AllocExpr Post))
-  \in properUPred_ent_trans Ghosts
-      (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts))
-      (WP H mscE (App (Lam nA PairBody) AllocExpr) Post)
-      framedAlloc
-      (properUPred_ent_trans
-        (WP H mscE AllocExpr (wp_frame_post AllocPost Ghosts))
-        (WP H mscE (App (Val LetLam) AllocExpr) Post)
-        (WP H mscE (App (Lam nA PairBody) AllocExpr) Post)
-        allocToLet surfaceLet)
+                  (WP H mscE PairExpr Post) =>
+                  ipm $
+                    wp_apply (wp_pair_values H mscE locV (natV T) Post) $
+                    wp_apply (wp_value_intro H mscE
+                      (PairV locV (natV T)) Post) $ iAssumption
+              | initialized : Resources ⊢ (WP H mscE PairExpr Post) =>
+                  ipm $
+                    wp_apply (fupd_wp H mscE PairExpr Post) $
+                    wp_apply (fupd_mono H.iris_wsat mscE mscE
+                      (Post (PairV locV (natV T)))
+                      (WP H mscE PairExpr Post) pairProgram) $
+                    wp_apply (msc_initialize_counter H G T l) $ iAssumption
+            \in iDestruct "HWitness" "% HBlock" $ \lam heq =>
+              iRewrite heq Goal $
+              wp_apply initialized $
+              iFrame "HGhosts" $
+              wp_apply blockToArray $ iExact "HBlock"
+  \in ipm $ wp_smart_apply framedAlloc continue $ iAssumption
 
 \lemma msc_new_counter_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (T : Nat)
@@ -10738,29 +9619,17 @@
         (AllocN (Val (natV T)) (Val (natV 0)))
         (Pair (Var nA) (Val (natV T)))
     | Post => msc_new_counter_post H G T
-    | bodyWP : mkProperEmp ⊢ (WP H mscE Body Post) =>
-        properUPred_ent_trans mkProperEmp
-          (|==> (msc_initial_ghosts G T))
-          (WP H mscE Body Post)
-          (msc_initial_ghosts_alloc G T)
-          (properUPred_ent_trans
-            (|==> (msc_initial_ghosts G T))
-            (|==> (WP H mscE Body Post))
-            (WP H mscE Body Post)
-            (bupd_mono (msc_initial_ghosts G T)
-              (WP H mscE Body Post)
-              (msc_new_counter_with_ghosts H G T positive))
-            (wp_bupd H mscE Body Post))
-  \in properUPred_ent_trans mkProperEmp
-      (WP H mscE Body Post)
-      (WP H mscE
-        (App (Val msc_new_counter) (Val (natV T))) Post)
-      bodyWP
-      (wp_lam_beta H mscE nT
+    | Ghosts => msc_initial_ghosts G T
+  \in ipm $
+      wp_apply (wp_lam_beta H mscE nT
         (letE nA
           (AllocN (Var nT) (Val (natV 0)))
           (Pair (Var nA) (Var nT)))
-        (natV T) Post)
+        (natV T) Post) $
+      wp_apply (wp_bupd H mscE Body Post) $
+      wp_apply (bupd_mono Ghosts (WP H mscE Body Post)
+        (msc_new_counter_with_ghosts H G T positive)) $
+      wp_apply (msc_initial_ghosts_alloc G T) $ iAssumption
 
 -- Client-side ghost accounting for the parallel four-increment example.
 -- The map itself is existentially tracked together with its two lookup facts.
@@ -11866,7 +10735,7 @@
         (WP H mscE Incr (\lam v => WP H mscE Incr SecondPost))
         first (wp_mono H mscE Incr FirstPost
           (\lam v => WP H mscE Incr SecondPost) continue))
-      (wp_letE H mscE nIgnore Incr Incr SecondPost)
+      (pm_wp_let H mscE nIgnore Incr Incr SecondPost)
 
 \lemma msc_client1_incr_twice_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -11966,7 +10835,7 @@
         (WP H mscE Incr (\lam v => WP H mscE Incr SecondPost))
         first (wp_mono H mscE Incr FirstPost
           (\lam v => WP H mscE Incr SecondPost) continue))
-      (wp_letE H mscE nIgnore Incr Incr SecondPost)
+      (pm_wp_let H mscE nIgnore Incr Incr SecondPost)
 
 \lemma msc_client2_incr_twice_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -13081,7 +11950,7 @@
   \in properUPred_ent_trans Pre
       (WP H mscE ParE (\lam returned => WP H mscE ReadE Post))
       (WP H mscE (seqE ParE ReadE) Post) chained
-      (wp_letE H mscE nIgnore ParE ReadE Post)
+      (pm_wp_let H mscE nIgnore ParE ReadE Post)
 
 -- Lambda literals that mention an enclosing binder must remain expressions
 -- until that binder has been substituted.  This wrapper evaluates the two
@@ -13269,7 +12138,7 @@
   \in properUPred_ent_trans Pre
       (WP H mscE ParE (\lam returned => WP H mscE ReadE Post))
       (WP H mscE (seqE ParE ReadE) Post) chained
-      (wp_letE H mscE nIgnore ParE ReadE Post)
+      (pm_wp_let H mscE nIgnore ParE ReadE Post)
 
 \lemma msc_nC_ne_nH1 : Not (nC = nH1) =>
   \lam p => \case p \with {}

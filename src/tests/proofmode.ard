@@ -47,6 +47,10 @@
   \let | Aliased => P ∗ Q
   \in (ipm $ iIntros "HP HQ" $ iExact "HP" : Aliased ⊢ P)
 
+\lemma proofmode_intros_single {M : UCMRA} (P : ProperUPred M)
+  : P ⊢ P =>
+  ipm $ iIntros "HP" $ iExact "HP"
+
 \lemma proofmode_connective_local_aliases {M : UCMRA}
     (P Q R : ProperUPred M) : ((P ∗ Q) ∗ R) ⊢ (Q ∗ R) =>
   \let
@@ -92,6 +96,12 @@
   ipm $ iIntros "Hex HQ" $ iDestruct "Hex" "HPhi" $ \lam a =>
     iExists a $ iFrame "HPhi" $ iExact "HQ"
 
+\lemma proofmode_destruct_exist1 {M : UCMRA} {A : \Set1}
+    (Phi : A -> ProperUPred M) (Q : ProperUPred M) :
+  ((mkProperExist1 A Phi) ∗ Q) ⊢ Q =>
+  ipm $ iIntros "Hex HQ" $ iDestruct "Hex" "HPhi" Phi $ \lam _ =>
+    iExact "HQ"
+
 \func proofmode_wrapped_exists {M : UCMRA} {A : \Set0}
     (Phi : A -> ProperUPred M) : ProperUPred M => mkProperExist A Phi
 
@@ -116,6 +126,13 @@
   ((mkProperPure phi) ∗ P) ⊢ ((mkProperPure phi) ∗ P) =>
   ipm $ iIntros "Hphi HP" $ iDestruct "Hphi" "%" $ \lam h =>
     iSplitL "" (iPureIntro $ h) (iExact "HP")
+
+\lemma proofmode_destruct_and_pure_l {M : UCMRA}
+    (P Q : ProperUPred M) (phi : \Prop) :
+  (((mkProperPure phi) ∧ P) ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HAnd HQ" $
+    iDestruct "HAnd" "% HP" $ \lam _ =>
+    iFrame "HP" $ iExact "HQ"
 
 \lemma proofmode_destruct_pure_rewrite {M : UCMRA}
     (Phi : Nat -> ProperUPred M) (x y : Nat) :
@@ -144,6 +161,28 @@
   : ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
   ipm $ iIntros "HU HE" $ iDestruct "HU" "#HP" $
     iSplitL "" (iExact "HP") (iExact "HP")
+
+\lemma proofmode_destruct_persistent_via_rule {M : UCMRA}
+    (P : ProperUPred M) (persistent : P ⊢ (<#> P)) :
+  (P ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HP HE" $
+    iDestruct "HP" "#HP" persistent $
+    iFrame "HP" $ iExact "HP"
+
+\lemma proofmode_destruct_persistent_copy {M : UCMRA}
+    (P : ProperUPred M) (persistent : P ⊢ (<#> P)) :
+  (P ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HP HE" $
+    iDestruct "HP" "#HPersistent HCopy" persistent $
+    iFrame "HCopy" $ iExact "HPersistent"
+
+\lemma proofmode_destruct_persistent_exist {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) :
+  ((<#> (mkProperExist Nat Phi)) ∗ mkProperEmp) ⊢
+    (mkProperExist Nat Phi) =>
+  ipm $ iIntros "HU HE" $ iDestruct "HU" "#HExists" $
+    iDestruct "HExists" "HP" $ \lam n =>
+    iExists n $ iExact "HP"
 
 \lemma proofmode_clear {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ Q =>
@@ -205,6 +244,10 @@
 \lemma proofmode_mod_intro {M : UCMRA} (P : ProperUPred M)
   : (P ∗ mkProperEmp) ⊢ (|==> P) =>
   ipm $ iIntros "HP HE" $ iModIntro $ iExact "HP"
+
+\lemma proofmode_emp_intro {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ mkProperEmp =>
+  ipm $ iEmpIntro
 
 \lemma proofmode_mod {M : UCMRA} (P : ProperUPred M)
   : ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
@@ -296,6 +339,47 @@
       (wp H E (If (Val (boolV true)) t f) Phi) =>
   ipm $ iIntros "HP HE" $
     wp_apply (wp_if_true H E t f Phi) $ iExact "HP"
+
+\lemma proofmode_wp_smart_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value)
+    (Phi Psi : Value -> iProp S)
+    (post : \Pi (result : Value) -> (Phi result) ⊢ (Psi result)) :
+  ((Phi v) ∗ mkProperEmp) ⊢ (wp H E (Val v) Psi) =>
+  ipm $ iIntros "HP HE" $
+    wp_smart_apply (wp_value_intro H E v Phi) post $ iExact "HP"
+
+\lemma proofmode_wp_bind_smart_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (vf : Value) (e : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      wp H E (App (Val vf) (Val v)) Psi) :
+  (P ∗ mkProperEmp) ⊢ (wp H E (App (Val vf) e) Psi) =>
+  ipm $ iIntros "HP HE" $
+    wp_smart_apply rule post $ iExact "HP"
+
+\lemma proofmode_wp_let_smart_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E rhs Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      wp H E (subst x v body) Psi) :
+  (P ∗ mkProperEmp) ⊢ (wp H E (App (Lam x body) rhs) Psi) =>
+  ipm $ iIntros "HP HE" $
+    wp_smart_apply rule post $ iExact "HP"
+
+\func proofmode_wrapped_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (Phi : Value -> iProp S) : iProp S => wp H E e Phi
+
+\lemma proofmode_wp_smart_apply_wrapped {cnt : Countable Loc}
+    {S : gFunctors} (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ (Psi v)) :
+  (P ∗ mkProperEmp) ⊢ proofmode_wrapped_wp H E e Psi =>
+  ipm $ iIntros "HP HE" $
+    wp_smart_apply rule post $ iExact "HP"
 
 \lemma proofmode_wp_bind_app_left {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)

@@ -65,6 +65,7 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "iRight", RightMeta.class, RightMeta::new);
     dependencyMeta(contributor, module, "iExists", ExistsMeta.class, ExistsMeta::new);
     dependencyMeta(contributor, module, "iPureIntro", PureIntroMeta.class, PureIntroMeta::new);
+    dependencyMeta(contributor, module, "iEmpIntro", EmpIntroMeta.class, EmpIntroMeta::new);
     dependencyMeta(contributor, module, "iAssumption", AssumptionMeta.class, AssumptionMeta::new);
     dependencyMeta(contributor, module, "iApply", ApplyWandMeta.class, ApplyWandMeta::new);
     dependencyMeta(contributor, module, "iSpecialize", SpecializeMeta.class, SpecializeMeta::new);
@@ -83,7 +84,8 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "wp_value", WpValueMeta.class, WpValueMeta::new);
     dependencyMeta(contributor, module, "wp_if", WpIfMeta.class, WpIfMeta::new);
     dependencyMeta(contributor, module, "wp_apply", WpApplyMeta.class, WpApplyMeta::new);
-    dependencyMeta(contributor, module, "wp_smart_apply", WpApplyMeta.class, WpApplyMeta::new);
+    dependencyMeta(contributor, module, "wp_smart_apply",
+        WpSmartApplyMeta.class, WpSmartApplyMeta::new);
     dependencyMeta(contributor, module, "iEval", WpApplyMeta.class, WpApplyMeta::new);
     String[] explicitWpRules = {
         "wp_lam", "wp_rec", "wp_let", "wp_alloc", "wp_allocN",

@@ -22,12 +22,21 @@ final class DestructMeta extends ExactMeta {
 
   @Dependency(name = "pm_destruct_persistent")
   private ArendRef pmDestructPersistent;
+  @Dependency(name = "pm_destruct_persistent_copy")
+  private ArendRef pmDestructPersistentCopy;
 
   @Dependency(name = "pm_destruct_exist")
   private ArendRef pmDestructExist;
+  @Dependency(name = "pm_destruct_exist1")
+  private ArendRef pmDestructExist1;
+  @Dependency(name = "pm_destruct_exist_intuitionistic")
+  private ArendRef pmDestructExistIntuitionistic;
 
   @Dependency(name = "pm_destruct_pure")
   private ArendRef pmDestructPure;
+
+  @Dependency(name = "pm_destruct_and_pure_l")
+  private ArendRef pmDestructAndPureLeft;
 
   @Dependency(name = "pm_destruct_or")
   private ArendRef pmDestructOr;
@@ -43,9 +52,14 @@ final class DestructMeta extends ExactMeta {
 
   @Dependency(name = "mkProperExist")
   private CoreFunctionDefinition mkProperExist;
+  @Dependency(name = "mkProperExist1")
+  private CoreFunctionDefinition mkProperExist1;
 
   @Dependency(name = "mkProperPure")
   private CoreFunctionDefinition mkProperPure;
+
+  @Dependency(name = "mkProperAnd")
+  private CoreFunctionDefinition mkProperAnd;
 
   @Dependency(name = "mkProperOr")
   private CoreFunctionDefinition mkProperOr;
@@ -67,9 +81,9 @@ final class DestructMeta extends ExactMeta {
     ConcreteExpression explicitRight = explicit.size() == 5 ? explicit.get(3) : null;
     ConcreteExpression continuation = explicit.get(explicit.size() - 1);
     if (trimmedPattern.startsWith("#")) {
-      if (explicit.size() != 3) {
+      if (explicit.size() != 3 && explicit.size() != 4) {
         typechecker.getErrorReporter().report(new TypecheckingError(
-            "Persistent iDestruct expects a name pattern and a continuation",
+            "Persistent iDestruct expects a name pattern, optional persistence rule, and a continuation",
             contextData.getMarker()));
         return null;
       }
@@ -78,13 +92,25 @@ final class DestructMeta extends ExactMeta {
     }
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
-    if (resolved.persistent()) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "Destructing intuitionistic hypotheses is not implemented yet", contextData.getMarker()));
-      return null;
-    }
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
+    if (resolved.persistent()) {
+      if (proposition instanceof CoreFunCallExpression exists
+          && exists.getDefinition() == mkProperExist
+          && exists.getDefCallArguments().size() >= 3) {
+        return destructExist(typechecker, contextData, resolved, proposition,
+            exists, requested, trimmedPattern, explicitShape, continuation);
+      }
+      String[] names = trimmedPattern.split("\\s+");
+      if (names.length == 1 && !trimmedPattern.isEmpty()) {
+        return destructExist(typechecker, contextData, resolved, proposition,
+            null, requested, trimmedPattern, explicitShape, continuation);
+      }
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Only existential intuitionistic hypotheses can currently be destructed",
+          contextData.getMarker()));
+      return null;
+    }
     String[] branchNames = trimmedPattern.split("\\|", -1);
     if (branchNames.length == 2) {
       if (explicit.size() != 4 && explicit.size() != 6) {
@@ -105,11 +131,29 @@ final class DestructMeta extends ExactMeta {
       return destructExist(typechecker, contextData, resolved, proposition,
           exists, requested, trimmedPattern, explicitShape, continuation);
     }
+    if (proposition instanceof CoreFunCallExpression exists
+        && exists.getDefinition() == mkProperExist1
+        && exists.getDefCallArguments().size() >= 3) {
+      return destructExist(typechecker, contextData, resolved, proposition,
+          exists, requested, trimmedPattern, explicitShape, continuation, true);
+    }
     if (proposition instanceof CoreFunCallExpression pure
         && pure.getDefinition() == mkProperPure
         && pure.getDefCallArguments().size() >= 2) {
       return destructPure(typechecker, contextData, resolved, proposition,
           pure, trimmedPattern, explicitShape, continuation);
+    }
+    if (proposition instanceof CoreFunCallExpression and
+        && and.getDefinition() == mkProperAnd
+        && and.getDefCallArguments().size() >= 3) {
+      CoreExpression left = weakHead(typechecker,
+          and.getDefCallArguments().get(and.getDefCallArguments().size() - 2));
+      if (left instanceof CoreFunCallExpression pure
+          && pure.getDefinition() == mkProperPure
+          && pure.getDefCallArguments().size() >= 2) {
+        return destructAndPureLeft(typechecker, contextData, resolved,
+            proposition, and, pure, requested, trimmedPattern, continuation);
+      }
     }
     if (proposition instanceof CoreFunCallExpression sep
         && sep.getDefinition() == mkProperSep
@@ -134,6 +178,54 @@ final class DestructMeta extends ExactMeta {
         "iDestruct expected a separating conjunction, existential, pure, or persistent proposition",
         contextData.getMarker()));
     return null;
+  }
+
+  private @Nullable TypedExpression destructAndPureLeft(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      ResolvedSelection resolved, CoreExpression proposition,
+      CoreFunCallExpression and, CoreFunCallExpression pure,
+      String requested, String pattern, ConcreteExpression continuation) {
+    if (explicitArguments(contextData).size() != 3) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Pure conjunction iDestruct expects a pattern and continuation",
+          contextData.getMarker()));
+      return null;
+    }
+    String[] names = pattern.split("\\s+");
+    if (names.length != 2 || !names[0].equals("%") || names[1].isEmpty()) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Pure conjunction iDestruct expects the pattern '% Hrest'",
+          contextData.getMarker()));
+      return null;
+    }
+    String introduced = names[1];
+    if (!introduced.equals(requested)
+        && environmentContainsName(typechecker, resolved.environment(), introduced)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Duplicate proof-mode hypothesis name '" + introduced + "'",
+          contextData.getMarker()));
+      return null;
+    }
+    CoreExpression fact = pure.getDefCallArguments().getLast();
+    CoreExpression right = and.getDefCallArguments().getLast();
+    var factory = contextData.getFactory();
+    var reflArgs = new ArrayList<ConcreteArgument>();
+    reflArgs.add(factory.arg(factory.hole(), false));
+    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+    ConcreteExpression into = factory.app(factory.ref(entailmentRefl), reflArgs);
+
+    var args = new ArrayList<ConcreteArgument>();
+    args.add(factory.arg(factory.hole(), false));
+    args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
+    args.add(factory.arg(resolved.selection().term(), true));
+    args.add(factory.arg(name(contextData, introduced), true));
+    args.add(factory.arg(factory.core(fact.computeTyped()), false));
+    args.add(factory.arg(factory.core(right.computeTyped()), false));
+    args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
+    args.add(factory.arg(into, true));
+    args.add(factory.arg(continuation, true));
+    return typechecker.typecheck(factory.app(factory.ref(pmDestructAndPureLeft), args),
+        contextData.getExpectedType());
   }
 
   private @Nullable TypedExpression destructOr(ExpressionTypechecker typechecker,
@@ -252,6 +344,15 @@ final class DestructMeta extends ExactMeta {
       CoreExpression proposition, @Nullable CoreFunCallExpression exists,
       String requested, String introduced, @Nullable ConcreteExpression explicitFamily,
       ConcreteExpression continuation) {
+    return destructExist(typechecker, contextData, resolved, proposition, exists,
+        requested, introduced, explicitFamily, continuation, false);
+  }
+
+  private @Nullable TypedExpression destructExist(ExpressionTypechecker typechecker,
+      ContextData contextData, ResolvedSelection resolved,
+      CoreExpression proposition, @Nullable CoreFunCallExpression exists,
+      String requested, String introduced, @Nullable ConcreteExpression explicitFamily,
+      ConcreteExpression continuation, boolean universeOne) {
     if (explicitArguments(contextData).size() > 4) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "Existential iDestruct accepts at most one explicit family",
@@ -292,7 +393,9 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(into, true));
     args.add(factory.arg(continuation, true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructExist), args),
+    ArendRef lemma = resolved.persistent() ? pmDestructExistIntuitionistic
+        : universeOne ? pmDestructExist1 : pmDestructExist;
+    return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
   }
 
@@ -333,10 +436,21 @@ final class DestructMeta extends ExactMeta {
 
   private @Nullable TypedExpression destructPersistent(
       ExpressionTypechecker typechecker, ContextData contextData,
-      String requested, String introduced) {
-    if (introduced.isEmpty() || introduced.contains(" ")) {
+      String requested, String introducedPattern) {
+    String[] introduced = introducedPattern.trim().split("\\s+");
+    if (introduced.length < 1 || introduced.length > 2
+        || introduced[0].isEmpty()) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "Persistent iDestruct expects exactly one name after '#'",
+          "Persistent iDestruct expects one persistent name and an optional spatial-copy name after '#'",
+          contextData.getMarker()));
+      return null;
+    }
+    String persistentName = introduced[0];
+    String copyName = introduced.length == 2 ? introduced[1] : null;
+    if (copyName != null && (copyName.isEmpty()
+        || copyName.equals(persistentName))) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Persistent and spatial-copy names must be distinct",
           contextData.getMarker()));
       return null;
     }
@@ -348,40 +462,82 @@ final class DestructMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    if (!introduced.equals(requested)
-        && environmentContainsName(typechecker, resolved.environment(), introduced)) {
+    if (!persistentName.equals(requested)
+        && environmentContainsName(typechecker, resolved.environment(), persistentName)) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "Duplicate proof-mode hypothesis name '" + introduced + "'",
+          "Duplicate proof-mode hypothesis name '" + persistentName + "'",
           contextData.getMarker()));
       return null;
     }
+    if (copyName != null && !copyName.equals(requested)
+        && environmentContainsName(typechecker, resolved.environment(), copyName)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Duplicate proof-mode hypothesis name '" + copyName + "'",
+          contextData.getMarker()));
+      return null;
+    }
+    var factory = contextData.getFactory();
+    var explicit = explicitArguments(contextData);
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
-    if (!(proposition instanceof CoreFunCallExpression persistently)
-        || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
-        || persistently.getDefCallArguments().size() < 2) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "Persistent iDestruct expected a persistently proposition",
-          contextData.getMarker()));
-      return null;
+    CoreExpression body = null;
+    ConcreteExpression persistent;
+    if (explicit.size() == 4) {
+      TypedExpression typedPersistent = typechecker.typecheck(explicit.get(2), null);
+      if (typedPersistent == null) return null;
+      CoreExpression persistentType = weakHead(typechecker,
+          typedPersistent.getType());
+      if (!(persistentType instanceof CoreFunCallExpression entailment)
+          || !entailment.getDefinition().getName().equals("properUPred_ent")
+          || entailment.getDefCallArguments().size() < 3) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Explicit persistence rule must be an entailment",
+            contextData.getMarker()));
+        return null;
+      }
+      CoreExpression conclusion = weakHead(typechecker,
+          entailment.getDefCallArguments().getLast());
+      if (!(conclusion instanceof CoreFunCallExpression persistently)
+          || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
+          || persistently.getDefCallArguments().size() < 2) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Explicit persistence rule must conclude a persistently proposition",
+            contextData.getMarker()));
+        return null;
+      }
+      body = persistently.getDefCallArguments().getLast();
+      persistent = factory.core(typedPersistent);
+    } else {
+      if (!(proposition instanceof CoreFunCallExpression persistently)
+          || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
+          || persistently.getDefCallArguments().size() < 2) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Persistent iDestruct expected a persistently proposition or an explicit persistence rule",
+            contextData.getMarker()));
+        return null;
+      }
+      body = persistently.getDefCallArguments().getLast();
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      persistent = factory.app(factory.ref(entailmentRefl), reflArgs);
     }
-    CoreExpression body = persistently.getDefCallArguments().getLast();
-    var factory = contextData.getFactory();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression persistent = factory.app(factory.ref(entailmentRefl), reflArgs);
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
     args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
     args.add(factory.arg(resolved.selection().term(), true));
-    args.add(factory.arg(name(contextData, introduced), true));
-    args.add(factory.arg(factory.core(body.computeTyped()), false));
+    args.add(factory.arg(name(contextData, persistentName), true));
+    if (copyName != null) {
+      args.add(factory.arg(name(contextData, copyName), true));
+    }
+    args.add(factory.arg(body == null ? factory.hole()
+        : factory.core(body.computeTyped()), false));
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(persistent, true));
-    args.add(factory.arg(explicitArguments(contextData).get(2), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructPersistent), args),
+    args.add(factory.arg(explicit.getLast(), true));
+    return typechecker.typecheck(factory.app(factory.ref(copyName == null
+        ? pmDestructPersistent : pmDestructPersistentCopy), args),
         contextData.getExpectedType());
   }
 }

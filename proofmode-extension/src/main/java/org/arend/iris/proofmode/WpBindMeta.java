@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-final class WpBindMeta extends ExactMeta {
+class WpBindMeta extends ExactMeta {
   @Dependency(name = "pm_wp_bind_item")
   private ArendRef pmWpBindItem;
   @Dependency(name = "AppLCtx")
@@ -52,16 +52,16 @@ final class WpBindMeta extends ExactMeta {
   @Dependency(name = "StoreRCtx")
   private ArendRef storeRCtx;
 
-  private record Focus(ConcreteExpression item, CoreExpression expression) {}
+  protected record Focus(ConcreteExpression item, CoreExpression expression) {}
 
-  private CoreExpression constructorForm(ExpressionTypechecker typechecker,
+  protected CoreExpression constructorForm(ExpressionTypechecker typechecker,
       CoreExpression expression) {
     CoreExpression result = dereference(typechecker, expression);
     return result instanceof CoreConCallExpression ? result
         : dereference(typechecker, result.normalize(NormalizationMode.NF));
   }
 
-  private @Nullable CoreExpression value(ExpressionTypechecker typechecker,
+  protected @Nullable CoreExpression value(ExpressionTypechecker typechecker,
       CoreExpression expression) {
     CoreExpression result = constructorForm(typechecker, expression);
     return result instanceof CoreConCallExpression call
@@ -70,7 +70,7 @@ final class WpBindMeta extends ExactMeta {
         ? call.getDefCallArguments().getLast() : null;
   }
 
-  private ConcreteExpression item(ContextData contextData, ArendRef constructor,
+  protected ConcreteExpression item(ContextData contextData, ArendRef constructor,
       CoreExpression... arguments) {
     var factory = contextData.getFactory();
     List<ConcreteArgument> args = new ArrayList<>();
@@ -81,7 +81,7 @@ final class WpBindMeta extends ExactMeta {
         : factory.app(factory.ref(constructor), args);
   }
 
-  private @Nullable Focus focus(ExpressionTypechecker typechecker,
+  protected @Nullable Focus focus(ExpressionTypechecker typechecker,
       ContextData contextData, CoreExpression expression) {
     CoreExpression form = constructorForm(typechecker, expression);
     if (!(form instanceof CoreConCallExpression call)) return null;

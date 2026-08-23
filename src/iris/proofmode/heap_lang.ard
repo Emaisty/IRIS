@@ -13,6 +13,7 @@
 \import iris.proofmode.core
 \import iris_heap_lang.lang
 \import iris_heap_lang.lang_ectx
+\import iris_heap_lang.lang_subst
 \import stdpp.coPset
 \import stdpp.namespaces
 
@@ -28,6 +29,18 @@
   : (Phi v) ⊢ (pm_wp H E (Val v) Phi) =>
   wp_value_intro H E v Phi
 
+\lemma pm_wp_smart_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E e Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢ (Psi v))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E e Psi) =>
+  properUPred_ent_trans (of_envs envs) P (pm_wp H E e Psi) next
+    (properUPred_ent_trans P (pm_wp H E e Phi) (pm_wp H E e Psi)
+      rule (wp_mono H E e Phi Psi post))
+
 \lemma pm_wp_bind_item {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (Ki : EctxItem)
     (e : Expr) (Phi : Value -> iProp S)
@@ -39,6 +52,87 @@
     (pm_wp H E e (\lam v => pm_wp H E (fill_item Ki (Val v)) Phi))
     (pm_wp H E (fill_item Ki e) Phi)
     next (wp_bind_item H E Ki e Phi)
+
+-- Generic call-by-value let sequencing.  HeapLang's `let x := rhs in body`
+-- is represented by `App (Lam x body) rhs`; keeping this theorem here avoids
+-- rebuilding the Lam/App plumbing in each client library.
+\lemma pm_wp_let {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (Phi : Value -> iProp S) :
+  (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
+    (pm_wp H E (App (Lam x body) rhs) Phi) =>
+  \let
+    | LamV0 => LamV x body
+    | AppPost : Value -> iProp S => \lam v =>
+        pm_wp H E (App (Val LamV0) (Val v)) Phi
+    | LamPost : Value -> iProp S => \lam vf =>
+        pm_wp H E (App (Val vf) rhs) Phi
+    | specialize : \Pi (v : Value) ->
+        (pm_wp H E (subst x v body) Phi) ⊢ (AppPost v) =>
+        \lam v => wp_lam_beta H E x body v Phi
+    | rhsToApp :
+        (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
+          (pm_wp H E (App (Val LamV0) rhs) Phi) =>
+        properUPred_ent_trans
+          (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
+          (pm_wp H E rhs AppPost)
+          (pm_wp H E (App (Val LamV0) rhs) Phi)
+          (wp_mono H E rhs
+            (\lam v => pm_wp H E (subst x v body) Phi)
+            AppPost specialize)
+          (wp_bind_app_r H E LamV0 rhs Phi)
+    | exposeLam : (pm_wp H E (App (Val LamV0) rhs) Phi) ⊢
+        (pm_wp H E (App (Lam x body) rhs) Phi) =>
+        properUPred_ent_trans
+          (pm_wp H E (App (Val LamV0) rhs) Phi)
+          (pm_wp H E (Val LamV0) LamPost)
+          (pm_wp H E (App (Lam x body) rhs) Phi)
+          (wp_value_intro H E LamV0 LamPost)
+          (properUPred_ent_trans
+            (pm_wp H E (Val LamV0) LamPost)
+            (pm_wp H E (Lam x body) LamPost)
+            (pm_wp H E (App (Lam x body) rhs) Phi)
+            (wp_lam_expr H E x body LamPost)
+            (wp_bind_app_l H E (Lam x body) rhs Phi))
+  \in properUPred_ent_trans
+      (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
+      (pm_wp H E (App (Val LamV0) rhs) Phi)
+      (pm_wp H E (App (Lam x body) rhs) Phi) rhsToApp exposeLam
+
+\lemma pm_wp_smart_let {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E rhs Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      (pm_wp H E (subst x v body) Psi))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E (App (Lam x body) rhs) Psi) =>
+  properUPred_ent_trans (of_envs envs) P
+    (pm_wp H E (App (Lam x body) rhs) Psi) next
+    (properUPred_ent_trans P (pm_wp H E rhs Phi)
+      (pm_wp H E (App (Lam x body) rhs) Psi) rule
+      (properUPred_ent_trans (pm_wp H E rhs Phi)
+        (pm_wp H E rhs
+          (\lam v => pm_wp H E (subst x v body) Psi))
+        (pm_wp H E (App (Lam x body) rhs) Psi)
+        (wp_mono H E rhs Phi
+          (\lam v => pm_wp H E (subst x v body) Psi) post)
+        (pm_wp_let H E x rhs body Psi)))
+
+\lemma pm_wp_smart_bind_item {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Ki : EctxItem) (e : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E e Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      (pm_wp H E (fill_item Ki (Val v)) Psi))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E (fill_item Ki e) Psi) =>
+  pm_wp_bind_item H E Ki e Psi
+    (pm_wp_smart_apply H E e Phi
+      (\lam v => pm_wp H E (fill_item Ki (Val v)) Psi)
+      envs P rule post next)
 
 \lemma pm_wp_if_true {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (t f : Expr)

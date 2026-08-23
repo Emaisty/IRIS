@@ -22,6 +22,7 @@
 \import iris.program_logic.adequacy
 \import iris.program_logic.iris_sigma
 \import iris_heap_lang.lang
+\import iris.proofmode.heap_lang (pm_wp_let)
 \import stdpp.coPset
 \import examples.parallel_counter
 \import examples.parallel_counter_ghost
@@ -535,7 +536,7 @@
       (WP H coPset_universe Constructor
         (\lam c => WP H coPset_universe (subst nC c Body) ResultPost))
       (WP H coPset_universe msc_closed_client ResultPost) sequenced
-      (wp_letE H coPset_universe nC Constructor Body ResultPost)
+      (pm_wp_let H coPset_universe nC Constructor Body ResultPost)
 
 -- Concrete signature and initial machine state for the closed example.
 \func msc_clientSigma : gFunctors =>

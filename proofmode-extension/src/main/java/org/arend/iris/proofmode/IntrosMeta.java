@@ -27,6 +27,9 @@ final class IntrosMeta extends ExactMeta {
   @Dependency(name = "pm_intros_sep")
   private ArendRef pmIntrosSep;
 
+  @Dependency(name = "pm_rename_spatial")
+  private ArendRef pmRenameSpatial;
+
   @Dependency(name = "envs_entails")
   private CoreFunctionDefinition envsEntails;
 
@@ -63,9 +66,37 @@ final class IntrosMeta extends ExactMeta {
     String pattern = stringArgument(typechecker, contextData, 0);
     if (pattern == null) return null;
     String[] names = pattern.trim().split("\\s+");
+    if (names.length == 1 && !names[0].isEmpty()) {
+      String introduced = names[0];
+      ResolvedSelection resolved = resolveNamed(typechecker, contextData, "");
+      if (resolved == null) return null;
+      if (resolved.persistent()) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "iIntros expected an anonymous spatial hypothesis",
+            contextData.getMarker()));
+        return null;
+      }
+      if (environmentContainsName(typechecker, resolved.environment(), introduced)) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Proof-mode hypothesis '" + introduced + "' already exists",
+            contextData.getMarker()));
+        return null;
+      }
+      var factory = contextData.getFactory();
+      var callArgs = new ArrayList<org.arend.ext.concrete.expr.ConcreteArgument>();
+      callArgs.add(factory.arg(factory.hole(), false));
+      callArgs.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
+      callArgs.add(factory.arg(resolved.selection().term(), true));
+      callArgs.add(factory.arg(name(contextData, introduced), true));
+      callArgs.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
+      callArgs.add(factory.arg(explicitArguments(contextData).get(1), true));
+      return typechecker.typecheck(factory.app(factory.ref(pmRenameSpatial), callArgs),
+          contextData.getExpectedType());
+    }
     if (names.length != 2 || names[0].isEmpty() || names[1].isEmpty()) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "This iIntros form expects exactly two names", contextData.getMarker()));
+          "iIntros expects one name or two separating-conjunction names",
+          contextData.getMarker()));
       return null;
     }
     if (names[0].equals(names[1])) {
