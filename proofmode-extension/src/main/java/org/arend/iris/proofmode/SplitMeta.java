@@ -44,6 +44,13 @@ abstract class SplitMeta extends ExactMeta {
 
   protected record BuiltSplit(ConcreteExpression term, Set<String> found) {}
 
+  private boolean accepts(ExpressionTypechecker typechecker,
+      ConcreteExpression expression, CoreExpression expectedType) {
+    return Boolean.TRUE.equals(typechecker.withCurrentState(tc ->
+        tc.withErrorReporter(error -> {}, checker ->
+            checker.typecheck(expression, expectedType) != null)));
+  }
+
   protected @Nullable BuiltSplit buildSplit(ExpressionTypechecker typechecker,
       ContextData contextData, CoreExpression environment, Set<String> selected) {
     CoreExpression current = dereference(typechecker, environment);
@@ -102,30 +109,27 @@ abstract class SplitMeta extends ExactMeta {
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
     CoreExpression target = weakHead(typechecker, goal.target());
-    if (target instanceof CoreFunCallExpression conjunction
-        && conjunction.getDefinition() == mkProperAnd) {
+    List<ConcreteExpression> arguments = explicitArguments(contextData);
+    var factory = contextData.getFactory();
+    List<ConcreteArgument> andArgs = new ArrayList<>();
+    andArgs.add(factory.arg(factory.hole(), false));
+    andArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
+    andArgs.add(factory.arg(arguments.get(1), true));
+    andArgs.add(factory.arg(arguments.get(2), true));
+    ConcreteExpression andCall = factory.app(factory.ref(pmSplitAnd), andArgs);
+    boolean directAnd = target instanceof CoreFunCallExpression conjunction
+        && conjunction.getDefinition() == mkProperAnd;
+    boolean directSep = target instanceof CoreFunCallExpression separation
+        && separation.getDefinition() == mkProperSep;
+    if (directAnd || !directSep && selected.isEmpty()
+        && accepts(typechecker, andCall, contextData.getExpectedType())) {
       if (!selected.isEmpty()) {
         typechecker.getErrorReporter().report(new TypecheckingError(
             "Ordinary conjunction duplicates the whole context; use an empty split pattern",
             contextData.getMarker()));
         return null;
       }
-      List<ConcreteExpression> arguments = explicitArguments(contextData);
-      var factory = contextData.getFactory();
-      List<ConcreteArgument> callArgs = new ArrayList<>();
-      callArgs.add(factory.arg(factory.hole(), false));
-      callArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
-      callArgs.add(factory.arg(arguments.get(1), true));
-      callArgs.add(factory.arg(arguments.get(2), true));
-      return typechecker.typecheck(factory.app(factory.ref(pmSplitAnd), callArgs),
-          contextData.getExpectedType());
-    }
-    if (!(target instanceof CoreFunCallExpression call)
-        || call.getDefinition() != mkProperSep) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "iSplitL/iSplitR requires a conjunction goal",
-          contextData.getMarker()));
-      return null;
+      return typechecker.typecheck(andCall, contextData.getExpectedType());
     }
 
     CoreExpression environment = goal.environment();
@@ -145,18 +149,21 @@ abstract class SplitMeta extends ExactMeta {
       return null;
     }
 
-    if (call.getDefCallArguments().size() < 2) return null;
-    CoreExpression leftTarget = call.getDefCallArguments().get(
-        call.getDefCallArguments().size() - 2);
-    CoreExpression rightTarget = call.getDefCallArguments().getLast();
-    List<ConcreteExpression> arguments = explicitArguments(contextData);
-    var factory = contextData.getFactory();
     List<ConcreteArgument> callArgs = new ArrayList<>();
     callArgs.add(factory.arg(factory.hole(), false));
     callArgs.add(factory.arg(factory.core(environment.computeTyped()), false));
     callArgs.add(factory.arg(split.term(), true));
-    callArgs.add(factory.arg(factory.core(leftTarget.computeTyped()), false));
-    callArgs.add(factory.arg(factory.core(rightTarget.computeTyped()), false));
+    CoreExpression leftTarget = directSep
+        ? ((CoreFunCallExpression) target).getDefCallArguments().get(
+            ((CoreFunCallExpression) target).getDefCallArguments().size() - 2)
+        : null;
+    CoreExpression rightTarget = directSep
+        ? ((CoreFunCallExpression) target).getDefCallArguments().getLast()
+        : null;
+    callArgs.add(factory.arg(leftTarget == null ? factory.hole()
+        : factory.core(leftTarget.computeTyped()), false));
+    callArgs.add(factory.arg(rightTarget == null ? factory.hole()
+        : factory.core(rightTarget.computeTyped()), false));
     callArgs.add(factory.arg(arguments.get(1), true));
     callArgs.add(factory.arg(arguments.get(2), true));
     return typechecker.typecheck(factory.app(factory.ref(pmSplitSep), callArgs),

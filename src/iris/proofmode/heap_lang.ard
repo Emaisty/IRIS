@@ -28,6 +28,18 @@
   : (Phi v) ⊢ (pm_wp H E (Val v) Phi) =>
   wp_value_intro H E v Phi
 
+\lemma pm_wp_bind_item {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Ki : EctxItem)
+    (e : Expr) (Phi : Value -> iProp S)
+    {envs : PMEnvs (iResUR S)}
+    (next : envs_entails envs
+      (pm_wp H E e (\lam v => pm_wp H E (fill_item Ki (Val v)) Phi)))
+  : envs_entails envs (pm_wp H E (fill_item Ki e) Phi) =>
+  properUPred_ent_trans (of_envs envs)
+    (pm_wp H E e (\lam v => pm_wp H E (fill_item Ki (Val v)) Phi))
+    (pm_wp H E (fill_item Ki e) Phi)
+    next (wp_bind_item H E Ki e Phi)
+
 \lemma pm_wp_if_true {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (t f : Expr)
     (Phi : Value -> iProp S)

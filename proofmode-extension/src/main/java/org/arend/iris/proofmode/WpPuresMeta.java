@@ -24,8 +24,6 @@ final class WpPuresMeta extends ExactMeta {
   private ArendRef pmEntApply;
   @Dependency(name = "pm_wp")
   private CoreFunctionDefinition pmWp;
-  @Dependency(name = "pure_head_eval")
-  private CoreFunctionDefinition pureHeadEval;
   @Dependency(name = "wp_lam_expr")
   private ArendRef wpLamExpr;
   @Dependency(name = "wp_rec_expr")
@@ -44,6 +42,10 @@ final class WpPuresMeta extends ExactMeta {
   private ArendRef wpFstPair;
   @Dependency(name = "wp_snd_pair")
   private ArendRef wpSndPair;
+  @Dependency(name = "wp_loc_add")
+  private ArendRef wpLocAdd;
+  @Dependency(name = "pm_wp_value_intro")
+  private ArendRef wpValueIntro;
 
   private CoreExpression constructorForm(ExpressionTypechecker typechecker,
       CoreExpression expression) {
@@ -75,11 +77,18 @@ final class WpPuresMeta extends ExactMeta {
       CoreExpression expression, CoreExpression post) {
     var factory = contextData.getFactory();
     CoreExpression outerExpression = constructorForm(typechecker, expression);
-    if (!(outerExpression instanceof CoreConCallExpression outer)) return null;
-    var fields = outer.getDefCallArguments();
+    List<? extends CoreExpression> fields;
+    String outerName;
+    if (outerExpression instanceof CoreConCallExpression outer) {
+      fields = outer.getDefCallArguments();
+      outerName = outer.getDefinition().getName();
+    } else if (outerExpression instanceof CoreFunCallExpression outer) {
+      fields = outer.getDefCallArguments();
+      outerName = outer.getDefinition().getName();
+    } else return null;
     var args = theoremPrefix(contextData, iris, mask);
     ArendRef rule;
-    switch (outer.getDefinition().getName()) {
+    switch (outerName) {
       case "Lam" -> {
         if (fields.size() < 2) return null;
         rule = wpLamExpr;
@@ -161,10 +170,43 @@ final class WpPuresMeta extends ExactMeta {
         CoreConCallExpression pair = constructor(typechecker,
             valueExpr.getDefCallArguments().getLast(), "PairV");
         if (pair == null || pair.getDefCallArguments().size() < 2) return null;
-        rule = outer.getDefinition().getName().equals("Fst") ? wpFstPair : wpSndPair;
+        rule = outerName.equals("Fst") ? wpFstPair : wpSndPair;
         args.add(factory.arg(factory.core(
             pair.getDefCallArguments().get(pair.getDefCallArguments().size() - 2).computeTyped()), true));
         args.add(factory.arg(factory.core(pair.getDefCallArguments().getLast().computeTyped()), true));
+      }
+      case "BinOp", "LocAdd" -> {
+        if (fields.size() < (outerName.equals("BinOp") ? 3 : 2)) return null;
+        if (outerName.equals("BinOp")) {
+          CoreExpression operation = constructorForm(typechecker,
+              fields.get(fields.size() - 3));
+          if (!(operation instanceof CoreConCallExpression operationCall)
+              || !operationCall.getDefinition().getName().equals("LocAddOp")) return null;
+        }
+        CoreConCallExpression leftExpr = constructor(typechecker,
+            fields.get(fields.size() - 2), "Val");
+        CoreConCallExpression rightExpr = constructor(typechecker, fields.getLast(), "Val");
+        if (leftExpr == null || rightExpr == null) return null;
+        CoreConCallExpression leftLit = constructor(typechecker,
+            leftExpr.getDefCallArguments().getLast(), "LitV");
+        CoreConCallExpression rightLit = constructor(typechecker,
+            rightExpr.getDefCallArguments().getLast(), "LitV");
+        if (leftLit == null || rightLit == null) return null;
+        CoreConCallExpression location = constructor(typechecker,
+            leftLit.getDefCallArguments().getLast(), "LitLoc");
+        CoreConCallExpression integer = constructor(typechecker,
+            rightLit.getDefCallArguments().getLast(), "LitInt");
+        if (location == null || integer == null
+            || location.getDefCallArguments().isEmpty()
+            || integer.getDefCallArguments().isEmpty()) return null;
+        CoreConCallExpression positive = constructor(typechecker,
+            integer.getDefCallArguments().getLast(), "pos");
+        if (positive == null || positive.getDefCallArguments().isEmpty()) return null;
+        rule = wpLocAdd;
+        args.add(factory.arg(factory.core(
+            location.getDefCallArguments().getLast().computeTyped()), true));
+        args.add(factory.arg(factory.core(
+            positive.getDefCallArguments().getLast().computeTyped()), true));
       }
       default -> { return null; }
     }
@@ -172,19 +214,21 @@ final class WpPuresMeta extends ExactMeta {
     return factory.app(factory.ref(rule), args);
   }
 
-  private @Nullable CoreExpression evaluate(ExpressionTypechecker typechecker,
-      ContextData contextData, CoreExpression expression) {
-    var factory = contextData.getFactory();
-    var args = new ArrayList<ConcreteArgument>();
-    args.add(factory.arg(factory.core(expression.computeTyped()), true));
-    TypedExpression evaluated = typechecker.typecheck(
-        factory.app(factory.ref(pureHeadEval.getRef()), args), null);
-    if (evaluated == null) return null;
-    CoreExpression result = constructorForm(typechecker, evaluated.getExpression());
-    if (!(result instanceof CoreConCallExpression just)
-        || !just.getDefinition().getName().equals("just")
-        || just.getDefCallArguments().isEmpty()) return null;
-    return just.getDefCallArguments().getLast();
+  private @Nullable CoreExpression theoremResult(ExpressionTypechecker typechecker,
+      TypedExpression theorem) {
+    CoreExpression type = dereference(typechecker, theorem.getType());
+    if (!(type instanceof CoreFunCallExpression entailment)
+        || !entailment.getDefinition().getName().equals("properUPred_ent")
+        || entailment.getDefCallArguments().size() < 3) return null;
+    var entailmentArgs = entailment.getDefCallArguments();
+    CoreExpression source = weakHead(typechecker,
+        entailmentArgs.get(entailmentArgs.size() - 2));
+    if (!(source instanceof CoreFunCallExpression wpCall)
+        || !(wpCall.getDefinition().getName().equals("wp")
+          || wpCall.getDefinition().getName().equals("pm_wp"))
+        || wpCall.getDefCallArguments().size() < 4) return null;
+    var wpArgs = wpCall.getDefCallArguments();
+    return wpArgs.get(wpArgs.size() - 2);
   }
 
   private ConcreteExpression wp(ContextData contextData, CoreExpression iris,
@@ -201,10 +245,31 @@ final class WpPuresMeta extends ExactMeta {
       CoreExpression mask, CoreExpression expression, CoreExpression post,
       ConcreteExpression continuation, int depth) {
     if (depth >= 64) return continuation;
-    ConcreteExpression theorem = theorem(typechecker, contextData, iris, mask,
+    CoreConCallExpression valueExpression = constructor(typechecker, expression, "Val");
+    if (valueExpression != null && !valueExpression.getDefCallArguments().isEmpty()) {
+      CoreExpression value = valueExpression.getDefCallArguments().getLast();
+      var factory = contextData.getFactory();
+      var theoremArgs = theoremPrefix(contextData, iris, mask);
+      theoremArgs.add(factory.arg(factory.core(value.computeTyped()), true));
+      theoremArgs.add(factory.arg(factory.core(post.computeTyped()), true));
+      ConcreteExpression precondition = factory.app(
+          factory.core(post.computeTyped()), true,
+          factory.core(value.computeTyped()));
+      var args = new ArrayList<ConcreteArgument>();
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(factory.core(environment.computeTyped()), false));
+      args.add(factory.arg(precondition, false));
+      args.add(factory.arg(wp(contextData, iris, mask, expression, post), false));
+      args.add(factory.arg(factory.app(factory.ref(wpValueIntro), theoremArgs), true));
+      args.add(factory.arg(continuation, true));
+      return factory.app(factory.ref(pmEntApply), args);
+    }
+    ConcreteExpression theoremExpression = theorem(typechecker, contextData, iris, mask,
         expression, post);
+    if (theoremExpression == null) return continuation;
+    TypedExpression theorem = typechecker.typecheck(theoremExpression, null);
     if (theorem == null) return continuation;
-    CoreExpression result = evaluate(typechecker, contextData, expression);
+    CoreExpression result = theoremResult(typechecker, theorem);
     if (result == null) return continuation;
     ConcreteExpression inner = chain(typechecker, contextData, environment, iris,
         mask, result, post, continuation, depth + 1);
@@ -214,7 +279,7 @@ final class WpPuresMeta extends ExactMeta {
     args.add(factory.arg(factory.core(environment.computeTyped()), false));
     args.add(factory.arg(wp(contextData, iris, mask, result, post), false));
     args.add(factory.arg(wp(contextData, iris, mask, expression, post), false));
-    args.add(factory.arg(theorem, true));
+    args.add(factory.arg(factory.core(theorem), true));
     args.add(factory.arg(inner, true));
     return factory.app(factory.ref(pmEntApply), args);
   }

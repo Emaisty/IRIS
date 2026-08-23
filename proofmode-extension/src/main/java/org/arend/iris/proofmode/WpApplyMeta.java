@@ -3,7 +3,6 @@ package org.arend.iris.proofmode;
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.core.expr.CoreExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
-import org.arend.ext.core.ops.CMP;
 import org.arend.ext.error.TypecheckingError;
 import org.arend.ext.reference.ArendRef;
 import org.arend.ext.typechecking.ContextData;
@@ -39,14 +38,6 @@ final class WpApplyMeta extends ExactMeta {
     }
     var entailmentArgs = entailment.getDefCallArguments();
     CoreExpression source = entailmentArgs.get(entailmentArgs.size() - 2);
-    CoreExpression destination = entailmentArgs.getLast();
-    if (!dereference(typechecker, destination).compare(
-        dereference(typechecker, goal.target()), CMP.EQ)) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "wp_apply theorem does not conclude the current goal",
-          contextData.getMarker()));
-      return null;
-    }
     var callArgs = new ArrayList<ConcreteArgument>();
     callArgs.add(factory.arg(factory.hole(), false));
     callArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));

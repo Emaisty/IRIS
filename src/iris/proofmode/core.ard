@@ -10,7 +10,7 @@
 \import iris.base_logic.notation
 \import iris.bi.big_op
 \import iris.bi.updates
-\import iris.base_logic.lib.invariants (lob_wand_apply_ent)
+\import iris.base_logic.lib.invariants (lob_wand_apply_ent, sep_or_l_elim)
 
 -- Proof-mode identifiers deliberately avoid semantic String.  The extension
 -- turns quoted UTF-16 code units into this representation before elaboration.
@@ -433,6 +433,12 @@
     (next : (of_envs envs) ⊢ Q)
   : envs_entails envs Q => next
 
+\lemma pm_transport {A : \Type} {x y : A} (path : x = y)
+    {M : UCMRA} {envs : PMEnvs M} {Phi : A -> ProperUPred M}
+    (next : envs_entails envs (Phi y))
+  : envs_entails envs (Phi x) =>
+  transport (\lam z => envs_entails envs (Phi z)) (Paths.inv path) next
+
 \lemma pm_ent_apply {M : UCMRA} {envs : PMEnvs M}
     {P Q : ProperUPred M} (entailment : P ⊢ Q)
     (next : envs_entails envs P) : envs_entails envs Q =>
@@ -526,6 +532,114 @@
             (sep_comm_ent (P ∗ Q) (pm_of_env selection.selected_rest))
             (sep_assoc_r_ent (pm_of_env selection.selected_rest) P Q)))))
     next
+
+\lemma pm_destruct_exist {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {A : \Set0} {Phi : A -> ProperUPred M} {R : ProperUPred M}
+    (into : selection.selected_prop ⊢ (mkProperExist A Phi))
+    (next : \Pi (a : A) -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name (Phi a)
+      }) R)
+  : envs_entails envs R =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | Rest => pm_of_env selection.selected_rest
+    | Exists => mkProperExist A Phi
+    | expose : (of_envs envs) ⊢ (I ∗ (Exists ∗ Rest)) =>
+        sep_mono_r_ent I (pm_of_env envs.spatial) (Exists ∗ Rest)
+          (properUPred_ent_trans (pm_of_env envs.spatial)
+            (selection.selected_prop ∗ Rest) (Exists ∗ Rest)
+            selection.selection_sound
+            (sep_mono_l_ent selection.selected_prop Exists Rest into))
+    | perWitness : \Pi (a : A) -> ((Phi a) ∗ (I ∗ Rest)) ⊢ R =>
+        \lam a => properUPred_ent_trans ((Phi a) ∗ (I ∗ Rest))
+          (I ∗ (Rest ∗ (Phi a))) R
+          (properUPred_ent_trans ((Phi a) ∗ (I ∗ Rest))
+            ((I ∗ Rest) ∗ (Phi a)) (I ∗ (Rest ∗ (Phi a)))
+            (sep_comm_ent (Phi a) (I ∗ Rest))
+            (sep_assoc_l_ent I Rest (Phi a)))
+          (next a)
+  \in properUPred_ent_trans (of_envs envs) (I ∗ (Exists ∗ Rest)) R
+      expose
+      (properUPred_ent_trans (I ∗ (Exists ∗ Rest))
+        (Exists ∗ (I ∗ Rest)) R
+        (sep_swap_ent I Exists Rest)
+        (sep_exist_l_elim Phi (I ∗ Rest) R perWitness))
+
+\lemma pm_destruct_pure {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) {phi : \Prop}
+    {R : ProperUPred M}
+    (into : selection.selected_prop ⊢ (mkProperPure phi))
+    (next : phi -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      }) R)
+  : envs_entails envs R =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | Rest => pm_of_env selection.selected_rest
+    | Pure => mkProperPure {M} phi
+    | expose : (of_envs envs) ⊢ (I ∗ (Pure ∗ Rest)) =>
+        sep_mono_r_ent I (pm_of_env envs.spatial) (Pure ∗ Rest)
+          (properUPred_ent_trans (pm_of_env envs.spatial)
+            (selection.selected_prop ∗ Rest) (Pure ∗ Rest)
+            selection.selection_sound
+            (sep_mono_l_ent selection.selected_prop Pure Rest into))
+  \in properUPred_ent_trans (of_envs envs) (I ∗ (Pure ∗ Rest)) R
+      expose
+      (properUPred_ent_trans (I ∗ (Pure ∗ Rest))
+        (Pure ∗ (I ∗ Rest)) R
+        (sep_swap_ent I Pure Rest)
+        (pure_sep_l_elim phi (I ∗ Rest) R next))
+
+\lemma pm_destruct_or {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (left_name right_name : PMName)
+    {P Q R : ProperUPred M}
+    (into : selection.selected_prop ⊢ (P ∨ Q))
+    (left : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest left_name P
+      }) R)
+    (right : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest right_name Q
+      }) R)
+  : envs_entails envs R =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | Rest => pm_of_env selection.selected_rest
+    | Or => P ∨ Q
+    | expose : (of_envs envs) ⊢ (I ∗ (Or ∗ Rest)) =>
+        sep_mono_r_ent I (pm_of_env envs.spatial) (Or ∗ Rest)
+          (properUPred_ent_trans (pm_of_env envs.spatial)
+            (selection.selected_prop ∗ Rest) (Or ∗ Rest)
+            selection.selection_sound
+            (sep_mono_l_ent selection.selected_prop Or Rest into))
+    | arrangeP : (P ∗ (I ∗ Rest)) ⊢ R =>
+        properUPred_ent_trans (P ∗ (I ∗ Rest))
+          (I ∗ (Rest ∗ P)) R
+          (properUPred_ent_trans (P ∗ (I ∗ Rest))
+            ((I ∗ Rest) ∗ P) (I ∗ (Rest ∗ P))
+            (sep_comm_ent P (I ∗ Rest))
+            (sep_assoc_l_ent I Rest P)) left
+    | arrangeQ : (Q ∗ (I ∗ Rest)) ⊢ R =>
+        properUPred_ent_trans (Q ∗ (I ∗ Rest))
+          (I ∗ (Rest ∗ Q)) R
+          (properUPred_ent_trans (Q ∗ (I ∗ Rest))
+            ((I ∗ Rest) ∗ Q) (I ∗ (Rest ∗ Q))
+            (sep_comm_ent Q (I ∗ Rest))
+            (sep_assoc_l_ent I Rest Q)) right
+  \in properUPred_ent_trans (of_envs envs) (I ∗ (Or ∗ Rest)) R
+      expose
+      (properUPred_ent_trans (I ∗ (Or ∗ Rest))
+        (Or ∗ (I ∗ Rest)) R
+        (sep_swap_ent I Or Rest)
+        (sep_or_l_elim P Q (I ∗ Rest) R arrangeP arrangeQ))
 
 \lemma pm_destruct_persistent {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) (name : PMName)
@@ -630,6 +744,31 @@
     (sep_mono_r_ent selection.selected_prop
       ((pm_of_persistent_env envs.intuitionistic) ∗
         pm_of_env selection.selected_rest) Q next)
+
+\lemma pm_frame_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {Q : ProperUPred M} (next : envs_entails envs Q)
+  : envs_entails envs (selection.persistent_prop ∗ Q) =>
+  \let
+    | Context => of_envs envs
+    | P => selection.persistent_prop
+    | persistent : Context ⊢ (<#> P) =>
+        properUPred_ent_trans Context
+          (pm_of_persistent_env envs.intuitionistic) (<#> P)
+          (sep_elim_l_ent (pm_of_persistent_env envs.intuitionistic)
+            (pm_of_env envs.spatial))
+          (properUPred_ent_trans
+            (pm_of_persistent_env envs.intuitionistic)
+            ((<#> P) ∗
+              pm_of_persistent_env selection.persistent_rest)
+            (<#> P) selection.persistent_selection_sound
+            (sep_elim_l_ent (<#> P)
+              (pm_of_persistent_env selection.persistent_rest)))
+  \in properUPred_ent_trans Context (Context ∗ P) (P ∗ Q)
+      (persistent_consequence_frame_ent Context P persistent)
+      (properUPred_ent_trans (Context ∗ P) (P ∗ Context) (P ∗ Q)
+        (sep_comm_ent Context P)
+        (sep_mono_r_ent P Context Q next))
 
 \lemma pm_left {M : UCMRA} {envs : PMEnvs M} {P Q : ProperUPred M}
     (next : envs_entails envs P) : envs_entails envs (P ∨ Q) =>

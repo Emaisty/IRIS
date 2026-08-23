@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.concrete.expr.ConcreteStringExpression;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
@@ -20,6 +21,9 @@ final class RewriteMeta extends ExactMeta {
   @Dependency(name = "pm_rewrite")
   private ArendRef pmRewrite;
 
+  @Dependency(name = "pm_transport")
+  private ArendRef pmTransport;
+
   @Dependency(name = "properUPred_ent_refl")
   private ArendRef entailmentRefl;
 
@@ -29,7 +33,35 @@ final class RewriteMeta extends ExactMeta {
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
-    if (!requireCount(typechecker, contextData, 2)) return null;
+    var explicit = explicitArguments(contextData);
+    if (explicit.size() != 2 && explicit.size() != 3) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "iRewrite expects an equality, an optional goal family, and a continuation",
+          contextData.getMarker()));
+      return null;
+    }
+    if (!(explicit.getFirst() instanceof ConcreteStringExpression)) {
+      GoalData goal = resolveGoal(typechecker, contextData);
+      if (goal == null) return null;
+      var factory = contextData.getFactory();
+      var args = new ArrayList<ConcreteArgument>();
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(explicit.getFirst(), true));
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
+      args.add(factory.arg(explicit.size() == 3 ? explicit.get(1) : factory.hole(), false));
+      args.add(factory.arg(explicit.getLast(), true));
+      return typechecker.typecheck(factory.app(factory.ref(pmTransport), args),
+          contextData.getExpectedType());
+    }
+    if (explicit.size() != 2) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Internal-equality iRewrite expects a hypothesis name and a continuation",
+          contextData.getMarker()));
+      return null;
+    }
     String requested = stringArgument(typechecker, contextData, 0);
     if (requested == null) return null;
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
@@ -66,7 +98,7 @@ final class RewriteMeta extends ExactMeta {
     args.add(factory.arg(factory.core(left.computeTyped()), false));
     args.add(factory.arg(factory.core(right.computeTyped()), false));
     args.add(factory.arg(refl, true));
-    args.add(factory.arg(explicitArguments(contextData).get(1), true));
+    args.add(factory.arg(explicit.getLast(), true));
     return typechecker.typecheck(factory.app(factory.ref(pmRewrite), args),
         contextData.getExpectedType());
   }

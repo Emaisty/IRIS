@@ -46,6 +46,7 @@ public final class ProofModeExtension extends DefaultArendExtension {
     contributor.declare(module, new ModulePath("iris", "bi", "updates"));
     contributor.declare(module, new ModulePath("iris", "base_logic", "lib", "invariants"));
     contributor.declare(module, new ModulePath("stdpp", "namespaces"));
+    contributor.declare(module, new ModulePath("iris_heap_lang", "lang"));
     contributor.declare(module, new ModulePath("iris_heap_lang", "lang_ectx"));
     contributor.declare(module, new ModulePath("iris", "program_logic", "lifting"));
     contributor.declare(module, new ModulePath("iris", "proofmode", "heap_lang"));
@@ -78,13 +79,14 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "iLob", LobMeta.class, LobMeta::new);
     dependencyMeta(contributor, module, "iInv", InvMeta.class, InvMeta::new);
     dependencyMeta(contributor, module, "wp_pures", WpPuresMeta.class, WpPuresMeta::new);
+    dependencyMeta(contributor, module, "wp_bind", WpBindMeta.class, WpBindMeta::new);
     dependencyMeta(contributor, module, "wp_value", WpValueMeta.class, WpValueMeta::new);
     dependencyMeta(contributor, module, "wp_if", WpIfMeta.class, WpIfMeta::new);
     dependencyMeta(contributor, module, "wp_apply", WpApplyMeta.class, WpApplyMeta::new);
     dependencyMeta(contributor, module, "wp_smart_apply", WpApplyMeta.class, WpApplyMeta::new);
     dependencyMeta(contributor, module, "iEval", WpApplyMeta.class, WpApplyMeta::new);
     String[] explicitWpRules = {
-        "wp_bind", "wp_lam", "wp_rec", "wp_let", "wp_alloc", "wp_allocN",
+        "wp_lam", "wp_rec", "wp_let", "wp_alloc", "wp_allocN",
         "wp_load", "wp_store", "wp_faa", "wp_fork", "wp_new_proph", "wp_resolve"
     };
     for (String name : explicitWpRules) {
