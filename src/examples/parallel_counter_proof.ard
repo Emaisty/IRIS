@@ -4450,54 +4450,21 @@
     ((msc_read_after H G gam a w) ∗
       (msc_lbs G w.read_initial gam.msc_shard_names)) =>
   \let
-    | LenN => mkProperPure {iResUR S}
-        (length w.read_initial = gam.msc_size)
-    | LenNames => mkProperPure {iResUR S}
-        (length gam.msc_shard_names = gam.msc_size)
-    | Auth => msc_counter_auth G gam (nat_sum w.read_initial)
-    | Cells => pointsto_array H.iris_gen_heap suc a
-        (map natV w.read_initial)
-    | Monos => msc_mono_auths G w.read_initial gam.msc_shard_names
-    | Requests => msc_requests H G gam (nat_sum w.read_initial)
-        w.read_requests
     | Body => msc_read_after H G gam a w
     | LBs => msc_lbs G w.read_initial gam.msc_shard_names
-    | toMonos : Body ⊢ Monos =>
-        properUPred_ent_trans Body
-          (Auth ∗
-            ((Cells ∗ Monos) ∗ Requests)) Monos
-          (properUPred_ent_trans Body
-            (LenNames ∗
-              (Auth ∗
-                ((Cells ∗ Monos) ∗ Requests)))
-            (Auth ∗
-              ((Cells ∗ Monos) ∗ Requests))
-            (sep_elim_r_ent LenN
-              (LenNames ∗
-                (Auth ∗
-                  ((Cells ∗ Monos) ∗ Requests))))
-            (sep_elim_r_ent LenNames
-              (Auth ∗
-                ((Cells ∗ Monos) ∗ Requests))))
-          (properUPred_ent_trans
-            (Auth ∗
-              ((Cells ∗ Monos) ∗ Requests))
-            ((Cells ∗ Monos) ∗ Requests) Monos
-            (sep_elim_r_ent Auth
-              ((Cells ∗ Monos) ∗ Requests))
-            (properUPred_ent_trans
-              ((Cells ∗ Monos) ∗ Requests)
-              (Cells ∗ Monos) Monos
-              (sep_elim_l_ent (Cells ∗ Monos) Requests)
-              (sep_elim_r_ent Cells Monos)))
     | toPersistent : Body ⊢ (<#> LBs) =>
-        properUPred_ent_trans Body Monos
-          (<#> LBs) toMonos
-          (properUPred_ent_trans Monos LBs (<#> LBs)
-            (msc_mono_auths_to_lbs G w.read_initial gam.msc_shard_names)
-            (msc_lbs_persistent G w.read_initial gam.msc_shard_names))
+        ipm $ iIntros "HBody" $
+          iDestruct "HBody" "HLenN HBody" $
+          iDestruct "HBody" "HLenNames HBody" $
+          iDestruct "HBody" "HAuth HBody" $
+          iDestruct "HBody" "HShards HRequests" $
+          iDestruct "HShards" "HCells HMonos" $
+          wp_apply (msc_lbs_persistent G w.read_initial
+            gam.msc_shard_names) $
+          wp_apply (msc_mono_auths_to_lbs G w.read_initial
+            gam.msc_shard_names) $
+          iExact "HMonos"
   \in persistent_consequence_frame_ent Body LBs toPersistent
-
 \lemma msc_read_rebuild {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a : Nat) (w : msc_read_witness gam)
@@ -4540,57 +4507,29 @@
             (ghost_map_elem (msc_requestGS G gam) id
               (predicted, gamQ)))))) =>
   \let
-    | Auth => msc_counter_auth G gam total
-    | Map => ghost_map_auth (msc_requestGS G gam) qp_one requests
-    | States => big_sepM requests (\lam _ request =>
-        msc_read_state H G gam total request)
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | VS => msc_read_shift H G gam P Q
     | Shift => <#>
         (((msc_counter_auth G gam predicted) ∗ P) -∗
           (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
             ((msc_counter_auth G gam predicted) ∗ (Q predicted))))
-    | Client => Saved ∗ (VS ∗ P)
-    | Client' => Saved ∗ (Shift ∗ P)
-    | Source => Auth ∗
-        ((Map ∗ States) ∗ Client)
-    | Expected => Auth ∗
-        (Map ∗ (Client' ∗ States))
-    | client : Client ⊢ Client' =>
-        sep_mono_r_ent Saved (VS ∗ P) (Shift ∗ P)
-          (sep_mono_l_ent VS Shift P
-            (forall_elim_ent (\lam n =>
-              <#>
-                (((msc_counter_auth G gam n) ∗ P) -∗
-                  (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-                    ((msc_counter_auth G gam n) ∗ (Q n)))))
-              predicted))
-    | arrange : Source ⊢ Expected =>
-        sep_mono_r_ent Auth
-          ((Map ∗ States) ∗ Client)
-          (Map ∗ (Client' ∗ States))
-          (properUPred_ent_trans
-            ((Map ∗ States) ∗ Client)
-            (Map ∗ (States ∗ Client))
-            (Map ∗ (Client' ∗ States))
-            (sep_assoc_l_ent Map States Client)
-            (sep_mono_r_ent Map (States ∗ Client)
-              (Client' ∗ States)
-              (properUPred_ent_trans (States ∗ Client)
-                (Client ∗ States) (Client' ∗ States)
-                (sep_comm_ent States Client)
-                (sep_mono_l_ent Client Client' States client))))
-  \in properUPred_ent_trans Source Expected
-      (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-        (mkProperExist Nat (\lam id =>
-          Auth ∗
-            ((msc_requests H G gam total
-                (ginsert id (predicted, gamQ) requests)) ∗
-              (ghost_map_elem (msc_requestGS G gam) id
-                (predicted, gamQ))))))
-      arrange
-      (msc_request_register H G gam total predicted gamQ requests P Q hle)
-
+    | ShiftFamily : Nat -> iProp S => \lam n =>
+        <#>
+          (((msc_counter_auth G gam n) ∗ P) -∗
+            (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
+              ((msc_counter_auth G gam n) ∗ (Q n))))
+  \in ipm $ iIntros "HAuth HRest" $
+    iDestruct "HRest" "HRequests HClient" $
+    iDestruct "HRequests" "HMap HStates" $
+    iDestruct "HClient" "HSaved HRest" $
+    iDestruct "HRest" "HShiftAll HP" $
+    iAssert "HShift" "HShiftAll" Shift
+      (wp_apply (forall_elim_ent ShiftFamily predicted) $
+        iExact "HShiftAll")
+      (wp_apply (msc_request_register H G gam total predicted gamQ
+        requests P Q hle) $
+        iFrame "HAuth" $ iFrame "HMap" $
+        iSplitL "HSaved HShift HP"
+          (iFrame "HSaved" $ iFrame "HShift" $ iExact "HP")
+          (iExact "HStates"))
 \lemma msc_read_register_or_keep {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a predicted : Nat) (gamQ : gname) (w : msc_read_witness gam)
@@ -4679,35 +4618,6 @@
                       (iExists id $ iExact "HElem")))
       }
   \in proof
-\lemma msc_read_stage_registration {M : UCMRA}
-    (A B C D E F : ProperUPred M) :
-  ((A ∗ (B ∗ C)) ∗
-      (D ∗ (E ∗ F))) ⊢
-    ((B ∗ F) ∗
-      (C ∗ (A ∗ (D ∗ E)))) =>
-  ipm $ iIntros "HABC HDEF" $
-    iDestruct "HABC" "HA HBC" $
-    iDestruct "HBC" "HB HC" $
-    iDestruct "HDEF" "HD HEF" $
-    iDestruct "HEF" "HE HF" $
-    iSplitL "HB HF"
-      (iFrame "HB" $ iExact "HF")
-      (iFrame "HC" $ iFrame "HA" $ iFrame "HD" $ iExact "HE")
-\lemma msc_read_stage_close {M : UCMRA}
-    (A B C D E F : ProperUPred M) :
-  ((A ∗ B) ∗
-      (C ∗ (D ∗ (E ∗ F)))) ⊢
-    ((A ∗ E) ∗
-      (F ∗ (C ∗ (D ∗ B)))) =>
-  ipm $ iIntros "HAB HCDEF" $
-    iDestruct "HAB" "HA HB" $
-    iDestruct "HCDEF" "HC HDEF" $
-    iDestruct "HDEF" "HD HEF" $
-    iDestruct "HEF" "HE HF" $
-    iSplitL "HA HE"
-      (iFrame "HA" $ iExact "HE")
-      (iFrame "HF" $ iFrame "HC" $ iFrame "HD" $ iExact "HB")
-
 \func msc_read_new_raw {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (w : msc_read_witness gam) (v : Value) : iProp S =>
@@ -4826,76 +4736,31 @@
         (msc_inv H G gam a)
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | InvP => msc_inv H G gam a
-    | Payload => (PublicInv ∗ Saved) ∗
-        (Eq ∗ ((Token ∗ LBs) ∗ Case))
-    | Staged => (Body ∗ Close) ∗ Payload
-    | stage : ((Body ∗ Case) ∗
-          (Eq ∗
-            ((Token ∗ LBs) ∗
-              (Close ∗ (PublicInv ∗ Saved))))) ⊢ Staged =>
-        msc_read_stage_close Body Case Eq (Token ∗ LBs)
-          Close (PublicInv ∗ Saved)
-    | bodyLater : Body ⊢ (|> InvP) =>
-        properUPred_ent_trans Body InvP (|> InvP)
-          (msc_read_rebuild H G gam a w requests)
-          (proper_later_intro InvP)
-    | closePair : (Body ∗ Close) ⊢
-        (Close ∗ (|> InvP)) =>
-        properUPred_ent_trans (Body ∗ Close)
-          (Close ∗ Body)
-          (Close ∗ (|> InvP))
-          (sep_comm_ent Body Close)
-          (sep_mono_r_ent Close Body (|> InvP) bodyLater)
-    | closeShift : (Close ∗ (|> InvP)) ⊢
+    | close : (Close ∗ (|> InvP)) ⊢
         (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp) =>
         transport (\lam C => (C ∗ (|> InvP)) ⊢
           (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))
           (Paths.inv closeEq)
           (wand_elim_ent (|> InvP)
             (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))
-    | closeFramed : Staged ⊢
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE
-          (mkProperEmp ∗ Payload)) =>
-        properUPred_ent_trans Staged
-          ((mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp) ∗
-            Payload)
-          (mkProperFUpd H.iris_wsat msc_open_mask mscE
-            (mkProperEmp ∗ Payload))
-          (sep_mono_l_ent (Body ∗ Close)
-            (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-            Payload
-            (properUPred_ent_trans (Body ∗ Close)
-              (Close ∗ (|> InvP))
-              (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-              closePair closeShift))
-          (fupd_frame_r H.iris_wsat msc_open_mask mscE mkProperEmp Payload)
-    | post : (mkProperEmp ∗ Payload) ⊢
-        (mkProperExist ProphId (\lam p0 =>
-          mkProperExist (List ProphPayload) (\lam resolves0 =>
-            (PublicInv ∗ Saved) ∗
-              ((mkProperPure
-                  (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                  (msc_read_case G gam (msc_proph_total resolves0)
-                    (nat_sum w.read_initial) gamQ P)))))) =>
-        properUPred_ent_trans (mkProperEmp ∗ Payload) Payload
-          (mkProperExist ProphId (\lam p0 =>
-            mkProperExist (List ProphPayload) (\lam resolves0 =>
-              (PublicInv ∗ Saved) ∗
-                ((mkProperPure
-                    (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                  (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                    (msc_read_case G gam (msc_proph_total resolves0)
-                      (nat_sum w.read_initial) gamQ P))))))
-          (sep_elim_r_ent mkProperEmp Payload)
-          (properUPred_ent_trans Payload
-            (mkProperExist (List ProphPayload) (\lam resolves0 =>
-              (PublicInv ∗ Saved) ∗
-                ((mkProperPure
-                    (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-                  (((proph H.iris_proph_map p resolves0) ∗ LBs) ∗
-                    (msc_read_case G gam (msc_proph_total resolves0)
-                      (nat_sum w.read_initial) gamQ P)))))
+  \in ipm $ iIntros "HBodyCase HRest" $
+    iDestruct "HBodyCase" "HBody HCase" $
+    iDestruct "HRest" "HEq HRest" $
+    iDestruct "HRest" "HTokenLBs HRest" $
+    iDestruct "HTokenLBs" "HToken HLBs" $
+    iDestruct "HRest" "HClose HPublicSaved" $
+    iDestruct "HPublicSaved" "HPublic HSaved" $
+    iAssert "HLaterInv" "HBody" (|> InvP)
+      (wp_apply (proper_later_intro InvP) $
+        wp_apply (msc_read_rebuild H G gam a w requests) $
+          iExact "HBody")
+      (iAssert "HCloseUpdate" "HClose HLaterInv"
+        (mkProperFUpd H.iris_wsat
+          msc_open_mask mscE mkProperEmp)
+        (wp_apply close $
+          iFrame "HClose" $ iExact "HLaterInv")
+        (iMod "HCloseUpdate" "HEmp" $
+          wp_apply (fupd_intro H.iris_wsat mscE
             (mkProperExist ProphId (\lam p0 =>
               mkProperExist (List ProphPayload) (\lam resolves0 =>
                 (PublicInv ∗ Saved) ∗
@@ -4903,62 +4768,16 @@
                       (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
                     (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
                       (msc_read_case G gam (msc_proph_total resolves0)
-                        (nat_sum w.read_initial) gamQ P))))))
-            (exist_intro_ent (\lam resolves0 =>
-              (PublicInv ∗ Saved) ∗
-                ((mkProperPure
-                    (LitV (LitProphecy p) = LitV (LitProphecy p))) ∗
-                  (((proph H.iris_proph_map p resolves0) ∗ LBs) ∗
-                    (msc_read_case G gam (msc_proph_total resolves0)
-                      (nat_sum w.read_initial) gamQ P)))) resolves)
-            (exist_intro_ent (\lam p0 =>
-              mkProperExist (List ProphPayload) (\lam resolves0 =>
-                (PublicInv ∗ Saved) ∗
-                  ((mkProperPure
-                      (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                    (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                      (msc_read_case G gam (msc_proph_total resolves0)
-                        (nat_sum w.read_initial) gamQ P))))) p))
-  \in properUPred_ent_trans
-      ((Body ∗ Case) ∗
-        (Eq ∗
-          ((Token ∗ LBs) ∗
-            (Close ∗ (PublicInv ∗ Saved)))))
-      Staged
-      (mkProperFUpd H.iris_wsat msc_open_mask mscE
-        (mkProperExist ProphId (\lam p0 =>
-          mkProperExist (List ProphPayload) (\lam resolves0 =>
-            (PublicInv ∗ Saved) ∗
-              ((mkProperPure
-                  (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                  (msc_read_case G gam (msc_proph_total resolves0)
-                    (nat_sum w.read_initial) gamQ P)))))))
-      stage
-      (properUPred_ent_trans Staged
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE
-          (mkProperEmp ∗ Payload))
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE
-          (mkProperExist ProphId (\lam p0 =>
-            mkProperExist (List ProphPayload) (\lam resolves0 =>
-              (PublicInv ∗ Saved) ∗
-                ((mkProperPure
-                    (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                  (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                    (msc_read_case G gam (msc_proph_total resolves0)
-                      (nat_sum w.read_initial) gamQ P)))))))
-        closeFramed
-        (fupd_mono H.iris_wsat msc_open_mask mscE
-          (mkProperEmp ∗ Payload)
-          (mkProperExist ProphId (\lam p0 =>
-            mkProperExist (List ProphPayload) (\lam resolves0 =>
-              (PublicInv ∗ Saved) ∗
-                ((mkProperPure
-                    (LitV (LitProphecy p) = LitV (LitProphecy p0))) ∗
-                  (((proph H.iris_proph_map p0 resolves0) ∗ LBs) ∗
-                    (msc_read_case G gam (msc_proph_total resolves0)
-                      (nat_sum w.read_initial) gamQ P)))))) post))
-
+                        (nat_sum w.read_initial) gamQ P))))))) $
+          iExists p $
+          iExists resolves $
+          iSplitL "HPublic HSaved"
+            (iFrame "HPublic" $ iExact "HSaved")
+            (iSplitL "HEq"
+              (iExact "HEq")
+              (iSplitL "HToken HLBs"
+                (iFrame "HToken" $ iExact "HLBs")
+                (iExact "HCase")))))
 \lemma msc_read_raw_continue {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (w : msc_read_witness gam) (gamQ : gname)
@@ -5078,37 +4897,22 @@
           (Saved ∗ ((msc_read_shift H G gam P Q) ∗ P)))
     | Frame => Close ∗ K
     | Raw : Value -> iProp S => msc_read_new_raw H G gam a w
+    | Final : Value -> iProp S => \lam v =>
+        mkProperFUpd H.iris_wsat msc_open_mask mscE
+          (msc_read_prepared H G gam a w gamQ P Q v)
     | base : PreNew ⊢ (WP H msc_open_mask NewProph Raw) =>
         wp_new_proph_later_frame H msc_open_mask Body Raw
           (\lam p resolves => msc_read_new_raw_intro H G gam a w p resolves)
-    | arrange : ((PreNew ∗ Close) ∗ K) ⊢
-        (PreNew ∗ Frame) =>
-        sep_assoc_l_ent PreNew Close K
-    | framed : (PreNew ∗ Frame) ⊢
-        (WP H msc_open_mask NewProph (wp_frame_post Raw Frame)) =>
-        properUPred_ent_trans (PreNew ∗ Frame)
-          ((WP H msc_open_mask NewProph Raw) ∗ Frame)
-          (WP H msc_open_mask NewProph (wp_frame_post Raw Frame))
-          (sep_mono_l_ent PreNew (WP H msc_open_mask NewProph Raw)
-            Frame base)
-          (wp_frame_r H msc_open_mask NewProph Raw Frame)
-  \in properUPred_ent_trans
-      ((PreNew ∗ Close) ∗ K)
-      (PreNew ∗ Frame)
-      (WP H msc_open_mask NewProph (\lam v =>
-        mkProperFUpd H.iris_wsat msc_open_mask mscE
-          (msc_read_prepared H G gam a w gamQ P Q v))) arrange
-      (properUPred_ent_trans (PreNew ∗ Frame)
-        (WP H msc_open_mask NewProph (wp_frame_post Raw Frame))
-        (WP H msc_open_mask NewProph (\lam v =>
-          mkProperFUpd H.iris_wsat msc_open_mask mscE
-            (msc_read_prepared H G gam a w gamQ P Q v))) framed
-        (wp_mono H msc_open_mask NewProph (wp_frame_post Raw Frame)
-          (\lam v => mkProperFUpd H.iris_wsat msc_open_mask mscE
-            (msc_read_prepared H G gam a w gamQ P Q v))
-          (\lam v => msc_read_raw_continue H G gam a w gamQ P Q v
-            Close idp)))
-
+  \in ipm $ iIntros "HOpened HK" $
+    iDestruct "HOpened" "HPreNew HClose" $
+    wp_apply (wp_mono H msc_open_mask NewProph
+      (wp_frame_post Raw Frame) Final
+      (\lam v => msc_read_raw_continue H G gam a w gamQ P Q v
+        Close idp)) $
+    wp_apply (wp_frame_r H msc_open_mask NewProph Raw Frame) $
+    iSplitL "HPreNew"
+      (wp_apply base $ iExact "HPreNew")
+      (iFrame "HClose" $ iExact "HK")
 \lemma msc_read_new_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (gamQ : gname) (P : iProp S) (Q : Nat -> iProp S) :
@@ -5163,59 +4967,6 @@
       mscN_subset_mscE new_proph_strongly_atomic
       (msc_read_now_timeless gam) (msc_inv_read_split H G gam a) opened
 
-\lemma msc_read_duplicate_public {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (a : Nat) (gamQ : gname) (P : iProp S) (Q : Nat -> iProp S) :
-  ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)) ∗
-      ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-        ((msc_read_shift H G gam P Q) ∗ P))) ⊢
-    ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)) ∗
-      ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-          (msc_inv H G gam a)) ∗
-        ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-          ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-            ((msc_read_shift H G gam P Q) ∗ P))))) =>
-  \let
-    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | Client => (msc_read_shift H G gam P Q) ∗ P
-    | invDup : Inv ⊢ (Inv ∗ Inv) =>
-        persistent_consequence_frame_ent Inv Inv
-          (inv_persistent H.iris_wsat mscN (msc_inv H G gam a))
-    | savedDup : Saved ⊢ (Saved ∗ Saved) =>
-        persistent_consequence_frame_ent Saved Saved
-          (saved_pred_discarded_persistent G.msc_saved_predG gamQ Q)
-  \in properUPred_ent_trans
-      (Inv ∗ (Saved ∗ Client))
-      ((Inv ∗ Inv) ∗ (Saved ∗ Client))
-      (Inv ∗
-        (Inv ∗
-          (Saved ∗ (Saved ∗ Client))))
-      (sep_mono_l_ent Inv (Inv ∗ Inv)
-        (Saved ∗ Client) invDup)
-      (properUPred_ent_trans
-        ((Inv ∗ Inv) ∗ (Saved ∗ Client))
-        (Inv ∗ (Inv ∗ (Saved ∗ Client)))
-        (Inv ∗
-          (Inv ∗
-            (Saved ∗ (Saved ∗ Client))))
-        (sep_assoc_l_ent Inv Inv (Saved ∗ Client))
-          (sep_mono_r_ent Inv
-            (Inv ∗ (Saved ∗ Client))
-            (Inv ∗
-              (Saved ∗ (Saved ∗ Client)))
-            (sep_mono_r_ent Inv (Saved ∗ Client)
-              (Saved ∗ (Saved ∗ Client))
-              (properUPred_ent_trans (Saved ∗ Client)
-                ((Saved ∗ Saved) ∗ Client)
-                (Saved ∗ (Saved ∗ Client))
-                (sep_mono_l_ent Saved (Saved ∗ Saved)
-                  Client savedDup)
-                (sep_assoc_l_ent Saved Saved Client)))))
-
 \func msc_read_new_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (P : iProp S) (Q : Nat -> iProp S) (v : Value) : iProp S =>
@@ -5233,91 +4984,35 @@
   \let
     | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
         (msc_inv H G gam a)
-    | Client => (msc_read_shift H G gam P Q) ∗ P
-    | Source => Inv ∗ Client
     | SavedF : gname -> iProp S => \lam gamQ =>
         saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | SavedExists => mkProperExist gname SavedF
-    | allocated : Source ⊢
-        (|==> (SavedExists ∗ Source)) =>
-        bupd_alloc_frame SavedExists Source
-          (saved_pred_alloc G.msc_saved_predG Q DfracDiscarded ())
-    | afterAlloc : (SavedExists ∗ Source) ⊢
-        (WP H mscE NewProph (msc_read_new_post H G gam a P Q)) =>
-        sep_exist_l_elim SavedF Source
-          (WP H mscE NewProph (msc_read_new_post H G gam a P Q))
-          (\lam gamQ =>
-            \let
-              | Saved => SavedF gamQ
-              | arranged : (Saved ∗ Source) ⊢
-                  (Inv ∗ (Saved ∗ Client)) =>
-                  properUPred_ent_trans (Saved ∗ (Inv ∗ Client))
-                    (Inv ∗ (Saved ∗ Client))
-                    (Inv ∗ (Saved ∗ Client))
-                    (sep_swap_ent Saved Inv Client)
-                    (properUPred_ent_refl
-                      (Inv ∗ (Saved ∗ Client)))
-              | ready : (Saved ∗ Source) ⊢
-                  (Inv ∗
-                    (Inv ∗
-                      (Saved ∗
-                        (Saved ∗ Client)))) =>
-                  properUPred_ent_trans (Saved ∗ Source)
-                    (Inv ∗ (Saved ∗ Client))
-                    (Inv ∗
-                      (Inv ∗
-                        (Saved ∗ (Saved ∗ Client))))
-                    arranged
-                    (msc_read_duplicate_public H G gam a gamQ P Q)
-              | core : (Inv ∗
-                    (Inv ∗
-                      (Saved ∗
-                        (Saved ∗ Client)))) ⊢
-                  (WP H mscE NewProph (\lam v =>
-                    mkProperExist (msc_read_witness gam) (\lam w =>
-                      msc_read_prepared H G gam a w gamQ P Q v))) =>
-                  msc_read_new_wp H G gam a gamQ P Q
-              | hideName : (WP H mscE NewProph (\lam v =>
-                    mkProperExist (msc_read_witness gam) (\lam w =>
-                      msc_read_prepared H G gam a w gamQ P Q v))) ⊢
-                  (WP H mscE NewProph
-                    (msc_read_new_post H G gam a P Q)) =>
-                  wp_mono H mscE NewProph
-                    (\lam v => mkProperExist (msc_read_witness gam) (\lam w =>
-                      msc_read_prepared H G gam a w gamQ P Q v))
-                    (msc_read_new_post H G gam a P Q)
-                    (\lam v => exist_intro_ent (\lam gamQ0 =>
-                      mkProperExist (msc_read_witness gam) (\lam w =>
-                        msc_read_prepared H G gam a w gamQ0 P Q v)) gamQ)
-            \in properUPred_ent_trans (Saved ∗ Source)
-                (Inv ∗
-                  (Inv ∗
-                    (Saved ∗ (Saved ∗ Client))))
-                (WP H mscE NewProph (msc_read_new_post H G gam a P Q))
-                ready (properUPred_ent_trans
-                  (Inv ∗
-                    (Inv ∗
-                      (Saved ∗ (Saved ∗ Client))))
-                  (WP H mscE NewProph (\lam v =>
-                    mkProperExist (msc_read_witness gam) (\lam w =>
-                      msc_read_prepared H G gam a w gamQ P Q v)))
-                  (WP H mscE NewProph (msc_read_new_post H G gam a P Q))
-                  core hideName))
-    | updated : (|==> (SavedExists ∗ Source)) ⊢
-        (|==>
-          (WP H mscE NewProph (msc_read_new_post H G gam a P Q))) =>
-        bupd_mono (SavedExists ∗ Source)
-          (WP H mscE NewProph (msc_read_new_post H G gam a P Q)) afterAlloc
-  \in properUPred_ent_trans Source
-      (|==> (SavedExists ∗ Source))
-      (WP H mscE NewProph (msc_read_new_post H G gam a P Q)) allocated
-      (properUPred_ent_trans
-        (|==> (SavedExists ∗ Source))
-        (|==>
-          (WP H mscE NewProph (msc_read_new_post H G gam a P Q)))
-        (WP H mscE NewProph (msc_read_new_post H G gam a P Q)) updated
-        (wp_bupd H mscE NewProph (msc_read_new_post H G gam a P Q)))
-
+    | Phi : gname -> Value -> iProp S => \lam gamQ v =>
+        mkProperExist (msc_read_witness gam) (\lam w =>
+          msc_read_prepared H G gam a w gamQ P Q v)
+  \in ipm $ iIntros "HInv HClient" $
+    wp_apply (wp_bupd H mscE NewProph
+      (msc_read_new_post H G gam a P Q)) $
+    iAssert "HSavedUpdate" "" (|==> SavedExists)
+      (wp_apply
+        (saved_pred_alloc G.msc_saved_predG Q DfracDiscarded ()) $
+        iEmpIntro)
+      (iMod "HSavedUpdate" "HSavedExists" $
+        iDestruct "HSavedExists" "HSaved" SavedF $ \lam gamQ =>
+        iDestruct "HInv" "#HInv"
+          (inv_persistent H.iris_wsat mscN (msc_inv H G gam a)) $
+        iDestruct "HSaved" "#HSaved"
+          (saved_pred_discarded_persistent
+            G.msc_saved_predG gamQ Q) $
+        iModIntro $
+        wp_apply (wp_mono H mscE NewProph (Phi gamQ)
+          (msc_read_new_post H G gam a P Q)
+          (\lam v => exist_intro_ent
+            (\lam gamQ0 => Phi gamQ0 v) gamQ)) $
+        wp_apply (msc_read_new_wp H G gam a gamQ P Q) $
+        iFrame "HInv" $ iFrame "HInv" $
+          iFrame "HSaved" $ iFrame "HSaved" $
+            iExact "HClient")
 \lemma msc_read_stage_scan {M : UCMRA}
     (A B C D E : ProperUPred M) :
   ((A ∗ B) ∗ ((C ∗ D) ∗ E)) ⊢
