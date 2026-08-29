@@ -1,0 +1,1754 @@
+\import Logic
+\import Paths
+\import Paths.Meta
+\import Function.Meta
+\import Arith.Nat
+\import Arith.Rat
+\import Algebra.StrictlyOrdered
+\import Order.LinearOrder
+\import Order.PartialOrder
+\import Data.List
+\import Data.Bool
+\import Data.Maybe
+\import Data.Or
+\import iris.algebra.gmap
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.dfrac
+\import iris.algebra.frac
+\import iris.algebra.option
+\import iris.algebra.prod
+\import iris.algebra.excl
+\import iris.algebra.auth
+\import iris.algebra.view
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.interface
+\import iris.bi.big_op
+\import iris.bi.updates
+\import iris.bi.derived_laws_later
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.own
+\import iris.base_logic.lib.gen_heap
+\import iris.base_logic.lib.ghost_map
+\import iris.base_logic.lib.mono_nat
+\import iris.base_logic.lib.proph_map
+\import iris.base_logic.lib.saved_pred
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.fancy_updates_mask
+\import iris.base_logic.lib.invariants
+\import iris.base_logic.lib.wsat_alloc
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting \hiding (wp_bind)
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+\import iris_heap_lang.lang_subst
+\import iris_heap_lang.lib.syntax
+\import iris_heap_lang.lib.spawn
+\import iris.proofmode.heap_lang (pm_wp_let)
+\import stdpp.coPset
+\import stdpp.namespaces
+\import stdpp.pmap (xH, xO, xI, pos_len, pos_pad, pos_pad_len,
+  pmap_depth', plookup', plookup'_beyond_depth)
+\import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
+  iAssumption, iApply, iSplitL, iAssert, iEmpIntro, iNext,
+  iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
+  wp_apply, wp_smart_apply, wp_bind, wp_pures)
+
+-- The exclusive token used by the Rocq spawn/join library.  It remains a
+-- separate functor requirement, since heap state and counter ghost state can
+-- be shared by clients that do not use fork/join.
+\func spawnR : CMRA.{0} => ExclCMRA (DiscreteOFE Nat)
+\func spawnRF : RFunctor => constRF spawnR
+\func spawnRF_contractive : RFunctorContractive spawnRF =>
+  constRF_contractive spawnR
+\func spawn_gFunctor : gFunctor =>
+  mkGFunctor spawnRF spawnRF_contractive
+\func spawnSigma : gFunctors => gFunctors_singleton spawn_gFunctor
+
+\record spawnG (S : gFunctors)
+  | spawn_tokG : inG S (ExclCMRA (DiscreteOFE Nat))
+
+\func subG_spawnG {S : gFunctors} (h : subG spawnSigma S) : spawnG S \cowith
+  | spawn_tokG => transport (\lam Z => inG S Z)
+      (rFunctor_apply_constRF spawnR (iPropCOFE S)) (subG_inG h)
+
+\func spawn_token_elem : (ExclCMRA (DiscreteOFE Nat)).E => excl 0
+
+\func spawn_tok {S : gFunctors} (SG : spawnG S) (gam : gname) : iProp S =>
+  own SG.spawn_tokG gam spawn_token_elem
+
+\lemma spawn_tok_alloc {S : gFunctors} (SG : spawnG S) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (spawn_tok SG))) =>
+  own_alloc SG.spawn_tokG spawn_token_elem ()
+
+\func spawn_token_op_invalidN (n : Nat)
+    (invalid : (ExclCMRA (DiscreteOFE Nat)).validN n
+      ((ExclCMRA (DiscreteOFE Nat)).op
+        spawn_token_elem spawn_token_elem)) : Empty =>
+  invalid
+
+\lemma spawn_tok_exclusive {S : gFunctors} (SG : spawnG S)
+    (gam : gname) (Target : iProp S) :
+  ((spawn_tok SG gam) ∗ (spawn_tok SG gam)) ⊢
+    Target =>
+  properUPred_ent_trans
+    ((spawn_tok SG gam) ∗ (spawn_tok SG gam))
+    (mkProperValidOf {iResUR S} {ExclCMRA (DiscreteOFE Nat)}
+      ((ExclCMRA (DiscreteOFE Nat)).op
+        spawn_token_elem spawn_token_elem)) Target
+    (own_op_valid SG.spawn_tokG gam spawn_token_elem spawn_token_elem)
+    (\lam n _ _ invalid => \case spawn_token_op_invalidN n invalid \with {})
+
+\func spawnN : Namespace => ndot nroot (xO (xO xH))
+
+\func spawn_pendingV : Value => PairV (boolV false) unitV
+\func spawn_doneV (v : Value) : Value => PairV (boolV true) v
+
+\func spawn_state {S : gFunctors} (SG : spawnG S) (gam : gname)
+    (Psi : Value -> iProp S) (lv : Value) : iProp S =>
+  (mkProperPure (lv = spawn_pendingV)) ∨
+    (mkProperExist Value (\lam v =>
+      (mkProperPure (lv = spawn_doneV v)) ∗
+        ((Psi v) ∨ (spawn_tok SG gam))))
+
+\func spawn_inv {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc)
+    (Psi : Value -> iProp S) : iProp S =>
+  mkProperExist Value (\lam lv =>
+    (pointsto_full H.iris_gen_heap l lv) ∗
+      (spawn_state SG gam Psi lv))
+
+\func join_handle {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (l : Loc) (Psi : Value -> iProp S) : iProp S =>
+  mkProperExist gname (\lam gam =>
+    (spawn_tok SG gam) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)))
+
+-- `irisGS` deliberately leaves the fork postcondition abstract.  Heap-lang's
+-- usual instance chooses a trivially inhabited post; this explicit premise
+-- is the exact condition needed by the generic spawn proof and by adequacy.
+\func ForkPostInhabited {S : gFunctors} (H : irisGS natCountable S) : \Type =>
+  \Pi (v : Value) -> mkProperEmp ⊢ (H.iris_fork_post v)
+
+\lemma spawn_inv_initial {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  (pointsto_full H.iris_gen_heap l spawn_pendingV) ⊢
+    (spawn_inv H SG gam l Psi) =>
+  properUPred_ent_trans
+    (pointsto_full H.iris_gen_heap l spawn_pendingV)
+    ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+      (mkProperPure {iResUR S} (spawn_pendingV = spawn_pendingV)))
+    (spawn_inv H SG gam l Psi)
+    (properUPred_ent_trans
+      (pointsto_full H.iris_gen_heap l spawn_pendingV)
+      ((mkProperPure (spawn_pendingV = spawn_pendingV)) ∗
+        (pointsto_full H.iris_gen_heap l spawn_pendingV))
+      ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (mkProperPure (spawn_pendingV = spawn_pendingV)))
+      (pure_intro_sep_ent (spawn_pendingV = spawn_pendingV) idp
+        (pointsto_full H.iris_gen_heap l spawn_pendingV))
+      (sep_comm_ent (mkProperPure (spawn_pendingV = spawn_pendingV))
+        (pointsto_full H.iris_gen_heap l spawn_pendingV)))
+    (properUPred_ent_trans
+      ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (mkProperPure {iResUR S} (spawn_pendingV = spawn_pendingV)))
+      ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (spawn_state SG gam Psi spawn_pendingV))
+      (spawn_inv H SG gam l Psi)
+      (sep_mono_r_ent (pointsto_full H.iris_gen_heap l spawn_pendingV)
+        (mkProperPure (spawn_pendingV = spawn_pendingV))
+        (spawn_state SG gam Psi spawn_pendingV)
+        (or_intro_l_ent
+          (mkProperPure (spawn_pendingV = spawn_pendingV))
+          (mkProperExist Value (\lam v =>
+            (mkProperPure (spawn_pendingV = spawn_doneV v)) ∗
+              ((Psi v) ∨ (spawn_tok SG gam))))))
+      (exist_intro_ent (\lam lv =>
+        (pointsto_full H.iris_gen_heap l lv) ∗
+          (spawn_state SG gam Psi lv)) spawn_pendingV))
+
+\lemma spawn_inv_done {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc) (Psi : Value -> iProp S)
+    (v : Value) :
+  ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+      (Psi v)) ⊢
+    (spawn_inv H SG gam l Psi) =>
+  \let
+    | Point => pointsto_full H.iris_gen_heap l (spawn_doneV v)
+    | Eq => mkProperPure {iResUR S} (spawn_doneV v = spawn_doneV v)
+    | Payload => (Psi v) ∨ (spawn_tok SG gam)
+    | State => spawn_state SG gam Psi (spawn_doneV v)
+  \in properUPred_ent_trans (Point ∗ (Psi v))
+      (Point ∗ (Eq ∗ Payload))
+      (spawn_inv H SG gam l Psi)
+      (sep_mono_r_ent Point (Psi v) (Eq ∗ Payload)
+        (properUPred_ent_trans (Psi v)
+          (Eq ∗ (Psi v)) (Eq ∗ Payload)
+          (pure_intro_sep_ent (spawn_doneV v = spawn_doneV v) idp (Psi v))
+          (sep_mono_r_ent Eq (Psi v) Payload
+            (or_intro_l_ent (Psi v) (spawn_tok SG gam)))))
+      (properUPred_ent_trans (Point ∗ (Eq ∗ Payload))
+        (Point ∗ State) (spawn_inv H SG gam l Psi)
+        (sep_mono_r_ent Point (Eq ∗ Payload) State
+          (properUPred_ent_trans (Eq ∗ Payload)
+            (mkProperExist Value (\lam w =>
+              (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                ((Psi w) ∨ (spawn_tok SG gam)))) State
+            (exist_intro_ent (\lam w =>
+              (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                ((Psi w) ∨ (spawn_tok SG gam))) v)
+            (or_intro_r_ent
+              (mkProperPure (spawn_doneV v = spawn_pendingV))
+              (mkProperExist Value (\lam w =>
+                (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                  ((Psi w) ∨ (spawn_tok SG gam)))))))
+        (exist_intro_ent (\lam lv =>
+          (pointsto_full H.iris_gen_heap l lv) ∗
+            (spawn_state SG gam Psi lv)) (spawn_doneV v)))
+
+-- The joiner consumes its exclusive token when it observes completion.  The
+-- token is put back into the invariant, leaving the result postcondition to
+-- the caller.  This is the second payload branch of the Rocq spawn protocol.
+\lemma spawn_inv_done_token {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc) (Psi : Value -> iProp S)
+    (v : Value) :
+  ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+      (spawn_tok SG gam)) ⊢
+    (spawn_inv H SG gam l Psi) =>
+  \let
+    | Point => pointsto_full H.iris_gen_heap l (spawn_doneV v)
+    | Eq => mkProperPure {iResUR S} (spawn_doneV v = spawn_doneV v)
+    | Payload => (Psi v) ∨ (spawn_tok SG gam)
+    | State => spawn_state SG gam Psi (spawn_doneV v)
+  \in properUPred_ent_trans (Point ∗ (spawn_tok SG gam))
+      (Point ∗ (Eq ∗ Payload))
+      (spawn_inv H SG gam l Psi)
+      (sep_mono_r_ent Point (spawn_tok SG gam) (Eq ∗ Payload)
+        (properUPred_ent_trans (spawn_tok SG gam)
+          (Eq ∗ (spawn_tok SG gam)) (Eq ∗ Payload)
+          (pure_intro_sep_ent (spawn_doneV v = spawn_doneV v) idp
+            (spawn_tok SG gam))
+          (sep_mono_r_ent Eq (spawn_tok SG gam) Payload
+            (or_intro_r_ent (Psi v) (spawn_tok SG gam)))))
+      (properUPred_ent_trans (Point ∗ (Eq ∗ Payload))
+        (Point ∗ State) (spawn_inv H SG gam l Psi)
+        (sep_mono_r_ent Point (Eq ∗ Payload) State
+          (properUPred_ent_trans (Eq ∗ Payload)
+            (mkProperExist Value (\lam w =>
+              (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                ((Psi w) ∨ (spawn_tok SG gam)))) State
+            (exist_intro_ent (\lam w =>
+              (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                ((Psi w) ∨ (spawn_tok SG gam))) v)
+            (or_intro_r_ent
+              (mkProperPure (spawn_doneV v = spawn_pendingV))
+              (mkProperExist Value (\lam w =>
+                (mkProperPure (spawn_doneV v = spawn_doneV w)) ∗
+                  ((Psi w) ∨ (spawn_tok SG gam)))))))
+        (exist_intro_ent (\lam lv =>
+          (pointsto_full H.iris_gen_heap l lv) ∗
+            (spawn_state SG gam Psi lv)) (spawn_doneV v)))
+
+\lemma spawn_store_close {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S)
+    (old v returned : Value) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | StorePost => (mkProperPure {iResUR S} (returned = unitV)) ∧
+        (pointsto_full H.iris_gen_heap l (spawn_doneV v))
+    | Frame => ((|> (spawn_state SG gam Psi old)) ∗ Close) ∗
+        (Psi v)
+  \in (StorePost ∗ Frame) ⊢
+      (mkProperFUpd H.iris_wsat D coPset_universe
+        (H.iris_fork_post returned)) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Point => pointsto_full H.iris_gen_heap l (spawn_doneV v)
+    | StorePost => (mkProperPure {iResUR S} (returned = unitV)) ∧ Point
+    | OldLater => |> (spawn_state SG gam Psi old)
+    | Frame => (OldLater ∗ Close) ∗ (Psi v)
+    | Ready => Close ∗ (Point ∗ (Psi v))
+    | LaterBody => |> Body
+    | arrange : (StorePost ∗ Frame) ⊢ Ready =>
+        properUPred_ent_trans (StorePost ∗ Frame)
+          (Point ∗ (Close ∗ (Psi v))) Ready
+          (properUPred_ent_trans (StorePost ∗ Frame)
+            (Point ∗ Frame)
+            (Point ∗ (Close ∗ (Psi v)))
+            (sep_mono_l_ent StorePost Point Frame
+              (and_elim_r_ent
+                (mkProperPure {iResUR S} (returned = unitV)) Point))
+            (sep_mono_r_ent Point Frame (Close ∗ (Psi v))
+              (sep_mono_l_ent (OldLater ∗ Close) Close (Psi v)
+                (sep_elim_r_ent OldLater Close))))
+          (sep_swap_ent Point Close (Psi v))
+    | close : Ready ⊢
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp) =>
+        properUPred_ent_trans Ready (Close ∗ LaterBody)
+          (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+          (sep_mono_r_ent Close (Point ∗ (Psi v)) LaterBody
+            (properUPred_ent_trans (Point ∗ (Psi v)) Body LaterBody
+              (spawn_inv_done H SG gam l Psi v)
+              (proper_later_intro Body)))
+          (wand_elim_ent LaterBody
+            (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp))
+  \in properUPred_ent_trans (StorePost ∗ Frame) Ready
+      (mkProperFUpd H.iris_wsat D coPset_universe
+        (H.iris_fork_post returned)) arrange
+      (properUPred_ent_trans Ready
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+        (mkProperFUpd H.iris_wsat D coPset_universe
+          (H.iris_fork_post returned)) close
+        (fupd_mono H.iris_wsat D coPset_universe mkProperEmp
+          (H.iris_fork_post returned) (FPI returned)))
+
+\lemma spawn_store_child {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (v : Value) :
+  ((iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)) ∗ (Psi v)) ⊢
+    (WP H coPset_universe
+      (Store (Val (LitV (LitLoc l))) (Val (spawn_doneV v)))
+      H.iris_fork_post) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Rnow : Value -> iProp S => \lam old =>
+        pointsto_full H.iris_gen_heap l old
+    | Rafter : Value -> iProp S => \lam old =>
+        spawn_state SG gam Psi old
+    | K => Psi v
+    | StoreE => Store (Val (LitV (LitLoc l))) (Val (spawn_doneV v))
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | perOld : \Pi (old : Value) -> ((((Rnow old) ∗ (|> (Rafter old))) ∗
+            ((|> Body) -∗
+              (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp))) ∗ K) ⊢
+        (WP H D StoreE (\lam returned =>
+          mkProperFUpd H.iris_wsat D coPset_universe
+            (H.iris_fork_post returned))) => \lam old =>
+        \let
+          | Close => (|> Body) -∗
+              (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+          | Frame => ((|> (Rafter old)) ∗ Close) ∗ K
+          | StorePost : Value -> iProp S => \lam returned =>
+              (mkProperPure (returned = unitV)) ∧
+                (pointsto_full H.iris_gen_heap l (spawn_doneV v))
+          | arrange : ((((Rnow old) ∗ (|> (Rafter old))) ∗
+                  Close) ∗ K) ⊢
+              ((Rnow old) ∗ Frame) =>
+              properUPred_ent_trans
+                ((((Rnow old) ∗ (|> (Rafter old))) ∗
+                    Close) ∗ K)
+                (((Rnow old) ∗
+                    ((|> (Rafter old)) ∗ Close)) ∗ K)
+                ((Rnow old) ∗ Frame)
+                (sep_mono_l_ent
+                  (((Rnow old) ∗
+                    (|> (Rafter old))) ∗ Close)
+                  ((Rnow old) ∗
+                    ((|> (Rafter old)) ∗ Close)) K
+                  (sep_assoc_l_ent (Rnow old)
+                    (|> (Rafter old)) Close))
+                (sep_assoc_l_ent (Rnow old)
+                  ((|> (Rafter old)) ∗ Close) K)
+        \in properUPred_ent_trans
+            ((((Rnow old) ∗ (|> (Rafter old))) ∗
+                Close) ∗ K)
+            ((Rnow old) ∗ Frame)
+            (WP H D StoreE (\lam returned =>
+              mkProperFUpd H.iris_wsat D coPset_universe
+                (H.iris_fork_post returned))) arrange
+            (properUPred_ent_trans ((Rnow old) ∗ Frame)
+              ((WP H D StoreE StorePost) ∗ Frame)
+              (WP H D StoreE (\lam returned =>
+                mkProperFUpd H.iris_wsat D coPset_universe
+                  (H.iris_fork_post returned)))
+              (sep_mono_l_ent (Rnow old) (WP H D StoreE StorePost) Frame
+                (wp_store H D l old (spawn_doneV v)))
+              (properUPred_ent_trans
+                ((WP H D StoreE StorePost) ∗ Frame)
+                (WP H D StoreE (wp_frame_post StorePost Frame))
+                (WP H D StoreE (\lam returned =>
+                  mkProperFUpd H.iris_wsat D coPset_universe
+                    (H.iris_fork_post returned)))
+                (wp_frame_r H D StoreE StorePost Frame)
+                (wp_mono H D StoreE (wp_frame_post StorePost Frame)
+                  (\lam returned => mkProperFUpd H.iris_wsat D
+                    coPset_universe (H.iris_fork_post returned))
+                  (\lam returned => spawn_store_close H SG FPI gam l Psi
+                    old v returned))))
+  \in wp_atomic_inv_acc_timeless_exist_frame H coPset_universe spawnN
+      Body Rnow Rafter K StoreE H.iris_fork_post
+      (\lam p _ => coPmem_universe p)
+      (store_strongly_atomic l (spawn_doneV v))
+      (\lam old => pointsto_full_timeless H.iris_gen_heap l old)
+      (properUPred_ent_refl Body) perOld
+
+\lemma spawn_store_pair_child {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (gam : gname) (l : Loc)
+    (Psi : Value -> iProp S) (v : Value) :
+  ((iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)) ∗ (Psi v)) ⊢
+    (WP H coPset_universe
+      (Store (Val (LitV (LitLoc l)))
+        (Pair (Val (boolV true)) (Val v))) H.iris_fork_post) =>
+  \let
+    | StoreDone => Store (Val (LitV (LitLoc l)))
+        (Val (spawn_doneV v))
+    | PairE => Pair (Val (boolV true)) (Val v)
+    | PairPost : Value -> iProp S => \lam new =>
+        WP H coPset_universe
+          (Store (Val (LitV (LitLoc l))) (Val new)) H.iris_fork_post
+  \in properUPred_ent_trans
+      ((iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+          (spawn_inv H SG gam l Psi)) ∗ (Psi v))
+      (WP H coPset_universe StoreDone H.iris_fork_post)
+      (WP H coPset_universe
+        (Store (Val (LitV (LitLoc l))) PairE) H.iris_fork_post)
+      (spawn_store_child H SG FPI gam l Psi v)
+      (properUPred_ent_trans
+        (WP H coPset_universe StoreDone H.iris_fork_post)
+        (WP H coPset_universe (Val (spawn_doneV v)) PairPost)
+        (WP H coPset_universe
+          (Store (Val (LitV (LitLoc l))) PairE) H.iris_fork_post)
+        (wp_value_intro H coPset_universe (spawn_doneV v) PairPost)
+        (properUPred_ent_trans
+          (WP H coPset_universe (Val (spawn_doneV v)) PairPost)
+          (WP H coPset_universe PairE PairPost)
+          (WP H coPset_universe
+            (Store (Val (LitV (LitLoc l))) PairE) H.iris_fork_post)
+          (wp_pair_values H coPset_universe (boolV true) v PairPost)
+          (wp_bind_store_r H coPset_universe (LitV (LitLoc l))
+            PairE H.iris_fork_post)))
+
+\lemma spawn_child {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (f : Value) :
+  ((iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)) ∗
+      (WP H coPset_universe
+        (App (Val f) (Val unitV)) Psi)) ⊢
+    (WP H coPset_universe
+      (letE nR (App (Val f) (Val unitV))
+        (Store (Val (LitV (LitLoc l)))
+          (Pair (Val (boolV true)) (Var nR))))
+      H.iris_fork_post) =>
+  \let
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)
+    | Call => App (Val f) (Val unitV)
+    | StoreBody => Store (Val (LitV (LitLoc l)))
+        (Pair (Val (boolV true)) (Var nR))
+    | FramedPost : Value -> iProp S => \lam v => (Psi v) ∗ Inv
+    | Continue : Value -> iProp S => \lam v =>
+        WP H coPset_universe
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Val v))) H.iris_fork_post
+    | framed : (Inv ∗ (WP H coPset_universe Call Psi)) ⊢
+        (WP H coPset_universe Call FramedPost) =>
+        properUPred_ent_trans
+          (Inv ∗ (WP H coPset_universe Call Psi))
+          ((WP H coPset_universe Call Psi) ∗ Inv)
+          (WP H coPset_universe Call FramedPost)
+          (sep_comm_ent Inv (WP H coPset_universe Call Psi))
+          (wp_frame_r H coPset_universe Call Psi Inv)
+    | next : \Pi (v : Value) -> (FramedPost v) ⊢
+        (Continue v) => \lam v =>
+        properUPred_ent_trans ((Psi v) ∗ Inv)
+          (Inv ∗ (Psi v)) (Continue v)
+          (sep_comm_ent (Psi v) Inv)
+          (spawn_store_pair_child H SG FPI gam l Psi v)
+  \in properUPred_ent_trans
+      (Inv ∗ (WP H coPset_universe Call Psi))
+      (WP H coPset_universe Call Continue)
+      (WP H coPset_universe (letE nR Call StoreBody)
+        H.iris_fork_post)
+      (properUPred_ent_trans
+        (Inv ∗ (WP H coPset_universe Call Psi))
+        (WP H coPset_universe Call FramedPost)
+        (WP H coPset_universe Call Continue) framed
+        (wp_mono H coPset_universe Call FramedPost Continue next))
+      (pm_wp_let H coPset_universe nR Call StoreBody H.iris_fork_post)
+
+\func spawn_post {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (Psi : Value -> iProp S) (returned : Value) : iProp S =>
+  mkProperExist Loc (\lam l =>
+    (mkProperPure (returned = LitV (LitLoc l))) ∧
+      (join_handle H SG l Psi))
+
+\lemma join_handle_intro {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  ((spawn_tok SG gam) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi))) ⊢
+    (join_handle H SG l Psi) =>
+  exist_intro_ent (\lam name =>
+    (spawn_tok SG name) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG name l Psi))) gam
+
+\lemma spawn_post_intro {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  ((spawn_tok SG gam) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi))) ⊢
+    (spawn_post H SG Psi (LitV (LitLoc l))) =>
+  \let
+    | Source => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+          (spawn_inv H SG gam l Psi))
+    | Eq => mkProperPure {iResUR S}
+        ((LitV (LitLoc l) : Value) = LitV (LitLoc l))
+    | Handle => join_handle H SG l Psi
+    | Pair => Eq ∧ Handle
+    | left : Source ⊢ Eq => \lam _ _ _ _ => idp
+    | right : Source ⊢ Handle =>
+        join_handle_intro H SG gam l Psi
+  \in properUPred_ent_trans Source Pair
+      (spawn_post H SG Psi (LitV (LitLoc l)))
+      ((BIuPredMixin (iResUR S)).bi_mixin_and_intro Source Eq Handle left right)
+      (exist_intro_ent (\lam loc => (mkProperPure ((LitV (LitLoc l) : Value) = LitV (LitLoc loc))) ∧
+        (join_handle H SG loc Psi)) l)
+
+\lemma spawn_parent_fork {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (f : Value) :
+  ((iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)) ∗
+      ((spawn_tok SG gam) ∗
+        (WP H coPset_universe (App (Val f) (Val unitV)) Psi))) ⊢
+    (WP H coPset_universe
+      (seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val (LitV (LitLoc l))))
+      (spawn_post H SG Psi)) =>
+  \let
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)
+    | Tok => spawn_tok SG gam
+    | FWP => WP H coPset_universe (App (Val f) (Val unitV)) Psi
+    | ChildE => letE nR (App (Val f) (Val unitV))
+        (Store (Val (LitV (LitLoc l)))
+          (Pair (Val (boolV true)) (Var nR)))
+    | ParentWP => WP H coPset_universe (Val (LitV (LitLoc l)))
+        (spawn_post H SG Psi)
+    | ForkPost : Value -> iProp S => \lam _ => ParentWP
+    | proof : (Inv ∗ (Tok ∗ FWP)) ⊢
+        (WP H coPset_universe
+          (seqE (Fork ChildE) (Val (LitV (LitLoc l))))
+          (spawn_post H SG Psi)) =>
+      ipm $ iIntros "HInv HRest" $
+        iDestruct "HRest" "HTok HFWP" $
+        iDestruct "HInv" "#HInv"
+          (inv_persistent H.iris_wsat spawnN
+            (spawn_inv H SG gam l Psi)) $
+        wp_apply (pm_wp_let H coPset_universe nIgnore (Fork ChildE)
+          (Val (LitV (LitLoc l))) (spawn_post H SG Psi)) $
+        wp_apply (wp_fork H coPset_universe ChildE ForkPost) $
+        iSplitL "HTok"
+          (wp_apply (wp_value_intro H coPset_universe
+            (LitV (LitLoc l)) (spawn_post H SG Psi)) $
+            wp_apply (spawn_post_intro H SG gam l Psi) $
+              iFrame "HTok" $ iExact "HInv")
+          (wp_apply (spawn_child H SG FPI gam l Psi f) $
+            iFrame "HInv" $ iExact "HFWP")
+  \in proof
+\lemma spawn_allocate_inv_run {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (gam : gname) (l : Loc)
+    (Psi : Value -> iProp S) (f : Value) :
+  ((spawn_tok SG gam) ∗
+      ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (WP H coPset_universe (App (Val f) (Val unitV)) Psi))) ⊢
+    (WP H coPset_universe
+      (seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val (LitV (LitLoc l))))
+      (spawn_post H SG Psi)) =>
+  \let
+    | Tok => spawn_tok SG gam
+    | Point => pointsto_full H.iris_gen_heap l spawn_pendingV
+    | FWP => WP H coPset_universe (App (Val f) (Val unitV)) Psi
+    | Rest => Tok ∗ FWP
+    | Body => spawn_inv H SG gam l Psi
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Program => seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val (LitV (LitLoc l)))
+    | Post => spawn_post H SG Psi
+    | arrange : (Tok ∗ (Point ∗ FWP)) ⊢
+        (Point ∗ Rest) => sep_swap_ent Tok Point FWP
+    | laterBody : Point ⊢ (|> Body) =>
+        properUPred_ent_trans Point Body (|> Body)
+          (spawn_inv_initial H SG gam l Psi) (proper_later_intro Body)
+    | allocate : (Point ∗ Rest) ⊢
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+          (Inv ∗ Rest)) =>
+        properUPred_ent_trans (Point ∗ Rest)
+          ((mkProperFUpd H.iris_wsat coPset_universe coPset_universe Inv) ∗
+            Rest)
+          (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+            (Inv ∗ Rest))
+          (sep_mono_l_ent Point
+            (mkProperFUpd H.iris_wsat coPset_universe coPset_universe Inv)
+            Rest
+            (properUPred_ent_trans Point (|> Body)
+              (mkProperFUpd H.iris_wsat coPset_universe coPset_universe Inv)
+              laterBody
+              (inv_alloc H.iris_wsat spawnN coPset_universe Body)))
+          (fupd_frame_r H.iris_wsat coPset_universe coPset_universe Inv Rest)
+    | run : (Inv ∗ Rest) ⊢
+        (WP H coPset_universe Program Post) =>
+        spawn_parent_fork H SG FPI gam l Psi f
+  \in properUPred_ent_trans
+      (Tok ∗ (Point ∗ FWP))
+      (Point ∗ Rest) (WP H coPset_universe Program Post) arrange
+      (properUPred_ent_trans (Point ∗ Rest)
+        (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+          (Inv ∗ Rest))
+        (WP H coPset_universe Program Post) allocate
+        (properUPred_ent_trans
+          (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+            (Inv ∗ Rest))
+          (mkProperFUpd H.iris_wsat coPset_universe coPset_universe
+            (WP H coPset_universe Program Post))
+          (WP H coPset_universe Program Post)
+          (fupd_mono H.iris_wsat coPset_universe coPset_universe
+            (Inv ∗ Rest) (WP H coPset_universe Program Post) run)
+          (fupd_wp H coPset_universe Program Post)))
+
+\lemma spawn_token_then_run {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H) (l : Loc)
+    (Psi : Value -> iProp S) (f : Value) :
+  ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+      (WP H coPset_universe (App (Val f) (Val unitV)) Psi)) ⊢
+    (WP H coPset_universe
+      (seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val (LitV (LitLoc l))))
+      (spawn_post H SG Psi)) =>
+  \let
+    | Resources => (pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (WP H coPset_universe (App (Val f) (Val unitV)) Psi)
+    | Toks => mkProperExist gname (spawn_tok SG)
+    | Named => mkProperExist gname (\lam gam =>
+        (spawn_tok SG gam) ∗ Resources)
+    | Program => seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val (LitV (LitLoc l)))
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val (LitV (LitLoc l)))
+    | Post => spawn_post H SG Psi
+    | allocate : Resources ⊢ (|==> Named) =>
+        properUPred_ent_trans Resources
+          ((|==> Toks) ∗ Resources)
+          (|==> Named)
+          (properUPred_ent_trans Resources
+            (mkProperEmp ∗ Resources)
+            ((|==> Toks) ∗ Resources)
+            ((BIuPredMixin (iResUR S)).bi_mixin_emp_sep_1 Resources)
+            (sep_mono_l_ent mkProperEmp (|==> Toks) Resources
+              (spawn_tok_alloc SG)))
+          (properUPred_ent_trans
+            ((|==> Toks) ∗ Resources)
+            (|==> (Toks ∗ Resources))
+            (|==> Named)
+            (bupd_frame_r Toks Resources)
+            (bupd_mono (Toks ∗ Resources) Named
+              (sep_exist_l_elim (spawn_tok SG) Resources Named
+                (\lam gam => exist_intro_ent (\lam name =>
+                  (spawn_tok SG name) ∗ Resources) gam))))
+    | runNamed : Named ⊢
+        (WP H coPset_universe Program Post) =>
+        exist_elim_ent (\lam gam => (spawn_tok SG gam) ∗ Resources)
+          (WP H coPset_universe Program Post)
+          (\lam gam => spawn_allocate_inv_run H SG FPI gam l Psi f)
+  \in properUPred_ent_trans Resources (|==> Named)
+      (WP H coPset_universe Program Post) allocate
+      (properUPred_ent_trans (|==> Named)
+        (|==> (WP H coPset_universe Program Post))
+        (WP H coPset_universe Program Post)
+        (bupd_mono Named (WP H coPset_universe Program Post) runNamed)
+        (wp_bupd H coPset_universe Program Post))
+
+\lemma spawn_after_alloc {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (Psi : Value -> iProp S) (f returned : Value) :
+  ((mkProperExist Loc (\lam l => (mkProperPure (returned = LitV (LitLoc l))) ∧
+        (pointsto_full H.iris_gen_heap l spawn_pendingV))) ∗
+      (WP H coPset_universe (App (Val f) (Val unitV)) Psi)) ⊢
+    (WP H coPset_universe
+      (seqE
+        (Fork (letE nR (App (Val f) (Val unitV))
+          (Store (Val returned)
+            (Pair (Val (boolV true)) (Var nR)))))
+        (Val returned)) (spawn_post H SG Psi)) =>
+  \let
+    | FWP => WP H coPset_universe (App (Val f) (Val unitV)) Psi
+    | Goal => WP H coPset_universe
+        (seqE
+          (Fork (letE nR (App (Val f) (Val unitV))
+            (Store (Val returned)
+              (Pair (Val (boolV true)) (Var nR)))))
+          (Val returned)) (spawn_post H SG Psi)
+    | perLoc : \Pi (l : Loc) -> (((mkProperPure (returned = LitV (LitLoc l))) ∧
+            (pointsto_full H.iris_gen_heap l spawn_pendingV)) ∗ FWP) ⊢ Goal =>
+        \lam l =>
+          \let
+            | PairP => (mkProperPure {iResUR S} (returned = LitV (LitLoc l))) ∧
+                (pointsto_full H.iris_gen_heap l spawn_pendingV)
+            | Eq => returned = LitV (LitLoc l)
+            | Rest => (pointsto_full H.iris_gen_heap l spawn_pendingV) ∗ FWP
+            | retainEq : (PairP ∗ FWP) ⊢
+                ((mkProperPure Eq) ∗ (PairP ∗ FWP)) =>
+                pure_consequence_frame_ent (PairP ∗ FWP) Eq
+                  (properUPred_ent_trans (PairP ∗ FWP) PairP
+                    (mkProperPure Eq)
+                    (sep_elim_l_ent PairP FWP)
+                    (and_elim_l_ent (mkProperPure Eq)
+                      (pointsto_full H.iris_gen_heap l spawn_pendingV)))
+            | useEq : Eq -> (PairP ∗ FWP) ⊢ Goal => \lam eq =>
+                transport (\lam r => (PairP ∗ FWP) ⊢
+                  (WP H coPset_universe
+                    (seqE
+                      (Fork (letE nR (App (Val f) (Val unitV))
+                        (Store (Val r)
+                          (Pair (Val (boolV true)) (Var nR)))))
+                      (Val r)) (spawn_post H SG Psi)))
+                  (inv eq)
+                  (properUPred_ent_trans (PairP ∗ FWP) Rest
+                    (WP H coPset_universe
+                      (seqE
+                        (Fork (letE nR (App (Val f) (Val unitV))
+                          (Store (Val (LitV (LitLoc l)))
+                            (Pair (Val (boolV true)) (Var nR)))))
+                        (Val (LitV (LitLoc l)))) (spawn_post H SG Psi))
+                    (sep_mono_l_ent PairP
+                      (pointsto_full H.iris_gen_heap l spawn_pendingV) FWP
+                      (and_elim_r_ent (mkProperPure Eq)
+                        (pointsto_full H.iris_gen_heap l spawn_pendingV)))
+                    (spawn_token_then_run H SG FPI l Psi f))
+          \in properUPred_ent_trans (PairP ∗ FWP)
+              ((mkProperPure Eq) ∗ (PairP ∗ FWP)) Goal
+              retainEq (pure_sep_l_elim Eq (PairP ∗ FWP) Goal useEq)
+  \in sep_exist_l_elim (\lam l => (mkProperPure (returned = LitV (LitLoc l))) ∧
+      (pointsto_full H.iris_gen_heap l spawn_pendingV)) FWP Goal perLoc
+
+\lemma spawn_spec {S : gFunctors} (H : irisGS natCountable S)
+    (SG : spawnG S) (FPI : ForkPostInhabited H)
+    (Psi : Value -> iProp S) (f : Value) :
+  (WP H coPset_universe (App (Val f) (Val unitV)) Psi) ⊢
+    (WP H coPset_universe (App (Val spawn) (Val f))
+      (spawn_post H SG Psi)) =>
+  \let
+    | FWP => WP H coPset_universe (App (Val f) (Val unitV)) Psi
+    | AllocPost : Value -> iProp S => \lam returned =>
+        mkProperExist Loc (\lam l => (mkProperPure (returned = LitV (LitLoc l))) ∧
+          (pointsto_full H.iris_gen_heap l spawn_pendingV))
+    | FramedPost : Value -> iProp S => \lam returned =>
+        (AllocPost returned) ∗ FWP
+    | Continue : Value -> iProp S => \lam returned =>
+        WP H coPset_universe
+          (seqE
+            (Fork (letE nR (App (Val f) (Val unitV))
+              (Store (Val returned)
+                (Pair (Val (boolV true)) (Var nR)))))
+            (Val returned)) (spawn_post H SG Psi)
+    | AllocE => Alloc (Val spawn_pendingV)
+    | BodyF => letE nHandle AllocE
+        (seqE
+          (Fork (letE nR (App (Val f) (Val unitV))
+            (Store (Var nHandle)
+              (Pair (Val (boolV true)) (Var nR)))))
+          (Var nHandle))
+    | BodyGeneric => letE nHandle
+        (Alloc (Val (PairV (boolV false) unitV)))
+        (seqE
+          (Fork (letE nR (App (Var nThunk) (Val unitV))
+            (Store (Var nHandle)
+              (Pair (Val (boolV true)) (Var nR)))))
+          (Var nHandle))
+    | allocated : FWP ⊢
+        (WP H coPset_universe AllocE FramedPost) =>
+        properUPred_ent_trans FWP (mkProperEmp ∗ FWP)
+          (WP H coPset_universe AllocE FramedPost)
+          ((BIuPredMixin (iResUR S)).bi_mixin_emp_sep_1 FWP)
+          (properUPred_ent_trans (mkProperEmp ∗ FWP)
+            ((WP H coPset_universe AllocE AllocPost) ∗ FWP)
+            (WP H coPset_universe AllocE FramedPost)
+            (sep_mono_l_ent mkProperEmp
+              (WP H coPset_universe AllocE AllocPost) FWP
+              (wp_alloc H coPset_universe spawn_pendingV))
+            (wp_frame_r H coPset_universe AllocE AllocPost FWP))
+    | continue : \Pi (returned : Value) -> (FramedPost returned) ⊢ (Continue returned) => \lam returned =>
+        spawn_after_alloc H SG FPI Psi f returned
+    | allocationBody : FWP ⊢
+        (WP H coPset_universe BodyF (spawn_post H SG Psi)) =>
+        properUPred_ent_trans FWP
+          (WP H coPset_universe AllocE Continue)
+          (WP H coPset_universe BodyF (spawn_post H SG Psi))
+          (properUPred_ent_trans FWP
+            (WP H coPset_universe AllocE FramedPost)
+            (WP H coPset_universe AllocE Continue) allocated
+            (wp_mono H coPset_universe AllocE FramedPost Continue continue))
+          (pm_wp_let H coPset_universe nHandle AllocE
+            (seqE
+              (Fork (letE nR (App (Val f) (Val unitV))
+                (Store (Var nHandle)
+                  (Pair (Val (boolV true)) (Var nR)))))
+              (Var nHandle)) (spawn_post H SG Psi))
+  \in properUPred_ent_trans FWP
+      (WP H coPset_universe BodyF (spawn_post H SG Psi))
+      (WP H coPset_universe (App (Val spawn) (Val f))
+        (spawn_post H SG Psi)) allocationBody
+      (wp_lam_beta H coPset_universe nThunk BodyGeneric f
+        (spawn_post H SG Psi))
+
+\func join_continue (l : Loc) (cell : Value) : Expr =>
+  If (Fst (Val cell)) (Snd (Val cell))
+    (App (Val join) (Val (LitV (LitLoc l))))
+
+\func join_loop (l : Loc) : Expr =>
+  letE nCell (Load (Val (LitV (LitLoc l))))
+    (If (Fst (Var nCell)) (Snd (Var nCell))
+      (App (Val join) (Val (LitV (LitLoc l)))))
+
+\lemma join_pending_continue {S : gFunctors}
+    (H : irisGS natCountable S) (E : coPset) (l : Loc)
+    (Psi : Value -> iProp S) :
+  (WP H E (App (Val join) (Val (LitV (LitLoc l)))) Psi) ⊢
+    (WP H E (join_continue l spawn_pendingV) Psi) =>
+  \let
+    | Then => Snd (Val spawn_pendingV)
+    | Else => App (Val join) (Val (LitV (LitLoc l)))
+    | CondPost : Value -> iProp S => \lam b =>
+        WP H E (If (Val b) Then Else) Psi
+    | falseIf : (WP H E Else Psi) ⊢
+        (WP H E (If (Val (boolV false)) Then Else) Psi) =>
+        wp_if_false H E Then Else Psi
+  \in properUPred_ent_trans (WP H E Else Psi)
+      (WP H E (Val (boolV false)) CondPost)
+      (WP H E (join_continue l spawn_pendingV) Psi)
+      (properUPred_ent_trans (WP H E Else Psi)
+        (WP H E (If (Val (boolV false)) Then Else) Psi)
+        (WP H E (Val (boolV false)) CondPost) falseIf
+        (wp_value_intro H E (boolV false) CondPost))
+      (properUPred_ent_trans (WP H E (Val (boolV false)) CondPost)
+        (WP H E (Fst (Val spawn_pendingV)) CondPost)
+        (WP H E (join_continue l spawn_pendingV) Psi)
+        (wp_fst_pair H E (boolV false) unitV CondPost)
+        (wp_bind_if H E (Fst (Val spawn_pendingV)) Then Else Psi))
+
+\lemma join_done_continue {S : gFunctors}
+    (H : irisGS natCountable S) (E : coPset) (l : Loc)
+    (Psi : Value -> iProp S) (v : Value) :
+  (Psi v) ⊢
+    (WP H E (join_continue l (spawn_doneV v)) Psi) =>
+  \let
+    | Then => Snd (Val (spawn_doneV v))
+    | Else => App (Val join) (Val (LitV (LitLoc l)))
+    | CondPost : Value -> iProp S => \lam b =>
+        WP H E (If (Val b) Then Else) Psi
+    | thenWP : (Psi v) ⊢ (WP H E Then Psi) =>
+        properUPred_ent_trans (Psi v) (WP H E (Val v) Psi)
+          (WP H E Then Psi)
+          (wp_value_intro H E v Psi)
+          (wp_snd_pair H E (boolV true) v Psi)
+    | trueIf : (Psi v) ⊢
+        (WP H E (If (Val (boolV true)) Then Else) Psi) =>
+        properUPred_ent_trans (Psi v) (WP H E Then Psi)
+          (WP H E (If (Val (boolV true)) Then Else) Psi)
+          thenWP (wp_if_true H E Then Else Psi)
+  \in properUPred_ent_trans (Psi v)
+      (WP H E (Val (boolV true)) CondPost)
+      (WP H E (join_continue l (spawn_doneV v)) Psi)
+      (properUPred_ent_trans (Psi v)
+        (WP H E (If (Val (boolV true)) Then Else) Psi)
+        (WP H E (Val (boolV true)) CondPost) trueIf
+        (wp_value_intro H E (boolV true) CondPost))
+      (properUPred_ent_trans (WP H E (Val (boolV true)) CondPost)
+        (WP H E (Fst (Val (spawn_doneV v))) CondPost)
+        (WP H E (join_continue l (spawn_doneV v)) Psi)
+        (wp_fst_pair H E (boolV true) v CondPost)
+        (wp_bind_if H E (Fst (Val (spawn_doneV v))) Then Else Psi))
+
+\lemma join_pending_exact {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+  \in ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+        (Close ∗ (W ∗ Base))) ⊢
+      (mkProperFUpd H.iris_wsat D coPset_universe
+        (WP H coPset_universe
+          (join_continue l spawn_pendingV) Psi)) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | R => W ∗ Base
+    | LaterBody => |> Body
+    | Closed => mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp
+    | Continue => WP H coPset_universe
+        (join_continue l spawn_pendingV) Psi
+
+    | proof :
+        ((pointsto_full H.iris_gen_heap l spawn_pendingV) ∗
+          (Close ∗ R)) ⊢
+        (mkProperFUpd H.iris_wsat D coPset_universe Continue) =>
+      ipm $ iIntros "HPoint HRest" $
+        iDestruct "HRest" "HClose HR" $
+        iDestruct "HR" "HW HBase" $
+        iAssert "HLaterBody" "HPoint" LaterBody
+          (iNext $
+            wp_apply (spawn_inv_initial H SG gam l Psi) $
+              iExact "HPoint")
+          (iAssert "HClosed" "HClose HLaterBody" Closed
+            (iApply "HClose" $ iExact "HLaterBody")
+            (iMod "HClosed" "HEmp" $
+              wp_apply (fupd_intro H.iris_wsat coPset_universe Continue) $
+              wp_apply (join_pending_continue
+                H coPset_universe l Psi) $
+              iApply "HW" $ iExact "HBase"))
+  \in proof
+\lemma join_done_result_exact {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (v : Value) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+  \in ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+        ((Psi v) ∗
+          (Close ∗ (W ∗ Base)))) ⊢
+      (mkProperFUpd H.iris_wsat D coPset_universe
+        (WP H coPset_universe (join_continue l (spawn_doneV v)) Psi)) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Tok => spawn_tok SG gam
+    | LaterBody => |> Body
+    | Closed => mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp
+    | Continue => WP H coPset_universe
+        (join_continue l (spawn_doneV v)) Psi
+
+    | proof :
+        (pointsto_full H.iris_gen_heap l (spawn_doneV v) ∗
+          (Psi v ∗ (Close ∗
+            ((Tok ∗ Inv -∗
+              WP H coPset_universe
+                (App (Val join) (Val (LitV (LitLoc l)))) Psi) ∗
+              (Tok ∗ Inv))))) ⊢
+        mkProperFUpd H.iris_wsat D coPset_universe
+          (WP H coPset_universe (join_continue l (spawn_doneV v)) Psi) =>
+      ipm $ iIntros "HPoint HRest" $
+    iDestruct "HRest" "HPsi HRest" $
+    iDestruct "HRest" "HClose HRest" $
+    iDestruct "HRest" "HW HBase" $
+    iDestruct "HBase" "HTok HInv" $
+    iAssert "HLaterBody" "HPoint HTok" LaterBody
+      (iNext $
+        wp_apply (spawn_inv_done_token H SG gam l Psi v) $
+          iFrame "HPoint" $ iExact "HTok")
+      (iAssert "HClosed" "HClose HLaterBody" Closed
+        (iApply "HClose" $ iExact "HLaterBody")
+        (iMod "HClosed" "HEmp" $
+          wp_apply (fupd_intro H.iris_wsat coPset_universe Continue) $
+          wp_apply (join_done_continue
+            H coPset_universe l Psi v) $
+          iExact "HPsi"))
+  \in proof
+\lemma join_done_token_exact {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (v : Value)
+    (Target : iProp S) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+  \in ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+        ((spawn_tok SG gam) ∗
+          (Close ∗ (W ∗ Base)))) ⊢ Target =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Tok => spawn_tok SG gam
+    | Base => Tok ∗ Inv
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | Point => pointsto_full H.iris_gen_heap l (spawn_doneV v)
+    | Source => Point ∗
+        (Tok ∗ (Close ∗ (W ∗ Base)))
+    | Flat => Point ∗
+        (Tok ∗ (Close ∗ (W ∗
+          (Tok ∗ Inv))))
+    | TokFront => Tok ∗ (Point ∗
+        (Tok ∗ (Close ∗ (W ∗ Inv))))
+    | TwoTok => Tok ∗ Tok
+    | select : TokFront ⊢ TwoTok =>
+        sep_mono_r_ent Tok
+          (Point ∗
+            (Tok ∗ (Close ∗ (W ∗ Inv))))
+          Tok
+          (properUPred_ent_trans
+            (Point ∗
+              (Tok ∗ (Close ∗ (W ∗ Inv))))
+            (Tok ∗ (Point ∗
+              (Close ∗ (W ∗ Inv)))) Tok
+            (sep_swap_ent Point Tok (Close ∗ (W ∗ Inv)))
+            (sep_elim_l_ent Tok
+              (Point ∗ (Close ∗ (W ∗ Inv)))))
+  \in properUPred_ent_trans Source Flat Target
+      (properUPred_ent_refl Source)
+      (properUPred_ent_trans Flat TokFront Target
+        (sep_move_fifth_front Point Tok Close W Tok Inv)
+        (properUPred_ent_trans TokFront TwoTok Target select
+          (spawn_tok_exclusive SG gam Target)))
+
+\lemma join_load_transition {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (lv : Value) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | Rest => Close ∗ (W ∗ Base)
+    | Continue => WP H coPset_universe (join_continue l lv) Psi
+  \in ((pointsto_full H.iris_gen_heap l lv) ∗
+        ((spawn_state SG gam Psi lv) ∗ Rest)) ⊢
+      (|==>
+        (mkProperFUpd H.iris_wsat D coPset_universe Continue)) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | Rest => Close ∗ (W ∗ Base)
+    | Point => pointsto_full H.iris_gen_heap l lv
+    | Frame => Point ∗ Rest
+    | Continue => WP H coPset_universe (join_continue l lv) Psi
+    | FContinue => mkProperFUpd H.iris_wsat D coPset_universe Continue
+    | Target => |==> FContinue
+    | Pending => mkProperPure {iResUR S} (lv = spawn_pendingV)
+    | Done => mkProperExist Value (\lam v =>
+        (mkProperPure (lv = spawn_doneV v)) ∗
+          ((Psi v) ∨ (spawn_tok SG gam)))
+    | pending : (Pending ∗ Frame) ⊢ FContinue =>
+        pure_sep_l_elim (lv = spawn_pendingV) Frame FContinue
+          (\lam eq => transport
+            (\lam current => ((pointsto_full H.iris_gen_heap l current) ∗ Rest) ⊢
+              (mkProperFUpd H.iris_wsat D coPset_universe
+                (WP H coPset_universe (join_continue l current) Psi)))
+            (inv eq) (join_pending_exact H SG gam l Psi))
+    | doneOne : \Pi (v : Value) -> (((mkProperPure (lv = spawn_doneV v)) ∗
+            ((Psi v) ∨ (spawn_tok SG gam))) ∗ Frame) ⊢
+        FContinue => \lam v =>
+        \let
+          | Eq => mkProperPure {iResUR S} (lv = spawn_doneV v)
+          | Payload => (Psi v) ∨ (spawn_tok SG gam)
+          | WithEq => Eq ∗ (Payload ∗ Frame)
+        \in properUPred_ent_trans
+            ((Eq ∗ Payload) ∗ Frame) WithEq FContinue
+            (sep_assoc_l_ent Eq Payload Frame)
+            (pure_sep_l_elim (lv = spawn_doneV v)
+              (Payload ∗ Frame) FContinue
+              (\lam eq => transport
+                (\lam current => (Payload ∗
+                    ((pointsto_full H.iris_gen_heap l current) ∗ Rest)) ⊢
+                  (mkProperFUpd H.iris_wsat D coPset_universe
+                    (WP H coPset_universe
+                      (join_continue l current) Psi)))
+                (inv eq)
+                (sep_or_l_elim (Psi v) (spawn_tok SG gam)
+                  ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗ Rest)
+                  (mkProperFUpd H.iris_wsat D coPset_universe
+                    (WP H coPset_universe
+                      (join_continue l (spawn_doneV v)) Psi))
+                  (properUPred_ent_trans
+                    ((Psi v) ∗
+                      ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗ Rest))
+                    ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+                      ((Psi v) ∗ Rest))
+                    (mkProperFUpd H.iris_wsat D coPset_universe
+                      (WP H coPset_universe
+                        (join_continue l (spawn_doneV v)) Psi))
+                    (sep_swap_ent (Psi v)
+                      (pointsto_full H.iris_gen_heap l (spawn_doneV v)) Rest)
+                    (join_done_result_exact H SG gam l Psi v))
+                  (properUPred_ent_trans
+                    ((spawn_tok SG gam) ∗
+                      ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗ Rest))
+                    ((pointsto_full H.iris_gen_heap l (spawn_doneV v)) ∗
+                      ((spawn_tok SG gam) ∗ Rest))
+                    (mkProperFUpd H.iris_wsat D coPset_universe
+                      (WP H coPset_universe
+                        (join_continue l (spawn_doneV v)) Psi))
+                    (sep_swap_ent (spawn_tok SG gam)
+                      (pointsto_full H.iris_gen_heap l (spawn_doneV v)) Rest)
+                    (join_done_token_exact H SG gam l Psi v
+                      (mkProperFUpd H.iris_wsat D coPset_universe
+                        (WP H coPset_universe
+                          (join_continue l (spawn_doneV v)) Psi)))))))
+    | done : (Done ∗ Frame) ⊢ FContinue =>
+        sep_exist_l_elim
+          (\lam v => (mkProperPure (lv = spawn_doneV v)) ∗
+            ((Psi v) ∨ (spawn_tok SG gam)))
+          Frame FContinue doneOne
+    | choose : ((spawn_state SG gam Psi lv) ∗ Frame) ⊢ FContinue =>
+        sep_or_l_elim Pending Done Frame FContinue pending done
+    | expose : (Point ∗
+          ((spawn_state SG gam Psi lv) ∗ Rest)) ⊢
+        FContinue => properUPred_ent_trans
+          (Point ∗
+            ((spawn_state SG gam Psi lv) ∗ Rest))
+          ((spawn_state SG gam Psi lv) ∗ Frame) FContinue
+          (sep_swap_ent Point (spawn_state SG gam Psi lv) Rest) choose
+  \in properUPred_ent_trans
+      (Point ∗ ((spawn_state SG gam Psi lv) ∗ Rest))
+      FContinue Target expose (bupd_intro FContinue)
+
+\lemma join_load_opened {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) (lv : Value) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | K => (|> W) ∗ Base
+    | Phi : Value -> iProp S => \lam loaded =>
+        WP H coPset_universe (join_continue l loaded) Psi
+  \in ((((pointsto_full H.iris_gen_heap l lv) ∗
+            (|> (spawn_state SG gam Psi lv))) ∗
+          Close) ∗ K) ⊢
+      (WP H D (Load (Val (LitV (LitLoc l))))
+        (\lam loaded => mkProperFUpd H.iris_wsat D coPset_universe
+          (Phi loaded))) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | D => coPset_difference coPset_universe (nclose spawnN)
+    | Close => (|> Body) -∗
+        (mkProperFUpd H.iris_wsat D coPset_universe mkProperEmp)
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | K => (|> W) ∗ Base
+    | Point => pointsto_full H.iris_gen_heap l lv
+    | StateP => spawn_state SG gam Psi lv
+    | Rest => Close ∗ (W ∗ Base)
+    | After => StateP ∗ Rest
+    | Phi : Value -> iProp S => \lam loaded =>
+        WP H coPset_universe (join_continue l loaded) Psi
+    | proof : (((Point ∗ (|> StateP)) ∗ Close) ∗ K) ⊢
+        (WP H D (Load (Val (LitV (LitLoc l))))
+          (\lam loaded => mkProperFUpd H.iris_wsat D coPset_universe
+            (Phi loaded))) =>
+      ipm $ iIntros "HPSC HK" $
+        iDestruct "HPSC" "HPS HClose" $
+        iDestruct "HPS" "HPoint HLaterState" $
+        iDestruct "HK" "HLaterW HBase" $
+        iAssert "HLaterClose" "HClose" (|> Close)
+          (iNext $ iExact "HClose")
+          (iAssert "HLaterBase" "HBase" (|> Base)
+            (iNext $ iExact "HBase")
+            (wp_apply (wp_load_later_frame H D l
+              (DfracOwn qp_one) lv After
+              (\lam loaded =>
+                mkProperFUpd H.iris_wsat D coPset_universe (Phi loaded))
+              (join_load_transition H SG gam l Psi lv)) $
+              iSplitL "HPoint"
+                (iExact "HPoint")
+                (wp_apply (proper_later_sep_2 StateP Rest) $
+                  iSplitL "HLaterState"
+                    (iExact "HLaterState")
+                    (wp_apply (proper_later_sep_2 Close (W ∗ Base)) $
+                      iSplitL "HLaterClose"
+                        (iExact "HLaterClose")
+                        (wp_apply (proper_later_sep_2 W Base) $
+                          iSplitL "HLaterW"
+                            (iExact "HLaterW")
+                            (iExact "HLaterBase"))))))
+  \in proof
+\lemma join_load_wp {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Base => (spawn_tok SG gam) ∗ Inv
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | K => (|> W) ∗ Base
+    | Phi : Value -> iProp S => \lam loaded =>
+        WP H coPset_universe (join_continue l loaded) Psi
+  \in (Inv ∗ K) ⊢
+      (WP H coPset_universe
+        (Load (Val (LitV (LitLoc l)))) Phi) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Base => (spawn_tok SG gam) ∗ Inv
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | K => (|> W) ∗ Base
+    | Phi : Value -> iProp S => \lam loaded =>
+        WP H coPset_universe (join_continue l loaded) Psi
+  \in wp_atomic_inv_acc_timeless_exist_frame H coPset_universe spawnN
+      Body
+      (\lam lv => pointsto_full H.iris_gen_heap l lv)
+      (\lam lv => spawn_state SG gam Psi lv)
+      K (Load (Val (LitV (LitLoc l)))) Phi
+      (\lam p _ => coPmem_universe p)
+      (load_strongly_atomic l)
+      (\lam lv => pointsto_full_timeless H.iris_gen_heap l lv)
+      (properUPred_ent_refl Body)
+      (\lam lv => join_load_opened H SG gam l Psi lv)
+
+\lemma join_lob_step {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Base => (spawn_tok SG gam) ∗ Inv
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+  \in ((|> W) ∗ Base) ⊢ P =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body
+    | Tok => spawn_tok SG gam
+    | Base => Tok ∗ Inv
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+    | W => Base -∗ P
+    | K => (|> W) ∗ Base
+    | Phi : Value -> iProp S => \lam loaded =>
+        WP H coPset_universe (join_continue l loaded) Psi
+    | Source => (|> W) ∗ Base
+    | Duplicated => (|> W) ∗
+        (Tok ∗ (Inv ∗ Inv))
+    | Ready => Inv ∗ K
+    | duplicate : Source ⊢ Duplicated =>
+        sep_mono_r_ent (|> W) Base
+          (Tok ∗ (Inv ∗ Inv))
+          (sep_mono_r_ent Tok Inv (Inv ∗ Inv)
+            (persistent_consequence_frame_ent Inv Inv
+              (inv_persistent H.iris_wsat spawnN Body)))
+    | arrange : Duplicated ⊢ Ready =>
+        sep_rotate_third_front (|> W) Tok Inv Inv
+    | load : Ready ⊢
+        (WP H coPset_universe
+          (Load (Val (LitV (LitLoc l)))) Phi) =>
+        join_load_wp H SG gam l Psi
+    | loop : Ready ⊢
+        (WP H coPset_universe (join_loop l) Psi) =>
+        properUPred_ent_trans Ready
+          (WP H coPset_universe
+            (Load (Val (LitV (LitLoc l)))) Phi)
+          (WP H coPset_universe (join_loop l) Psi) load
+          (pm_wp_let H coPset_universe nCell
+            (Load (Val (LitV (LitLoc l))))
+            (If (Fst (Var nCell)) (Snd (Var nCell))
+              (App (Val join) (Val (LitV (LitLoc l))))) Psi)
+  \in properUPred_ent_trans Source Duplicated P duplicate
+      (properUPred_ent_trans Duplicated Ready P arrange
+        (properUPred_ent_trans Ready
+          (WP H coPset_universe (join_loop l) Psi) P loop
+          (wp_rec_beta H coPset_universe nJoin nHandle
+            (letE nCell (Load (Var nHandle))
+              (If (Fst (Var nCell)) (Snd (Var nCell))
+                (App (Var nJoin) (Var nHandle))))
+            (LitV (LitLoc l)) Psi)))
+
+\lemma join_named_spec {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (gam : gname) (l : Loc) (Psi : Value -> iProp S) :
+  ((spawn_tok SG gam) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi))) ⊢
+    (WP H coPset_universe
+      (App (Val join) (Val (LitV (LitLoc l)))) Psi) =>
+  \let
+    | Body => spawn_inv H SG gam l Psi
+    | Base => (spawn_tok SG gam) ∗
+        (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN Body)
+    | P => WP H coPset_universe
+        (App (Val join) (Val (LitV (LitLoc l)))) Psi
+  \in lob_wand_apply_ent Base P (join_lob_step H SG gam l Psi)
+
+\lemma join_spec {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (l : Loc) (Psi : Value -> iProp S) :
+  (join_handle H SG l Psi) ⊢
+    (WP H coPset_universe
+      (App (Val join) (Val (LitV (LitLoc l)))) Psi) =>
+  exist_elim_ent
+    (\lam gam => (spawn_tok SG gam) ∗
+      (iris.base_logic.lib.invariants.inv H.iris_wsat spawnN
+        (spawn_inv H SG gam l Psi)))
+    (WP H coPset_universe
+      (App (Val join) (Val (LitV (LitLoc l)))) Psi)
+    (\lam gam => join_named_spec H SG gam l Psi)
+
+\func par_pair_post {S : gFunctors}
+    (Psi1 Psi2 : Value -> iProp S) (returned : Value) : iProp S =>
+  mkProperExist Value (\lam v1 => mkProperExist Value (\lam v2 =>
+    (mkProperPure (returned = PairV v1 v2)) ∗
+      ((Psi1 v1) ∗ (Psi2 v2))))
+
+\lemma par_pair_values {S : gFunctors}
+    (H : irisGS natCountable S) (Psi1 Psi2 : Value -> iProp S)
+    (v1 v2 : Value) :
+  ((Psi1 v1) ∗ (Psi2 v2)) ⊢
+    (WP H coPset_universe (Pair (Val v1) (Val v2))
+      (par_pair_post Psi1 Psi2)) =>
+  \let
+    | Resources => (Psi1 v1) ∗ (Psi2 v2)
+    | Post => par_pair_post Psi1 Psi2
+    | AtPair => (mkProperPure {iResUR S} (PairV v1 v2 = PairV v1 v2)) ∗ Resources
+    | make : Resources ⊢ (Post (PairV v1 v2)) =>
+        properUPred_ent_trans Resources AtPair (Post (PairV v1 v2))
+          (pure_intro_sep_ent (PairV v1 v2 = PairV v1 v2) idp Resources)
+          (properUPred_ent_trans AtPair
+            (mkProperExist Value (\lam w2 =>
+              (mkProperPure (PairV v1 v2 = PairV v1 w2)) ∗
+                ((Psi1 v1) ∗ (Psi2 w2))))
+            (Post (PairV v1 v2))
+            (exist_intro_ent (\lam w2 =>
+              (mkProperPure (PairV v1 v2 = PairV v1 w2)) ∗
+                ((Psi1 v1) ∗ (Psi2 w2))) v2)
+            (exist_intro_ent (\lam w1 => mkProperExist Value (\lam w2 =>
+              (mkProperPure (PairV v1 v2 = PairV w1 w2)) ∗
+                ((Psi1 w1) ∗ (Psi2 w2)))) v1))
+    | value : Resources ⊢
+        (WP H coPset_universe (Val (PairV v1 v2)) Post) =>
+        properUPred_ent_trans Resources (Post (PairV v1 v2))
+          (WP H coPset_universe (Val (PairV v1 v2)) Post) make
+          (wp_value_intro H coPset_universe (PairV v1 v2) Post)
+  \in properUPred_ent_trans Resources
+      (WP H coPset_universe (Val (PairV v1 v2)) Post)
+      (WP H coPset_universe (Pair (Val v1) (Val v2)) Post) value
+      (wp_pair_values H coPset_universe v1 v2 Post)
+
+\lemma par_after_handle {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (Psi1 Psi2 : Value -> iProp S) (f2 : Value) (l : Loc) :
+  ((join_handle H SG l Psi1) ∗
+      (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)) ⊢
+    (WP H coPset_universe
+      (letE nY (App (Val f2) (Val unitV))
+        (letE nX (App (Val join) (Val (LitV (LitLoc l))))
+          (Pair (Var nX) (Var nY))))
+      (par_pair_post Psi1 Psi2)) =>
+  \let
+    | Handle => join_handle H SG l Psi1
+    | RightCall => App (Val f2) (Val unitV)
+    | JoinCall => App (Val join) (Val (LitV (LitLoc l)))
+    | Post => par_pair_post Psi1 Psi2
+    | RightPost : Value -> iProp S => \lam v2 =>
+        (Psi2 v2) ∗ Handle
+    | afterJoin : \Pi (v2 : Value) -> (Handle ∗ (Psi2 v2)) ⊢
+        (WP H coPset_universe
+          (letE nX JoinCall (Pair (Var nX) (Val v2))) Post) => \lam v2 =>
+        \let
+          | JoinPost : Value -> iProp S => \lam v1 =>
+              (Psi1 v1) ∗ (Psi2 v2)
+          | joined : (Handle ∗ (Psi2 v2)) ⊢
+              (WP H coPset_universe JoinCall JoinPost) =>
+              properUPred_ent_trans (Handle ∗ (Psi2 v2))
+                ((WP H coPset_universe JoinCall Psi1) ∗ (Psi2 v2))
+                (WP H coPset_universe JoinCall JoinPost)
+                (sep_mono_l_ent Handle
+                  (WP H coPset_universe JoinCall Psi1) (Psi2 v2)
+                  (join_spec H SG l Psi1))
+                (wp_frame_r H coPset_universe JoinCall Psi1 (Psi2 v2))
+          | next : \Pi (v1 : Value) -> (JoinPost v1) ⊢
+              (WP H coPset_universe (Pair (Val v1) (Val v2)) Post) =>
+              \lam v1 => par_pair_values H Psi1 Psi2 v1 v2
+        \in properUPred_ent_trans (Handle ∗ (Psi2 v2))
+            (WP H coPset_universe JoinCall (\lam v1 =>
+              WP H coPset_universe (Pair (Val v1) (Val v2)) Post))
+            (WP H coPset_universe
+              (letE nX JoinCall (Pair (Var nX) (Val v2))) Post)
+            (properUPred_ent_trans (Handle ∗ (Psi2 v2))
+              (WP H coPset_universe JoinCall JoinPost)
+              (WP H coPset_universe JoinCall (\lam v1 =>
+                WP H coPset_universe (Pair (Val v1) (Val v2)) Post))
+              joined (wp_mono H coPset_universe JoinCall JoinPost
+                (\lam v1 => WP H coPset_universe
+                  (Pair (Val v1) (Val v2)) Post) next))
+            (pm_wp_let H coPset_universe nX JoinCall
+              (Pair (Var nX) (Val v2)) Post)
+    | rightFramed : (Handle ∗ (WP H coPset_universe RightCall Psi2)) ⊢
+        (WP H coPset_universe RightCall RightPost) =>
+        properUPred_ent_trans
+          (Handle ∗ (WP H coPset_universe RightCall Psi2))
+          ((WP H coPset_universe RightCall Psi2) ∗ Handle)
+          (WP H coPset_universe RightCall RightPost)
+          (sep_comm_ent Handle (WP H coPset_universe RightCall Psi2))
+          (wp_frame_r H coPset_universe RightCall Psi2 Handle)
+    | nextRight : \Pi (v2 : Value) -> (RightPost v2) ⊢
+        (WP H coPset_universe
+          (letE nX JoinCall (Pair (Var nX) (Val v2))) Post) => \lam v2 =>
+        properUPred_ent_trans ((Psi2 v2) ∗ Handle)
+          (Handle ∗ (Psi2 v2))
+          (WP H coPset_universe
+            (letE nX JoinCall (Pair (Var nX) (Val v2))) Post)
+          (sep_comm_ent (Psi2 v2) Handle) (afterJoin v2)
+  \in properUPred_ent_trans
+      (Handle ∗ (WP H coPset_universe RightCall Psi2))
+      (WP H coPset_universe RightCall (\lam v2 =>
+        WP H coPset_universe
+          (letE nX JoinCall (Pair (Var nX) (Val v2))) Post))
+      (WP H coPset_universe
+        (letE nY RightCall
+          (letE nX JoinCall (Pair (Var nX) (Var nY)))) Post)
+      (properUPred_ent_trans
+        (Handle ∗ (WP H coPset_universe RightCall Psi2))
+        (WP H coPset_universe RightCall RightPost)
+        (WP H coPset_universe RightCall (\lam v2 =>
+          WP H coPset_universe
+            (letE nX JoinCall (Pair (Var nX) (Val v2))) Post))
+        rightFramed (wp_mono H coPset_universe RightCall RightPost
+          (\lam v2 => WP H coPset_universe
+            (letE nX JoinCall (Pair (Var nX) (Val v2))) Post)
+          nextRight))
+      (pm_wp_let H coPset_universe nY RightCall
+        (letE nX JoinCall (Pair (Var nX) (Var nY))) Post)
+
+\lemma par_after_spawn {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (Psi1 Psi2 : Value -> iProp S) (f2 returned : Value) :
+  ((spawn_post H SG Psi1 returned) ∗
+      (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)) ⊢
+    (WP H coPset_universe
+      (letE nY (App (Val f2) (Val unitV))
+        (letE nX (App (Val join) (Val returned))
+          (Pair (Var nX) (Var nY))))
+      (par_pair_post Psi1 Psi2)) =>
+  \let
+    | RightWP => WP H coPset_universe
+        (App (Val f2) (Val unitV)) Psi2
+    | Post => par_pair_post Psi1 Psi2
+    | Goal => WP H coPset_universe
+        (letE nY (App (Val f2) (Val unitV))
+          (letE nX (App (Val join) (Val returned))
+            (Pair (Var nX) (Var nY)))) Post
+    | perLoc : \Pi (l : Loc) -> (((mkProperPure (returned = LitV (LitLoc l))) ∧
+            (join_handle H SG l Psi1)) ∗ RightWP) ⊢ Goal => \lam l =>
+        \let
+          | PairP => (mkProperPure {iResUR S} (returned = LitV (LitLoc l))) ∧
+              (join_handle H SG l Psi1)
+          | Eq => returned = LitV (LitLoc l)
+          | ExactGoal => WP H coPset_universe
+              (letE nY (App (Val f2) (Val unitV))
+                (letE nX
+                  (App (Val join) (Val (LitV (LitLoc l))))
+                  (Pair (Var nX) (Var nY)))) Post
+          | retainEq : (PairP ∗ RightWP) ⊢
+              ((mkProperPure Eq) ∗
+                (PairP ∗ RightWP)) =>
+              pure_consequence_frame_ent (PairP ∗ RightWP) Eq
+                (properUPred_ent_trans (PairP ∗ RightWP) PairP
+                  (mkProperPure Eq)
+                  (sep_elim_l_ent PairP RightWP)
+                  (and_elim_l_ent (mkProperPure Eq)
+                    (join_handle H SG l Psi1)))
+          | exact : (PairP ∗ RightWP) ⊢
+              ExactGoal => properUPred_ent_trans
+                (PairP ∗ RightWP)
+                ((join_handle H SG l Psi1) ∗ RightWP)
+                ExactGoal
+                (sep_mono_l_ent PairP (join_handle H SG l Psi1) RightWP
+                  (and_elim_r_ent (mkProperPure Eq)
+                    (join_handle H SG l Psi1)))
+                (par_after_handle H SG Psi1 Psi2 f2 l)
+          | useEq : Eq -> (PairP ∗ RightWP) ⊢ Goal => \lam eq =>
+              transport (\lam r => (PairP ∗ RightWP) ⊢
+                (WP H coPset_universe
+                  (letE nY (App (Val f2) (Val unitV))
+                    (letE nX (App (Val join) (Val r))
+                      (Pair (Var nX) (Var nY)))) Post))
+                (inv eq) exact
+        \in properUPred_ent_trans (PairP ∗ RightWP)
+            ((mkProperPure Eq) ∗
+              (PairP ∗ RightWP)) Goal retainEq
+            (pure_sep_l_elim Eq (PairP ∗ RightWP) Goal useEq)
+  \in sep_exist_l_elim
+      (\lam l => (mkProperPure (returned = LitV (LitLoc l))) ∧
+        (join_handle H SG l Psi1))
+      RightWP Goal perLoc
+
+\lemma par_body_spec {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H)
+    (Psi1 Psi2 : Value -> iProp S) (f1 f2 : Value) :
+  ((WP H coPset_universe (App (Val f1) (Val unitV)) Psi1) ∗
+      (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)) ⊢
+    (WP H coPset_universe
+      (letE nHandle (App (Val spawn) (Val f1))
+        (letE nY (App (Val f2) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY)))))
+      (par_pair_post Psi1 Psi2)) =>
+  \let
+    | LeftWP => WP H coPset_universe
+        (App (Val f1) (Val unitV)) Psi1
+    | RightWP => WP H coPset_universe
+        (App (Val f2) (Val unitV)) Psi2
+    | SpawnCall => App (Val spawn) (Val f1)
+    | Post => par_pair_post Psi1 Psi2
+    | SpawnFramed : Value -> iProp S => \lam returned =>
+        (spawn_post H SG Psi1 returned) ∗ RightWP
+    | spawned : (LeftWP ∗ RightWP) ⊢
+        (WP H coPset_universe SpawnCall SpawnFramed) =>
+        properUPred_ent_trans (LeftWP ∗ RightWP)
+          ((WP H coPset_universe SpawnCall (spawn_post H SG Psi1)) ∗
+            RightWP)
+          (WP H coPset_universe SpawnCall SpawnFramed)
+          (sep_mono_l_ent LeftWP
+            (WP H coPset_universe SpawnCall (spawn_post H SG Psi1))
+            RightWP (spawn_spec H SG FPI Psi1 f1))
+          (wp_frame_r H coPset_universe SpawnCall
+            (spawn_post H SG Psi1) RightWP)
+    | next : \Pi (returned : Value) -> (SpawnFramed returned) ⊢
+        (WP H coPset_universe
+          (letE nY (App (Val f2) (Val unitV))
+            (letE nX (App (Val join) (Val returned))
+              (Pair (Var nX) (Var nY)))) Post) => \lam returned =>
+        par_after_spawn H SG Psi1 Psi2 f2 returned
+  \in properUPred_ent_trans (LeftWP ∗ RightWP)
+      (WP H coPset_universe SpawnCall (\lam returned =>
+        WP H coPset_universe
+          (letE nY (App (Val f2) (Val unitV))
+            (letE nX (App (Val join) (Val returned))
+              (Pair (Var nX) (Var nY)))) Post))
+      (WP H coPset_universe
+        (letE nHandle SpawnCall
+          (letE nY (App (Val f2) (Val unitV))
+            (letE nX (App (Val join) (Var nHandle))
+              (Pair (Var nX) (Var nY))))) Post)
+      (properUPred_ent_trans (LeftWP ∗ RightWP)
+        (WP H coPset_universe SpawnCall SpawnFramed)
+        (WP H coPset_universe SpawnCall (\lam returned =>
+          WP H coPset_universe
+            (letE nY (App (Val f2) (Val unitV))
+              (letE nX (App (Val join) (Val returned))
+                (Pair (Var nX) (Var nY)))) Post))
+        spawned (wp_mono H coPset_universe SpawnCall SpawnFramed
+          (\lam returned => WP H coPset_universe
+            (letE nY (App (Val f2) (Val unitV))
+              (letE nX (App (Val join) (Val returned))
+                (Pair (Var nX) (Var nY)))) Post) next))
+      (pm_wp_let H coPset_universe nHandle SpawnCall
+        (letE nY (App (Val f2) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY)))) Post)
+
+\lemma par_spec {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H)
+    (Psi1 Psi2 : Value -> iProp S) (f1 f2 : Value) :
+  ((WP H coPset_universe (App (Val f1) (Val unitV)) Psi1) ∗
+      (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)) ⊢
+    (WP H coPset_universe (app2 (Val par) (Val f1) (Val f2))
+      (par_pair_post Psi1 Psi2)) =>
+  \let
+    | Pre => (WP H coPset_universe (App (Val f1) (Val unitV)) Psi1) ∗
+        (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)
+    | BodyGeneric => letE nHandle (App (Val spawn) (Var nLeft))
+        (letE nY (App (Var nRight) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | BodyLeft => letE nHandle (App (Val spawn) (Val f1))
+        (letE nY (App (Var nRight) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | BodyAt => letE nHandle (App (Val spawn) (Val f1))
+        (letE nY (App (Val f2) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | InnerLam => LamV nRight BodyLeft
+    | OuterApp => App (Val par) (Val f1)
+    | Post => par_pair_post Psi1 Psi2
+    | PhiOuter : Value -> iProp S => \lam vf =>
+        WP H coPset_universe (App (Val vf) (Val f2)) Post
+    | body : Pre ⊢ (WP H coPset_universe BodyAt Post) =>
+        par_body_spec H SG FPI Psi1 Psi2 f1 f2
+    | innerApp : Pre ⊢ (PhiOuter InnerLam) =>
+        properUPred_ent_trans Pre (WP H coPset_universe BodyAt Post)
+          (PhiOuter InnerLam) body
+          (wp_lam_beta H coPset_universe nRight BodyLeft f2 Post)
+    | innerValue : Pre ⊢
+        (WP H coPset_universe (Val InnerLam) PhiOuter) =>
+        properUPred_ent_trans Pre (PhiOuter InnerLam)
+          (WP H coPset_universe (Val InnerLam) PhiOuter) innerApp
+          (wp_value_intro H coPset_universe InnerLam PhiOuter)
+    | innerExpr : Pre ⊢
+        (WP H coPset_universe (Lam nRight BodyLeft) PhiOuter) =>
+        properUPred_ent_trans Pre
+          (WP H coPset_universe (Val InnerLam) PhiOuter)
+          (WP H coPset_universe (Lam nRight BodyLeft) PhiOuter)
+          innerValue (wp_lam_expr H coPset_universe nRight BodyLeft PhiOuter)
+    | outerBeta : Pre ⊢
+        (WP H coPset_universe OuterApp PhiOuter) =>
+        properUPred_ent_trans Pre
+          (WP H coPset_universe (Lam nRight BodyLeft) PhiOuter)
+          (WP H coPset_universe OuterApp PhiOuter) innerExpr
+          (wp_lam_beta H coPset_universe nLeft
+            (Lam nRight BodyGeneric) f1 PhiOuter)
+  \in properUPred_ent_trans Pre
+      (WP H coPset_universe OuterApp PhiOuter)
+      (WP H coPset_universe (App OuterApp (Val f2)) Post)
+      outerBeta
+      (wp_bind_app_l H coPset_universe OuterApp (Val f2) Post)
+
+-- Evaluate lambda expressions before applying the value-level `par` rule.
+-- This is needed when a lambda body mentions an enclosing binder and is only
+-- closed after substitution by a surrounding WP rule.
+\lemma par_lam_spec {S : gFunctors}
+    (H : irisGS natCountable S) (SG : spawnG S)
+    (FPI : ForkPostInhabited H)
+    (Psi1 Psi2 : Value -> iProp S)
+    (x1 x2 : Name) (body1 body2 : Expr) :
+  \let
+    | f1 => LamV x1 body1
+    | f2 => LamV x2 body2
+    | Pre => (WP H coPset_universe (App (Val f1) (Val unitV)) Psi1) ∗
+        (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)
+  \in Pre ⊢
+      (WP H coPset_universe
+        (app2 (Val par) (Lam x1 body1) (Lam x2 body2))
+        (par_pair_post Psi1 Psi2)) =>
+  \let
+    | f1 => LamV x1 body1
+    | f2 => LamV x2 body2
+    | Pre => (WP H coPset_universe (App (Val f1) (Val unitV)) Psi1) ∗
+        (WP H coPset_universe (App (Val f2) (Val unitV)) Psi2)
+    | Post => par_pair_post Psi1 Psi2
+    | LeftV => App (Val par) (Val f1)
+    | LeftE => App (Val par) (Lam x1 body1)
+    | Goal => WP H coPset_universe
+        (app2 (Val par) (Lam x1 body1) (Lam x2 body2)) Post
+    | PhiV : Value -> iProp S => \lam vf =>
+        WP H coPset_universe (App (Val vf) (Val f2)) Post
+    | PhiE : Value -> iProp S => \lam vf =>
+        WP H coPset_universe (App (Val vf) (Lam x2 body2)) Post
+    | Arg2Post : Value -> Value -> iProp S => \lam vf v =>
+        WP H coPset_universe (App (Val vf) (Val v)) Post
+    | BodyGeneric => letE nHandle (App (Val spawn) (Var nLeft))
+        (letE nY (App (Var nRight) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | BodyLeft => letE nHandle (App (Val spawn) (Val f1))
+        (letE nY (App (Var nRight) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | BodyAt => letE nHandle (App (Val spawn) (Val f1))
+        (letE nY (App (Val f2) (Val unitV))
+          (letE nX (App (Val join) (Var nHandle))
+            (Pair (Var nX) (Var nY))))
+    | InnerLam => LamV nRight BodyLeft
+    | valueCore : Pre ⊢ (WP H coPset_universe LeftV PhiV) =>
+        ipm $
+          wp_apply (wp_lam_beta H coPset_universe nLeft
+            (Lam nRight BodyGeneric) f1 PhiV) $
+          wp_apply (wp_lam_expr H coPset_universe nRight BodyLeft PhiV) $
+          wp_apply (wp_value_intro H coPset_universe InnerLam PhiV) $
+          wp_apply (wp_lam_beta H coPset_universe
+            nRight BodyLeft f2 Post) $
+          wp_apply (par_body_spec H SG FPI Psi1 Psi2 f1 f2) $ iAssumption
+    | exposeArg2 : \Pi (vf : Value) -> (PhiV vf) ⊢ (PhiE vf) =>
+        \lam vf => ipm $
+          wp_apply (wp_bind_app_r H coPset_universe
+            vf (Lam x2 body2) Post) $
+          wp_apply (wp_lam_expr H coPset_universe
+            x2 body2 (Arg2Post vf)) $
+          wp_apply (wp_value_intro H coPset_universe
+            f2 (Arg2Post vf)) $ iAssumption
+    | Arg1Post : Value -> iProp S => \lam v =>
+        WP H coPset_universe (App (Val par) (Val v)) PhiE
+  \in (ipm $
+      wp_apply (wp_bind_app_l H coPset_universe
+        LeftE (Lam x2 body2) Post) $
+      wp_apply (wp_bind_app_r H coPset_universe
+        par (Lam x1 body1) PhiE) $
+      wp_apply (wp_lam_expr H coPset_universe x1 body1 Arg1Post) $
+      wp_apply (wp_value_intro H coPset_universe f1 Arg1Post) $
+      wp_apply (wp_mono H coPset_universe LeftV PhiV PhiE exposeArg2) $
+      wp_apply valueCore $ iAssumption : Pre ⊢ Goal)

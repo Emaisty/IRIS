@@ -18,17 +18,39 @@
       (wp H E
         (If (Val (boolV true))
           (App (Val (LamV 0 (Val result))) (Val arg)) (Val other)) Phi) =>
-  ipm $ wp_pures $ wp_value $ iExact ""
+  ipm $ wp_pures $ iExact ""
 
 \lemma proofmode_wp_pures_rec_beta {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (result arg : Value)
     (Phi : Value -> iProp S)
   : (Phi result) ⊢
       (wp H E (App (Val (RecV 0 1 (Val result))) (Val arg)) Phi) =>
-  ipm $ wp_pures $ wp_value $ iExact ""
+  ipm $ wp_pures $ iExact ""
 
 \lemma proofmode_wp_pures_rec_expr {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (body : Expr)
     (Phi : Value -> iProp S)
   : (Phi (RecV 0 1 body)) ⊢ (wp H E (Rec 0 1 body) Phi) =>
-  ipm $ wp_pures $ wp_value $ iExact ""
+  ipm $ wp_pures $ iExact ""
+
+\lemma proofmode_wp_pures_nested_contexts {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (result other : Value) (n m : Nat)
+    (Phi : Value -> iProp S)
+  : (Phi result) ⊢
+      (wp H E
+        (If
+          (App (Val (LamV 0 (Val (boolV true))))
+            (NatAdd (Val (natV n)) (Val (natV m))))
+          (Val result) (Val other)) Phi) =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma proofmode_wp_pure_one_context_at_a_time
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (result other arg : Value)
+    (Phi : Value -> iProp S)
+  : (Phi result) ⊢
+      (wp H E
+        (If
+          (App (Val (LamV 0 (Val (boolV true)))) (Val arg))
+          (Val result) (Val other)) Phi) =>
+  ipm $ wp_pure $ wp_pure $ iExact ""

@@ -1,4 +1,5 @@
 \import Data.Bool
+\import Paths
 \import iris.algebra.coPset
 \import iris.algebra.gmap
 \import iris.base_logic.lib.gfunctors
@@ -22,6 +23,13 @@
 \func pm_wp {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
     (Phi : Value -> iProp S) : iProp S => wp H E e Phi
+
+\lemma pm_wp_expr_eq {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) (equal : e1 = e2) :
+  (pm_wp H E e1 Phi) ⊢ (pm_wp H E e2 Phi) =>
+  \lam n a valid holds =>
+    transport (\lam e => (pm_wp H E e Phi).upred_holds n a) equal holds
 
 \lemma pm_wp_value_intro {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (v : Value)

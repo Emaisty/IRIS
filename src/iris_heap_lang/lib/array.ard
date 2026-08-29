@@ -1,0 +1,27 @@
+\import Paths
+\import Arith.Nat
+\import Data.List
+\import iris.base_logic.lib.gen_heap
+
+\lemma array_suc_add (start count : Nat) :
+  suc start Nat.+ count = start Nat.+ suc count \elim count
+  | 0 => idp
+  | suc count => pmap suc (array_suc_add start count)
+
+-- HeapLang locations are natural numbers, so the generic array index
+-- operation from gen_heap computes to ordinary location addition.
+\lemma pointsto_array_index_suc_add (a i : Nat) :
+  pointsto_array_index_loc suc a i = a Nat.+ i \elim i
+  | 0 => idp
+  | suc i => pointsto_array_index_suc_add (suc a) i *>
+      array_suc_add a i
+
+-- Mapping preserves the prefix/cell/suffix decomposition used when focusing
+-- a single physical array cell.
+\func map_append_cons {A B : \Type} (f : A -> B)
+    (prefix suffix : List A) (x : A) :
+  map f (prefix ++ x :: suffix) =
+    map f prefix ++ f x :: map f suffix \elim prefix
+  | nil => idp
+  | :: y prefix => pmap (f y ::)
+      (map_append_cons f prefix suffix x)

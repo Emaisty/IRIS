@@ -1,5 +1,6 @@
 \import Logic
 \import Paths
+\import Function.Meta
 \import Arith.Nat
 \import Data.Or
 \import iris.algebra.cmra
@@ -22,191 +23,16 @@
 \import iris.program_logic.adequacy
 \import iris.program_logic.iris_sigma
 \import iris_heap_lang.lang
+\import iris_heap_lang.lib.syntax
+\import iris_heap_lang.lib.spawn
+\import iris_heap_lang.lib.spawn_proof
 \import iris.proofmode.heap_lang (pm_wp_let)
+\import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
+  iAssert, iSplitL, iEmpIntro, iClear, iMod, wp_apply)
 \import stdpp.coPset
 \import examples.parallel_counter
 \import examples.parallel_counter_ghost
 \import examples.parallel_counter_proof
-
--- The proof-mode port uses this small family of structural BI lemmas in
--- place of repeated `iFrame`/`iDestruct` permutations.
-\lemma sep_move_fourth_front {M : UCMRA}
-    (A B C D : ProperUPred M) :
-  (A ∗ (B ∗ (C ∗ D))) ⊢
-    (D ∗ (A ∗ (B ∗ C))) =>
-  properUPred_ent_trans
-    (A ∗ (B ∗ (C ∗ D)))
-    (A ∗ (B ∗ (D ∗ C)))
-    (D ∗ (A ∗ (B ∗ C)))
-    (sep_mono_r_ent A
-      (B ∗ (C ∗ D))
-      (B ∗ (D ∗ C))
-      (sep_mono_r_ent B (C ∗ D)
-        (D ∗ C) (sep_comm_ent C D)))
-    (sep_rotate_third_front A B D C)
-
-\lemma persistent_duplicate_ent {M : UCMRA} (P : ProperUPred M)
-    (persistent : P ⊢ (<#> P)) :
-  P ⊢ (P ∗ P) =>
-  properUPred_ent_trans P (<#> P)
-    (P ∗ P) persistent
-    (properUPred_ent_trans (<#> P)
-      ((<#> P) ∗ (<#> P))
-      (P ∗ P) (persistently_dup_ent P)
-      (properUPred_ent_trans
-        ((<#> P) ∗ (<#> P))
-        (P ∗ (<#> P)) (P ∗ P)
-        (sep_mono_l_ent (<#> P) P
-          (<#> P) (persistently_elim_ent P))
-        (sep_mono_r_ent P (<#> P) P
-          (persistently_elim_ent P))))
-
--- Attach two freely derivable assertions between an existing head and tail.
-\lemma sep_attach_two_middle {M : UCMRA}
-    (P Q R T : ProperUPred M)
-    (makeQ : mkProperEmp ⊢ Q)
-    (makeR : mkProperEmp ⊢ R) :
-  (P ∗ T) ⊢
-    (P ∗ (Q ∗ (R ∗ T))) =>
-  \let
-    | S0 => P ∗ T
-    | S1 => S0 ∗ Q
-    | S2 => P ∗ (T ∗ Q)
-    | S3 => P ∗ (Q ∗ T)
-    | S4 => S3 ∗ R
-    | S5 => P ∗ ((Q ∗ T) ∗ R)
-    | S6 => P ∗ (Q ∗ (T ∗ R))
-    | Goal => P ∗ (Q ∗ (R ∗ T))
-  \in properUPred_ent_trans S0 S1 Goal
-      (attach_valid_r_ent S0 Q makeQ)
-      (properUPred_ent_trans S1 S2 Goal
-        (sep_assoc_l_ent P T Q)
-        (properUPred_ent_trans S2 S3 Goal
-          (sep_mono_r_ent P (T ∗ Q)
-            (Q ∗ T) (sep_comm_ent T Q))
-          (properUPred_ent_trans S3 S4 Goal
-            (attach_valid_r_ent S3 R makeR)
-            (properUPred_ent_trans S4 S5 Goal
-              (sep_assoc_l_ent P (Q ∗ T) R)
-              (properUPred_ent_trans S5 S6 Goal
-                (sep_mono_r_ent P
-                  ((Q ∗ T) ∗ R)
-                  (Q ∗ (T ∗ R))
-                  (sep_assoc_l_ent Q T R))
-                (sep_mono_r_ent P
-                  (Q ∗ (T ∗ R))
-                  (Q ∗ (R ∗ T))
-                  (sep_mono_r_ent Q (T ∗ R)
-                    (R ∗ T) (sep_comm_ent T R))))))))
-
--- Reorder A,B,C,D,E,F,G,H into A,E,G,C | B,F,H,D.
-\lemma sep_client_reorder8 {M : UCMRA}
-    (A B C D E F G H : ProperUPred M) :
-  (A ∗ (B ∗ (C ∗ (D ∗
-      (E ∗ (F ∗ (G ∗ H))))))) ⊢
-    ((A ∗ (E ∗ (G ∗ C))) ∗
-      (B ∗ (F ∗ (H ∗ D)))) =>
-  \let
-    | S0 => A ∗ (B ∗ (C ∗ (D ∗
-        (E ∗ (F ∗ (G ∗ H))))))
-    | S1 => A ∗ (B ∗ (C ∗ (E ∗
-        (D ∗ (F ∗ (G ∗ H))))))
-    | S2 => A ∗ (B ∗ (E ∗ (C ∗
-        (D ∗ (F ∗ (G ∗ H))))))
-    | S3 => A ∗ (E ∗ (B ∗ (C ∗
-        (D ∗ (F ∗ (G ∗ H))))))
-    | S4 => A ∗ (E ∗ (B ∗ (C ∗
-        (D ∗ (G ∗ (F ∗ H))))))
-    | S5 => A ∗ (E ∗ (B ∗ (C ∗
-        (G ∗ (D ∗ (F ∗ H))))))
-    | S6 => A ∗ (E ∗ (B ∗ (G ∗
-        (C ∗ (D ∗ (F ∗ H))))))
-    | S7 => A ∗ (E ∗ (G ∗ (B ∗
-        (C ∗ (D ∗ (F ∗ H))))))
-    | S8 => A ∗ (E ∗ (G ∗ (C ∗
-        (B ∗ (D ∗ (F ∗ H))))))
-    | S9 => A ∗ (E ∗ (G ∗ (C ∗
-        (B ∗ (F ∗ (D ∗ H))))))
-    | S10 => A ∗ (E ∗ (G ∗ (C ∗
-        (B ∗ (F ∗ (H ∗ D))))))
-    | Target => (A ∗ (E ∗ (G ∗ C))) ∗
-        (B ∗ (F ∗ (H ∗ D)))
-    | h01 : S0 ⊢ S1 =>
-        sep_mono_r_ent A _ _
-          (sep_mono_r_ent B _ _
-            (sep_mono_r_ent C _ _
-              (sep_swap_ent D E (F ∗ (G ∗ H)))))
-    | h12 : S1 ⊢ S2 =>
-        sep_mono_r_ent A _ _
-          (sep_mono_r_ent B _ _
-            (sep_swap_ent C E
-              (D ∗ (F ∗ (G ∗ H)))))
-    | h23 : S2 ⊢ S3 =>
-        sep_mono_r_ent A _ _
-          (sep_swap_ent B E
-            (C ∗ (D ∗
-              (F ∗ (G ∗ H)))))
-    | h34 : S3 ⊢ S4 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent B _ _ (sep_mono_r_ent C _ _
-            (sep_mono_r_ent D _ _ (sep_swap_ent F G H)))))
-    | h45 : S4 ⊢ S5 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent B _ _ (sep_mono_r_ent C _ _
-            (sep_swap_ent D G (F ∗ H)))))
-    | h56 : S5 ⊢ S6 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent B _ _
-            (sep_swap_ent C G (D ∗ (F ∗ H)))))
-    | h67 : S6 ⊢ S7 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_swap_ent B G
-            (C ∗ (D ∗ (F ∗ H)))))
-    | h78 : S7 ⊢ S8 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent G _ _
-            (sep_swap_ent B C (D ∗ (F ∗ H)))))
-    | h89 : S8 ⊢ S9 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent G _ _ (sep_mono_r_ent C _ _
-            (sep_mono_r_ent B _ _ (sep_swap_ent D F H)))))
-    | h910 : S9 ⊢ S10 =>
-        sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-          (sep_mono_r_ent G _ _ (sep_mono_r_ent C _ _
-            (sep_mono_r_ent B _ _ (sep_mono_r_ent F _ _
-              (sep_comm_ent D H))))))
-    | grouped : S10 ⊢ Target =>
-        properUPred_ent_trans S10
-          (A ∗ (E ∗
-            ((G ∗ C) ∗
-              (B ∗ (F ∗ (H ∗ D))))))
-          Target
-          (sep_mono_r_ent A _ _ (sep_mono_r_ent E _ _
-            (sep_assoc_r_ent G C
-              (B ∗ (F ∗ (H ∗ D))))))
-          (properUPred_ent_trans
-            (A ∗ (E ∗
-              ((G ∗ C) ∗
-                (B ∗ (F ∗ (H ∗ D))))))
-            (A ∗
-              ((E ∗ (G ∗ C)) ∗
-                (B ∗ (F ∗ (H ∗ D)))))
-            Target
-            (sep_mono_r_ent A _ _
-              (sep_assoc_r_ent E (G ∗ C)
-                (B ∗ (F ∗ (H ∗ D)))))
-            (sep_assoc_r_ent A (E ∗ (G ∗ C))
-              (B ∗ (F ∗ (H ∗ D)))))
-  \in properUPred_ent_trans S0 S1 Target h01
-      (properUPred_ent_trans S1 S2 Target h12
-        (properUPred_ent_trans S2 S3 Target h23
-          (properUPred_ent_trans S3 S4 Target h34
-            (properUPred_ent_trans S4 S5 Target h45
-              (properUPred_ent_trans S5 S6 Target h56
-                (properUPred_ent_trans S6 S7 Target h67
-                  (properUPred_ent_trans S7 S8 Target h78
-                    (properUPred_ent_trans S8 S9 Target h89
-                      (properUPred_ent_trans S9 S10 Target h910 grouped)))))))))
 
 \lemma msc_client_ready_parallel_pre {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -231,59 +57,26 @@
     | H2 => msc_handle G gam h2
     | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
     | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
-    | Elems => E1 ∗ E2
-    | Handles => H1 ∗ H2
-    | Ready => Public ∗ Elems
-    | Frame => C ∗ Handles
-    | Public2 => Public ∗ Public
-    | C2 => C ∗ C
-    | D0 => (Public2 ∗ Elems) ∗
-        (C2 ∗ Handles)
-    | Flat => Public ∗ (Public ∗
-        (E1 ∗ (E2 ∗ (C ∗
-          (C ∗ (H1 ∗ H2))))))
+    | Ready => Public ∗ (E1 ∗ E2)
+    | Frame => C ∗ (H1 ∗ H2)
     | Pre1 => Public ∗ (C ∗ (H1 ∗ E1))
     | Pre2 => Public ∗ (C ∗ (H2 ∗ E2))
-    | duplicatePublic : Ready ⊢
-        (Public2 ∗ Elems) =>
-        sep_mono_l_ent Public Public2 Elems
-          (inv_dup_ent H.iris_wsat msc_clientN
-            (msc_client_inv G gam gamM gamD base))
-    | duplicateCounter : Frame ⊢
-        (C2 ∗ Handles) =>
-        sep_mono_l_ent C C2 Handles
-          (persistent_duplicate_ent C
-            (msc_is_counter_persistent H G gam c))
-    | duplicated : (Ready ∗ Frame) ⊢ D0 =>
-        properUPred_ent_trans (Ready ∗ Frame)
-          ((Public2 ∗ Elems) ∗ Frame) D0
-          (sep_mono_l_ent Ready (Public2 ∗ Elems) Frame
-            duplicatePublic)
-          (sep_mono_r_ent (Public2 ∗ Elems) Frame
-            (C2 ∗ Handles) duplicateCounter)
-    | flat0 => Public2 ∗
-        (Elems ∗ (C2 ∗ Handles))
-    | flat1 => Public ∗
-        (Public ∗ (Elems ∗ (C2 ∗ Handles)))
-    | flat2 => Public ∗
-        (Public ∗
-          (E1 ∗ (E2 ∗ (C2 ∗ Handles))))
-    | flatten : D0 ⊢ Flat =>
-        properUPred_ent_trans D0 flat0 Flat
-          (sep_assoc_l_ent Public2 Elems (C2 ∗ Handles))
-          (properUPred_ent_trans flat0 flat1 Flat
-            (sep_assoc_l_ent Public Public
-              (Elems ∗ (C2 ∗ Handles)))
-            (properUPred_ent_trans flat1 flat2 Flat
-              (sep_mono_r_ent Public _ _ (sep_mono_r_ent Public _ _
-                (sep_assoc_l_ent E1 E2 (C2 ∗ Handles))))
-              (sep_mono_r_ent Public _ _ (sep_mono_r_ent Public _ _
-                (sep_mono_r_ent E1 _ _ (sep_mono_r_ent E2 _ _
-                  (sep_assoc_l_ent C C Handles)))))))
-  \in properUPred_ent_trans (Ready ∗ Frame) D0
-      (Pre1 ∗ Pre2) duplicated
-      (properUPred_ent_trans D0 Flat (Pre1 ∗ Pre2) flatten
-        (sep_client_reorder8 Public Public E1 E2 C C H1 H2))
+  \in (ipm $ iIntros "HReady HFrame" $
+    iDestruct "HReady" "HPublic HElems" $
+    iDestruct "HElems" "HE1 HE2" $
+    iDestruct "HFrame" "HCounter HHandles" $
+    iDestruct "HHandles" "HH1 HH2" $
+    iDestruct "HPublic" "#HPublic"
+      (inv_persistent H.iris_wsat msc_clientN
+        (msc_client_inv G gam gamM gamD base)) $
+    iDestruct "HCounter" "#HCounter"
+      (msc_is_counter_persistent H G gam c) $
+    iSplitL "HH1 HE1"
+      (iFrame "HPublic" $ iFrame "HCounter" $
+        iFrame "HH1" $ iExact "HE1")
+      (iFrame "HPublic" $ iFrame "HCounter" $
+        iFrame "HH2" $ iExact "HE2")
+    : (Ready ∗ Frame) ⊢ (Pre1 ∗ Pre2))
 
 \lemma msc_client_read_post_result {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -344,10 +137,12 @@
     | rich : Pre ⊢ (WP H mscE Program RichPost) =>
         msc_two_incr_twice_read_spec H G SG FPI gam gamM gamD
           base c h1 h2
-  \in properUPred_ent_trans Pre (WP H mscE Program RichPost)
-      (WP H mscE Program ResultPost) rich
-      (wp_mono H mscE Program RichPost ResultPost (\lam returned =>
-        msc_client_read_post_result H G gam base c h1 h2 returned))
+  \in (ipm $ iIntros "HPre" $
+    wp_apply (wp_mono H mscE Program RichPost ResultPost
+      (\lam returned =>
+        msc_client_read_post_result H G gam base c h1 h2 returned)) $
+    wp_apply rich $ iExact "HPre"
+      : Pre ⊢ (WP H mscE Program ResultPost))
 
 \lemma msc_initialized_client_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
@@ -380,51 +175,36 @@
     | setup : Frag ⊢
         (mkProperFUpd H.iris_wsat mscE mscE ReadyExists) =>
         msc_client_setup H G gam gamD base
-    | moveFrag : Source ⊢ (Frag ∗ Frame) =>
-        sep_move_fourth_front C H1 H2 Frag
-    | setupFramed : (Frag ∗ Frame) ⊢
-        (mkProperFUpd H.iris_wsat mscE mscE
-          (ReadyExists ∗ Frame)) =>
-        properUPred_ent_trans (Frag ∗ Frame)
-          ((mkProperFUpd H.iris_wsat mscE mscE ReadyExists) ∗ Frame)
-          (mkProperFUpd H.iris_wsat mscE mscE
-            (ReadyExists ∗ Frame))
-          (sep_mono_l_ent Frag
-            (mkProperFUpd H.iris_wsat mscE mscE ReadyExists) Frame setup)
-          (fupd_frame_r H.iris_wsat mscE mscE ReadyExists Frame)
-    | run : (ReadyExists ∗ Frame) ⊢ Goal =>
-        sep_exist_l_elim
-          (\lam gamM => msc_client_ready H G gam gamM gamD base)
-          Frame Goal (\lam gamM =>
-            \let
-              | Public => msc_client_public H G gam gamM gamD base
-              | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
-              | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
-              | Ready => Public ∗ (E1 ∗ E2)
-              | Pre1 => Public ∗
-                  (C ∗ (H1 ∗ E1))
-              | Pre2 => Public ∗
-                  (C ∗ (H2 ∗ E2))
-              | Pre => Pre1 ∗ Pre2
-            \in properUPred_ent_trans (Ready ∗ Frame) Pre Goal
-                (msc_client_ready_parallel_pre H G gam gamM gamD
-                  base c h1 h2)
-                (msc_two_incr_twice_read_result_spec H G SG FPI gam
-                  gamM gamD base c h1 h2))
-    | updated : (mkProperFUpd H.iris_wsat mscE mscE
-          (ReadyExists ∗ Frame)) ⊢
-        (mkProperFUpd H.iris_wsat mscE mscE Goal) =>
-        fupd_mono H.iris_wsat mscE mscE
-          (ReadyExists ∗ Frame) Goal run
-  \in properUPred_ent_trans Source (Frag ∗ Frame) Goal moveFrag
-      (properUPred_ent_trans (Frag ∗ Frame)
-        (mkProperFUpd H.iris_wsat mscE mscE
-          (ReadyExists ∗ Frame)) Goal setupFramed
-        (properUPred_ent_trans
-          (mkProperFUpd H.iris_wsat mscE mscE
-            (ReadyExists ∗ Frame))
-          (mkProperFUpd H.iris_wsat mscE mscE Goal) Goal updated
-          (fupd_wp H mscE Program ResultPost)))
+  \in (ipm $ iIntros "HCounter HRest1" $
+    iDestruct "HRest1" "HH1 HRest2" $
+    iDestruct "HRest2" "HH2 HFrag" $
+    iAssert "HSetup" "HFrag"
+      (mkProperFUpd H.iris_wsat mscE mscE ReadyExists)
+      (wp_apply setup $ iExact "HFrag") $
+    wp_apply (fupd_wp H mscE Program ResultPost) $
+    iMod "HSetup" "HReadyExists" $
+    wp_apply (fupd_intro H.iris_wsat mscE Goal) $
+    iDestruct "HReadyExists" "HReady"
+      (\lam gamM => msc_client_ready H G gam gamM gamD base) $
+      \lam gamM =>
+        \let
+          | Public => msc_client_public H G gam gamM gamD base
+          | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
+          | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
+          | Ready => Public ∗ (E1 ∗ E2)
+          | Pre1 => Public ∗ (C ∗ (H1 ∗ E1))
+          | Pre2 => Public ∗ (C ∗ (H2 ∗ E2))
+          | Pre => Pre1 ∗ Pre2
+          | prepare : (Ready ∗ Frame) ⊢ Pre =>
+              msc_client_ready_parallel_pre H G gam gamM gamD
+                base c h1 h2
+          | run : Pre ⊢ Goal =>
+              msc_two_incr_twice_read_result_spec H G SG FPI gam
+                gamM gamD base c h1 h2
+        \in wp_apply run $ wp_apply prepare $
+          iFrame "HReady" $ iFrame "HCounter" $
+            iFrame "HH1" $ iExact "HH2"
+    : Source ⊢ Goal)
 
 -- Consume the concrete two-cell constructor post and run the full client.
 -- The constructor's size equation justifies the two public handle values;
@@ -456,8 +236,6 @@
             | H0 => msc_handle G gam (natV 0)
             | H1 => msc_handle G gam (natV 1)
             | Spatial => C ∗ (AllHandles ∗ Frag)
-            | Core => C ∗ Frag
-            | Ready => C ∗ (H0 ∗ (H1 ∗ Frag))
           \in pure_sep_l_elim (gam.msc_size = 2) Spatial Goal
               (\lam hsize =>
                 \let
@@ -467,17 +245,19 @@
                   | h1bound : nat_lt 1 gam.msc_size =>
                       transport (\lam z => nat_lt 1 z) (inv hsize)
                         (nat_suc_le_add_suc 1 0)
-                  | discardAll : Spatial ⊢ Core =>
-                      sep_mono_r_ent C (AllHandles ∗ Frag) Frag
-                        (sep_elim_r_ent AllHandles Frag)
-                  | addHandles : Core ⊢ Ready =>
-                      sep_attach_two_middle C H0 H1 Frag
-                        (msc_handle_nat_intro G gam 0 h0bound)
-                        (msc_handle_nat_intro G gam 1 h1bound)
-                \in properUPred_ent_trans Spatial Core Goal discardAll
-                    (properUPred_ent_trans Core Ready Goal addHandles
-                      (msc_initialized_client_spec H G SG FPI gam 0
-                        c (natV 0) (natV 1))))
+                \in ipm $ iIntros "HCounter HRest" $
+                  iDestruct "HRest" "HAllHandles HFrag" $
+                  iClear "HAllHandles" $
+                  iAssert "HH0" "" H0
+                    (wp_apply (msc_handle_nat_intro G gam 0 h0bound) $
+                      iEmpIntro) $
+                  iAssert "HH1" "" H1
+                    (wp_apply (msc_handle_nat_intro G gam 1 h1bound) $
+                      iEmpIntro) $
+                  wp_apply (msc_initialized_client_spec H G SG FPI gam 0
+                    c (natV 0) (natV 1)) $
+                  iFrame "HCounter" $ iFrame "HH0" $
+                    iFrame "HH1" $ iExact "HFrag")
   \in exist_elim_ent Body Goal perGam
 
 \lemma msc_closed_client_subst (c : Value) :
@@ -521,22 +301,12 @@
             (WP H coPset_universe e ResultPost))
           (inv (msc_closed_client_subst c))
           (msc_new_counter_two_client_spec H G SG FPI c)
-    | sequenced : mkProperEmp ⊢
-        (WP H coPset_universe Constructor
-          (\lam c => WP H coPset_universe (subst nC c Body) ResultPost)) =>
-        properUPred_ent_trans mkProperEmp
-          (WP H coPset_universe Constructor NewPost)
-          (WP H coPset_universe Constructor
-            (\lam c => WP H coPset_universe
-              (subst nC c Body) ResultPost)) constructorWP
-          (wp_mono H coPset_universe Constructor NewPost
-            (\lam c => WP H coPset_universe
-              (subst nC c Body) ResultPost) continue)
-  \in properUPred_ent_trans mkProperEmp
-      (WP H coPset_universe Constructor
-        (\lam c => WP H coPset_universe (subst nC c Body) ResultPost))
-      (WP H coPset_universe msc_closed_client ResultPost) sequenced
-      (pm_wp_let H coPset_universe nC Constructor Body ResultPost)
+  \in ipm $
+    wp_apply (pm_wp_let H coPset_universe nC Constructor Body ResultPost) $
+    wp_apply (wp_mono H coPset_universe Constructor NewPost
+      (\lam c => WP H coPset_universe (subst nC c Body) ResultPost)
+      continue) $
+    wp_apply constructorWP $ iEmpIntro
 
 -- Concrete signature and initial machine state for the closed example.
 \func msc_clientSigma : gFunctors =>

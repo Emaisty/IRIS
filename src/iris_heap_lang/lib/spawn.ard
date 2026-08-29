@@ -1,0 +1,32 @@
+\import Data.Bool
+\import iris_heap_lang.lang
+\import iris_heap_lang.lib.syntax
+
+-- A heap-language spawn/join implementation. The cell contains
+-- ((ready : Bool), result); its logical handle is defined in spawn_proof.
+\func spawn : Value =>
+  LamV nThunk
+    (letE nHandle
+      (Alloc (Val (PairV (boolV false) unitV)))
+      (seqE
+        (Fork
+          (letE nR (App (Var nThunk) (Val unitV))
+            (Store (Var nHandle)
+              (Pair (Val (boolV true)) (Var nR)))))
+        (Var nHandle)))
+
+\func join : Value =>
+  RecV nJoin nHandle
+    (letE nCell (Load (Var nHandle))
+      (If (Fst (Var nCell))
+        (Snd (Var nCell))
+        (App (Var nJoin) (Var nHandle))))
+
+-- Run the left thunk in a fork, the right thunk in the current thread, then
+-- join the left one. Returning both results matches Iris' par library.
+\func par : Value =>
+  LamV nLeft (Lam nRight
+    (letE nHandle (App (Val spawn) (Var nLeft))
+      (letE nY (App (Var nRight) (Val unitV))
+        (letE nX (App (Val join) (Var nHandle))
+          (Pair (Var nX) (Var nY))))))

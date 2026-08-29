@@ -82,6 +82,8 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "iLob", LobMeta.class, LobMeta::new);
     dependencyMeta(contributor, module, "iInv", InvMeta.class, InvMeta::new);
     dependencyMeta(contributor, module, "wp_pures", WpPuresMeta.class, WpPuresMeta::new);
+    dependencyMeta(contributor, module, "wp_pure", WpPuresMeta.class,
+        () -> new WpPuresMeta(false));
     dependencyMeta(contributor, module, "wp_bind", WpBindMeta.class, WpBindMeta::new);
     dependencyMeta(contributor, module, "wp_value", WpValueMeta.class, WpValueMeta::new);
     dependencyMeta(contributor, module, "wp_if", WpIfMeta.class, WpIfMeta::new);
