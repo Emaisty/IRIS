@@ -91,10 +91,12 @@ public final class ProofModeExtension extends DefaultArendExtension {
     dependencyMeta(contributor, module, "wp_smart_apply",
         WpSmartApplyMeta.class, WpSmartApplyMeta::new);
     dependencyMeta(contributor, module, "iEval", WpApplyMeta.class, WpApplyMeta::new);
-    String[] explicitWpRules = { "wp_lam", "wp_rec", "wp_let" };
-    for (String name : explicitWpRules) {
-      dependencyMeta(contributor, module, name, WpApplyMeta.class, WpApplyMeta::new);
-    }
+    dependencyMeta(contributor, module, "wp_lam", WpPuresMeta.class,
+        () -> new WpPuresMeta(WpPuresMeta.StopAfter.LAM_BETA));
+    dependencyMeta(contributor, module, "wp_let", WpPuresMeta.class,
+        () -> new WpPuresMeta(WpPuresMeta.StopAfter.LAM_BETA));
+    dependencyMeta(contributor, module, "wp_rec", WpPuresMeta.class,
+        () -> new WpPuresMeta(WpPuresMeta.StopAfter.REC_BETA));
     String[] contextualWpRules = {
         "wp_alloc", "wp_allocN", "wp_load", "wp_store", "wp_faa",
         "wp_fork", "wp_new_proph", "wp_resolve"

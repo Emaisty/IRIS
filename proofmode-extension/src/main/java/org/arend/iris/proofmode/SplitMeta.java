@@ -46,9 +46,12 @@ abstract class SplitMeta extends ExactMeta {
 
   private boolean accepts(ExpressionTypechecker typechecker,
       ConcreteExpression expression, CoreExpression expectedType) {
-    return Boolean.TRUE.equals(typechecker.withCurrentState(tc ->
-        tc.withErrorReporter(error -> {}, checker ->
-            checker.typecheck(expression, expectedType) != null)));
+    return Boolean.TRUE.equals(typechecker.withCurrentState(tc -> {
+      boolean[] hasError = { false };
+      TypedExpression result = tc.withErrorReporter(error -> hasError[0] = true,
+          checker -> checker.typecheck(expression, expectedType));
+      return result != null && !hasError[0];
+    }));
   }
 
   protected @Nullable BuiltSplit buildSplit(ExpressionTypechecker typechecker,

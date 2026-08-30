@@ -58,7 +58,7 @@
 \import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
   iAssumption, iApply, iSplitL, iLeft, iRight, iAssert, iClear, iEmpIntro, iNext,
   iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
-  wp_apply, wp_smart_apply, wp_bind, wp_pure, wp_pures)
+  wp_apply, wp_smart_apply, wp_bind, wp_lam, wp_pure, wp_pures)
 
 -- Counter namespace and the public mask used by all three operations.
 \func mscN : Namespace => ndot nroot (xI xH)
@@ -5750,29 +5750,15 @@
           ((msc_handle G gam h) ∗
             (ghost_map_elem (msc_clientGS G gamM) 1 (old, gamD))))
     | Incr => app2 (Val msc_incr) (Val c) (Val h)
-    | BodyGeneric => seqE
-        (app2 (Val msc_incr) (Var nC) (Var nK))
-        (app2 (Val msc_incr) (Var nC) (Var nK))
-    | BodyC => seqE
-        (app2 (Val msc_incr) (Val c) (Var nK))
-        (app2 (Val msc_incr) (Val c) (Var nK))
     | BodyAt => seqE Incr Incr
-    | InnerLam => LamV nK BodyC
-    | OuterApp => App (Val msc_incr_twice) (Val c)
     | Post => msc_client1_incr_post H G gam gamM gamD base
         (suc old) c h
-    | PhiOuter : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) (Val h)) Post
     | body : Pre ⊢ (WP H mscE BodyAt Post) =>
         msc_client1_incr_twice_body_spec H G gam gamM gamD
           base old c h
-    | Goal => WP H mscE (App OuterApp (Val h)) Post
-  \in (ipm $ wp_apply (wp_bind_app_l H mscE OuterApp (Val h) Post) $
-      wp_apply (wp_lam_beta H mscE nC
-        (Lam nK BodyGeneric) c PhiOuter) $
-      wp_apply (wp_lam_expr H mscE nK BodyC PhiOuter) $
-      wp_apply (wp_value_intro H mscE InnerLam PhiOuter) $
-      wp_apply (wp_lam_beta H mscE nK BodyC h Post) $
+    | Goal => WP H mscE
+        (app2 (Val msc_incr_twice) (Val c) (Val h)) Post
+  \in (ipm $ wp_lam $ wp_lam $
       wp_apply body $ iAssumption : Pre ⊢ Goal)
 
 \lemma msc_client2_incr_twice_body_spec {S : gFunctors}
@@ -5832,29 +5818,15 @@
           ((msc_handle G gam h) ∗
             (ghost_map_elem (msc_clientGS G gamM) 2 (old, gamD))))
     | Incr => app2 (Val msc_incr) (Val c) (Val h)
-    | BodyGeneric => seqE
-        (app2 (Val msc_incr) (Var nC) (Var nK))
-        (app2 (Val msc_incr) (Var nC) (Var nK))
-    | BodyC => seqE
-        (app2 (Val msc_incr) (Val c) (Var nK))
-        (app2 (Val msc_incr) (Val c) (Var nK))
     | BodyAt => seqE Incr Incr
-    | InnerLam => LamV nK BodyC
-    | OuterApp => App (Val msc_incr_twice) (Val c)
     | Post => msc_client2_incr_post H G gam gamM gamD base
         (suc old) c h
-    | PhiOuter : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) (Val h)) Post
     | body : Pre ⊢ (WP H mscE BodyAt Post) =>
         msc_client2_incr_twice_body_spec H G gam gamM gamD
           base old c h
-    | Goal => WP H mscE (App OuterApp (Val h)) Post
-  \in (ipm $ wp_apply (wp_bind_app_l H mscE OuterApp (Val h) Post) $
-      wp_apply (wp_lam_beta H mscE nC
-        (Lam nK BodyGeneric) c PhiOuter) $
-      wp_apply (wp_lam_expr H mscE nK BodyC PhiOuter) $
-      wp_apply (wp_value_intro H mscE InnerLam PhiOuter) $
-      wp_apply (wp_lam_beta H mscE nK BodyC h Post) $
+    | Goal => WP H mscE
+        (app2 (Val msc_incr_twice) (Val c) (Val h)) Post
+  \in (ipm $ wp_lam $ wp_lam $
       wp_apply body $ iAssumption : Pre ⊢ Goal)
 
 \func msc_client1_twice_post {S : gFunctors}
@@ -5880,9 +5852,7 @@
           (app2 (Val msc_incr_twice) (Val c) (Val h))))
         (Val unitV))
       (msc_client1_twice_post H G gam gamM gamD base c h)) =>
-  ipm $ wp_apply (wp_lam_beta H mscE nIgnore
-      (app2 (Val msc_incr_twice) (Val c) (Val h)) unitV
-      (msc_client1_twice_post H G gam gamM gamD base c h)) $
+  ipm $ wp_lam $
     wp_apply (msc_client1_incr_twice_spec H G gam gamM gamD base 0 c h) $
     iAssumption
 
@@ -5899,9 +5869,7 @@
           (app2 (Val msc_incr_twice) (Val c) (Val h))))
         (Val unitV))
       (msc_client2_twice_post H G gam gamM gamD base c h)) =>
-  ipm $ wp_apply (wp_lam_beta H mscE nIgnore
-      (app2 (Val msc_incr_twice) (Val c) (Val h)) unitV
-      (msc_client2_twice_post H G gam gamM gamD base c h)) $
+  ipm $ wp_lam $
     wp_apply (msc_client2_incr_twice_spec H G gam gamM gamD base 0 c h) $
     iAssumption
 
@@ -6510,63 +6478,6 @@
                 (wp_apply (msc_read_spec H G gam c P Q) $
                   iFrame "HShift HC HE1" $ iExact "HE2")
                 (iFrame "HH1" $ iExact "HH2"))) : Source ⊢ Goal)
-
-\lemma msc_two_incr_twice_read_body_spec {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
-    (FPI : ForkPostInhabited H) (gam : msc_name)
-    (gamM gamD : gname) (base : Nat) (c h1 h2 : Value) :
-  \let
-    | Public => msc_client_public H G gam gamM gamD base
-    | C => msc_is_counter H G gam c
-    | H1 => msc_handle G gam h1
-    | H2 => msc_handle G gam h2
-    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
-    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
-    | Pre1 => Public ∗ (C ∗ (H1 ∗ E1))
-    | Pre2 => Public ∗ (C ∗ (H2 ∗ E2))
-    | F1 => LamV nIgnore
-        (app2 (Val msc_incr_twice) (Val c) (Val h1))
-    | F2 => LamV nIgnore
-        (app2 (Val msc_incr_twice) (Val c) (Val h2))
-    | ParE => app2 (Val par) (Val F1) (Val F2)
-    | ReadE => App (Val msc_read) (Val c)
-    | Q : Nat -> iProp S => msc_client_read_Q G gam base
-    | Handles => H1 ∗ H2
-    | Post => wp_frame_post (msc_read_post H G gam c Q) Handles
-  \in (Pre1 ∗ Pre2) ⊢
-      (WP H mscE (seqE ParE ReadE) Post) =>
-  \let
-    | Public => msc_client_public H G gam gamM gamD base
-    | C => msc_is_counter H G gam c
-    | H1 => msc_handle G gam h1
-    | H2 => msc_handle G gam h2
-    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
-    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
-    | Pre1 => Public ∗ (C ∗ (H1 ∗ E1))
-    | Pre2 => Public ∗ (C ∗ (H2 ∗ E2))
-    | Pre => Pre1 ∗ Pre2
-    | F1 => LamV nIgnore
-        (app2 (Val msc_incr_twice) (Val c) (Val h1))
-    | F2 => LamV nIgnore
-        (app2 (Val msc_incr_twice) (Val c) (Val h2))
-    | ParE => app2 (Val par) (Val F1) (Val F2)
-    | ReadE => App (Val msc_read) (Val c)
-    | PairPost => par_pair_post
-        (msc_client1_twice_post H G gam gamM gamD base c h1)
-        (msc_client2_twice_post H G gam gamM gamD base c h2)
-    | Q : Nat -> iProp S => msc_client_read_Q G gam base
-    | Handles => H1 ∗ H2
-    | Post => wp_frame_post (msc_read_post H G gam c Q) Handles
-    | parallel : Pre ⊢ (WP H mscE ParE PairPost) =>
-        msc_parallel_increments_spec H G SG FPI gam gamM gamD
-          base c h1 h2
-    | continue : \Pi (returned : Value) -> (PairPost returned) ⊢ (WP H mscE ReadE Post) => \lam returned =>
-        msc_parallel_then_read H G gam gamM gamD base c h1 h2 returned
-    | Goal => WP H mscE (seqE ParE ReadE) Post
-  \in (ipm $ wp_apply (pm_wp_let H mscE nIgnore ParE ReadE Post) $
-      wp_apply (wp_mono H mscE ParE PairPost
-        (\lam returned => WP H mscE ReadE Post) continue) $
-      wp_apply parallel $ iAssumption : Pre ⊢ Goal)
 
 \lemma msc_two_incr_twice_read_source_body_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)

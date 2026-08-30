@@ -17,33 +17,67 @@
 \import iris.proofmode.Meta (ipm, iEmpIntro, iExact)
 \import stdpp.coPset
 
--- The primitive-named metas deliberately share one sound implementation,
--- but each public entry point is checked against its actual HeapLang rule.
+-- Each primitive-named meta is checked against its actual HeapLang step.
 \func proofmode_wp_post_refl {S : gFunctors} (Phi : Value -> iProp S) :
   \Pi (v : Value) -> (Phi v) ⊢ (Phi v) =>
   \lam v => properUPred_ent_refl (Phi v)
 
 \lemma proofmode_wp_lam_rule {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (x : Name) (body : Expr)
-    (Phi : Value -> iProp S) :
-  (wp H E (Val (LamV x body)) Phi) ⊢ (wp H E (Lam x body) Phi) =>
-  ipm $ iris.proofmode.Meta.wp_lam (wp_lam_expr H E x body Phi) $
-    iExact ""
+    (v : Value) (Phi : Value -> iProp S) :
+  (wp H E (subst x v body) Phi) ⊢
+    (wp H E (App (Val (LamV x body)) (Val v)) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_lam $ iExact ""
 
 \lemma proofmode_wp_rec_rule {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (f x : Name) (body : Expr)
-    (Phi : Value -> iProp S) :
-  (wp H E (Val (RecV f x body)) Phi) ⊢ (wp H E (Rec f x body) Phi) =>
-  ipm $ iris.proofmode.Meta.wp_rec (wp_rec_expr H E f x body Phi) $
-    iExact ""
+    (v : Value) (Phi : Value -> iProp S) :
+  (wp H E (subst x v (subst f (RecV f x body) body)) Phi) ⊢
+    (wp H E (App (Val (RecV f x body)) (Val v)) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_rec $ iExact ""
 
 \lemma proofmode_wp_let_beta_rule {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (x : Name) (body : Expr)
   (v : Value) (Phi : Value -> iProp S) :
   (wp H E (subst x v body) Phi) ⊢
     (wp H E (App (Val (LamV x body)) (Val v)) Phi) =>
-  ipm $ iris.proofmode.Meta.wp_let (wp_lam_beta H E x body v Phi) $
-    iExact ""
+  ipm $ iris.proofmode.Meta.wp_let $ iExact ""
+
+\lemma proofmode_wp_lam_curried {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (a b result : Value)
+    (Phi : Value -> iProp S) :
+  (Phi result) ⊢
+    (wp H E
+      (App
+        (App (Val (LamV 0 (Lam 1 (Val result)))) (Val a))
+        (Val b)) Phi) =>
+  \let
+    | Goal0 => wp H E
+        (App
+          (App (Val (LamV 0 (Lam 1 (Val result)))) (Val a))
+          (Val b)) Phi
+    | Goal1 => Goal0
+    | Goal2 => Goal1
+    | Goal3 => Goal2
+    | Goal4 => Goal3
+    | Goal5 => Goal4
+  \in (ipm $ iris.proofmode.Meta.wp_lam $
+      iris.proofmode.Meta.wp_lam $ iris.proofmode.Meta.wp_value $ iExact ""
+    : (Phi result) ⊢ Goal5)
+
+\lemma proofmode_wp_lam_local_post {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (b result : Value)
+    (Phi : Value -> iProp S) :
+  (Phi result) ⊢
+    (wp H E (Lam 1 (Val result)) (\lam vf =>
+      wp H E (App (Val vf) (Val b)) Phi)) =>
+  \let
+    | LocalPost : Value -> iProp S => \lam vf =>
+        wp H E (App (Val vf) (Val b)) Phi
+    | Goal => wp H E (Lam 1 (Val result)) LocalPost
+  \in (ipm $ iris.proofmode.Meta.wp_lam $
+      iris.proofmode.Meta.wp_value $ iExact ""
+    : (Phi result) ⊢ Goal)
 
 \lemma proofmode_wp_alloc_rule {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (v : Value) :

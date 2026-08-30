@@ -18,16 +18,25 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 final class WpPuresMeta extends WpBindMeta {
-  private final boolean resumeNestedContexts;
+  enum StopAfter { NONE, VALUE, LAM_BETA, REC_BETA }
+
+  private enum StepKind { OTHER, LAM_BETA, REC_BETA }
+
+  private final StopAfter stopAfter;
 
   WpPuresMeta() {
-    this(true);
+    this(StopAfter.NONE);
   }
 
   WpPuresMeta(boolean resumeNestedContexts) {
-    this.resumeNestedContexts = resumeNestedContexts;
+    this(resumeNestedContexts ? StopAfter.NONE : StopAfter.VALUE);
+  }
+
+  WpPuresMeta(StopAfter stopAfter) {
+    this.stopAfter = stopAfter;
   }
 
   @Dependency(name = "pm_ent_apply")
@@ -103,7 +112,9 @@ final class WpPuresMeta extends WpBindMeta {
     return args;
   }
 
-  private @Nullable ConcreteExpression theorem(ExpressionTypechecker typechecker,
+  private record Step(ConcreteExpression theorem, StepKind kind) {}
+
+  private @Nullable Step theorem(ExpressionTypechecker typechecker,
       ContextData contextData, CoreExpression iris, CoreExpression mask,
       CoreExpression expression, CoreExpression post) {
     var factory = contextData.getFactory();
@@ -119,6 +130,7 @@ final class WpPuresMeta extends WpBindMeta {
     } else return null;
     var args = theoremPrefix(contextData, iris, mask);
     ArendRef rule;
+    StepKind kind = StepKind.OTHER;
     switch (outerName) {
       case "Lam" -> {
         if (fields.size() < 2) return null;
@@ -147,12 +159,14 @@ final class WpPuresMeta extends WpBindMeta {
         if (functionCall.getDefinition().getName().equals("LamV")
             && functionFields.size() >= 2) {
           rule = wpLamBeta;
+          kind = StepKind.LAM_BETA;
           args.add(factory.arg(factory.core(
               functionFields.get(functionFields.size() - 2).computeTyped()), true));
           args.add(factory.arg(factory.core(functionFields.getLast().computeTyped()), true));
         } else if (functionCall.getDefinition().getName().equals("RecV")
             && functionFields.size() >= 3) {
           rule = wpRecBeta;
+          kind = StepKind.REC_BETA;
           args.add(factory.arg(factory.core(
               functionFields.get(functionFields.size() - 3).computeTyped()), true));
           args.add(factory.arg(factory.core(
@@ -254,7 +268,12 @@ final class WpPuresMeta extends WpBindMeta {
       default -> { return null; }
     }
     args.add(factory.arg(factory.core(post.computeTyped()), true));
-    return factory.app(factory.ref(rule), args);
+    return new Step(factory.app(factory.ref(rule), args), kind);
+  }
+
+  private boolean stopsAfter(StepKind kind) {
+    return stopAfter == StopAfter.LAM_BETA && kind == StepKind.LAM_BETA
+        || stopAfter == StopAfter.REC_BETA && kind == StepKind.REC_BETA;
   }
 
   private @Nullable CoreExpression theoremResult(ExpressionTypechecker typechecker,
@@ -279,14 +298,26 @@ final class WpPuresMeta extends WpBindMeta {
 
   private @Nullable WpData wpData(ExpressionTypechecker typechecker,
       CoreExpression proposition) {
-    CoreExpression value = weakHead(typechecker, proposition);
-    if (!(value instanceof CoreFunCallExpression wpCall)
-        || !(wpCall.getDefinition().getName().equals("wp")
-          || wpCall.getDefinition().getName().equals("pm_wp"))
-        || wpCall.getDefCallArguments().size() < 4) return null;
-    var args = wpCall.getDefCallArguments();
-    return new WpData(args.get(args.size() - 4), args.get(args.size() - 3),
-        constructorForm(typechecker, args.get(args.size() - 2)), args.getLast());
+    CoreExpression value = dereference(typechecker, proposition)
+        .unfold(Set.of(), null, true, false);
+    for (int i = 0; i < 4; i++) {
+      value = weakHead(typechecker, value);
+      if (value instanceof CoreFunCallExpression call) {
+        String name = call.getDefinition().getName();
+        if ((name.equals("wp") || name.equals("pm_wp"))
+            && call.getDefCallArguments().size() >= 4) {
+          var args = call.getDefCallArguments();
+          return new WpData(args.get(args.size() - 4),
+              args.get(args.size() - 3),
+              constructorForm(typechecker, args.get(args.size() - 2)),
+              args.getLast());
+        }
+        value = value.unfold(Set.of(call.getDefinition()), null, true, false);
+      } else {
+        value = value.normalize(NormalizationMode.WHNF);
+      }
+    }
+    return null;
   }
 
   private @Nullable WpData theoremSource(ExpressionTypechecker typechecker,
@@ -326,7 +357,8 @@ final class WpPuresMeta extends WpBindMeta {
       TypedExpression typedPrecondition = typechecker.typecheck(precondition, null);
       WpData resumed = typedPrecondition == null ? null
           : wpData(typechecker, typedPrecondition.getExpression());
-      ConcreteExpression next = resumed == null || !resumeNestedContexts ? continuation
+      ConcreteExpression next = resumed == null || stopAfter == StopAfter.VALUE
+          ? continuation
           : chain(typechecker, contextData, environment, resumed.iris(),
               resumed.mask(), resumed.expression(), resumed.post(), continuation,
               depth + 1);
@@ -339,9 +371,9 @@ final class WpPuresMeta extends WpBindMeta {
       args.add(factory.arg(next, true));
       return factory.app(factory.ref(pmEntApply), args);
     }
-    ConcreteExpression theoremExpression = theorem(typechecker, contextData, iris, mask,
+    Step step = theorem(typechecker, contextData, iris, mask,
         expression, post);
-    if (theoremExpression == null) {
+    if (step == null) {
       Focus focus = focus(typechecker, contextData, expression);
       if (focus == null) return continuation;
       var factory = contextData.getFactory();
@@ -367,12 +399,13 @@ final class WpPuresMeta extends WpBindMeta {
       args.add(factory.arg(inner, true));
       return factory.app(factory.ref(pmEntApply), args);
     }
-    TypedExpression theorem = typechecker.typecheck(theoremExpression, null);
+    TypedExpression theorem = typechecker.typecheck(step.theorem(), null);
     if (theorem == null) return continuation;
     CoreExpression result = theoremResult(typechecker, theorem);
     if (result == null) return continuation;
-    ConcreteExpression inner = chain(typechecker, contextData, environment, iris,
-        mask, result, post, continuation, depth + 1);
+    ConcreteExpression inner = stopsAfter(step.kind()) ? continuation
+        : chain(typechecker, contextData, environment, iris,
+            mask, result, post, continuation, depth + 1);
     var factory = contextData.getFactory();
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -390,21 +423,16 @@ final class WpPuresMeta extends WpBindMeta {
     if (!requireCount(typechecker, contextData, 1)) return null;
     GoalData goal = resolveGoal(typechecker, contextData);
     if (goal == null) return null;
-    CoreExpression target = weakHead(typechecker, goal.target());
-    if (!(target instanceof CoreFunCallExpression wpCall)
-        || !(wpCall.getDefinition().getName().equals("wp")
-          || wpCall.getDefinition().getName().equals("pm_wp"))
-        || wpCall.getDefCallArguments().size() < 4) {
+    WpData data = wpData(typechecker, goal.target());
+    if (data == null) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "wp_pures requires a weakest-precondition goal", contextData.getMarker()));
       return null;
     }
-    var wpArgs = wpCall.getDefCallArguments();
-    CoreExpression iris = wpArgs.get(wpArgs.size() - 4);
-    CoreExpression mask = wpArgs.get(wpArgs.size() - 3);
-    CoreExpression expression = constructorForm(typechecker,
-        wpArgs.get(wpArgs.size() - 2));
-    CoreExpression post = wpArgs.getLast();
+    CoreExpression iris = data.iris();
+    CoreExpression mask = data.mask();
+    CoreExpression expression = data.expression();
+    CoreExpression post = data.post();
     ConcreteExpression proof = chain(typechecker, contextData, goal.environment(),
         iris, mask, expression, post, explicitArguments(contextData).getFirst(), 0);
     return typechecker.typecheck(proof, contextData.getExpectedType());

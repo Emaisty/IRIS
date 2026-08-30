@@ -896,6 +896,31 @@
           (pm_of_env selection.selected_rest))))
     next
 
+\lemma pm_clear_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {R : ProperUPred M}
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => selection.persistent_rest
+        | spatial => envs.spatial
+      }) R)
+  : envs_entails envs R =>
+  properUPred_ent_trans (of_envs envs)
+    ((pm_of_persistent_env selection.persistent_rest) ∗
+      pm_of_env envs.spatial) R
+    (sep_mono_l_ent (pm_of_persistent_env envs.intuitionistic)
+      (pm_of_persistent_env selection.persistent_rest)
+      (pm_of_env envs.spatial)
+      (properUPred_ent_trans
+        (pm_of_persistent_env envs.intuitionistic)
+        ((<#> selection.persistent_prop) ∗
+          pm_of_persistent_env selection.persistent_rest)
+        (pm_of_persistent_env selection.persistent_rest)
+        selection.persistent_selection_sound
+        (sep_elim_r_ent (<#> selection.persistent_prop)
+          (pm_of_persistent_env selection.persistent_rest))))
+    next
+
 \lemma pm_rename_spatial {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) (new_name : PMName)
     {R : ProperUPred M}
@@ -918,6 +943,35 @@
         selection.selection_sound
         (sep_comm_ent selection.selected_prop
           (pm_of_env selection.selected_rest))))
+    next
+
+\lemma pm_rename_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    (new_name : PMName) {R : ProperUPred M}
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => pm_snoc selection.persistent_rest new_name
+            selection.persistent_prop
+        | spatial => envs.spatial
+      }) R)
+  : envs_entails envs R =>
+  properUPred_ent_trans (of_envs envs)
+    ((pm_of_persistent_env selection.persistent_rest ∗
+        (<#> selection.persistent_prop)) ∗
+      pm_of_env envs.spatial) R
+    (sep_mono_l_ent (pm_of_persistent_env envs.intuitionistic)
+      (pm_of_persistent_env selection.persistent_rest ∗
+        (<#> selection.persistent_prop))
+      (pm_of_env envs.spatial)
+      (properUPred_ent_trans
+        (pm_of_persistent_env envs.intuitionistic)
+        ((<#> selection.persistent_prop) ∗
+          pm_of_persistent_env selection.persistent_rest)
+        (pm_of_persistent_env selection.persistent_rest ∗
+          (<#> selection.persistent_prop))
+        selection.persistent_selection_sound
+        (sep_comm_ent (<#> selection.persistent_prop)
+          (pm_of_persistent_env selection.persistent_rest))))
     next
 
 \lemma pm_frame_spatial {M : UCMRA} {envs : PMEnvs M}
@@ -1261,6 +1315,16 @@
       }) Q)
   : envs_entails envs P =>
   pm_apply_resource selection is_equality (internal_eq_elim_r_ent P Q) next
+
+\lemma pm_rewrite_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {P Q : ProperUPred M}
+    (is_equality : selection.persistent_prop ⊢
+      mkProperInternalEq {M} {UPredOFE M} P Q)
+    (next : envs_entails envs Q)
+  : envs_entails envs P =>
+  pm_apply_intuitionistic_resource selection is_equality
+    (internal_eq_elim_r_ent P Q) next
 
 \lemma pm_next {M : UCMRA} {envs : PMEnvs M} {P : ProperUPred M}
     (next : envs_entails envs P) : envs_entails envs (|> P) =>

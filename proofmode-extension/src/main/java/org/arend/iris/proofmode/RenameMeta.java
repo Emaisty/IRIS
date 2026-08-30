@@ -15,6 +15,9 @@ final class RenameMeta extends ExactMeta {
   @Dependency(name = "pm_rename_spatial")
   private ArendRef pmRenameSpatial;
 
+  @Dependency(name = "pm_rename_intuitionistic")
+  private ArendRef pmRenameIntuitionistic;
+
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
@@ -29,11 +32,6 @@ final class RenameMeta extends ExactMeta {
     }
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, oldName);
     if (resolved == null) return null;
-    if (resolved.persistent()) {
-      typechecker.getErrorReporter().report(new org.arend.ext.error.TypecheckingError(
-          "Renaming intuitionistic hypotheses is not implemented yet", contextData.getMarker()));
-      return null;
-    }
     if (!oldName.equals(newName)
         && environmentContainsName(typechecker, resolved.environment(), newName)) {
       typechecker.getErrorReporter().report(new org.arend.ext.error.TypecheckingError(
@@ -49,7 +47,8 @@ final class RenameMeta extends ExactMeta {
     args.add(factory.arg(name(contextData, newName), true));
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(explicitArguments(contextData).get(2), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmRenameSpatial), args),
+    return typechecker.typecheck(factory.app(factory.ref(resolved.persistent()
+            ? pmRenameIntuitionistic : pmRenameSpatial), args),
         contextData.getExpectedType());
   }
 }

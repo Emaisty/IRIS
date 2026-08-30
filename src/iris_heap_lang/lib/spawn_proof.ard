@@ -54,7 +54,7 @@
 \import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
   iAssumption, iApply, iSplitL, iAssert, iEmpIntro, iNext,
   iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
-  wp_apply, wp_smart_apply, wp_bind, wp_pures)
+  wp_apply, wp_smart_apply, wp_bind, wp_lam, wp_pures)
 
 -- The exclusive token used by the spawn/join library.  Its concrete
 -- signature remains separate, since heap and counter ghost state can be
@@ -1711,27 +1711,8 @@
         WP H coPset_universe (App (Val vf) (Lam x2 body2)) Post
     | Arg2Post : Value -> Value -> iProp S => \lam vf v =>
         WP H coPset_universe (App (Val vf) (Val v)) Post
-    | BodyGeneric => letE nHandle (App (Val spawn) (Var nLeft))
-        (letE nY (App (Var nRight) (Val unitV))
-          (letE nX (App (Val join) (Var nHandle))
-            (Pair (Var nX) (Var nY))))
-    | BodyLeft => letE nHandle (App (Val spawn) (Val f1))
-        (letE nY (App (Var nRight) (Val unitV))
-          (letE nX (App (Val join) (Var nHandle))
-            (Pair (Var nX) (Var nY))))
-    | BodyAt => letE nHandle (App (Val spawn) (Val f1))
-        (letE nY (App (Val f2) (Val unitV))
-          (letE nX (App (Val join) (Var nHandle))
-            (Pair (Var nX) (Var nY))))
-    | InnerLam => LamV nRight BodyLeft
     | valueCore : Pre ⊢ (WP H coPset_universe LeftV PhiV) =>
-        ipm $
-          wp_apply (wp_lam_beta H coPset_universe nLeft
-            (Lam nRight BodyGeneric) f1 PhiV) $
-          wp_apply (wp_lam_expr H coPset_universe nRight BodyLeft PhiV) $
-          wp_apply (wp_value_intro H coPset_universe InnerLam PhiV) $
-          wp_apply (wp_lam_beta H coPset_universe
-            nRight BodyLeft f2 Post) $
+        ipm $ wp_lam $ wp_lam $
           wp_apply (par_body_spec H SG FPI Psi1 Psi2 f1 f2) $ iAssumption
     | exposeArg2 : \Pi (vf : Value) -> (PhiV vf) ⊢ (PhiE vf) =>
         \lam vf => ipm $

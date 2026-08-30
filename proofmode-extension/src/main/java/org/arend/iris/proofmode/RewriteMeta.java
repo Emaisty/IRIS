@@ -21,6 +21,9 @@ final class RewriteMeta extends ExactMeta {
   @Dependency(name = "pm_rewrite")
   private ArendRef pmRewrite;
 
+  @Dependency(name = "pm_rewrite_intuitionistic")
+  private ArendRef pmRewriteIntuitionistic;
+
   @Dependency(name = "pm_transport")
   private ArendRef pmTransport;
 
@@ -66,12 +69,6 @@ final class RewriteMeta extends ExactMeta {
     if (requested == null) return null;
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
-    if (resolved.persistent()) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "Rewriting with intuitionistic hypotheses is not implemented yet",
-          contextData.getMarker()));
-      return null;
-    }
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (!(proposition instanceof CoreFunCallExpression equality)
@@ -99,7 +96,8 @@ final class RewriteMeta extends ExactMeta {
     args.add(factory.arg(factory.core(right.computeTyped()), false));
     args.add(factory.arg(refl, true));
     args.add(factory.arg(explicit.getLast(), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmRewrite), args),
+    return typechecker.typecheck(factory.app(factory.ref(resolved.persistent()
+            ? pmRewriteIntuitionistic : pmRewrite), args),
         contextData.getExpectedType());
   }
 }

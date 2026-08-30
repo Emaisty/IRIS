@@ -54,3 +54,19 @@
           (App (Val (LamV 0 (Val (boolV true)))) (Val arg))
           (Val result) (Val other)) Phi) =>
   ipm $ wp_pure $ wp_pure $ iExact ""
+
+\lemma proofmode_wp_pure_curried_three
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (a b c : Value)
+    (Phi : Value -> iProp S)
+  : (Phi (PairV a (PairV b c))) ⊢
+      (wp H E
+        (App
+          (App
+            (App
+              (Val (LamV 0 (Lam 1 (Lam 2
+                (Pair (Var 0) (Pair (Var 1) (Var 2)))))))
+              (Val a))
+            (Val b))
+          (Val c)) Phi) =>
+  ipm $ wp_pure $ wp_pure $ wp_pure $ wp_pure $ iExact ""
