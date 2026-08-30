@@ -1,12 +1,35 @@
+\import Logic
 \import Paths
 \import Arith.Nat
+\import Order.PartialOrder
 \import Data.List
 \import iris.base_logic.lib.gen_heap
 
-\lemma array_suc_add (start count : Nat) :
+\lemma nat_suc_not_le_zero (n : Nat) : suc n <= 0 -> Empty =>
+  \lam h => h (NatOrder.zero<suc {n})
+
+\lemma array_nat_le_suc_self (n : Nat) : n <= suc n \elim n
+  | 0 => zero<=_
+  | suc n => suc<=suc (array_nat_le_suc_self n)
+
+\lemma nat_le_suc_right (r n : Nat) (h : r <= n) : r <= suc n =>
+  (NatSemiring.<=∘) h (array_nat_le_suc_self n)
+
+\lemma nat_suc_le_add_suc (start count : Nat) :
+  suc start <= start Nat.+ suc count \elim count
+  | 0 => <=-refl
+  | suc count => nat_le_suc_right (suc start)
+      (start Nat.+ suc count) (nat_suc_le_add_suc start count)
+
+\lemma nat_suc_add (start count : Nat) :
   suc start Nat.+ count = start Nat.+ suc count \elim count
   | 0 => idp
-  | suc count => pmap suc (array_suc_add start count)
+  | suc count => pmap suc (nat_suc_add start count)
+
+\lemma nat_add_suc_right (x y : Nat) :
+  x Nat.+ suc y = suc (x Nat.+ y) =>
+  NatSemiring.+-comm {x} {suc y} *>
+    pmap suc (NatSemiring.+-comm {y} {x})
 
 -- HeapLang locations are natural numbers, so the generic array index
 -- operation from gen_heap computes to ordinary location addition.
@@ -14,7 +37,7 @@
   pointsto_array_index_loc suc a i = a Nat.+ i \elim i
   | 0 => idp
   | suc i => pointsto_array_index_suc_add (suc a) i *>
-      array_suc_add a i
+      nat_suc_add a i
 
 -- Mapping preserves the prefix/cell/suffix decomposition used when focusing
 -- a single physical array cell.
@@ -25,3 +48,32 @@
   | nil => idp
   | :: y prefix => pmap (f y ::)
       (map_append_cons f prefix suffix x)
+
+\lemma list_insert_length {A : \Type} (prefix suffix : List A)
+    (old new : A) :
+  length (prefix ++ new :: suffix) =
+    length (prefix ++ old :: suffix) \elim prefix
+  | nil => idp
+  | :: _ prefix => pmap suc
+      (list_insert_length prefix suffix old new)
+
+\func list_decompose {A : \Set0} (xs : List A) (i : Nat)
+    (hi : suc i <= length xs) :
+  \Sigma (prefix : List A) (x : A) (suffix : List A)
+    (xs = prefix ++ x :: suffix) (length prefix = i)
+  \elim xs, i
+  | nil, i => absurd (nat_suc_not_le_zero i hi)
+  | :: x xs, 0 => (nil, x, xs, idp, idp)
+  | :: x xs, suc i =>
+      \let | d => list_decompose xs i (suc<=suc.conv hi)
+      \in (x :: d.1, d.2, d.3, pmap (x ::) d.4, pmap suc d.5)
+
+\func append_snoc_cons {A : \Type} (prefix suffix : List A) (x : A) :
+  (prefix ++ x :: nil) ++ suffix = prefix ++ x :: suffix \elim prefix
+  | nil => idp
+  | :: y prefix => pmap (y ::) (append_snoc_cons prefix suffix x)
+
+\lemma length_snoc {A : \Type} (prefix : List A) (x : A) :
+  length (prefix ++ x :: nil) = suc (length prefix) \elim prefix
+  | nil => idp
+  | :: _ prefix => pmap suc (length_snoc prefix x)

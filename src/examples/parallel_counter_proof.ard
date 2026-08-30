@@ -281,16 +281,6 @@
     }
   }
 
-\lemma nat_le_suc_self (n : Nat) : n <= suc n \elim n
-  | 0 => zero<=_
-  | suc n => suc<=suc (nat_le_suc_self n)
-
-\lemma nat_le_suc_right (r n : Nat) (h : r <= n) : r <= suc n =>
-  (NatSemiring.<=∘) h (nat_le_suc_self n)
-
-\lemma nat_suc_not_le_zero (n : Nat) : suc n <= 0 -> Empty =>
-  \lam h => h (NatOrder.zero<suc {n})
-
 -- If n < r but r is not the immediate successor of n, then S n < r.
 \lemma nat_lt_advance (n r : Nat) (h : suc n <= r)
     (hne : Not (r = suc n)) : suc (suc n) <= r \elim n, r
@@ -1172,22 +1162,6 @@
       | inP (_, _, _, impossible, _) => \case impossible \with {}
     }
 
-\lemma nat_suc_le_add_suc (start count : Nat) :
-  suc start <= start Nat.+ suc count \elim count
-  | 0 => <=-refl
-  | suc count => nat_le_suc_right (suc start)
-      (start Nat.+ suc count) (nat_suc_le_add_suc start count)
-
-\lemma nat_suc_add (start count : Nat) :
-  suc start Nat.+ count = start Nat.+ suc count \elim count
-  | 0 => idp
-  | suc count => pmap suc (nat_suc_add start count)
-
-\lemma nat_add_suc_right (x y : Nat) :
-  x Nat.+ suc y = suc (x Nat.+ y) =>
-  NatSemiring.+-comm {x} {suc y} *>
-    pmap suc (NatSemiring.+-comm {y} {x})
-
 \lemma msc_sum_list_insert_suc (prefix suffix : List Nat) (n : Nat) :
   nat_sum (prefix ++ suc n :: suffix) =
     suc (nat_sum (prefix ++ n :: suffix)) \elim prefix
@@ -1195,13 +1169,6 @@
   | :: x prefix => pmap (x Nat.+)
       (msc_sum_list_insert_suc prefix suffix n) *>
       nat_add_suc_right x (nat_sum (prefix ++ n :: suffix))
-
-\lemma list_insert_length (prefix suffix : List Nat) (old new : Nat) :
-  length (prefix ++ new :: suffix) =
-    length (prefix ++ old :: suffix) \elim prefix
-  | nil => idp
-  | :: _ prefix => pmap suc
-      (list_insert_length prefix suffix old new)
 
 \lemma msc_handle_nat_intro {S : gFunctors} (G : mscG S)
     (gam : msc_name) (i : Nat) (hi : nat_lt i gam.msc_size) :
@@ -1239,17 +1206,6 @@
     (gam : msc_name) :
   mkProperEmp ⊢ (msc_handles G gam) =>
   msc_make_handles_from G gam 0 gam.msc_size <=-refl
-
-\func list_decompose {A : \Set0} (xs : List A) (i : Nat)
-    (hi : suc i <= length xs) :
-  \Sigma (prefix : List A) (x : A) (suffix : List A)
-    (xs = prefix ++ x :: suffix) (length prefix = i)
-  \elim xs, i
-  | nil, i => absurd (nat_suc_not_le_zero i hi)
-  | :: x xs, 0 => (nil, x, xs, idp, idp)
-  | :: x xs, suc i =>
-      \let | d => list_decompose xs i (suc<=suc.conv hi)
-      \in (x :: d.1, d.2, d.3, pmap (x ::) d.4, pmap suc d.5)
 
 \func msc_mono_rest {S : gFunctors} (G : mscG S)
     (nPrefix : List Nat) (gamPrefix : List gname)
@@ -2115,16 +2071,6 @@
     wp_pure $ wp_pure $ wp_pure $
     wp_apply finish $ iExact "HCore"
 
-\func append_snoc_cons {A : \Type} (prefix suffix : List A) (x : A) :
-  (prefix ++ x :: nil) ++ suffix = prefix ++ x :: suffix \elim prefix
-  | nil => idp
-  | :: y prefix => pmap (y ::) (append_snoc_cons prefix suffix x)
-
-\lemma length_snoc {A : \Type} (prefix : List A) (x : A) :
-  length (prefix ++ x :: nil) = suc (length prefix) \elim prefix
-  | nil => idp
-  | :: y prefix => pmap suc (length_snoc prefix x)
-
 \func msc_sum_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a : Nat)
@@ -2218,25 +2164,20 @@
                     (Var nNextI) (Var nNextAcc)))))
         | Cond => NatEq (Val (natV (length prefix)))
             (Val (natV gam.msc_size))
-        | CondPost : Value -> iProp S => \lam v =>
-            WP H mscE (If (Val v) Then Else) Post
         | ResultBody : List Nat -> iProp S => \lam reads =>
             (mkProperPure
                 (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
               ((mkProperPure (length reads = length (nil {gname}))) ∗
                 ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
                   (msc_lbs G reads (nil {gname}))))
-        | PostAt => Inv ∗ mkProperExist (List Nat) ResultBody
       \in ipm $ iIntros "HInv HEmp" $
           wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size
             (length prefix) acc Post) $
           wp_bind $
           wp_apply (wp_nat_eq_true H mscE (length prefix)
-            gam.msc_size indexEq CondPost) $
-          wp_apply (wp_value_intro H mscE (boolV true) CondPost) $
-          wp_apply (wp_if_true H mscE Then Else Post) $
-          wp_apply (wp_value_intro H mscE (natV acc) Post) $
-          wp_apply (properUPred_ent_refl PostAt) $
+            gam.msc_size indexEq (\lam v =>
+              WP H mscE (If (Val v) Then Else) Post)) $
+          wp_pures $
           iFrame "HInv" $
           iExists (nil {Nat}) ResultBody $
           iSplitL "" (iPureIntro $ idp)
@@ -2373,6 +2314,12 @@
                   wp_apply (properUPred_ent_refl
                     ((msc_shard_lb G name n) ∗ Rest)) $
                   iFrame "HHead" $ iExact "HRest"
+        | loadResume : \Pi (v : Value) -> ((LoadPost v) ∗ Rest) ⊢
+            (WP H mscE
+              (App (Val (LamV nN BodyN)) (Val v)) Post) =>
+            \lam v => ipm $
+              wp_apply (wp_lam_beta H mscE nN BodyN v Post) $
+              wp_apply (loadContinue v) $ iAssumption
         | loadSpec : (Inv ∗ Head0) ⊢
             (WP H mscE LoadExpr LoadPost) =>
             msc_load_shard_wp H G gam a index prefix name names lowerHead
@@ -2390,30 +2337,15 @@
                   iFrame "HInv" $ iExact "HHead")
                 (wp_apply (properUPred_ent_refl Rest) $
                   iFrame "HInv" $ iExact "HTail")
-        | loadLet : Pre ⊢
-            (WP H mscE (letE nN LoadExpr BodyN) Post) =>
-            ipm $ iIntros "HInv HResources" $
-              wp_smart_apply framedLoad loadContinue $
-              iFrame "HInv" $ iExact "HResources"
-        | LocBody => letE nN (Load (Var nL)) BodyN
-        | elseWP : Pre ⊢ (WP H mscE Else Post) =>
-            ipm $ iIntros "HInv HResources" $
-              wp_pure $ wp_pure $
-              wp_apply (wp_lam_beta H mscE nL LocBody LocV Post) $
-              wp_apply loadLet $
-              iFrame "HInv" $ iExact "HResources"
-        | CondPost : Value -> iProp S => \lam v =>
-            WP H mscE (If (Val v) Then Else) Post
       \in ipm $ iIntros "HInv HRest" $
           iDestruct "HRest" "HHead HTail" $
           wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size index acc Post) $
           wp_bind $
           wp_apply (wp_nat_eq_false H mscE index gam.msc_size
-            indexNe CondPost) $
-          wp_apply (wp_value_intro H mscE (boolV false) CondPost) $
-          wp_apply (wp_if_false H mscE Then Else Post) $
-          wp_apply elseWP $
-          wp_apply (properUPred_ent_refl Pre) $
+            indexNe (\lam v =>
+              WP H mscE (If (Val v) Then Else) Post)) $
+          wp_pures $
+          wp_smart_apply framedLoad loadResume $
           iFrame "HInv" $ iFrame "HHead" $ iExact "HTail"
 -- The invariant witnesses retained across the atomic NewProph step.  Unlike
 -- the shard-focused witnesses above, a read keeps the complete array and all

@@ -1444,6 +1444,33 @@
 \class PMFromLater (\classifying M : UCMRA) (P Q : ProperUPred M)
   | from_later : (|> P) ⊢ Q
 
+\class PMTimeless (\classifying M : UCMRA) (P : ProperUPred M)
+  | pm_timeless : (|> P) ⊢ (mkProperExceptZero P)
+
+\class PMFromExist (\classifying M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
+  | from_exist : (mkProperExist A Phi) ⊢ P
+
+\class PMIntoExist (\classifying M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+  | into_exist : P ⊢ (mkProperExist A Phi)
+
+\class PMFromExist1 (\classifying M : UCMRA) {A : \Set1}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
+  | from_exist1 : (mkProperExist1 A Phi) ⊢ P
+
+\class PMIntoExist1 (\classifying M : UCMRA) {A : \Set1}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+  | into_exist1 : P ⊢ (mkProperExist1 A Phi)
+
+\class PMIntoForall (\classifying M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
+  | into_forall : P ⊢ (mkProperForall A Phi)
+
+\class PMFromForall (\classifying M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+  | from_forall : (mkProperForall A Phi) ⊢ P
+
 \class PMFrame (\classifying M : UCMRA) (R P Q : ProperUPred M)
   | frame : P ⊢ (R ∗ Q)
 
@@ -1479,6 +1506,41 @@
 \func pm_into_later_direct {M : UCMRA} (P : ProperUPred M)
   : PMIntoLater M (|> P) P \cowith
   | into_later => properUPred_ent_refl (|> P)
+
+\func pm_timeless_direct {M : UCMRA} (P : ProperUPred M)
+    (timeless : (|> P) ⊢ (mkProperExceptZero P))
+  : PMTimeless M P \cowith
+  | pm_timeless => timeless
+
+\func pm_from_exist_direct {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M)
+  : PMFromExist M (mkProperExist A Phi) Phi \cowith
+  | from_exist => properUPred_ent_refl (mkProperExist A Phi)
+
+\func pm_into_exist_direct {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) (name : PMName)
+  : PMIntoExist M (mkProperExist A Phi) Phi name \cowith
+  | into_exist => properUPred_ent_refl (mkProperExist A Phi)
+
+\func pm_from_exist1_direct {M : UCMRA} {A : \Set1}
+    (Phi : A -> ProperUPred M)
+  : PMFromExist1 M (mkProperExist1 A Phi) Phi \cowith
+  | from_exist1 => properUPred_ent_refl (mkProperExist1 A Phi)
+
+\func pm_into_exist1_direct {M : UCMRA} {A : \Set1}
+    (Phi : A -> ProperUPred M) (name : PMName)
+  : PMIntoExist1 M (mkProperExist1 A Phi) Phi name \cowith
+  | into_exist1 => properUPred_ent_refl (mkProperExist1 A Phi)
+
+\func pm_into_forall_direct {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M)
+  : PMIntoForall M (mkProperForall A Phi) Phi \cowith
+  | into_forall => properUPred_ent_refl (mkProperForall A Phi)
+
+\func pm_from_forall_direct {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) (name : PMName)
+  : PMFromForall M (mkProperForall A Phi) Phi name \cowith
+  | from_forall => properUPred_ent_refl (mkProperForall A Phi)
 
 \func pm_frame_direct {M : UCMRA} (R Q : ProperUPred M)
   : PMFrame M R (R ∗ Q) Q \cowith

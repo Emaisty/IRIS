@@ -1,0 +1,141 @@
+\import Data.List
+\import Data.Maybe
+\import iris.algebra.cmra
+\import iris.base_logic.notation
+\import iris.base_logic.upred
+\import iris.proofmode.core
+
+\func pm_test_name_p : PMName => 80 :: nil
+\func pm_test_name_q : PMName => 81 :: nil
+
+\func proofmode_env_lookup_hit {M : UCMRA} (P Q : ProperUPred M) :
+  pm_lookup pm_test_name_q
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      just Q => idp
+
+\func proofmode_env_lookup_miss {M : UCMRA} (P : ProperUPred M) :
+  pm_lookup pm_test_name_q (pm_snoc pm_empty pm_test_name_p P) =
+    nothing => idp
+
+\func proofmode_env_insert_success {M : UCMRA} (P Q : ProperUPred M) :
+  pm_insert pm_test_name_q Q (pm_snoc pm_empty pm_test_name_p P) =
+    just (pm_snoc (pm_snoc pm_empty pm_test_name_p P)
+      pm_test_name_q Q) => idp
+
+\func proofmode_env_insert_duplicate {M : UCMRA} (P Q : ProperUPred M) :
+  pm_insert pm_test_name_p Q (pm_snoc pm_empty pm_test_name_p P) =
+    nothing => idp
+
+\func proofmode_env_delete_head {M : UCMRA} (P Q : ProperUPred M) :
+  pm_delete pm_test_name_q
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      pm_snoc pm_empty pm_test_name_p P => idp
+
+\func proofmode_env_delete_tail {M : UCMRA} (P Q : ProperUPred M) :
+  pm_delete pm_test_name_p
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      pm_snoc pm_empty pm_test_name_q Q => idp
+
+\func proofmode_env_delete_miss {M : UCMRA} (P : ProperUPred M) :
+  pm_delete pm_test_name_q (pm_snoc pm_empty pm_test_name_p P) =
+    pm_snoc pm_empty pm_test_name_p P => idp
+
+\func proofmode_env_replace_head {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  pm_replace pm_test_name_q R
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      just (pm_snoc (pm_snoc pm_empty pm_test_name_p P)
+        pm_test_name_q R) => idp
+
+\func proofmode_env_replace_tail {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  pm_replace pm_test_name_p R
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      just (pm_snoc (pm_snoc pm_empty pm_test_name_p R)
+        pm_test_name_q Q) => idp
+
+\func proofmode_env_replace_miss {M : UCMRA} (P Q : ProperUPred M) :
+  pm_replace pm_test_name_q Q (pm_snoc pm_empty pm_test_name_p P) =
+    nothing => idp
+
+\func proofmode_env_interpret_spatial {M : UCMRA}
+    (P Q : ProperUPred M) :
+  pm_of_env
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      ((mkProperEmp ∗ P) ∗ Q) => idp
+
+\func proofmode_env_interpret_persistent {M : UCMRA}
+    (P Q : ProperUPred M) :
+  pm_of_persistent_env
+    (pm_snoc (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q) =
+      ((mkProperEmp ∗ (<#> P)) ∗ (<#> Q)) => idp
+
+\func proofmode_env_interpret_both {M : UCMRA}
+    (P Q : ProperUPred M) :
+  of_envs (\new PMEnvs M {
+    | intuitionistic => pm_snoc pm_empty pm_test_name_p P
+    | spatial => pm_snoc pm_empty pm_test_name_q Q
+  }) = ((mkProperEmp ∗ (<#> P)) ∗ (mkProperEmp ∗ Q)) => idp
+
+\func proofmode_env_select_here {M : UCMRA} (P Q : ProperUPred M) :
+  \let | selection => pm_select_here
+      (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q
+  \in \Sigma (selection.selected_prop = Q)
+    (selection.selected_rest = pm_snoc pm_empty pm_test_name_p P) =>
+  (idp, idp)
+
+\func proofmode_env_select_there {M : UCMRA} (P Q : ProperUPred M) :
+  \let
+    | first => pm_select_here (pm_empty {M}) pm_test_name_p P
+    | selection => pm_select_there
+        (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q first
+  \in \Sigma (selection.selected_prop = P)
+    (selection.selected_rest = pm_snoc pm_empty pm_test_name_q Q) =>
+  (idp, idp)
+
+\func proofmode_env_persistent_select {M : UCMRA}
+    (P Q : ProperUPred M) :
+  \let
+    | first => pm_persistent_select_here
+        (pm_empty {M}) pm_test_name_p P
+    | selection => pm_persistent_select_there
+        (pm_snoc pm_empty pm_test_name_p P) pm_test_name_q Q first
+  \in \Sigma (selection.persistent_prop = P)
+    (selection.persistent_rest = pm_snoc pm_empty pm_test_name_q Q) =>
+  (idp, idp)
+
+\func proofmode_env_split {M : UCMRA} (P Q : ProperUPred M) :
+  PMSplit (pm_snoc (pm_snoc pm_empty pm_test_name_p P)
+    pm_test_name_q Q) =>
+  pm_split_put_right
+    (pm_split_put_left (pm_split_empty {M}) pm_test_name_p P)
+    pm_test_name_q Q
+
+\lemma proofmode_env_persistent_dup {M : UCMRA} (P : ProperUPred M) :
+  (<#> P) ⊢ ((<#> P) ∗ (<#> P)) => pm_persistently_dup P
+
+\lemma proofmode_env_persistent_context_dup {M : UCMRA}
+    (env : PMEnv M) :
+  (pm_of_persistent_env env) ⊢
+    ((pm_of_persistent_env env) ∗ (pm_of_persistent_env env)) =>
+  pm_persistent_env_dup env
+
+\lemma proofmode_env_frame_spatial {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) :
+  envs_entails envs
+    (selection.selected_prop ∗
+      of_envs (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      })) =>
+  pm_frame_spatial selection
+    (properUPred_ent_refl
+      (of_envs (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      })))
+
+\lemma proofmode_env_frame_persistent {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic) :
+  envs_entails envs (selection.persistent_prop ∗ of_envs envs) =>
+  pm_frame_intuitionistic selection (properUPred_ent_refl (of_envs envs))

@@ -377,6 +377,10 @@
   ipm $ iIntros "HP HE" $
     wp_apply (wp_if_true H E t f Phi) $ iExact "HP"
 
+\lemma proofmode_eval {M : UCMRA} (P Q : ProperUPred M)
+    (rule : P ⊢ Q) : (P ∗ mkProperEmp) ⊢ Q =>
+  ipm $ iIntros "HP HE" $ iEval rule $ iExact "HP"
+
 \lemma proofmode_wp_smart_apply {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (v : Value)
     (Phi Psi : Value -> iProp S)
@@ -452,7 +456,8 @@
   : (((Phi unitV) ∗ (wp H coPset_universe body H.iris_fork_post)) ∗
       mkProperEmp) ⊢ (wp H E (Fork body) Phi) =>
   ipm $ iIntros "HR HE" $
-    iris.proofmode.Meta.wp_fork (wp_fork H E body Phi) $ iExact "HR"
+    iris.proofmode.Meta.wp_fork (wp_fork H E body Phi)
+      (\lam v => properUPred_ent_refl (Phi v)) $ iExact "HR"
 
 \lemma proofmode_inv {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)

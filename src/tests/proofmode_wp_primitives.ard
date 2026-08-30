@@ -1,0 +1,172 @@
+\import Arith.Nat
+\import Data.List
+\import Function.Meta
+\import iris.algebra.coPset
+\import iris.algebra.dfrac
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gen_heap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.proph_map
+\import iris.base_logic.notation
+\import iris.base_logic.upred
+\import iris.program_logic.lifting
+\import iris.program_logic.weakestpre \hiding (wp_value)
+\import iris_heap_lang.lang
+\import iris_heap_lang.lib.syntax
+\import iris.proofmode.Meta (ipm, iEmpIntro, iExact)
+\import stdpp.coPset
+
+-- The primitive-named metas deliberately share one sound implementation,
+-- but each public entry point is checked against its actual HeapLang rule.
+\func proofmode_wp_post_refl {S : gFunctors} (Phi : Value -> iProp S) :
+  \Pi (v : Value) -> (Phi v) ⊢ (Phi v) =>
+  \lam v => properUPred_ent_refl (Phi v)
+
+\lemma proofmode_wp_lam_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (body : Expr)
+    (Phi : Value -> iProp S) :
+  (wp H E (Val (LamV x body)) Phi) ⊢ (wp H E (Lam x body) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_lam (wp_lam_expr H E x body Phi) $
+    iExact ""
+
+\lemma proofmode_wp_rec_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (f x : Name) (body : Expr)
+    (Phi : Value -> iProp S) :
+  (wp H E (Val (RecV f x body)) Phi) ⊢ (wp H E (Rec f x body) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_rec (wp_rec_expr H E f x body Phi) $
+    iExact ""
+
+\lemma proofmode_wp_let_beta_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (body : Expr)
+  (v : Value) (Phi : Value -> iProp S) :
+  (wp H E (subst x v body) Phi) ⊢
+    (wp H E (App (Val (LamV x body)) (Val v)) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_let (wp_lam_beta H E x body v Phi) $
+    iExact ""
+
+\lemma proofmode_wp_alloc_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value) :
+  mkProperEmp ⊢
+    (wp H E (Alloc (Val v)) (\lam w => mkProperExist Loc (\lam l =>
+      (mkProperPure (w = LitV (LitLoc l))) ∧
+        pointsto_full H.iris_gen_heap l v))) =>
+  ipm $ iris.proofmode.Meta.wp_alloc
+    (iris.program_logic.lifting.wp_alloc H E v)
+    (proofmode_wp_post_refl (\lam w => mkProperExist Loc (\lam l =>
+      (mkProperPure (w = LitV (LitLoc l))) ∧
+        pointsto_full H.iris_gen_heap l v))) $ iEmpIntro
+
+\lemma proofmode_wp_allocN_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (n : Nat) (v : Value)
+    (positive : \Sigma (k : Nat) (n = suc k)) :
+  mkProperEmp ⊢
+    (wp H E (AllocN (Val (natV n)) (Val v))
+      (\lam w => mkProperExist Loc (\lam l =>
+        (mkProperPure (w = LitV (LitLoc l))) ∧
+          pointsto_block H.iris_gen_heap suc l n v))) =>
+  ipm $ iris.proofmode.Meta.wp_allocN
+    (iris.program_logic.lifting.wp_allocN H E n v positive)
+    (proofmode_wp_post_refl (\lam w => mkProperExist Loc (\lam l =>
+      (mkProperPure (w = LitV (LitLoc l))) ∧
+        pointsto_block H.iris_gen_heap suc l n v))) $ iEmpIntro
+
+\lemma proofmode_wp_load_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l : Loc) (dq : Dfrac)
+    (v : Value) :
+  (pointsto H.iris_gen_heap l dq v) ⊢
+    (wp H E (Load (Val (LitV (LitLoc l))))
+      (\lam w => (mkProperPure (w = v)) ∧
+        pointsto H.iris_gen_heap l dq v)) =>
+  ipm $ iris.proofmode.Meta.wp_load
+    (iris.program_logic.lifting.wp_load H E l dq v)
+    (proofmode_wp_post_refl (\lam w => (mkProperPure (w = v)) ∧
+      pointsto H.iris_gen_heap l dq v)) $ iExact ""
+
+\lemma proofmode_wp_load_nested_let {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l : Loc)
+    (dq : Dfrac) (v : Value) :
+  (pointsto H.iris_gen_heap l dq v) ⊢
+    (wp H E
+      (letE 0 (Load (Val (LitV (LitLoc l)))) (Var 0))
+      (\lam w => (mkProperPure (w = v)) ∧
+        pointsto H.iris_gen_heap l dq v)) =>
+  \let | LoadPost : Value -> iProp S => \lam w =>
+      (mkProperPure (w = v)) ∧ pointsto H.iris_gen_heap l dq v
+  \in ipm $ iris.proofmode.Meta.wp_load
+    (iris.program_logic.lifting.wp_load H E l dq v)
+    (\lam w => wp_value_intro H E w LoadPost) $ iExact ""
+
+\lemma proofmode_wp_store_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l : Loc) (old new : Value) :
+  (pointsto_full H.iris_gen_heap l old) ⊢
+    (wp H E (Store (Val (LitV (LitLoc l))) (Val new))
+      (\lam w => (mkProperPure (w = LitV LitUnit)) ∧
+        pointsto_full H.iris_gen_heap l new)) =>
+  ipm $ iris.proofmode.Meta.wp_store
+    (iris.program_logic.lifting.wp_store H E l old new)
+    (proofmode_wp_post_refl (\lam w =>
+      (mkProperPure (w = LitV LitUnit)) ∧
+        pointsto_full H.iris_gen_heap l new)) $ iExact ""
+
+\lemma proofmode_wp_faa_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l : Loc) (old incr : Nat) :
+  (pointsto_full H.iris_gen_heap l (natV old)) ⊢
+    (wp H E (FAA (Val (LitV (LitLoc l))) (Val (natV incr)))
+      (\lam returned => (mkProperPure (returned = natV old)) ∧
+        pointsto_full H.iris_gen_heap l (natV (old Nat.+ incr)))) =>
+  ipm $ iris.proofmode.Meta.wp_faa
+    (iris.program_logic.lifting.wp_faa H E l old incr)
+    (proofmode_wp_post_refl (\lam returned =>
+      (mkProperPure (returned = natV old)) ∧
+        pointsto_full H.iris_gen_heap l (natV (old Nat.+ incr)))) $ iExact ""
+
+\lemma proofmode_wp_fork_rule_named {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (body : Expr)
+    (Phi : Value -> iProp S) :
+  ((Phi unitV) ∗ (wp H coPset_universe body H.iris_fork_post)) ⊢
+    (wp H E (Fork body) Phi) =>
+  ipm $ iris.proofmode.Meta.wp_fork
+    (iris.program_logic.lifting.wp_fork H E body Phi)
+    (proofmode_wp_post_refl Phi) $ iExact ""
+
+\lemma proofmode_wp_new_proph_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) :
+  mkProperEmp ⊢
+    (wp H E NewProph (\lam w =>
+      mkProperExist ProphId (\lam p =>
+        mkProperExist (List ProphPayload) (\lam resolves =>
+          (mkProperPure (w = LitV (LitProphecy p))) ∧
+            proph H.iris_proph_map p resolves)))) =>
+  ipm $ iris.proofmode.Meta.wp_new_proph
+    (iris.program_logic.lifting.wp_new_proph H E)
+    (proofmode_wp_post_refl (\lam w =>
+      mkProperExist ProphId (\lam p =>
+        mkProperExist (List ProphPayload) (\lam resolves =>
+          (mkProperPure (w = LitV (LitProphecy p))) ∧
+            proph H.iris_proph_map p resolves)))) $ iEmpIntro
+
+\lemma proofmode_wp_resolve_rule {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (l : Loc) (old new : Value)
+    (p : ProphId) (w : Value) (resolves : List ProphPayload) :
+  ((pointsto_full H.iris_gen_heap l old) ∗
+      (proph H.iris_proph_map p resolves)) ⊢
+    (wp H E
+      (Resolve (Store (Val (LitV (LitLoc l))) (Val new))
+        (Val (LitV (LitProphecy p))) (Val w))
+      (\lam returned =>
+        mkProperExist (List ProphPayload) (\lam remaining =>
+          (mkProperPure
+            (\Sigma (returned = LitV LitUnit)
+              (resolves = (LitV LitUnit, w) :: remaining))) ∗
+            ((pointsto_full H.iris_gen_heap l new) ∗
+              (proph H.iris_proph_map p remaining))))) =>
+  ipm $ iris.proofmode.Meta.wp_resolve
+    (wp_resolve_store H E l old new p w resolves)
+    (proofmode_wp_post_refl (\lam returned =>
+      mkProperExist (List ProphPayload) (\lam remaining =>
+        (mkProperPure
+          (\Sigma (returned = LitV LitUnit)
+            (resolves = (LitV LitUnit, w) :: remaining))) ∗
+          ((pointsto_full H.iris_gen_heap l new) ∗
+            (proph H.iris_proph_map p remaining))))) $ iExact ""
