@@ -25,7 +25,7 @@ final class IpmMeta extends ProofModeMeta {
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
     if (!requireCount(typechecker, contextData, 1)) return null;
-    CoreExpression expected = contextData.getExpectedType().getUnderlyingExpression();
+    CoreExpression expected = weakHead(typechecker, contextData.getExpectedType());
     if (!(expected instanceof CoreFunCallExpression entailment)
         || !entailment.getDefinition().getName().equals(properUPredEnt.getName())
         || entailment.getDefCallArguments().size() < 3) {

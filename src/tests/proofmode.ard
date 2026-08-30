@@ -198,10 +198,45 @@
   : (P ∗ Q) ⊢ (P ∗ Q) =>
   ipm $ iIntros "HP HQ" $ iFrame "HP" $ iExact "HQ"
 
+\lemma proofmode_frame_auto {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HP HQ" $ iFrame
+
+\lemma proofmode_frame_auto_composite {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ ((Q ∗ R) ∗ mkProperEmp)) ⊢ (P ∗ (Q ∗ R)) =>
+  ipm $ iIntros "HP HRest" $
+    iDestruct "HRest" "HQR HE" $ iFrame
+
+\lemma proofmode_frame_many {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ (Q ∗ R)) ⊢ (P ∗ (Q ∗ R)) =>
+  ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $
+    iFrame "HP HQ" $ iExact "HR"
+
+\lemma proofmode_frame_auto_emp {M : UCMRA} (P : ProperUPred M)
+  : P ⊢ (P ∗ mkProperEmp) =>
+  ipm $ iIntros "HP" $ iFrame
+
+\lemma proofmode_intros_many {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ (Q ∗ R)) ⊢ (P ∗ (Q ∗ R)) =>
+  ipm $ iIntros "HP HQ HR" $ iFrame
+
+\lemma proofmode_destruct_many {M : UCMRA}
+    (P Q R S : ProperUPred M) :
+  ((P ∗ (Q ∗ R)) ∗ S) ⊢ (P ∗ (Q ∗ (R ∗ S))) =>
+  ipm $ iIntros "HAll HS" $
+    iDestruct "HAll" "HP HQ HR" $ iFrame
+
 \lemma proofmode_frame_persistent {M : UCMRA} (P : ProperUPred M)
   : ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
   ipm $ iIntros "HU HE" $ iDestruct "HU" "#HP" $
     iFrame "HP" $ iExact "HP"
+
+\lemma proofmode_frame_auto_persistent {M : UCMRA} (P : ProperUPred M)
+  : ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HU HE" $ iDestruct "HU" "#HP" $ iFrame
 
 \lemma proofmode_left {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ mkProperEmp) ⊢ (P ∨ Q) =>
@@ -271,6 +306,16 @@
   : (P ∗ Q) ⊢ mkProperEmp =>
   ipm $ iEmpIntro
 
+\func proofmode_wrapped_emp {M : UCMRA} : ProperUPred M => mkProperEmp
+
+\lemma proofmode_emp_intro_wrapped {M : UCMRA} (P : ProperUPred M)
+  : P ⊢ proofmode_wrapped_emp =>
+  ipm $ iEmpIntro
+
+\func proofmode_emp_intro_non_emp_fails {M : UCMRA} (P : ProperUPred M)
+  : \Sigma =>
+  fails (ipm $ iEmpIntro : P ⊢ P)
+
 \lemma proofmode_mod {M : UCMRA} (P : ProperUPred M)
   : ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
   ipm $ iIntros "HU HE" $ iMod "HU" "HP" $
@@ -316,6 +361,11 @@
 
 \func proofmode_wrapped_sep {M : UCMRA}
     (P Q : ProperUPred M) : ProperUPred M => P ∗ Q
+
+\lemma proofmode_intros_many_wrapped {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ proofmode_wrapped_sep Q R) ⊢ (P ∗ (Q ∗ R)) =>
+  ipm $ iIntros "HP HQ HR" $ iFrame
 
 \lemma proofmode_destruct_wrapped_sep {M : UCMRA}
     (P Q R : ProperUPred M) :

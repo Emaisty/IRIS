@@ -90,7 +90,7 @@ final class WpSmartApplyMeta extends WpBindMeta {
     var explicit = explicitArguments(contextData);
     TypedExpression rule = typechecker.typecheck(explicit.get(0), null);
     if (rule == null) return null;
-    CoreExpression ruleType = dereference(typechecker, rule.getType());
+    CoreExpression ruleType = weakHead(typechecker, rule.getType());
     if (!(ruleType instanceof CoreFunCallExpression entailment)
         || !entailment.getDefinition().getName().equals("properUPred_ent")
         || entailment.getDefCallArguments().size() < 3) {

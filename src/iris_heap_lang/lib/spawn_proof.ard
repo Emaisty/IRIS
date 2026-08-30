@@ -56,9 +56,9 @@
   iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
   wp_apply, wp_smart_apply, wp_bind, wp_pures)
 
--- The exclusive token used by the Rocq spawn/join library.  It remains a
--- separate functor requirement, since heap state and counter ghost state can
--- be shared by clients that do not use fork/join.
+-- The exclusive token used by the spawn/join library.  Its concrete
+-- signature remains separate, since heap and counter ghost state can be
+-- shared by clients that do not use fork/join.
 \func spawnR : CMRA.{0} => ExclCMRA (DiscreteOFE Nat)
 \func spawnRF : RFunctor => constRF spawnR
 \func spawnRF_contractive : RFunctorContractive spawnRF =>

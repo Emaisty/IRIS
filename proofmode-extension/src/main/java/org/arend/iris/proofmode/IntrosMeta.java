@@ -24,8 +24,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 final class IntrosMeta extends ExactMeta {
-  @Dependency(name = "pm_intros_sep")
-  private ArendRef pmIntrosSep;
+  @Dependency(name = "pm_destruct_sep")
+  private ArendRef pmDestructSep;
+
+  @Dependency(name = "properUPred_ent_refl")
+  private ArendRef entailmentRefl;
 
   @Dependency(name = "pm_rename_spatial")
   private ArendRef pmRenameSpatial;
@@ -66,6 +69,20 @@ final class IntrosMeta extends ExactMeta {
     String pattern = stringArgument(typechecker, contextData, 0);
     if (pattern == null) return null;
     String[] names = pattern.trim().split("\\s+");
+    if (names.length > 2) {
+      GoalData goal = resolveGoal(typechecker, contextData);
+      if (goal == null) return null;
+      String restName = freshName(typechecker, goal.environment(),
+          "_ipm_intros_rest_", names);
+      String remaining = String.join(" ",
+          java.util.Arrays.copyOfRange(names, 1, names.length));
+      var factory = contextData.getFactory();
+      ConcreteExpression inner = factory.app(factory.meta("iIntros", this), true,
+          factory.string(remaining), explicitArguments(contextData).get(1));
+      ConcreteExpression outer = factory.app(factory.meta("iIntros", this), true,
+          factory.string(names[0] + " " + restName), inner);
+      return typechecker.typecheck(outer, contextData.getExpectedType());
+    }
     if (names.length == 1 && !names[0].isEmpty()) {
       String introduced = names[0];
       ResolvedSelection resolved = resolveNamed(typechecker, contextData, "");
@@ -162,32 +179,43 @@ final class IntrosMeta extends ExactMeta {
       proposition = dereference(typechecker,
           proposition.normalize(NormalizationMode.WHNF));
     }
-    if (!(proposition instanceof CoreFunCallExpression sep)
-        || !sep.getDefinition().getName().equals(mkProperSep.getName())
-        || sep.getDefCallArguments().size() < 3) {
-      typechecker.getErrorReporter().report(new TypecheckingError(
-          "iIntros expected a separating conjunction, got "
-              + proposition.getClass().getSimpleName(), contextData.getMarker()));
-      return null;
-    }
-    List<? extends CoreExpression> sepArgs = sep.getDefCallArguments();
-    CoreExpression left = sepArgs.get(sepArgs.size() - 2);
-    CoreExpression right = sepArgs.get(sepArgs.size() - 1);
+    CoreFunCallExpression sep = proposition instanceof CoreFunCallExpression call
+        && call.getDefinition().getName().equals(mkProperSep.getName())
+        && call.getDefCallArguments().size() >= 3 ? call : null;
+    List<? extends CoreExpression> sepArgs = sep == null
+        ? java.util.Collections.emptyList() : sep.getDefCallArguments();
+    CoreExpression left = sep == null ? null
+        : sepArgs.get(sepArgs.size() - 2);
+    CoreExpression right = sep == null ? null : sepArgs.get(sepArgs.size() - 1);
     CoreExpression target = goal.getDefCallArguments().getLast();
 
     var factory = contextData.getFactory();
+    var selectionArgs = new ArrayList<org.arend.ext.concrete.expr.ConcreteArgument>();
+    selectionArgs.add(factory.arg(factory.hole(), false));
+    selectionArgs.add(factory.arg(factory.core(tail.computeTyped()), true));
+    selectionArgs.add(factory.arg(factory.core(anonymous.computeTyped()), true));
+    selectionArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+    ConcreteExpression selection = factory.app(factory.ref(pmSelectHere), selectionArgs);
+
+    var reflArgs = new ArrayList<org.arend.ext.concrete.expr.ConcreteArgument>();
+    reflArgs.add(factory.arg(factory.hole(), false));
+    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+    ConcreteExpression split = factory.app(factory.ref(entailmentRefl), reflArgs);
+
     var callArgs = new ArrayList<org.arend.ext.concrete.expr.ConcreteArgument>();
     callArgs.add(factory.arg(factory.hole(), false));
-    callArgs.add(factory.arg(factory.core(intuitionistic.computeTyped()), false));
-    callArgs.add(factory.arg(factory.core(tail.computeTyped()), false));
-    callArgs.add(factory.arg(factory.core(anonymous.computeTyped()), false));
+    callArgs.add(factory.arg(factory.core(envExpression.computeTyped()), false));
+    callArgs.add(factory.arg(selection, true));
     callArgs.add(factory.arg(name(contextData, names[0]), true));
     callArgs.add(factory.arg(name(contextData, names[1]), true));
-    callArgs.add(factory.arg(factory.core(left.computeTyped()), false));
-    callArgs.add(factory.arg(factory.core(right.computeTyped()), false));
+    callArgs.add(factory.arg(left == null ? factory.hole()
+        : factory.core(left.computeTyped()), false));
+    callArgs.add(factory.arg(right == null ? factory.hole()
+        : factory.core(right.computeTyped()), false));
     callArgs.add(factory.arg(factory.core(target.computeTyped()), false));
+    callArgs.add(factory.arg(split, true));
     callArgs.add(factory.arg(next, true));
-    ConcreteExpression call = factory.app(factory.ref(pmIntrosSep), callArgs);
+    ConcreteExpression call = factory.app(factory.ref(pmDestructSep), callArgs);
     return typechecker.typecheck(call, contextData.getExpectedType());
   }
 }

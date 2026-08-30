@@ -3,6 +3,13 @@ package org.arend.iris.proofmode;
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
 import org.arend.ext.concrete.expr.ConcreteStringExpression;
+import org.arend.ext.core.expr.CoreClassCallExpression;
+import org.arend.ext.core.expr.CoreConCallExpression;
+import org.arend.ext.core.expr.CoreExpression;
+import org.arend.ext.core.expr.CoreFunCallExpression;
+import org.arend.ext.core.expr.CoreInferenceReferenceExpression;
+import org.arend.ext.core.expr.CoreNewExpression;
+import org.arend.ext.core.ops.NormalizationMode;
 import org.arend.ext.error.TypecheckingError;
 import org.arend.ext.reference.ArendRef;
 import org.arend.ext.typechecking.BaseMetaDefinition;
@@ -22,6 +29,29 @@ abstract class ProofModeMeta extends BaseMetaDefinition {
 
   @Dependency(name = "::")
   protected ArendRef cons;
+
+  protected CoreExpression dereference(ExpressionTypechecker typechecker,
+      CoreExpression expression) {
+    CoreExpression result = expression.getUnderlyingExpression();
+    while (result instanceof CoreInferenceReferenceExpression inference) {
+      if (inference.getSubstExpression() == null) {
+        typechecker.solveEquationsFor(inference.getVariable());
+      }
+      if (inference.getSubstExpression() == null) break;
+      result = inference.getSubstExpression().getUnderlyingExpression();
+    }
+    return result;
+  }
+
+  protected CoreExpression weakHead(ExpressionTypechecker typechecker,
+      CoreExpression expression) {
+    CoreExpression result = dereference(typechecker, expression);
+    if (result instanceof CoreFunCallExpression
+        || result instanceof CoreConCallExpression
+        || result instanceof CoreNewExpression
+        || result instanceof CoreClassCallExpression) return result;
+    return dereference(typechecker, result.normalize(NormalizationMode.WHNF));
+  }
 
   protected @Nullable TypedExpression apply(ExpressionTypechecker typechecker,
       ContextData contextData, ArendRef lemma, List<ConcreteExpression> arguments) {

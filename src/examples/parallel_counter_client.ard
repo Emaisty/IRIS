@@ -23,6 +23,7 @@
 \import iris.program_logic.adequacy
 \import iris.program_logic.iris_sigma
 \import iris_heap_lang.lang
+\import iris_heap_lang.lib.array (nat_suc_le_add_suc)
 \import iris_heap_lang.lib.syntax
 \import iris_heap_lang.lib.spawn
 \import iris_heap_lang.lib.spawn_proof

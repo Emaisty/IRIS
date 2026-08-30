@@ -28,12 +28,16 @@ final class WpApplyMeta extends ExactMeta {
     var arguments = explicitArguments(contextData);
     TypedExpression rule = typechecker.typecheck(arguments.get(0), null);
     if (rule == null) return null;
-    CoreExpression ruleType = dereference(typechecker, rule.getType());
+    CoreExpression ruleType = weakHead(typechecker, rule.getType());
     if (!(ruleType instanceof CoreFunCallExpression entailment)
         || !entailment.getDefinition().getName().equals("properUPred_ent")
         || entailment.getDefCallArguments().size() < 3) {
+      String actual = ruleType instanceof CoreFunCallExpression call
+          ? call.getDefinition().getName()
+          : ruleType.getClass().getSimpleName();
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "wp_apply expects an entailment theorem", contextData.getMarker()));
+          "wp_apply expects an entailment theorem; got " + actual,
+          contextData.getMarker()));
       return null;
     }
     var entailmentArgs = entailment.getDefCallArguments();

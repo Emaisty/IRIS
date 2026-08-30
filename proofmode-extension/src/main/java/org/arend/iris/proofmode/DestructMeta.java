@@ -92,6 +92,26 @@ final class DestructMeta extends ExactMeta {
     }
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
+    String[] flatNames = trimmedPattern.split("\\s+");
+    if (flatNames.length > 2 && !trimmedPattern.contains("|")) {
+      if (explicit.size() != 3) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Multi-name iDestruct does not take explicit proposition arguments",
+            contextData.getMarker()));
+        return null;
+      }
+      String restName = freshName(typechecker, resolved.environment(),
+          "_ipm_destruct_rest_", flatNames);
+      String remaining = String.join(" ",
+          java.util.Arrays.copyOfRange(flatNames, 1, flatNames.length));
+      var factory = contextData.getFactory();
+      ConcreteExpression inner = factory.app(factory.meta("iDestruct", this), true,
+          factory.string(restName), factory.string(remaining), continuation);
+      ConcreteExpression outer = factory.app(factory.meta("iDestruct", this), true,
+          factory.string(requested),
+          factory.string(flatNames[0] + " " + restName), inner);
+      return typechecker.typecheck(outer, contextData.getExpectedType());
+    }
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
     if (resolved.persistent()) {

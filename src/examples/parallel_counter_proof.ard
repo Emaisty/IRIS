@@ -99,11 +99,6 @@
     (gam : msc_name) (q : Qp) (n : Nat) : iProp S =>
   msc_frag G.msc_modelG gam.msc_model_name q n
 
-\func msc_shard_auth {S : gFunctors} (H : irisGS natCountable S)
-    (G : mscG S) (a i n : Nat) (gams : gname) : iProp S =>
-  (pointsto_full H.iris_gen_heap (a Nat.+ i) (natV n)) ∗
-    (mono_nat_auth_own G.msc_mono_natG gams qp_one n)
-
 \func msc_shard_lb {S : gFunctors} (G : mscG S)
     (gams : gname) (n : Nat) : iProp S =>
   mono_nat_lb_own G.msc_mono_natG gams n
@@ -212,16 +207,6 @@
   big_sepL (\lam i => msc_handle G gam (natV i))
     (nat_seq 0 gam.msc_size)
 
--- Small semantic BI laws used repeatedly below.  Iris exposes these through
--- proof-mode instances; the term-mode port states exactly the consumed laws.
-\lemma persistently_elim_ent {M : UCMRA} (P : ProperUPred M) :
-  (<#> P) ⊢ P =>
-  \lam n x _ hp =>
-    P.upred_mono n n (ucmra_core x) x hp
-      (inP (x, equiv_dist {M}
-        (M.equiv_sym (M.op (ucmra_core x) x) x
-          (ucmra_core_left_id x)) n)) <=-refl
-
 \lemma persistently_wand_elim_ent {M : UCMRA}
     (P Q : ProperUPred M) :
   ((<#> (P -∗ Q)) ∗ P) ⊢ Q =>
@@ -295,13 +280,6 @@
 \lemma nat_order_lt_to_msc_lt {a b : Nat}
     (h : a NatOrder.< b) : nat_lt a b => suc_<_<= h
 
-\lemma nat_le_ne_lt (n r : Nat) (hle : n <= r)
-    (hne : Not (n = r)) : nat_lt n r =>
-  \case LinearOrder.<=-dec hle \with {
-    | inl hlt => nat_order_lt_to_msc_lt hlt
-    | inr heq => absurd (hne heq)
-  }
-
 \func msc_fresh_id {V : \Set} (m : Gmap Nat natCountable V) : Nat =>
   pmap_depth' m.gtree.tree
 
@@ -365,10 +343,7 @@
               iFrame "HSaved" $
               iSplitL "HQR" (iExact "HQR")
                 (iPureIntro $ <=-refl))
-  \in ipm $ iIntros "HA HRest" $
-      iDestruct "HRest" "HSaved HRest" $
-      iDestruct "HRest" "HP HRest" $
-      iDestruct "HRest" "HWd HOldPure" $
+  \in ipm $ iIntros "HA HSaved HP HWd HOldPure" $
       iDestruct "HWd" "#HW" $
       iAssert "HShift" "HA HP" Shift
         (iApply "HW" $ iFrame "HA" $ iExact "HP")
@@ -404,16 +379,13 @@
     | OldBody => Saved ∗
         (P ∗ (Wd ∗ OldPure))
     | State => msc_read_state H G gam (suc n) (r, gamQ)
-  \in ipm $ iIntros "HA HBody" $
-      iDestruct "HBody" "HSaved HRest" $
-      iDestruct "HRest" "HP HRest" $
-      iDestruct "HRest" "HW HOldPure" $
+  \in ipm $ iIntros "HA HSaved HP HW HOldPure" $
       iDestruct "HOldPure" "%" $ \lam hlt =>
       wp_apply (fupd_intro H.iris_wsat msc_open_mask (A ∗ State)) $
       iFrame "HA" $
       wp_apply (msc_pending_intro H G gam (suc n) r gamQ P Q
         (nat_lt_advance n r hlt hne)) $
-      iFrame "HSaved" $ iFrame "HW" $ iExact "HP"
+      iFrame "HSaved HW" $ iExact "HP"
 
 \lemma msc_done_advance {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -431,9 +403,7 @@
     | OldPure => mkProperPure {iResUR S} (r <= n)
     | OldBody => Saved ∗ ((Q r) ∗ OldPure)
     | State => msc_read_state H G gam (suc n) (r, gamQ)
-  \in ipm $ iIntros "HA HBody" $
-      iDestruct "HBody" "HSaved HRest" $
-      iDestruct "HRest" "HQ HOldPure" $
+  \in ipm $ iIntros "HA HSaved HQ HOldPure" $
       iDestruct "HOldPure" "%" $ \lam hle =>
       wp_apply (fupd_intro H.iris_wsat msc_open_mask (A ∗ State)) $
       iFrame "HA" $
@@ -513,8 +483,7 @@
       | Target => A ∗ (R' ∗ Rs')
       | proof : (A ∗ (R ∗ Rs)) ⊢
           (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Target) =>
-        ipm $ iIntros "HA HRest" $
-          iDestruct "HRest" "HR HRs" $
+        ipm $ iIntros "HA HR HRs" $
           iAssert "HAdvanceRest" "HA HRs"
             (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
               (A ∗ Rs'))
@@ -532,7 +501,7 @@
                 (iMod "HAdvanceHead" "HHead'" $
                   iDestruct "HHead'" "HA HR'" $
                   wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
-                  iFrame "HA" $ iFrame "HR'" $ iExact "HRs'"))
+                  iFrame "HA HR'" $ iExact "HRs'"))
     \in proof
 \lemma msc_read_states_advance {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -564,8 +533,7 @@
     | States' => big_sepM requests (\lam _ request =>
         msc_read_state H G gam (suc n) request)
     | Target => A ∗ (Map ∗ States')
-  \in ipm $ iIntros "HA HRequests" $
-      iDestruct "HRequests" "HMap HStates" $
+  \in ipm $ iIntros "HA HMap HStates" $
       iAssert "HAdvance" "HA HStates"
         (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
           (A ∗ States'))
@@ -574,9 +542,7 @@
         (iMod "HAdvance" "HAdvanced" $
           iDestruct "HAdvanced" "HA HStates'" $
           wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
-          iFrame "HA" $
-          wp_apply (properUPred_ent_refl (Map ∗ States')) $
-          iFrame "HMap" $ iExact "HStates'")
+          iFrame)
 
 -- Agreement of the persistent saved predicates rewrites the completed
 -- request payload one step later, exactly as Iris' `iRewrite` under `▷`.
@@ -590,8 +556,7 @@
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | Saved' => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q'
     | Eq => mkProperInternalEq {iResUR S} {iPropO S} (Q r) (Q' r)
-  \in ipm $ iIntros "HSaved HRest" $
-      iDestruct "HRest" "HSaved' HQ'" $
+  \in ipm $ iIntros "HSaved HSaved' HQ'" $
       iAssert "HEq" "HSaved HSaved'" (|> Eq)
         (wp_apply (saved_pred_agree G.msc_saved_predG gamQ
           DfracDiscarded DfracDiscarded Q Q' r) $
@@ -621,24 +586,16 @@
   ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
       (msc_read_done G total r gamQ)) ⊢
     (|> (Q r)) =>
-  \lam n x hv hs => \case hs \with {
-    | inP (a, b, dab, hSaved, inP (Q', hbody)) =>
-      \let
-        | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-        | Saved' => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q'
-        | Body => Saved' ∗ ((Q' r) ∗
-            (mkProperPure {iResUR S} (r <= total)))
-        | Body' => Saved' ∗ (Q' r)
-        | dropPure : Body ⊢ Body' =>
-            sep_mono_r_ent Saved' ((Q' r) ∗
-              (mkProperPure {iResUR S} (r <= total))) (Q' r)
-              (sep_elim_l_ent (Q' r) (mkProperPure (r <= total)))
-        | source : (Saved ∗ Body).upred_holds n x =>
-            inP (a, b, dab, hSaved, hbody)
-        | prepared : (Saved ∗ Body').upred_holds n x =>
-            sep_mono_r_ent Saved Body Body' dropPure n x hv source
-      \in msc_saved_pred_apply G gamQ Q Q' r n x hv prepared
-  }
+  \let
+    | Done : (Nat -> iProp S) -> iProp S => \lam Q' =>
+        (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q') ∗
+          ((Q' r) ∗ (mkProperPure (r <= total)))
+  \in ipm $ iIntros "HSaved HDone" $
+      iDestruct "HDone" "HBody" Done $ \lam Q' =>
+      iDestruct "HBody" "HSaved' HQ' HLe" $
+      iClear "HLe" $
+      wp_apply (msc_saved_pred_apply G gamQ Q Q' r) $
+      iFrame "HSaved HSaved'" $ iExact "HQ'"
 
 \lemma msc_read_state_take {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -647,14 +604,12 @@
   ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
       (msc_read_state H G gam total (r, gamQ))) ⊢
     (|> (Q r)) =>
-  \lam n x hv hs => \case hs \with {
-    | inP (a, b, dab, hSaved, byLeft hpending) =>
-      msc_pending_take_impossible H G gam total r gamQ Q hrtotal
-        n x hv (inP (a, b, dab, hSaved, hpending))
-    | inP (a, b, dab, hSaved, byRight hdone) =>
-      msc_done_take G total r gamQ Q n x hv
-        (inP (a, b, dab, hSaved, hdone))
-  }
+  ipm $ iIntros "HSaved HState" $
+    iDestruct "HState" "HPending | HDone"
+      (wp_apply (msc_pending_take_impossible H G gam total r gamQ Q hrtotal) $
+        iFrame "HSaved" $ iExact "HPending")
+      (wp_apply (msc_done_take G total r gamQ Q) $
+        iFrame "HSaved" $ iExact "HDone")
 
 -- Faithful port of Rocq's `msc_request_take`: the linear request token proves
 -- membership, the completed state yields the promised postcondition, and the
@@ -683,9 +638,7 @@
         msc_read_state H G gam total request)
     | Core => Map ∗ Elem
     | lookup => glookup requests id = just (r, gamQ)
-  \in ipm $ iIntros "HSaved HRest" $
-      iDestruct "HRest" "HElem HRest" $
-      iDestruct "HRest" "HMap HStates" $
+  \in ipm $ iIntros "HSaved HElem HMap HStates" $
       iAssert "HLookupCore" "HMap HElem"
         ((mkProperPure lookup) ∗ Core)
         (wp_apply (pure_consequence_frame_ent Core lookup
@@ -755,7 +708,7 @@
   \in ipm $ iIntros "HSaved HRest" $ iDestruct "HRest" "HW HP" $
       wp_apply (or_intro_l_ent Pending Done) $
       iExists P PendingP $ iExists Q PendingQ $
-      iFrame "HSaved" $ iFrame "HP" $ iFrame "HW" $ iPureIntro $ hlt
+      iFrame "HSaved HP HW" $ iPureIntro $ hlt
 
 \lemma msc_done_intro {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -771,7 +724,7 @@
     | Pending => msc_read_pending H G gam total r gamQ
     | Done => msc_read_done G total r gamQ
   \in ipm $ iIntros "HSaved HQ" $ wp_apply (or_intro_r_ent Pending Done) $
-      iExists Q DoneQ $ iFrame "HSaved" $ iFrame "HQ" $ iPureIntro $ hle
+      iExists Q DoneQ $ iFrame "HSaved HQ" $ iPureIntro $ hle
 
 \lemma msc_request_insert {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -798,8 +751,7 @@
         msc_read_state H G gam total request)
     | States' => big_sepM (ginsert id (r, gamQ) requests)
         (\lam _ request => msc_read_state H G gam total request)
-  \in ipm $ iIntros "HA HRest" $ iDestruct "HRest" "HMap HPair" $
-      iDestruct "HPair" "HState HStates" $
+  \in ipm $ iIntros "HA HMap HState HStates" $
       iAssert "HInsert" "HMap" (|==> (Map' ∗ Elem))
         (wp_apply (ghost_map_insert (msc_requestGS G gam)
           requests id (r, gamQ) fresh) $ iExact "HMap")
@@ -813,8 +765,7 @@
             (iModIntro $
               iSplitL "HA" (iExact "HA") $
               iSplitL "HMap' HStates'"
-                (wp_apply (properUPred_ent_refl (Map' ∗ States')) $
-                  iFrame "HMap'" $ iExact "HStates'")
+                (iFrame "HMap'" $ iExact "HStates'")
                 (iExact "HElem")))
 
 \lemma msc_request_register_pending {S : gFunctors}
@@ -859,15 +810,14 @@
     | Exists => mkProperExist Nat (\lam j => A ∗
         ((msc_requests H G gam total (ginsert j (r, gamQ) requests)) ∗
           (ghost_map_elem (msc_requestGS G gam) j (r, gamQ))))
-  \in (ipm $ iIntros "HA HRest" $ iDestruct "HRest" "HMap HRest" $
-      iDestruct "HRest" "HInput HStates" $
+  \in (ipm $ iIntros "HA HMap HInput HStates" $
       iAssert "HState" "HInput" State
         (wp_apply (msc_pending_intro H G gam total r gamQ P Q hlt) $
           iExact "HInput")
         (iAssert "HInsert" "HA HMap HState HStates" (|==> Body)
           (wp_apply (msc_request_insert H G gam A total requests
             id r gamQ fresh) $
-            iFrame "HA" $ iFrame "HMap" $ iFrame "HState" $
+            iFrame "HA HMap HState" $
             iExact "HStates")
           (iAssert "HFupd" "HInsert"
             (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Body)
@@ -922,17 +872,12 @@
         ((msc_requests H G gam r (ginsert j (r, gamQ) requests)) ∗
           (ghost_map_elem (msc_requestGS G gam) j (r, gamQ))))
     | bodyArrange : Body0 ⊢ Prepared =>
-        ipm $ iIntros "HAQ HFrame" $
+        ipm $ iIntros "HAQ HSaved HMap HStates" $
           iDestruct "HAQ" "HA HQ" $
-          iDestruct "HFrame" "HSaved HMapStates" $
-          iDestruct "HMapStates" "HMap HStates" $
           iAssert "HState" "HSaved HQ" State
             (wp_apply (msc_done_intro H G gam r r gamQ Q <=-refl) $
-              wp_apply (properUPred_ent_refl (Saved ∗ (Q r))) $
               iFrame "HSaved" $ iExact "HQ")
-            (wp_apply (properUPred_ent_refl Prepared) $
-              iFrame "HA" $ iFrame "HMap" $
-              iFrame "HState" $ iExact "HStates")
+            (iFrame "HA HMap HState" $ iExact "HStates")
     | continue : Body0 ⊢
         (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Exists) =>
         ipm $ iIntros "HAQ HFrame" $
@@ -945,13 +890,9 @@
           wp_apply (bupd_fupd H.iris_wsat msc_open_mask Result) $
           wp_apply (msc_request_insert H G gam A r requests id r gamQ fresh) $
           wp_apply bodyArrange $
-          wp_apply (properUPred_ent_refl Body0) $
           iFrame "HAQ" $ iExact "HFrame"
-  \in ipm $ iIntros "HA HRest" $
-      iDestruct "HRest" "HMap HTail" $
-      iDestruct "HTail" "HInput HStates" $
-      iDestruct "HInput" "HSaved HWP" $
-      iDestruct "HWP" "HW HP" $
+  \in ipm $ iIntros "HA HMap HInput HStates" $
+      iDestruct "HInput" "HSaved HW HP" $
       wp_apply (fupd_trans H.iris_wsat msc_open_mask msc_open_mask
         msc_open_mask Exists) $
       wp_apply (fupd_mono H.iris_wsat msc_open_mask msc_open_mask Body0
@@ -963,10 +904,8 @@
         (wp_apply (persistently_wand_elim_ent (A ∗ P)
           (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
             (A ∗ (Q r)))) $
-          wp_apply (properUPred_ent_refl (W ∗ (A ∗ P))) $
-          iFrame "HW" $ iFrame "HA" $ iExact "HP")
-        (wp_apply (properUPred_ent_refl Frame) $
-          iFrame "HSaved" $ iFrame "HMap" $ iExact "HStates")
+          iFrame "HW HA" $ iExact "HP")
+        (iFrame "HSaved HMap" $ iExact "HStates")
 
 -- Rocq `msc_request_register`, with the spatial context grouped to expose the
 -- exact state consumed by the two arithmetic branches.
@@ -1027,7 +966,7 @@
               (msc_mono_auths G nil gams)
       \in ipm $ iModIntro $ iExists (nil {gname}) Body $
           iSplitL "" (iPureIntro $ idp) $
-          wp_apply (properUPred_ent_refl (mkProperEmp {iResUR S})) $ iEmpIntro
+          iEmpIntro
   | suc T =>
       \let
         | OldBody : List gname -> iProp S => \lam gams =>
@@ -1241,7 +1180,7 @@
             (wp_apply (msc_mono_auths_extract G nPrefix gamPrefix n gam
               nSuffix gamSuffix (pmap pred hlen)) $ iExact "HTail")
             (iDestruct "HExtracted" "HAuth HRest" $
-              iFrame "HAuth" $ iFrame "HHead" $ iExact "HRest") :
+              iFrame "HAuth HHead" $ iExact "HRest") :
           (Head ∗ Tail) ⊢ (Auth ∗ (Head ∗ Rest)))
   | nil, :: _ _ => \case hlen \with {}
   | :: _ _, nil => \case hlen \with {}
@@ -1392,9 +1331,8 @@
             (wp_apply monos $ iExact "HMonos")
             (iDestruct "HCellsFocused" "HNow HArrayRest" $
               iDestruct "HMonosFocused" "HMono HMonoRest" $
-              iFrame "HNow" $ iFrame "HAuth" $
-                iFrame "HArrayRest" $ iFrame "HMono" $
-                  iFrame "HMonoRest" $ iExact "HRequests"))
+              iFrame "HNow HAuth HArrayRest HMono HMonoRest" $
+                iExact "HRequests"))
   \in proof
 \lemma msc_inv_incr_split {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -1634,11 +1572,8 @@
           w.incr_old (suc w.incr_old) *> w.incr_ns_len
     | namesLen : length gam.msc_shard_names = gam.msc_size =>
         pmap length w.incr_names_eq *> w.incr_names_len
-  \in ipm $ iIntros "HCell HRest" $
-      iDestruct "HRest" "HAuth HRest" $
-      iDestruct "HRest" "HArrayRest HRest" $
-      iDestruct "HRest" "HMono HRest" $
-      iDestruct "HRest" "HMonoRest HRequests" $
+  \in ipm $ iIntros
+      "HCell HAuth HArrayRest HMono HMonoRest HRequests" $
       iAssert "HArray" "HCell HArrayRest" Array
         (wp_apply arrayInsert $
           iFrame "HCell" $ iExact "HArrayRest")
@@ -1727,11 +1662,8 @@
           (inv w.incr_names_eq) (properUPred_ent_refl MonosD)
     | namesLen : length gam.msc_shard_names = gam.msc_size =>
         pmap length w.incr_names_eq *> w.incr_names_len
-  \in ipm $ iIntros "HCell HRest" $
-      iDestruct "HRest" "HAuth HRest" $
-      iDestruct "HRest" "HArrayRest HRest" $
-      iDestruct "HRest" "HMono HRest" $
-      iDestruct "HRest" "HMonoRest HRequests" $
+  \in ipm $ iIntros
+      "HCell HAuth HArrayRest HMono HMonoRest HRequests" $
       iAssert "HArray" "HCell HArrayRest" Array
         (wp_apply arrayInsert $
           iFrame "HCell" $ iExact "HArrayRest")
@@ -1842,7 +1774,6 @@
               (wp_apply renameLB $ iExact "HLB0")
               (wp_apply projectBound $
                 wp_apply validLB $
-                wp_apply (properUPred_ent_refl (Mono ∗ NamedLB)) $
                 iFrame "HMono" $ iExact "HNamedLB"))
     | withBound : (Source ∗ Current) ⊢
         (Bound ∗ (Source ∗ Current)) =>
@@ -1854,23 +1785,19 @@
   \in ipm $ iIntros "HAfter HLB0" $
       iAssert "HSourceCurrent" "HAfter HLB0" (Source ∗ Current)
         (wp_apply sourceCurrent $
-          wp_apply (properUPred_ent_refl Source) $
           iFrame "HAfter" $ iExact "HLB0")
         (iDestruct "HSourceCurrent" "HSource HCurrent" $
           iDestruct "HSource" "HAfter HLB0" $
           iAssert "HBounded" "HAfter HLB0 HCurrent"
             (Bound ∗ (Source ∗ Current))
             (wp_apply withBound $
-              wp_apply (properUPred_ent_refl (Source ∗ Current)) $
               iSplitL "HAfter HLB0"
-                (wp_apply (properUPred_ent_refl Source) $
-                  iFrame "HAfter" $ iExact "HLB0")
+                (iFrame "HAfter" $ iExact "HLB0")
                 (iExact "HCurrent"))
             (iDestruct "HBounded" "HBound HSourceCurrent" $
               iDestruct "HSourceCurrent" "HSource HCurrent" $
               iDestruct "HSource" "HAfter HLB0" $
-              wp_apply (properUPred_ent_refl Target) $
-              iFrame "HAfter" $ iFrame "HCurrent" $ iExact "HBound"))
+              iFrame "HAfter HCurrent" $ iExact "HBound"))
 
 \lemma msc_load_transition {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -1914,12 +1841,10 @@
         (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)) $
       iAssert "HObserved" "HAfter HLB0" (After ∗ ResultResources)
         (wp_apply (msc_load_after_observe H G gam a i name lower rw) $
-          wp_apply (properUPred_ent_refl FocusSource) $
           iFrame "HAfter" $ iExact "HLB0")
         (iDestruct "HObserved" "HAfter HResult" $
           iAssert "HInv" "HCell HAfter" Inv
             (wp_apply (msc_incr_restore H G gam a i w) $
-              wp_apply (properUPred_ent_refl (Cell ∗ After)) $
               iFrame "HCell" $ iExact "HAfter")
             (iAssert "HLater" "HInv" LaterInv
               (iNext $ iExact "HInv")
@@ -2030,21 +1955,6 @@
             (app4 (Val msc_sum_loop)
               (Val (LitV (LitLoc a))) (Val (natV T))
               (Var nNextI) (Var nNextAcc))))))
-
-\lemma msc_sum_loop_unfold_eq (a T i acc : Nat) :
-  msc_sum_loop_unfold a T i acc =
-    If (NatEq (Val (natV i)) (Val (natV T)))
-      (Val (natV acc))
-      (letE nL
-        (LocAdd (Val (LitV (LitLoc a))) (Val (natV i)))
-        (letE nN (Load (Var nL))
-          (letE nNextI
-            (NatAdd (Val (natV i)) (Val (natV 1)))
-            (letE nNextAcc
-              (NatAdd (Val (natV acc)) (Var nN))
-              (app4 (Val msc_sum_loop)
-                (Val (LitV (LitLoc a))) (Val (natV T))
-                (Var nNextI) (Var nNextAcc)))))) => idp
 
 -- Four beta steps expose one iteration of the concrete recursive scan.
 \lemma msc_sum_loop_unfold_wp {S : gFunctors}
@@ -2183,8 +2093,7 @@
           iSplitL "" (iPureIntro $ idp)
             (iSplitL "" (iPureIntro $ idp)
               (iSplitL "" (iPureIntro $ zero<=_)
-                (wp_apply (properUPred_ent_refl
-                  (mkProperEmp {iResUR S})) $ iEmpIntro)))
+                iEmpIntro))
   | nil, :: _ _ => \lam n x hx h => \case h \with {
       | inP (_, _, _, _, impossible) => \case impossible \with {}
     }
@@ -2311,8 +2220,6 @@
                     ((msc_shard_lb G name n) ∗ Rest) ⊢
                       (WP H mscE (subst nN vv BodyN) Post))
                     (inv heq) (afterN n hbound)) $
-                  wp_apply (properUPred_ent_refl
-                    ((msc_shard_lb G name n) ∗ Rest)) $
                   iFrame "HHead" $ iExact "HRest"
         | loadResume : \Pi (v : Value) -> ((LoadPost v) ∗ Rest) ⊢
             (WP H mscE
@@ -2326,19 +2233,15 @@
               namesEq idp hi
         | framedLoad : Pre ⊢
             (WP H mscE LoadExpr (wp_frame_post LoadPost Rest)) =>
-            ipm $ iIntros "HInv HResources" $
-              iDestruct "HResources" "HHead HTail" $
+            ipm $ iIntros "HInv HHead HTail" $
               iDestruct "HInv" "#HInv"
                 (inv_persistent H.iris_wsat mscN (msc_inv H G gam a)) $
               wp_apply (wp_frame_r H mscE LoadExpr LoadPost Rest) $
               iSplitL "HHead"
                 (wp_apply loadSpec $
-                  wp_apply (properUPred_ent_refl (Inv ∗ Head0)) $
                   iFrame "HInv" $ iExact "HHead")
-                (wp_apply (properUPred_ent_refl Rest) $
-                  iFrame "HInv" $ iExact "HTail")
-      \in ipm $ iIntros "HInv HRest" $
-          iDestruct "HRest" "HHead HTail" $
+                (iFrame "HInv" $ iExact "HTail")
+      \in ipm $ iIntros "HInv HHead HTail" $
           wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size index acc Post) $
           wp_bind $
           wp_apply (wp_nat_eq_false H mscE index gam.msc_size
@@ -2346,7 +2249,7 @@
               WP H mscE (If (Val v) Then Else) Post)) $
           wp_pures $
           wp_smart_apply framedLoad loadResume $
-          iFrame "HInv" $ iFrame "HHead" $ iExact "HTail"
+          iFrame "HInv HHead" $ iExact "HTail"
 -- The invariant witnesses retained across the atomic NewProph step.  Unlike
 -- the shard-focused witnesses above, a read keeps the complete array and all
 -- monotone authorities: the following scan only needs a persistent snapshot.
@@ -2437,10 +2340,8 @@
     | LBs => msc_lbs G w.read_initial gam.msc_shard_names
     | toPersistent : Body ⊢ (<#> LBs) =>
         ipm $ iIntros "HBody" $
-          iDestruct "HBody" "HLenN HBody" $
-          iDestruct "HBody" "HLenNames HBody" $
-          iDestruct "HBody" "HAuth HBody" $
-          iDestruct "HBody" "HShards HRequests" $
+          iDestruct "HBody"
+            "HLenN HLenNames HAuth HShards HRequests" $
           iDestruct "HShards" "HCells HMonos" $
           wp_apply (msc_lbs_persistent G w.read_initial
             gam.msc_shard_names) $
@@ -2493,19 +2394,16 @@
           (((msc_counter_auth G gam n) ∗ P) -∗
             (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
               ((msc_counter_auth G gam n) ∗ (Q n))))
-  \in ipm $ iIntros "HAuth HRest" $
-    iDestruct "HRest" "HRequests HClient" $
+  \in ipm $ iIntros "HAuth HRequests HSaved HShiftAll HP" $
     iDestruct "HRequests" "HMap HStates" $
-    iDestruct "HClient" "HSaved HRest" $
-    iDestruct "HRest" "HShiftAll HP" $
     iAssert "HShift" "HShiftAll" Shift
       (wp_apply (forall_elim_ent ShiftFamily predicted) $
         iExact "HShiftAll")
       (wp_apply (msc_request_register H G gam total predicted gamQ
         requests P Q hle) $
-        iFrame "HAuth" $ iFrame "HMap" $
+        iFrame "HAuth HMap" $
         iSplitL "HSaved HShift HP"
-          (iFrame "HSaved" $ iFrame "HShift" $ iExact "HP")
+          (iFrame "HSaved HShift" $ iExact "HP")
           (iExact "HStates"))
 \lemma msc_read_register_or_keep {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -2556,8 +2454,7 @@
       \case LinearOrder.dec<_<= predicted Total \with {
         | inl hlt =>
           ipm $ iIntros "HBody HClient" $
-            iDestruct "HClient" "HSaved HRest" $
-            iDestruct "HRest" "HShift HP" $
+            iDestruct "HClient" "HSaved HShift HP" $
             wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
             iExists w.read_requests $
             iFrame "HBody" $
@@ -2567,27 +2464,23 @@
               (iExact "HP")
         | inr hle =>
           ipm $ iIntros "HBody HClient" $
-            iDestruct "HBody" "HLenN HBody" $
-            iDestruct "HBody" "HLenNames HBody" $
-            iDestruct "HBody" "HAuth HBody" $
-            iDestruct "HBody" "HShards HRequests" $
+            iDestruct "HBody"
+              "HLenN HLenNames HAuth HShards HRequests" $
             iAssert "HUpdatedUpdate" "HAuth HRequests HClient"
               (mkProperFUpd H.iris_wsat
                 msc_open_mask msc_open_mask Updated)
               (wp_apply (msc_read_register_core H G gam Total predicted
                 gamQ w.read_requests P Q hle) $
-                iFrame "HAuth" $ iFrame "HRequests" $
+                iFrame "HAuth HRequests" $
                   iExact "HClient")
               (iMod "HUpdatedUpdate" "HUpdated" $
                 iDestruct "HUpdated" "HUpdatedBody"
                   UpdatedBody $ \lam id =>
-                iDestruct "HUpdatedBody" "HAuth HRest" $
-                iDestruct "HRest" "HRequests HElem" $
+                iDestruct "HUpdatedBody" "HAuth HRequests HElem" $
                 wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
                 iExists (ginsert id (predicted, gamQ) w.read_requests) $
                 iSplitL "HLenN HLenNames HAuth HShards HRequests"
-                  (iFrame "HLenN" $ iFrame "HLenNames" $
-                    iFrame "HAuth" $ iFrame "HShards" $
+                  (iFrame "HLenN HLenNames HAuth HShards" $
                       iExact "HRequests")
                   (iLeft $
                     iSplitL ""
@@ -2702,12 +2595,9 @@
           (Paths.inv closeEq)
           (wand_elim_ent (|> InvP)
             (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))
-  \in ipm $ iIntros "HBodyCase HRest" $
+  \in ipm $ iIntros "HBodyCase HEq HTokenLBs HClose HPublicSaved" $
     iDestruct "HBodyCase" "HBody HCase" $
-    iDestruct "HRest" "HEq HRest" $
-    iDestruct "HRest" "HTokenLBs HRest" $
     iDestruct "HTokenLBs" "HToken HLBs" $
-    iDestruct "HRest" "HClose HPublicSaved" $
     iDestruct "HPublicSaved" "HPublic HSaved" $
     iAssert "HLaterInv" "HBody" (|> InvP)
       (wp_apply (proper_later_intro InvP) $
@@ -2790,11 +2680,8 @@
         iDestruct "HProph" "HResolve" (ResolveBody p) $ \lam resolves =>
         iDestruct "HResolve" "HEq HTokenBody" $
         iDestruct "HTokenBody" "HToken HBody" $
-        iDestruct "HFrame" "HClose HFrame" $
-        iDestruct "HFrame" "HPublicInv HFrame" $
-        iDestruct "HFrame" "HSavedClose HFrame" $
-        iDestruct "HFrame" "HSavedRegister HClient" $
-        iDestruct "HClient" "HShift HP" $
+        iDestruct "HFrame"
+          "HClose HPublicInv HSavedClose HSavedRegister HShift HP" $
         iDestruct "HEq" "%" $ \lam valueEq =>
         iRewrite valueEq Goal $
         iAssert "HBodyLBs" "HBody" (Body ∗ LBs)
@@ -2811,8 +2698,7 @@
                   msc_open_mask msc_open_mask (Registered resolves))
                 (wp_apply (msc_read_register_or_keep H G gam a
                   (msc_proph_total resolves) gamQ w P Q) $
-                  iFrame "HBody" $ iFrame "HSavedRegister" $
-                    iFrame "HShift" $ iExact "HP")
+                  iFrame "HBody HSavedRegister HShift" $ iExact "HP")
                 (iMod "HRegisteredUpdate" "HRegistered" $
                   iDestruct "HRegistered" "HRegisteredBody"
                     (RegisteredBody resolves) $ \lam requests =>
@@ -2824,7 +2710,7 @@
                       (iExact "HEqRefl")
                       (iSplitL "HToken HLBs"
                         (iFrame "HToken" $ iExact "HLBs")
-                        (iFrame "HClose" $ iFrame "HPublicInv" $
+                        (iFrame "HClose HPublicInv" $
                           iExact "HSavedClose"))))))
   \in proof
 \lemma msc_read_opened_new {S : gFunctors}
@@ -2961,8 +2847,7 @@
           (\lam v => exist_intro_ent
             (\lam gamQ0 => Phi gamQ0 v) gamQ)) $
         wp_apply (msc_read_new_wp H G gam a gamQ P Q) $
-        iFrame "HInv" $ iFrame "HInv" $
-          iFrame "HSaved" $ iFrame "HSaved" $
+        iFrame "HInv HInv HSaved HSaved" $
             iExact "HClient")
 \func msc_read_scan_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -3012,15 +2897,13 @@
         (WP H mscE Call SumPhi) =>
         msc_sum_loop_suffix_wp H G gam a 0 nil gam.msc_shard_names
           w.read_initial idp (Paths.inv w.read_names_len)
-  \in ipm $ iIntros "HInvSaved HRest" $
+  \in ipm $ iIntros "HInvSaved HEq HTokenLBs HCase" $
       iDestruct "HInvSaved" "HInv HSaved" $
-      iDestruct "HRest" "HEq HResources" $
-      iDestruct "HResources" "HTokenLBs HCase" $
       iDestruct "HTokenLBs" "HToken HLBs" $
       wp_apply (wp_frame_r H mscE Call SumPhi Rest) $
       iSplitL "HInv HLBs"
         (wp_apply scan $ iFrame "HInv" $ iExact "HLBs")
-        (iFrame "HSaved" $ iFrame "HToken" $ iExact "HCase")
+        (iFrame "HSaved HToken" $ iExact "HCase")
 
 \lemma msc_read_after_monos {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -3042,10 +2925,7 @@
         (LenNames ∗
           (Auth ∗ ((Cells ∗ Monos) ∗ Requests)))
     | proof : Source ⊢ Monos =>
-        ipm $ iIntros "HLenN HRest" $
-          iDestruct "HRest" "HLenNames HRest" $
-          iDestruct "HRest" "HAuth HRest" $
-          iDestruct "HRest" "HShards HRequests" $
+        ipm $ iIntros "HLenN HLenNames HAuth HShards HRequests" $
           iDestruct "HShards" "HCells HMonos" $
           iExact "HMonos"
   \in proof
@@ -3070,13 +2950,9 @@
     | Source => A ∗ (B ∗ (C ∗ (D ∗ E)))
     | Target => (A ∗ (B ∗ (C ∗ D))) ∗ E
     | proof : Source ⊢ Target =>
-        ipm $ iIntros "HA HB" $
-          iDestruct "HB" "HB HC" $
-          iDestruct "HC" "HC HD" $
-          iDestruct "HD" "HD HE" $
+        ipm $ iIntros "HA HB HC HD HE" $
           iSplitL "HA HB HC HD"
-            (iFrame "HA" $ iFrame "HB" $
-              iFrame "HC" $ iExact "HD")
+            iFrame
             (iExact "HE")
   \in proof
 
@@ -3115,12 +2991,9 @@
     | D => msc_shards H G a w.read_initial gam.msc_shard_names
     | E => msc_requests H G gam (nat_sum w.read_initial) requests
   \in ipm $ iIntros "HFixed HRequests" $
-    iDestruct "HFixed" "HA HRest" $
-    iDestruct "HRest" "HB HRest" $
-    iDestruct "HRest" "HC HD" $
+    iDestruct "HFixed" "HA HB HC HD" $
     wp_apply (msc_read_rebuild H G gam a w requests) $
-    iFrame "HA" $ iFrame "HB" $ iFrame "HC" $
-      iFrame "HD" $ iExact "HRequests"
+    iFrame "HA HB HC HD" $ iExact "HRequests"
 
 \lemma msc_read_finish_registered {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -3154,9 +3027,7 @@
     | Source => Saved ∗ (Elem ∗ (LBs ∗ Body))
     | Target => (msc_inv H G gam a) ∗ (|> (Q Actual))
     | proof : Source ⊢ (|==> Target) =>
-      ipm $ iIntros "HSaved HRest" $
-        iDestruct "HRest" "HElem HRest" $
-        iDestruct "HRest" "HLBs HBody" $
+      ipm $ iIntros "HSaved HElem HLBs HBody" $
         iAssert "HBoundResources" "HLBs HBody"
           (Bound ∗ (LBs ∗ Body))
           (wp_apply (pure_consequence_frame_ent (LBs ∗ Body)
@@ -3175,7 +3046,7 @@
                     (wp_apply (msc_request_take H G gam
                       (nat_sum final.read_initial) Actual gamQ id
                       final.read_requests Q hbound) $
-                      iFrame "HSaved" $ iFrame "HElem" $
+                      iFrame "HSaved HElem" $
                         iExact "HRequests")
                     (iMod "HUpdate" "HResult" $
                       iDestruct "HResult" "HRequests' HLaterQ" $
@@ -3270,23 +3141,19 @@
               transport (\lam r => ElemPred ⊢
                 (ghost_map_elem (msc_requestGS G gam) id (r, gamQ)))
                 predictedActual (properUPred_ent_refl ElemPred)
-        \in iDestruct "HRest" "HBody HRest" $
-          iDestruct "HRest" "HClose HRest" $
-          iDestruct "HRest" "HPublic HRest" $
-          iDestruct "HRest" "HSaved HRest" $
-          iDestruct "HRest" "HElemPred HLBs" $
+        \in iDestruct "HRest"
+          "HBody HClose HPublic HSaved HElemPred HLBs" $
           iAssert "HElemActual" "HElemPred" ElemActual
             (wp_apply convertElem $ iExact "HElemPred")
             (iAssert "HRequestUpdate"
               "HSaved HElemActual HLBs HBody" (|==> RequestResult)
               (wp_apply (msc_read_finish_registered H G gam a final
                 reads gamQ id Q) $
-                iFrame "HSaved" $ iFrame "HElemActual" $
-                  iFrame "HLBs" $ iExact "HBody")
+                iFrame "HSaved HElemActual HLBs" $ iExact "HBody")
               (iMod "HRequestUpdate" "HRequestResult" $
                 iModIntro $
                 wp_apply (msc_read_close_registered H G gam a Actual Q) $
-                iFrame "HRequestResult" $ iFrame "HClose" $
+                iFrame "HRequestResult HClose" $
                   iExact "HPublic"))
 
 \lemma msc_read_opened_resolve {S : gFunctors}
@@ -3341,17 +3208,12 @@
           (natV (nat_sum reads)) resolves After Phi
           (\lam remaining => msc_read_resolve_transition H G gam a final
             reads gamQ id Q p resolves remaining)
-  \in ipm $ iIntros "HOpened HFrame" $
+  \in ipm $ iIntros "HOpened HPublic HSaved HToken HElem HLBs" $
     iDestruct "HOpened" "HNowLater HClose" $
     iDestruct "HNowLater" "HNow HLaterBody" $
     iClear "HNow" $
-    iDestruct "HFrame" "HPublic HRest" $
-    iDestruct "HRest" "HSaved HRest" $
-    iDestruct "HRest" "HToken HRest" $
-    iDestruct "HRest" "HElem HLBs" $
     iAssert "HLaterRest" "HClose HPublic HSaved HElem HLBs" (|> Rest)
-      (iNext $ iFrame "HClose" $ iFrame "HPublic" $
-        iFrame "HSaved" $ iFrame "HElem" $ iExact "HLBs")
+      (iNext $ iFrame "HClose HPublic HSaved HElem" $ iExact "HLBs")
       (iAssert "HLaterAfter" "HLaterBody HLaterRest" (|> After)
         (wp_apply (proper_later_sep_2 Body Rest) $
           iFrame "HLaterBody" $ iExact "HLaterRest")
@@ -3595,18 +3457,6 @@
       initial actual Continue) $
     iExact "HResources"
 
-\lemma sep_or_frame_elim_ent {M : UCMRA}
-    (A B R Z : ProperUPred M)
-    (left : (A ∗ R) ⊢ Z)
-    (right : (B ∗ R) ⊢ Z) :
-  ((A ∨ B) ∗ R) ⊢ Z =>
-  \lam n x hv hs => \case hs \with {
-    | inP (xa, xr, dx, byLeft ha, hr) =>
-      left n x hv (inP (xa, xr, dx, ha, hr))
-    | inP (xb, xr, dx, byRight hb, hr) =>
-      right n x hv (inP (xb, xr, dx, hb, hr))
-  }
-
 \lemma msc_read_registered_scan_branch {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a initial : Nat)
@@ -3642,9 +3492,7 @@
       iDestruct "HRegistered" "HPred HElems" Pred Elems $
       iDestruct "HPred" "%" $ \lam _ =>
       iDestruct "HElems" "HElem" ElemF $ \lam id =>
-      iDestruct "HCommon" "HInv HRest" $
-      iDestruct "HRest" "HSaved HRest" $
-      iDestruct "HRest" "HToken HBoundLBs" $
+      iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       iDestruct "HBound" "%" $ \lam _ =>
       iAssert "HInvPair" "HInv" (Inv ∗ Inv)
@@ -3653,8 +3501,7 @@
         (iDestruct "HInvPair" "HInv1 HInv2" $
           wp_apply (msc_read_registered_sequence_wp H G gam a reads gamQ id
             Q p resolves) $
-          iFrame "HInv1" $ iFrame "HInv2" $ iFrame "HSaved" $
-          iFrame "HToken" $ iFrame "HElem" $ iExact "HLBs")
+          iFrame "HInv1 HInv2 HSaved HToken HElem" $ iExact "HLBs")
 
 \lemma msc_read_unregistered_scan_branch {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -3682,13 +3529,11 @@
     | Bound => mkProperPure {iResUR S} (initial <= nat_sum reads)
   \in ipm $ iIntros "HUnregistered HCommon" $
       iDestruct "HUnregistered" "HPred HP" Pred P $
-      iDestruct "HCommon" "HInv HRest" $
-      iDestruct "HRest" "HSaved HRest" $
-      iDestruct "HRest" "HToken HBoundLBs" $
+      iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       wp_apply (msc_read_unregistered_sequence_wp H G gam a initial
         (nat_sum reads) Q p resolves) $
-      iFrame "HToken" $ iFrame "HBound" $ iExact "HPred"
+      iFrame "HToken HBound" $ iExact "HPred"
 
 \lemma msc_read_after_scan_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -3729,11 +3574,9 @@
         (nat_sum w.read_initial) P
   \in ipm $ iDestruct "" "HSum HRest" Sum Rest $
       iDestruct "HSum" "HInv HReads" $
-      iDestruct "HRest" "HSaved HMore" $
-      iDestruct "HMore" "HToken HCase" $
+      iDestruct "HRest" "HSaved HToken HCase" $
       iDestruct "HReads" "HRead" ReadsBody $ \lam reads =>
-      iDestruct "HRead" "HValue HTail" $
-      iDestruct "HTail" "HLength HBoundLBs" $
+      iDestruct "HRead" "HValue HLength HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       iDestruct "HLength" "%" $ \lam _ =>
       iDestruct "HValue" "%" $ \lam valueEq =>
@@ -3742,12 +3585,10 @@
         Registered Unregistered
         (wp_apply (msc_read_registered_scan_branch H G gam a
             (nat_sum w.read_initial) reads gamQ Q p resolves) $
-          iFrame "HRegistered" $ iFrame "HInv" $ iFrame "HSaved" $
-          iFrame "HToken" $ iFrame "HBound" $ iExact "HLBs")
+          iFrame "HRegistered HInv HSaved HToken HBound" $ iExact "HLBs")
         (wp_apply (msc_read_unregistered_scan_branch H G gam a
             (nat_sum w.read_initial) reads gamQ P Q p resolves) $
-          iFrame "HUnregistered" $ iFrame "HInv" $ iFrame "HSaved" $
-          iFrame "HToken" $ iFrame "HBound" $ iExact "HLBs")
+          iFrame "HUnregistered HInv HSaved HToken HBound" $ iExact "HLBs")
 
 \lemma msc_read_scan_bound_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -3816,9 +3657,8 @@
   \in ipm $
       iDestruct "" "HProphBody" ProphBody $ \lam p =>
       iDestruct "HProphBody" "HResources" (ResolveBody p) $ \lam resolves =>
-      iDestruct "HResources" "HHead HRest" $
+      iDestruct "HResources" "HHead HEq HTail" $
       iDestruct "HHead" "HInv HSaved" $
-      iDestruct "HRest" "HEq HTail" $
       iDestruct "HTail" "HProphLBs HCase" $
       iDestruct "HProphLBs" "HProph HLBs" $
       iDestruct "HEq" "%" $ \lam valueEq =>
@@ -4008,25 +3848,9 @@
         (mkProperPure (v = natV total)) ∗ (Public ∗ (Q total))
   \in ipm $ iIntros "HCore HPublic" $
       iDestruct "HCore" "HBody" Body $ \lam total =>
-      iDestruct "HBody" "HPure HRest" $
-      iDestruct "HRest" "HInv HQ" $
+      iDestruct "HBody" "HPure HInv HQ" $
       iExists total Result $
-      iFrame "HPure" $ iFrame "HPublic" $ iExact "HQ"
-
-\lemma msc_read_prepare_public {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (c : Value) (P : iProp S) (Q : Nat -> iProp S) :
-  ((msc_read_shift H G gam P Q) ∗
-      ((msc_is_counter H G gam c) ∗ P)) ⊢
-    ((msc_is_counter H G gam c) ∗
-      ((msc_read_shift H G gam P Q) ∗
-        (P ∗ (msc_is_counter H G gam c)))) =>
-  ipm $ iIntros "HShift HRest" $
-    iDestruct "HRest" "HPublic HP" $
-    iDestruct "HPublic" "#HPublic"
-      (msc_is_counter_persistent H G gam c) $
-    iFrame "HPublic" $ iFrame "HShift" $
-    iFrame "HP" $ iExact "HPublic"
+      iFrame "HPure HPublic" $ iExact "HQ"
 
 \lemma msc_read_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -4074,7 +3898,7 @@
       iRewrite counterEq Goal $
       wp_apply (run a) $
       iSplitL "HInv HShift HP"
-        (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
+        (iFrame "HInv HShift" $ iExact "HP")
         (iExact "HPublic")
 
 \func msc_incr_result {S : gFunctors} (Q : Nat -> iProp S) : iProp S =>
@@ -4122,9 +3946,7 @@
     | TargetBody => (Auth ∗ (ArrayRest ∗ (Mono1 ∗ Tail))) ∗ X
     | proof : Source ⊢ (|==> TargetBody) =>
         ipm $ iIntros "HMain HX" $
-          iDestruct "HMain" "HAuth HRest" $
-          iDestruct "HRest" "HArray HRest" $
-          iDestruct "HRest" "HMono HTail" $
+          iDestruct "HMain" "HAuth HArray HMono HTail" $
           iAssert "HMonoUpdate" "HMono" (|==> (Mono1 ∗ LB))
             (wp_apply (mono_nat_own_update G.msc_mono_natG
               w.incr_name w.incr_old (suc w.incr_old)
@@ -4134,8 +3956,7 @@
               iDestruct "HUpdated" "HMono1 HLB" $
               iModIntro $
               iSplitL "HAuth HArray HMono1 HTail"
-                (iFrame "HAuth" $ iFrame "HArray" $
-                  iFrame "HMono1" $ iExact "HTail")
+                iFrame
                 (iExact "HX"))
   \in proof
 
@@ -4194,15 +4015,10 @@
           iDestruct "HRest" "HArray HMonoTail" $
           iDestruct "HMonoTail" "HMono HMonoRest" $
           iSplitL "HAuth HArray HMono HMonoRest HRequests"
-            (iFrame "HAuth" $ iFrame "HArray" $ iFrame "HMono" $
-              iFrame "HMonoRest" $ iExact "HRequests")
+            iFrame
             (iExact "HResult")
-  \in ipm $ iIntros "HMain HClient" $
-    iDestruct "HMain" "HAuth0 HRest" $
-    iDestruct "HRest" "HArray HRest" $
-    iDestruct "HRest" "HMono HRest" $
-    iDestruct "HRest" "HMonoRest HRequests0" $
-    iDestruct "HClient" "HShift HP" $
+  \in ipm $ iIntros "HMain HShift HP" $
+    iDestruct "HMain" "HAuth0 HArray HMono HMonoRest HRequests0" $
     iAssert "HClientUpdate" "HShift HAuth0 HP" ClientShift
       (wp_apply (persistently_wand_elim_ent (Auth0 ∗ P) ClientShift) $
         iSplitL "HShift"
@@ -4225,8 +4041,7 @@
             wp_apply finish $
             iSplitL "HAuth1 HRequests1"
               (iFrame "HAuth1" $ iExact "HRequests1")
-              (iFrame "HResult" $ iFrame "HArray" $
-                iFrame "HMono" $ iExact "HMonoRest")))
+              iFrame))
 
 \lemma msc_incr_after_step {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -4438,7 +4253,7 @@
       (iMod "HStepUpdate" "HStep" $
         iModIntro $
         wp_apply (msc_incr_finish_after_step H G gam a i w Q) $
-        iFrame "HStep" $ iFrame "HCell" $ iExact "HClose")
+        iFrame "HStep HCell" $ iExact "HClose")
 
 \lemma msc_incr_opened_faa {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -4667,30 +4482,7 @@
         (iAssert "HResult" "HCore" Result
           (wp_apply (and_elim_r_ent PureV Result) $ iExact "HCore")
           (iDestruct "HPublic" "HCounter HHandle" $
-            iFrame "HCounter" $ iFrame "HHandle" $ iExact "HResult"))
-
-\lemma msc_incr_prepare_public {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (c h : Value) (P : iProp S) (Q : Nat -> iProp S) :
-  ((msc_incr_shift H G gam P Q) ∗
-      ((msc_is_counter H G gam c) ∗
-        ((msc_handle G gam h) ∗ P))) ⊢
-    ((msc_is_counter H G gam c) ∗
-      ((msc_handle G gam h) ∗
-        ((msc_incr_shift H G gam P Q) ∗
-          (P ∗
-            ((msc_is_counter H G gam c) ∗
-              (msc_handle G gam h)))))) =>
-  ipm $ iIntros "HShift HRest" $
-      iDestruct "HRest" "HCounter HRest" $
-      iDestruct "HRest" "HHandle HP" $
-      iDestruct "HCounter" "#HCounter"
-        (msc_is_counter_persistent H G gam c) $
-      iDestruct "HHandle" "#HHandle"
-        (msc_handle_persistent G gam h) $
-      iFrame "HCounter" $ iFrame "HHandle" $
-      iFrame "HShift" $ iFrame "HP" $
-      iFrame "HCounter" $ iExact "HHandle"
+            iFrame "HCounter HHandle" $ iExact "HResult"))
 
 \lemma msc_incr_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -4738,9 +4530,7 @@
             (wp_apply (msc_incr_specialized_wp H G gam a i hi P Q) $
               iExact "HCore")
             (iExact "HPublic")
-  \in ipm $ iIntros "HShift HRest" $
-      iDestruct "HRest" "HCounter HRest" $
-      iDestruct "HRest" "HHandle HP" $
+  \in ipm $ iIntros "HShift HCounter HHandle HP" $
       iDestruct "HCounter" "#HCounter HCounterSource"
         (msc_is_counter_persistent H G gam c) $
       iDestruct "HHandle" "#HHandle HHandleSource"
@@ -4756,7 +4546,7 @@
       iRewrite eqH (GoalH a) $
       wp_apply (run a i hi) $
       iSplitL "HInv HShift HP"
-        (iFrame "HInv" $ iFrame "HShift" $ iExact "HP")
+        (iFrame "HInv HShift" $ iExact "HP")
         (iFrame "HCounter" $ iExact "HHandle")
 
 -- All non-physical resources created by `msc_new_counter`, packaged around
@@ -4823,28 +4613,6 @@
       (msc_mono_alloc_zeros G T)
       assemble
 
--- The resource permutation used when the constructor seals its initial
--- physical and ghost state into the invariant.  `P` is a pure length fact
--- which is deliberately discarded here and reintroduced from its proof.
-\lemma msc_initial_resource_reorder {M : UCMRA}
-    (P Q R S T U : ProperUPred M) :
-  (((P ∗ Q) ∗
-        (R ∗ (S ∗ T))) ∗ U) ⊢
-    (T ∗
-      (S ∗
-        ((U ∗ Q) ∗ R))) =>
-  ipm $ iIntros "HPQR HU" $
-    iDestruct "HPQR" "HPQ HRST" $
-    iDestruct "HPQ" "HP HQ" $
-    iDestruct "HRST" "HR HST" $
-    iDestruct "HST" "HS HT" $
-    iSplitL "HT"
-      (iExact "HT")
-      (iSplitL "HS"
-        (iExact "HS")
-        (iSplitL "HU HQ"
-          (iFrame "HU" $ iExact "HQ")
-          (iExact "HR")))
 \func msc_initial_fixed {S : gFunctors} (G : mscG S)
     (gam : msc_name) (T : Nat) : iProp S =>
   ((mkProperPure (length gam.msc_shard_names = T)) ∗
@@ -5009,9 +4777,8 @@
                       (iSplitL ""
                         (wp_apply (msc_make_handles G gam) $ iEmpIntro)
                         (iExact "HFrag")))
-          \in iDestruct "HResources" "HSize HRest" $
+          \in iDestruct "HResources" "HSize HFrag HBody" $
             iDestruct "HSize" "%" $ \lam hsize =>
-            iDestruct "HRest" "HFrag HBody" $
             wp_apply (fupd_mono H.iris_wsat mscE mscE
               (Inv ∗ Frag)
               (msc_new_counter_post H G T PairResult)
@@ -5220,14 +4987,6 @@
     (msc_client_done G gamM)
     (msc_client_pending_timeless G gam gamM gamD base)
     (msc_client_done_timeless G gamM)
-
-\lemma sep_cross4_ent {M : UCMRA} (A B C D : ProperUPred M) :
-  ((A ∗ B) ∗ (C ∗ D)) ⊢
-    ((A ∗ D) ∗ (C ∗ B)) =>
-  ipm $ iIntros "HAB HCD" $ iDestruct "HAB" "HA HB" $
-    iDestruct "HCD" "HC HD" $
-    iSplitL "HA HD" (iFrame "HA" $ iExact "HD") $
-    iFrame "HC" $ iExact "HB"
 
 \lemma bupd_pair_ent {M : UCMRA} (A B A' B' : ProperUPred M)
     (ha : A ⊢ (|==> A'))
@@ -5598,7 +5357,7 @@
       iDestruct "HX" "HC HElem" $
       wp_apply (msc_client_done_core_conflict G gamM m 1 old gamD
         X Target absent) $
-      iFrame "HMap" $ iFrame "HC" $ iExact "HElem"
+      iFrame "HMap HC" $ iExact "HElem"
 
 \lemma msc_client_done2_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
@@ -5631,7 +5390,7 @@
       iDestruct "HX" "HC HElem" $
       wp_apply (msc_client_done_core_conflict G gamM m 2 old gamD
         X Target absent) $
-      iFrame "HMap" $ iFrame "HC" $ iExact "HElem"
+      iFrame "HMap HC" $ iExact "HElem"
 
 -- The two public shard transitions.  The pending branch performs the joint
 -- ghost-map/model update; the done branch is impossible because it owns a
@@ -5646,17 +5405,12 @@
       ((msc_client_inv G gam gamM gamD base) ∗
         ((msc_counter_auth G gam (suc total)) ∗
           (ghost_map_elem (msc_clientGS G gamM) 1 (suc old, gamD))))) =>
-  sep_or_frame_elim_ent
-    (msc_client_pending G gam gamM gamD base)
-    (msc_client_done G gamM)
-    ((msc_counter_auth G gam total) ∗
-      (ghost_map_elem (msc_clientGS G gamM) 1 (old, gamD)))
-    (|==>
-      ((msc_client_inv G gam gamM gamD base) ∗
-        ((msc_counter_auth G gam (suc total)) ∗
-          (ghost_map_elem (msc_clientGS G gamM) 1 (suc old, gamD)))))
-    (msc_client_pending1_step G gam gamM gamD base total old)
-    (msc_client_done1_step G gam gamM gamD base total old)
+  ipm $ iIntros "HState HFrame" $
+    iDestruct "HState" "HPending | HDone"
+      (wp_apply (msc_client_pending1_step G gam gamM gamD base total old) $
+        iFrame "HPending" $ iExact "HFrame")
+      (wp_apply (msc_client_done1_step G gam gamM gamD base total old) $
+        iFrame "HDone" $ iExact "HFrame")
 
 \lemma msc_client2_state_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
@@ -5668,17 +5422,12 @@
       ((msc_client_inv G gam gamM gamD base) ∗
         ((msc_counter_auth G gam (suc total)) ∗
           (ghost_map_elem (msc_clientGS G gamM) 2 (suc old, gamD))))) =>
-  sep_or_frame_elim_ent
-    (msc_client_pending G gam gamM gamD base)
-    (msc_client_done G gamM)
-    ((msc_counter_auth G gam total) ∗
-      (ghost_map_elem (msc_clientGS G gamM) 2 (old, gamD)))
-    (|==>
-      ((msc_client_inv G gam gamM gamD base) ∗
-        ((msc_counter_auth G gam (suc total)) ∗
-          (ghost_map_elem (msc_clientGS G gamM) 2 (suc old, gamD)))))
-    (msc_client_pending2_step G gam gamM gamD base total old)
-    (msc_client_done2_step G gam gamM gamD base total old)
+  ipm $ iIntros "HState HFrame" $
+    iDestruct "HState" "HPending | HDone"
+      (wp_apply (msc_client_pending2_step G gam gamM gamD base total old) $
+        iFrame "HPending" $ iExact "HFrame")
+      (wp_apply (msc_client_done2_step G gam gamM gamD base total old) $
+        iFrame "HDone" $ iExact "HFrame")
 
 \func msc_client_public {S : gFunctors} (H : irisGS natCountable S)
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
@@ -5914,11 +5663,9 @@
       iAssert "HResources" "HCore" Resources
         (wp_apply (and_elim_r_ent
           (mkProperPure {iResUR S} (v = unitV)) Resources) $ iExact "HCore")
-        (iDestruct "HResources" "HCounter HRest" $
-          iDestruct "HRest" "HHandle HResult" $
+        (iDestruct "HResources" "HCounter HHandle HResult" $
           iDestruct "HResult" "HElem" (\lam _ => Elem) $ \lam _ =>
-          iFrame "HPublic" $ iFrame "HCounter" $
-          iFrame "HHandle" $ iExact "HElem") : Source ⊢ (Public ∗ Ready))
+          iFrame "HPublic HCounter HHandle" $ iExact "HElem") : Source ⊢ (Public ∗ Ready))
 
 \lemma msc_client2_incr_post_resources {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5942,11 +5689,9 @@
       iAssert "HResources" "HCore" Resources
         (wp_apply (and_elim_r_ent
           (mkProperPure {iResUR S} (v = unitV)) Resources) $ iExact "HCore")
-        (iDestruct "HResources" "HCounter HRest" $
-          iDestruct "HRest" "HHandle HResult" $
+        (iDestruct "HResources" "HCounter HHandle HResult" $
           iDestruct "HResult" "HElem" (\lam _ => Elem) $ \lam _ =>
-          iFrame "HPublic" $ iFrame "HCounter" $
-          iFrame "HHandle" $ iExact "HElem") : Source ⊢ (Public ∗ Ready))
+          iFrame "HPublic HCounter HHandle" $ iExact "HElem") : Source ⊢ (Public ∗ Ready))
 
 \lemma msc_client1_incr_twice_body_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -6491,16 +6236,14 @@
 \lemma msc_client_read_pending_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
     (base total : Nat) :
-  \let
-    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)
-    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD)
-    | X => (msc_counter_auth G gam total) ∗
-        (E1 ∗ E2)
-    | Target => |==>
-        ((msc_client_inv G gam gamM gamD base) ∗
-          ((msc_counter_auth G gam total) ∗
-            (msc_client_read_Q G gam base total)))
-  \in ((msc_client_pending G gam gamM gamD base) ∗ X) ⊢ Target =>
+  ((msc_client_pending G gam gamM gamD base) ∗
+      ((msc_counter_auth G gam total) ∗
+        ((ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)) ∗
+          (ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD))))) ⊢
+    (|==>
+      ((msc_client_inv G gam gamM gamD base) ∗
+        ((msc_counter_auth G gam total) ∗
+          (msc_client_read_Q G gam base total)))) =>
   \let
     | GM => msc_clientGS G gamM
     | E1 => ghost_map_elem GM 1 (2, gamD)
@@ -6580,22 +6323,20 @@
                       (msc_client_lookup_nat_agree m 2 k2 2
                         gamD stored2 ext2) ht) $
                     iSplitL "HA HE1 HE2"
-                      (iFrame "HA" $ iFrame "HE1" $ iExact "HE2")
+                      (iFrame "HA HE1" $ iExact "HE2")
                       (iFrame "HC" $ iExact "HF")))) : Source ⊢ Target)
 
 \lemma msc_client_read_done_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
     (base total : Nat) :
-  \let
-    | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)
-    | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD)
-    | X => (msc_counter_auth G gam total) ∗
-        (E1 ∗ E2)
-    | Target => |==>
-        ((msc_client_inv G gam gamM gamD base) ∗
-          ((msc_counter_auth G gam total) ∗
-            (msc_client_read_Q G gam base total)))
-  \in ((msc_client_done G gamM) ∗ X) ⊢ Target =>
+  ((msc_client_done G gamM) ∗
+      ((msc_counter_auth G gam total) ∗
+        ((ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)) ∗
+          (ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD))))) ⊢
+    (|==>
+      ((msc_client_inv G gam gamM gamD base) ∗
+        ((msc_counter_auth G gam total) ∗
+          (msc_client_read_Q G gam base total)))) =>
   \let
     | GM => msc_clientGS G gamM
     | E1 => ghost_map_elem GM 1 (2, gamD)
@@ -6628,28 +6369,29 @@
 \lemma msc_client_read_state_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
     (base total : Nat) :
+  ((msc_client_inv G gam gamM gamD base) ∗
+      ((msc_counter_auth G gam total) ∗
+        ((ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)) ∗
+          (ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD))))) ⊢
+    (|==>
+      ((msc_client_inv G gam gamM gamD base) ∗
+        ((msc_counter_auth G gam total) ∗
+          (msc_client_read_Q G gam base total)))) =>
   \let
     | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)
     | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD)
-    | X => (msc_counter_auth G gam total) ∗
-        (E1 ∗ E2)
+    | X => (msc_counter_auth G gam total) ∗ (E1 ∗ E2)
+    | Source => (msc_client_inv G gam gamM gamD base) ∗ X
     | Target => |==>
         ((msc_client_inv G gam gamM gamD base) ∗
           ((msc_counter_auth G gam total) ∗
             (msc_client_read_Q G gam base total)))
-  \in ((msc_client_inv G gam gamM gamD base) ∗ X) ⊢ Target =>
-  sep_or_frame_elim_ent
-    (msc_client_pending G gam gamM gamD base)
-    (msc_client_done G gamM)
-    ((msc_counter_auth G gam total) ∗
-      ((ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD)) ∗
-        (ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD))))
-    (|==>
-      ((msc_client_inv G gam gamM gamD base) ∗
-        ((msc_counter_auth G gam total) ∗
-          (msc_client_read_Q G gam base total))))
-    (msc_client_read_pending_step G gam gamM gamD base total)
-    (msc_client_read_done_step G gam gamM gamD base total)
+  \in (ipm $ iIntros "HState HX" $
+      iDestruct "HState" "HPending | HDone"
+        (wp_apply (msc_client_read_pending_step G gam gamM gamD base total) $
+          iFrame "HPending" $ iExact "HX")
+        (wp_apply (msc_client_read_done_step G gam gamM gamD base total) $
+          iFrame "HDone" $ iExact "HX") : Source ⊢ Target)
 
 \lemma msc_client_read_update {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -6716,21 +6458,6 @@
             ((msc_counter_auth G gam total) ∗ (Q total)))))
       perTotal
 
-\lemma sep_prepare_read6 {M : UCMRA}
-    (A B C D E F : ProperUPred M) :
-  ((A ∗ (B ∗ (C ∗ D))) ∗
-      (E ∗ F)) ⊢
-    ((A ∗ (B ∗ (D ∗ F))) ∗
-      (C ∗ E)) =>
-  ipm $ iIntros "HABCD HEF" $
-    iDestruct "HABCD" "HA HBCD" $
-    iDestruct "HBCD" "HB HCD" $
-    iDestruct "HCD" "HC HD" $
-    iDestruct "HEF" "HE HF" $
-    iSplitL "HA HB HD HF"
-      (iFrame "HA" $ iFrame "HB" $ iFrame "HD" $ iExact "HF")
-      (iFrame "HC" $ iExact "HE")
-
 \lemma msc_parallel_then_read {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (gamM gamD : gname) (base : Nat) (c h1 h2 returned : Value) :
@@ -6781,8 +6508,7 @@
               (App (Val msc_read) (Val c)) ReadPost Handles) $
               iSplitL "HShift HC HE1 HE2"
                 (wp_apply (msc_read_spec H G gam c P Q) $
-                  iFrame "HShift" $ iFrame "HC" $
-                  iFrame "HE1" $ iExact "HE2")
+                  iFrame "HShift HC HE1" $ iExact "HE2")
                 (iFrame "HH1" $ iExact "HH2"))) : Source ⊢ Goal)
 
 \lemma msc_two_incr_twice_read_body_spec {S : gFunctors}

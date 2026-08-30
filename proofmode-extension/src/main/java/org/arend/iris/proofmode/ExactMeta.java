@@ -66,29 +66,6 @@ class ExactMeta extends ProofModeMeta {
   @Dependency(name = "spatial")
   protected CoreClassField spatialField;
 
-  protected CoreExpression dereference(ExpressionTypechecker typechecker,
-      CoreExpression expression) {
-    CoreExpression result = expression.getUnderlyingExpression();
-    while (result instanceof CoreInferenceReferenceExpression inference) {
-      if (inference.getSubstExpression() == null) {
-        typechecker.solveEquationsFor(inference.getVariable());
-      }
-      if (inference.getSubstExpression() == null) break;
-      result = inference.getSubstExpression().getUnderlyingExpression();
-    }
-    return result;
-  }
-
-  protected CoreExpression weakHead(ExpressionTypechecker typechecker,
-      CoreExpression expression) {
-    CoreExpression result = dereference(typechecker, expression);
-    if (result instanceof CoreFunCallExpression
-        || result instanceof CoreConCallExpression
-        || result instanceof CoreNewExpression
-        || result instanceof CoreClassCallExpression) return result;
-    return dereference(typechecker, result.normalize(NormalizationMode.WHNF));
-  }
-
   protected @Nullable String decodeName(ExpressionTypechecker typechecker,
       CoreExpression expression) {
     StringBuilder result = new StringBuilder();
@@ -200,6 +177,24 @@ class ExactMeta extends ProofModeMeta {
     CoreExpression intuitionistic = envClass.getClosedImplementation(intuitionisticField);
     return spatial != null && containsName(typechecker, spatial, requested)
         || intuitionistic != null && containsName(typechecker, intuitionistic, requested);
+  }
+
+  protected String freshName(ExpressionTypechecker typechecker,
+      CoreExpression environment, String prefix, String... reserved) {
+    for (int index = 0; ; index++) {
+      String candidate = prefix + index;
+      boolean isReserved = false;
+      for (String name : reserved) {
+        if (candidate.equals(name)) {
+          isReserved = true;
+          break;
+        }
+      }
+      if (!isReserved
+          && !environmentContainsName(typechecker, environment, candidate)) {
+        return candidate;
+      }
+    }
   }
 
   protected record ResolvedSelection(CoreExpression environment,
