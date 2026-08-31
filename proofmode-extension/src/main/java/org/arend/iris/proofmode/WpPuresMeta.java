@@ -75,7 +75,7 @@ final class WpPuresMeta extends WpBindMeta {
       CoreExpression expression) {
     CoreExpression result = dereference(typechecker, expression);
     return result instanceof CoreConCallExpression ? result
-        : dereference(typechecker, result.normalize(NormalizationMode.NF));
+        : dereference(typechecker, result.normalize(NormalizationMode.WHNF));
   }
 
   private @Nullable CoreExpression natValue(ExpressionTypechecker typechecker,

@@ -1,6 +1,8 @@
 package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.concrete.expr.ConcreteArgument;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreClassField;
 import org.arend.ext.core.definition.CoreConstructor;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
@@ -42,6 +44,18 @@ final class IntrosMeta extends ExactMeta {
   @Dependency(name = "mkProperSep")
   private CoreFunctionDefinition mkProperSep;
 
+  @Dependency(name = "PMFromForall")
+  private CoreClassDefinition pmFromForall;
+
+  @Dependency(name = "pm_forall")
+  private ArendRef pmForall;
+
+  @Dependency(name = "pm_forall_from")
+  private ArendRef pmForallFrom;
+
+  @Dependency(name = "mkProperForall")
+  private CoreFunctionDefinition mkProperForall;
+
   @Dependency(name = "intuitionistic")
   private CoreClassField intuitionisticField;
 
@@ -65,9 +79,24 @@ final class IntrosMeta extends ExactMeta {
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
-    if (!requireCount(typechecker, contextData, 2)) return null;
+    List<ConcreteExpression> explicit = explicitArguments(contextData);
+    if (explicit.size() != 2 && explicit.size() != 3) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "iIntros expects a pattern, optional PMFromForall evidence, and a continuation",
+          contextData.getMarker()));
+      return null;
+    }
     String pattern = stringArgument(typechecker, contextData, 0);
     if (pattern == null) return null;
+    if (pattern.trim().isEmpty()) {
+      return introForall(typechecker, contextData, explicit);
+    }
+    if (explicit.size() != 2) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Named iIntros does not accept universal-goal evidence",
+          contextData.getMarker()));
+      return null;
+    }
     String[] names = pattern.trim().split("\\s+");
     if (names.length > 2) {
       GoalData goal = resolveGoal(typechecker, contextData);
@@ -217,5 +246,53 @@ final class IntrosMeta extends ExactMeta {
     callArgs.add(factory.arg(next, true));
     ConcreteExpression call = factory.app(factory.ref(pmDestructSep), callArgs);
     return typechecker.typecheck(call, contextData.getExpectedType());
+  }
+
+  private @Nullable TypedExpression introForall(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      List<ConcreteExpression> explicit) {
+    GoalData goal = resolveGoal(typechecker, contextData);
+    if (goal == null) return null;
+    ClassEvidence evidence = explicit.size() == 3
+        ? classEvidence(typechecker, contextData, explicit.get(1),
+            pmFromForall, "PMFromForall") : null;
+    if (explicit.size() == 3 && evidence == null) return null;
+    CoreExpression target = weakHead(typechecker, goal.target());
+    CoreFunCallExpression forall = target instanceof CoreFunCallExpression call
+        && call.getDefinition() == mkProperForall
+        && call.getDefCallArguments().size() >= 3 ? call : null;
+    if (evidence == null && forall == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Empty iIntros expects a universal goal or PMFromForall evidence",
+          contextData.getMarker()));
+      return null;
+    }
+    CoreExpression carrier = evidence == null
+        ? forall.getDefCallArguments().get(forall.getDefCallArguments().size() - 2)
+        : classField(evidence, "A");
+    CoreExpression family = evidence == null
+        ? forall.getDefCallArguments().getLast() : classField(evidence, "Phi");
+    CoreExpression evidenceTarget = evidence == null ? null
+        : classField(evidence, "P");
+    if (carrier == null || family == null
+        || evidence != null && evidenceTarget == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect universal-goal evidence", contextData.getMarker()));
+      return null;
+    }
+    var factory = contextData.getFactory();
+    var args = new ArrayList<ConcreteArgument>();
+    args.add(factory.arg(factory.hole(), false));
+    args.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
+    if (evidence != null) {
+      args.add(factory.arg(factory.core(evidenceTarget.computeTyped()), false));
+    }
+    args.add(factory.arg(factory.core(carrier.computeTyped()), false));
+    args.add(factory.arg(factory.core(family.computeTyped()), false));
+    if (evidence != null) args.add(factory.arg(evidence.term(), true));
+    args.add(factory.arg(explicit.getLast(), true));
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmForall : pmForallFrom), args),
+        contextData.getExpectedType());
   }
 }

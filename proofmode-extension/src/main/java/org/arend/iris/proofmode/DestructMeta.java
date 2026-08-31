@@ -63,6 +63,10 @@ final class DestructMeta extends ExactMeta {
 
   @Dependency(name = "pm_destruct_and_pure_l")
   private ArendRef pmDestructAndPureLeft;
+  @Dependency(name = "PMIntoAnd")
+  private CoreClassDefinition pmIntoAnd;
+  @Dependency(name = "pm_destruct_into_and_pure_l")
+  private ArendRef pmDestructIntoAndPureLeft;
 
   @Dependency(name = "pm_destruct_or")
   private ArendRef pmDestructOr;
@@ -101,6 +105,9 @@ final class DestructMeta extends ExactMeta {
 
   private record ExistEvidence(CoreExpression carrier, CoreExpression family,
       ConcreteExpression term, boolean universeOne) {}
+
+  private record AndEvidence(CoreExpression left, CoreExpression right,
+      ConcreteExpression term) {}
 
   private @Nullable SepEvidence sepEvidence(ExpressionTypechecker typechecker,
       ContextData contextData, ConcreteExpression expression) {
@@ -151,6 +158,21 @@ final class DestructMeta extends ExactMeta {
       return null;
     }
     return new ExistEvidence(carrier, family, checked.term(), universeOne);
+  }
+
+  private @Nullable AndEvidence andEvidence(ExpressionTypechecker typechecker,
+      ContextData contextData, ConcreteExpression expression) {
+    ClassEvidence checked = classEvidence(typechecker, contextData,
+        expression, pmIntoAnd, "PMIntoAnd");
+    if (checked == null) return null;
+    CoreExpression left = classField(checked, "Q");
+    CoreExpression right = classField(checked, "R");
+    if (left == null || right == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMIntoAnd evidence", contextData.getMarker()));
+      return null;
+    }
+    return new AndEvidence(left, right, checked.term());
   }
 
   @Override
@@ -252,17 +274,23 @@ final class DestructMeta extends ExactMeta {
       return destructPure(typechecker, contextData, resolved, proposition,
           pure, trimmedPattern, explicitShape, continuation);
     }
-    if (explicit.size() == 3
-        && proposition instanceof CoreFunCallExpression and
-        && and.getDefinition() == mkProperAnd
-        && and.getDefCallArguments().size() >= 3) {
-      CoreExpression left = weakHead(typechecker,
-          and.getDefCallArguments().get(and.getDefCallArguments().size() - 2));
+    if ((explicit.size() == 3 || explicit.size() == 4)
+        && trimmedPattern.startsWith("% ")) {
+      CoreFunCallExpression and = proposition instanceof CoreFunCallExpression call
+          && call.getDefinition() == mkProperAnd
+          && call.getDefCallArguments().size() >= 3 ? call : null;
+      AndEvidence evidence = explicit.size() == 4
+          ? andEvidence(typechecker, contextData, explicitShape) : null;
+      if (explicit.size() == 4 && evidence == null) return null;
+      CoreExpression left = weakHead(typechecker, evidence != null
+          ? evidence.left() : and == null ? proposition
+          : and.getDefCallArguments().get(and.getDefCallArguments().size() - 2));
       if (left instanceof CoreFunCallExpression pure
           && pure.getDefinition() == mkProperPure
           && pure.getDefCallArguments().size() >= 2) {
         return destructAndPureLeft(typechecker, contextData, resolved,
-            proposition, and, pure, requested, trimmedPattern, continuation);
+            proposition, and, pure, requested, trimmedPattern, continuation,
+            evidence);
       }
     }
     String[] inferredNames = trimmedPattern.split("\\s+");
@@ -298,11 +326,12 @@ final class DestructMeta extends ExactMeta {
   private @Nullable TypedExpression destructAndPureLeft(
       ExpressionTypechecker typechecker, ContextData contextData,
       ResolvedSelection resolved, CoreExpression proposition,
-      CoreFunCallExpression and, CoreFunCallExpression pure,
-      String requested, String pattern, ConcreteExpression continuation) {
-    if (explicitArguments(contextData).size() != 3) {
+      @Nullable CoreFunCallExpression and, CoreFunCallExpression pure,
+      String requested, String pattern, ConcreteExpression continuation,
+      @Nullable AndEvidence evidence) {
+    if (explicitArguments(contextData).size() != (evidence == null ? 3 : 4)) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "Pure conjunction iDestruct expects a pattern and continuation",
+          "Pure conjunction iDestruct expects optional PMIntoAnd evidence and a continuation",
           contextData.getMarker()));
       return null;
     }
@@ -322,12 +351,23 @@ final class DestructMeta extends ExactMeta {
       return null;
     }
     CoreExpression fact = pure.getDefCallArguments().getLast();
-    CoreExpression right = and.getDefCallArguments().getLast();
+    CoreExpression right = evidence != null ? evidence.right()
+        : and == null ? null : and.getDefCallArguments().getLast();
+    if (right == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot infer the right conjunction operand", contextData.getMarker()));
+      return null;
+    }
     var factory = contextData.getFactory();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    ConcreteExpression into;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      into = evidence.term();
+    }
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -339,7 +379,8 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(into, true));
     args.add(factory.arg(continuation, true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructAndPureLeft), args),
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmDestructAndPureLeft : pmDestructIntoAndPureLeft), args),
         contextData.getExpectedType());
   }
 

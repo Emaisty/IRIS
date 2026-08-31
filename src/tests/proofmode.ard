@@ -308,6 +308,22 @@
     iDestruct "HSource" "%" (proofmode_into_pure_and_left phi P) $
     \lam _ => iExact "HQ"
 
+\lemma proofmode_destruct_and_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) (phi : \Prop) :
+    ((((mkProperPure phi) ∧ P) ∗ mkProperEmp) ∗ Q) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HSource HQ" $
+    iDestruct "HSource" "% HP"
+      (proofmode_into_and_pure_drop_emp phi P) $
+    \lam _ => iFrame
+
+\func proofmode_destruct_and_class_wrong_source_fails {M : UCMRA}
+    (P Q : ProperUPred M) (phi : \Prop) : \Sigma =>
+  fails (ipm $ iIntros "HSource HQ" $
+    iDestruct "HSource" "% HP"
+      (proofmode_into_and_pure_drop_emp phi P) $
+    \lam _ => iFrame :
+    (((mkProperPure phi) ∧ P) ∗ Q) ⊢ (P ∗ Q))
+
 \lemma proofmode_pure_intro_class_instance {M : UCMRA}
     (phi : \Prop) (h : phi) :
     mkProperEmp {M} ⊢ ((mkProperPure {M} phi) ∧ mkProperEmp {M}) =>
@@ -371,12 +387,73 @@
     iNext (proofmode_from_later_or_left P Q) $
     iExact "HP"
 
+\lemma proofmode_next_hypothesis {M : UCMRA} (P : ProperUPred M) :
+    (|> P) ⊢ (|> P) =>
+  ipm $ iIntros "HP" $ iNext "HP" $ iExact "HP"
+
+\lemma proofmode_next_hypothesis_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    (((|> P) ∗ mkProperEmp) ∗ Q) ⊢ (|> (P ∗ Q)) =>
+  ipm $ iIntros "HSource HQ" $
+    iNext "HSource" (proofmode_into_later_drop_emp P) $ iFrame
+
+\func proofmode_next_hypothesis_class_wrong_source_fails {M : UCMRA}
+    (P Q : ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HP HQ" $
+    iNext "HP" (proofmode_into_later_drop_emp P) $ iFrame :
+    ((|> P) ∗ Q) ⊢ (|> (P ∗ Q)))
+
 \lemma proofmode_update_class_instance {M : UCMRA}
     (P : ProperUPred M) :
     ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
   ipm $ iIntros "HSource" $
     iMod "HSource" "HP" (proofmode_into_update_drop_emp P) $
     iModIntro $ iExact "HP"
+
+\lemma proofmode_exists_goal_class_instance {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) (Q : ProperUPred M) :
+    (Phi 0) ⊢ ((mkProperExist Nat Phi) ∨ Q) =>
+  ipm $ iIntros "HPhi" $
+    iExists 0 (proofmode_from_exist_or_left Phi Q) $
+    iExact "HPhi"
+
+\lemma proofmode_exists1_goal {M : UCMRA} {A : \Set1}
+    (Phi : A -> ProperUPred M) (a : A) :
+    (Phi a) ⊢ mkProperExist1 A Phi =>
+  ipm $ iIntros "HPhi" $
+    iExists a Phi $ iExact "HPhi"
+
+\lemma proofmode_forall_goal {M : UCMRA} (P : ProperUPred M) :
+    P ⊢ mkProperForall Nat (\lam _ => P) =>
+  ipm $ iIntros "HP" $
+    iIntros "" $ \lam _ => iExact "HP"
+
+\lemma proofmode_forall_goal_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    P ⊢ ((mkProperForall Nat (\lam _ => P)) ∨ Q) =>
+  ipm $ iIntros "HP" $
+    iIntros "" (proofmode_from_forall_or_left (\lam _ => P) Q) $
+    \lam _ => iExact "HP"
+
+\lemma proofmode_specialize_forall {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) :
+    (mkProperForall Nat Phi) ⊢ Phi 0 =>
+  ipm $ iIntros "HAll" $
+    iSpecialize "HAll" 0 "HZero" $ iExact "HZero"
+
+\lemma proofmode_specialize_forall_class_instance {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) :
+    ((mkProperForall Nat Phi) ∗ mkProperEmp) ⊢ Phi 0 =>
+  ipm $ iIntros "HSource" $
+    iSpecialize "HSource" 0 "HZero"
+      (proofmode_into_forall_drop_emp Phi) $ iExact "HZero"
+
+\func proofmode_specialize_forall_class_wrong_source_fails {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HAll" $
+    iSpecialize "HAll" 0 "HZero"
+      (proofmode_into_forall_drop_emp Phi) $ iExact "HZero" :
+    (mkProperForall Nat Phi) ⊢ Phi 0)
 
 \lemma proofmode_assumption {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ P => ipm $ iIntros "HP HQ" $ iAssumption
@@ -665,6 +742,107 @@
       (wp H E NewProph Phi) =>
   ipm $ iInv "" "HP Hclose" hNE new_proph_strongly_atomic $
     iStopProof opened
+
+\lemma proofmode_inv_class_instance {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (Phi : Value -> iProp S) (hNE : coPSubset (nclose N) E)
+    (opened :
+      (mkProperEmp ∗
+        ((mkProperEmp ∗ (|> P)) ∗
+          ((|> P) -∗
+            (mkProperFUpd H.iris_wsat
+              (coPset_difference E (nclose N)) E mkProperEmp)))) ⊢
+      (wp H (coPset_difference E (nclose N)) NewProph
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : ((inv H.iris_wsat N P) ∗ mkProperEmp) ⊢
+      (wp H E NewProph Phi) =>
+  ipm $ iInv "" "HP Hclose"
+    (proofmode_into_invariant_drop_emp H.iris_wsat N P)
+    hNE new_proph_strongly_atomic $ iStopProof opened
+
+\func proofmode_inv_class_wrong_source_fails
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (Phi : Value -> iProp S) (hNE : coPSubset (nclose N) E)
+    (opened :
+      (mkProperEmp ∗
+        ((mkProperEmp ∗ (|> P)) ∗
+          ((|> P) -∗
+            (mkProperFUpd H.iris_wsat
+              (coPset_difference E (nclose N)) E mkProperEmp)))) ⊢
+      (wp H (coPset_difference E (nclose N)) NewProph
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : \Sigma =>
+  fails (ipm $ iInv "" "HP Hclose"
+    (proofmode_into_invariant_drop_emp H.iris_wsat N P)
+    hNE new_proph_strongly_atomic $ iStopProof opened :
+      (inv H.iris_wsat N P) ⊢ (wp H E NewProph Phi))
+
+\lemma proofmode_accessor_class_instance
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E D : coPset) (P Close : iProp S)
+    (Phi : Value -> iProp S)
+    (opened :
+      (mkProperEmp ∗ ((mkProperEmp ∗ P) ∗ Close)) ⊢
+        (wp H D NewProph
+          (\lam v => mkProperFUpd H.iris_wsat D E (Phi v))))
+  : ((mkProperFUpd H.iris_wsat E D (P ∗ Close)) ∗ mkProperEmp) ⊢
+      (wp H E NewProph Phi) =>
+  ipm $ iInv "" "HP Hclose"
+    (proofmode_into_accessor_drop_emp H.iris_wsat E D P Close)
+    new_proph_strongly_atomic $ iStopProof opened
+
+\func proofmode_accessor_class_wrong_source_fails
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E D : coPset) (P Close : iProp S)
+    (Phi : Value -> iProp S)
+    (opened :
+      (mkProperEmp ∗ ((mkProperEmp ∗ P) ∗ Close)) ⊢
+        (wp H D NewProph
+          (\lam v => mkProperFUpd H.iris_wsat D E (Phi v))))
+  : \Sigma =>
+  fails (ipm $ iInv "" "HP Hclose"
+    (proofmode_into_accessor_drop_emp H.iris_wsat E D P Close)
+    new_proph_strongly_atomic $ iStopProof opened :
+      (mkProperFUpd H.iris_wsat E D (P ∗ Close)) ⊢
+        (wp H E NewProph Phi))
+
+\lemma proofmode_inv_timeless_class_instance
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace)
+    (Phi : Value -> iProp S) (hNE : coPSubset (nclose N) E)
+    (opened :
+      (mkProperEmp ∗
+        ((mkProperEmp ∗ mkProperEmp) ∗
+          (mkProperEmp -∗ mkProperFUpd H.iris_wsat
+            (coPset_difference E (nclose N)) E mkProperEmp))) ⊢
+      (wp H (coPset_difference E (nclose N)) NewProph
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : (inv H.iris_wsat N mkProperEmp) ⊢ (wp H E NewProph Phi) =>
+  ipm $ iInv "" ">HP Hclose" (proofmode_timeless_emp {iResUR S})
+    hNE new_proph_strongly_atomic $ iStopProof opened
+
+\func proofmode_inv_timeless_wrong_body_fails
+    {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (phi : \Prop)
+    (Phi : Value -> iProp S) (hNE : coPSubset (nclose N) E)
+    (opened :
+      (mkProperEmp ∗
+        ((mkProperEmp ∗ mkProperPure phi) ∗
+          (mkProperPure phi -∗ mkProperFUpd H.iris_wsat
+            (coPset_difference E (nclose N)) E mkProperEmp))) ⊢
+      (wp H (coPset_difference E (nclose N)) NewProph
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : \Sigma =>
+  fails (ipm $ iInv "" ">HP Hclose"
+    (proofmode_timeless_emp {iResUR S}) hNE new_proph_strongly_atomic $
+    iStopProof opened :
+      (inv H.iris_wsat N (mkProperPure phi)) ⊢
+        (wp H E NewProph Phi))
 
 \func proofmode_lookup_smoke {M : UCMRA} (P Q : ProperUPred M) :
     pm_lookup (72 :: nil) (pm_snoc (pm_snoc pm_empty (80 :: nil) P)

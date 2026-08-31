@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.concrete.expr.ConcreteStringExpression;
 import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreClassCallExpression;
@@ -44,6 +45,15 @@ final class SpecializeMeta extends ExactMeta {
   @Dependency(name = "mkProperWand")
   private CoreFunctionDefinition mkProperWand;
 
+  @Dependency(name = "PMIntoForall")
+  private CoreClassDefinition pmIntoForall;
+  @Dependency(name = "pm_specialize_forall")
+  private ArendRef pmSpecializeForall;
+  @Dependency(name = "pm_specialize_into_forall")
+  private ArendRef pmSpecializeIntoForall;
+  @Dependency(name = "mkProperForall")
+  private CoreFunctionDefinition mkProperForall;
+
   private ConcreteExpression refl(ContextData contextData, CoreExpression proposition) {
     var factory = contextData.getFactory();
     var args = new ArrayList<ConcreteArgument>();
@@ -56,6 +66,10 @@ final class SpecializeMeta extends ExactMeta {
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
     List<ConcreteExpression> explicit = explicitArguments(contextData);
+    if (explicit.size() >= 2
+        && !(explicit.get(1) instanceof ConcreteStringExpression)) {
+      return specializeForall(typechecker, contextData, explicit);
+    }
     if (explicit.size() < 4 || explicit.size() > 5) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "Expected wand, argument, result, optional PMIntoWand evidence, and continuation",
@@ -171,6 +185,84 @@ final class SpecializeMeta extends ExactMeta {
             : pmSpecializeIntoWandIntuitionistic
         : evidence == null ? pmSpecialize : pmSpecializeIntoWand;
     return typechecker.typecheck(factory.app(factory.ref(lemma), args),
+        contextData.getExpectedType());
+  }
+
+  private @Nullable TypedExpression specializeForall(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      List<ConcreteExpression> explicit) {
+    if (explicit.size() != 4 && explicit.size() != 5) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Universal iSpecialize expects a hypothesis, witness, result name, optional PMIntoForall evidence, and continuation",
+          contextData.getMarker()));
+      return null;
+    }
+    String sourceName = stringArgument(typechecker, contextData, 0);
+    String resultName = stringArgument(typechecker, contextData, 2);
+    if (sourceName == null || resultName == null) return null;
+    if (resultName.isEmpty()) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "iSpecialize result name cannot be empty", contextData.getMarker()));
+      return null;
+    }
+    ResolvedSelection resolved = resolveNamed(typechecker, contextData, sourceName);
+    if (resolved == null) return null;
+    if (resolved.persistent()) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Universal iSpecialize currently expects a spatial hypothesis",
+          contextData.getMarker()));
+      return null;
+    }
+    if (!resultName.equals(sourceName)
+        && environmentContainsName(typechecker, resolved.environment(), resultName)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "A proof-mode hypothesis named '" + resultName + "' already exists",
+          contextData.getMarker()));
+      return null;
+    }
+
+    ClassEvidence evidence = explicit.size() == 5
+        ? classEvidence(typechecker, contextData, explicit.get(3),
+            pmIntoForall, "PMIntoForall") : null;
+    if (explicit.size() == 5 && evidence == null) return null;
+    CoreExpression source = weakHead(typechecker,
+        resolved.selection().proposition());
+    CoreFunCallExpression forall = source instanceof CoreFunCallExpression call
+        && call.getDefinition() == mkProperForall
+        && call.getDefCallArguments().size() >= 3 ? call : null;
+    if (evidence == null && forall == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Universal iSpecialize expected a forall hypothesis or PMIntoForall evidence",
+          contextData.getMarker()));
+      return null;
+    }
+    CoreExpression carrier = evidence == null
+        ? forall.getDefCallArguments().get(forall.getDefCallArguments().size() - 2)
+        : classField(evidence, "A");
+    CoreExpression family = evidence == null
+        ? forall.getDefCallArguments().getLast() : classField(evidence, "Phi");
+    if (carrier == null || family == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect universal-hypothesis evidence",
+          contextData.getMarker()));
+      return null;
+    }
+
+    var factory = contextData.getFactory();
+    var args = new ArrayList<ConcreteArgument>();
+    args.add(factory.arg(factory.hole(), false));
+    args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
+    args.add(factory.arg(resolved.selection().term(), true));
+    args.add(factory.arg(name(contextData, resultName), true));
+    args.add(factory.arg(factory.core(carrier.computeTyped()), false));
+    args.add(factory.arg(factory.core(family.computeTyped()), false));
+    args.add(factory.arg(explicit.get(1), true));
+    args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
+    args.add(factory.arg(evidence == null
+        ? refl(contextData, source) : evidence.term(), true));
+    args.add(factory.arg(explicit.getLast(), true));
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmSpecializeForall : pmSpecializeIntoForall), args),
         contextData.getExpectedType());
   }
 }

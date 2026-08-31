@@ -2,6 +2,13 @@
 \import iris.base_logic.upred
 \import iris.base_logic.notation
 \import iris.bi.updates
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.wsat
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.invariants
+\import stdpp.coPset
+\import stdpp.namespaces
 \import iris.proofmode.core
 
 -- Every proof-mode class has a source-level construction test.  These tests
@@ -83,12 +90,15 @@
   : PMIntoUpdate M P Q \cowith
   | into_update => h
 
-\func proofmode_class_into_invariant {M : UCMRA}
-    (P Q Close : ProperUPred M) (h : P ⊢ (Q ∗ Close))
-  : PMIntoInvariant M P Q Close \cowith
+\func proofmode_class_into_invariant {S : gFunctors}
+    (P : iProp S) (W : wsatGS S) (N : Namespace) (Q : iProp S)
+    (h : P ⊢ inv W N Q)
+  : PMIntoInvariant P W N Q \cowith
   | into_invariant => h
 
-\func proofmode_class_into_accessor {M : UCMRA}
-    (P Q Close : ProperUPred M) (h : P ⊢ (Q ∗ Close))
-  : PMIntoAccessor M P Q Close \cowith
+\func proofmode_class_into_accessor {S : gFunctors}
+    (P : iProp S) (W : wsatGS S) (E1 E2 : coPset)
+    (Q Close : iProp S)
+    (h : P ⊢ mkProperFUpd W E1 E2 (Q ∗ Close))
+  : PMIntoAccessor P W E1 E2 Q Close \cowith
   | into_accessor => h

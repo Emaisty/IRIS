@@ -16,6 +16,7 @@
 \import iris.base_logic.lib.fancy_updates
 \import iris.base_logic.lib.invariants (lob_wand_apply_ent, sep_or_l_elim)
 \import stdpp.coPset
+\import stdpp.namespaces
 
 -- Proof-mode identifiers deliberately avoid semantic String.  The extension
 -- turns quoted UTF-16 code units into this representation before elaboration.
@@ -1051,6 +1052,19 @@
   properUPred_ent_trans (of_envs envs) (Phi witness)
     (mkProperExist A Phi) next (exist_intro_ent Phi witness)
 
+\lemma pm_exists1 {M : UCMRA} {envs : PMEnvs M} {A : \Set1}
+    {Phi : A -> ProperUPred M} (witness : A)
+    (next : envs_entails envs (Phi witness))
+  : envs_entails envs (mkProperExist1 A Phi) =>
+  properUPred_ent_trans (of_envs envs) (Phi witness)
+    (mkProperExist1 A Phi) next (exist1_intro_ent Phi witness)
+
+\lemma pm_forall {M : UCMRA} {envs : PMEnvs M} {A : \Set0}
+    {Phi : A -> ProperUPred M}
+    (next : \Pi (a : A) -> envs_entails envs (Phi a))
+  : envs_entails envs (mkProperForall A Phi) =>
+  (BIuPredMixin M).bi_mixin_forall_intro (of_envs envs) Phi next
+
 \lemma pm_pure_intro {M : UCMRA} {envs : PMEnvs M} {phi : \Prop}
     (proof : phi) : envs_entails envs (mkProperPure phi) =>
   \lam _ _ _ _ => proof
@@ -1101,6 +1115,49 @@
         ((pm_of_persistent_env envs.intuitionistic) ∗
           pm_of_env selection.selected_rest) P next))
     eliminate
+
+\lemma pm_replace_spatial {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P R : ProperUPred M}
+    (convert : selection.selected_prop ⊢ P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) R)
+  : envs_entails envs R =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | Rest => pm_of_env selection.selected_rest
+  \in properUPred_ent_trans (of_envs envs)
+      (I ∗ (selection.selected_prop ∗ Rest)) R
+      (sep_mono_r_ent I (pm_of_env envs.spatial)
+        (selection.selected_prop ∗ Rest) selection.selection_sound)
+      (properUPred_ent_trans
+        (I ∗ (selection.selected_prop ∗ Rest))
+        (I ∗ (Rest ∗ P)) R
+        (sep_mono_r_ent I (selection.selected_prop ∗ Rest)
+          (Rest ∗ P)
+          (properUPred_ent_trans
+            (selection.selected_prop ∗ Rest) (P ∗ Rest) (Rest ∗ P)
+            (sep_mono_l_ent selection.selected_prop P Rest convert)
+            (sep_comm_ent P Rest))) next)
+
+\lemma pm_specialize_forall {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {A : \Set0} {Phi : A -> ProperUPred M} (witness : A)
+    {R : ProperUPred M}
+    (into : selection.selected_prop ⊢ (mkProperForall A Phi))
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name (Phi witness)
+      }) R)
+  : envs_entails envs R =>
+  pm_replace_spatial selection name
+    (properUPred_ent_trans selection.selected_prop
+      (mkProperForall A Phi) (Phi witness) into
+      ((BIuPredMixin M).bi_mixin_forall_elim Phi witness)) next
 
 \lemma pm_apply_wand {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) {P Q : ProperUPred M}
@@ -1330,6 +1387,73 @@
     (next : envs_entails envs P) : envs_entails envs (|> P) =>
   properUPred_ent_trans (of_envs envs) P (|> P) next
     (proper_later_intro P)
+
+\lemma pm_next_hyp {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P R : ProperUPred M}
+    (into : selection.selected_prop ⊢ (|> P))
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) R)
+  : envs_entails envs (|> R) =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | Rest => pm_of_env selection.selected_rest
+    | expose : (of_envs envs) ⊢
+        (I ∗ (selection.selected_prop ∗ Rest)) =>
+        sep_mono_r_ent I (pm_of_env envs.spatial)
+          (selection.selected_prop ∗ Rest) selection.selection_sound
+    | shiftSelected :
+        (selection.selected_prop ∗ Rest) ⊢
+          ((|> P) ∗ (|> Rest)) =>
+        properUPred_ent_trans
+          (selection.selected_prop ∗ Rest) ((|> P) ∗ Rest)
+          ((|> P) ∗ (|> Rest))
+          (sep_mono_l_ent selection.selected_prop (|> P) Rest into)
+          (sep_mono_r_ent (|> P) Rest (|> Rest)
+            (proper_later_intro Rest))
+    | shiftContext :
+        (I ∗ (selection.selected_prop ∗ Rest)) ⊢
+          ((|> I) ∗ ((|> P) ∗ (|> Rest))) =>
+        properUPred_ent_trans
+          (I ∗ (selection.selected_prop ∗ Rest))
+          ((|> I) ∗ (selection.selected_prop ∗ Rest))
+          ((|> I) ∗ ((|> P) ∗ (|> Rest)))
+          (sep_mono_l_ent I (|> I)
+            (selection.selected_prop ∗ Rest) (proper_later_intro I))
+          (sep_mono_r_ent (|> I)
+            (selection.selected_prop ∗ Rest)
+            ((|> P) ∗ (|> Rest)) shiftSelected)
+    | combineLater :
+        ((|> I) ∗ ((|> P) ∗ (|> Rest))) ⊢
+          (|> (I ∗ (Rest ∗ P))) =>
+        properUPred_ent_trans
+          ((|> I) ∗ ((|> P) ∗ (|> Rest)))
+          ((|> I) ∗ (|> (P ∗ Rest)))
+          (|> (I ∗ (Rest ∗ P)))
+          (sep_mono_r_ent (|> I) ((|> P) ∗ (|> Rest))
+            (|> (P ∗ Rest)) (proper_later_sep_2 P Rest))
+          (properUPred_ent_trans
+            ((|> I) ∗ (|> (P ∗ Rest)))
+            (|> (I ∗ (P ∗ Rest)))
+            (|> (I ∗ (Rest ∗ P)))
+            (proper_later_sep_2 I (P ∗ Rest))
+            (proper_later_mono (I ∗ (P ∗ Rest))
+              (I ∗ (Rest ∗ P))
+              (sep_mono_r_ent I (P ∗ Rest) (Rest ∗ P)
+                (sep_comm_ent P Rest))))
+  \in properUPred_ent_trans (of_envs envs)
+      (I ∗ (selection.selected_prop ∗ Rest)) (|> R) expose
+      (properUPred_ent_trans
+        (I ∗ (selection.selected_prop ∗ Rest))
+        ((|> I) ∗ ((|> P) ∗ (|> Rest))) (|> R)
+        shiftContext
+        (properUPred_ent_trans
+          ((|> I) ∗ ((|> P) ∗ (|> Rest)))
+          (|> (I ∗ (Rest ∗ P))) (|> R) combineLater
+          (proper_later_mono (I ∗ (Rest ∗ P)) R next)))
 
 \lemma pm_mod_intro {M : UCMRA} {envs : PMEnvs M} {P : ProperUPred M}
     (next : envs_entails envs P) : envs_entails envs (|==> P) =>
@@ -1569,13 +1693,14 @@
     (M : UCMRA) (P Q : ProperUPred M)
   | into_update : P ⊢ (|==> Q)
 
-\class PMIntoInvariant \noclassifying
-    (M : UCMRA) (P Q Close : ProperUPred M)
-  | into_invariant : P ⊢ (Q ∗ Close)
+\class PMIntoInvariant \noclassifying {S : gFunctors}
+    (P : iProp S) (W : wsatGS S) (N : Namespace) (Q : iProp S)
+  | into_invariant : P ⊢ iris.base_logic.lib.invariants.inv W N Q
 
-\class PMIntoAccessor \noclassifying
-    (M : UCMRA) (P Q Close : ProperUPred M)
-  | into_accessor : P ⊢ (Q ∗ Close)
+\class PMIntoAccessor \noclassifying {S : gFunctors}
+    (P : iProp S) (W : wsatGS S) (E1 E2 : coPset)
+    (Q Close : iProp S)
+  | into_accessor : P ⊢ (mkProperFUpd W E1 E2 (Q ∗ Close))
 
 \lemma pm_destruct_from_sep {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) (left right : PMName)
@@ -1600,6 +1725,19 @@
       }) R)
   : envs_entails envs R =>
   pm_destruct_pure selection instance.into_pure next
+
+\lemma pm_destruct_into_and_pure_l {M : UCMRA}
+    {envs : PMEnvs M} (selection : PMSelection envs.spatial)
+    (name : PMName) {phi : \Prop} {P R : ProperUPred M}
+    (instance : PMIntoAnd M selection.selected_prop
+      (mkProperPure phi) P)
+    (next : phi -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_and_pure_l selection name instance.into_and next
 
 \lemma pm_pure_intro_from {M : UCMRA} {envs : PMEnvs M}
     {P : ProperUPred M} {phi : \Prop}
@@ -1763,6 +1901,18 @@
   : envs_entails envs Q =>
   pm_ent_apply instance.from_later (pm_next next)
 
+\lemma pm_next_hyp_from {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P R : ProperUPred M}
+    (instance : PMIntoLater M selection.selected_prop P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) R)
+  : envs_entails envs (|> R) =>
+  pm_next_hyp selection name instance.into_later next
+
 \lemma pm_mod_into_update {M : UCMRA} {envs : PMEnvs M}
     (selection : PMSelection envs.spatial) (name : PMName)
     {P Q : ProperUPred M}
@@ -1774,6 +1924,43 @@
       }) (|==> Q))
   : envs_entails envs (|==> Q) =>
   pm_mod selection name instance.into_update next
+
+\lemma pm_exists_from {M : UCMRA} {envs : PMEnvs M}
+    {P : ProperUPred M} {A : \Set0}
+    {Phi : A -> ProperUPred M}
+    (instance : PMFromExist M P Phi) (witness : A)
+    (next : envs_entails envs (Phi witness))
+  : envs_entails envs P =>
+  pm_ent_apply instance.from_exist (pm_exists witness next)
+
+\lemma pm_exists1_from {M : UCMRA} {envs : PMEnvs M}
+    {P : ProperUPred M} {A : \Set1}
+    {Phi : A -> ProperUPred M}
+    (instance : PMFromExist1 M P Phi) (witness : A)
+    (next : envs_entails envs (Phi witness))
+  : envs_entails envs P =>
+  pm_ent_apply instance.from_exist1 (pm_exists1 witness next)
+
+\lemma pm_forall_from {M : UCMRA} {envs : PMEnvs M}
+    {P : ProperUPred M} {A : \Set0}
+    {Phi : A -> ProperUPred M}
+    (instance : PMFromForall M P Phi)
+    (next : \Pi (a : A) -> envs_entails envs (Phi a))
+  : envs_entails envs P =>
+  pm_ent_apply instance.from_forall (pm_forall next)
+
+\lemma pm_specialize_into_forall {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {A : \Set0} {Phi : A -> ProperUPred M} (witness : A)
+    {R : ProperUPred M}
+    (instance : PMIntoForall M selection.selected_prop Phi)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name (Phi witness)
+      }) R)
+  : envs_entails envs R =>
+  pm_specialize_forall selection name witness instance.into_forall next
 
 \func pm_from_assumption_refl {M : UCMRA} (P : ProperUPred M)
   : PMFromAssumption M P P \cowith
@@ -1803,6 +1990,19 @@
     (timeless : (|> P) ⊢ (mkProperExceptZero P))
   : PMTimeless M P \cowith
   | pm_timeless => timeless
+
+\func pm_into_invariant_direct {S : gFunctors} (W : wsatGS S)
+    (N : Namespace) (P : iProp S)
+  : PMIntoInvariant (iris.base_logic.lib.invariants.inv W N P) W N P \cowith
+  | into_invariant => properUPred_ent_refl
+      (iris.base_logic.lib.invariants.inv W N P)
+
+\func pm_into_accessor_direct {S : gFunctors} (W : wsatGS S)
+    (E1 E2 : coPset) (P Close : iProp S)
+  : PMIntoAccessor (mkProperFUpd W E1 E2 (P ∗ Close))
+      W E1 E2 P Close \cowith
+  | into_accessor => properUPred_ent_refl
+      (mkProperFUpd W E1 E2 (P ∗ Close))
 
 \func pm_from_exist_direct {M : UCMRA} {A : \Set0}
     (Phi : A -> ProperUPred M)

@@ -58,7 +58,7 @@ class WpBindMeta extends ExactMeta {
       CoreExpression expression) {
     CoreExpression result = dereference(typechecker, expression);
     return result instanceof CoreConCallExpression ? result
-        : dereference(typechecker, result.normalize(NormalizationMode.NF));
+        : dereference(typechecker, result.normalize(NormalizationMode.WHNF));
   }
 
   protected @Nullable CoreExpression value(ExpressionTypechecker typechecker,

@@ -3,6 +3,14 @@
 \import iris.base_logic.notation
 \import iris.bi.big_op
 \import iris.bi.updates
+\import iris.bi.derived_laws_later
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.wsat
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.lib.invariants
+\import stdpp.coPset
+\import stdpp.namespaces
 \import iris.proofmode.core
 
 -- A downstream proof-mode extension used by the integration tests.
@@ -21,6 +29,13 @@
     PMIntoPure M ((mkProperPure phi) ∧ P) phi \cowith
   | into_pure =>
       (BIuPredMixin M).bi_mixin_and_elim_l (mkProperPure phi) P
+
+\func proofmode_into_and_pure_drop_emp {M : UCMRA}
+    (phi : \Prop) (P : ProperUPred M) :
+    PMIntoAnd M (((mkProperPure phi) ∧ P) ∗ mkProperEmp)
+      (mkProperPure phi) P \cowith
+  | into_and => sep_elim_l_ent
+      ((mkProperPure phi) ∧ P) mkProperEmp
 
 \func proofmode_from_pure_and_emp {M : UCMRA} (phi : \Prop) :
     PMFromPure M ((mkProperPure phi) ∧ mkProperEmp) phi \cowith
@@ -60,7 +75,43 @@
     PMFromLater M P ((|> P) ∨ Q) \cowith
   | from_later => or_intro_l_ent (|> P) Q
 
+\func proofmode_into_later_drop_emp {M : UCMRA}
+    (P : ProperUPred M) :
+    PMIntoLater M ((|> P) ∗ mkProperEmp) P \cowith
+  | into_later => sep_elim_l_ent (|> P) mkProperEmp
+
 \func proofmode_into_update_drop_emp {M : UCMRA}
     (P : ProperUPred M) :
     PMIntoUpdate M ((|==> P) ∗ mkProperEmp) P \cowith
   | into_update => sep_elim_l_ent (|==> P) mkProperEmp
+
+\func proofmode_from_exist_or_left {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) (Q : ProperUPred M) :
+    PMFromExist M ((mkProperExist A Phi) ∨ Q) Phi \cowith
+  | from_exist => or_intro_l_ent (mkProperExist A Phi) Q
+
+\func proofmode_from_forall_or_left {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) (Q : ProperUPred M) :
+    PMFromForall M ((mkProperForall A Phi) ∨ Q) Phi \cowith
+  | from_forall => or_intro_l_ent (mkProperForall A Phi) Q
+
+\func proofmode_into_forall_drop_emp {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) :
+    PMIntoForall M ((mkProperForall A Phi) ∗ mkProperEmp) Phi \cowith
+  | into_forall => sep_elim_l_ent (mkProperForall A Phi) mkProperEmp
+
+\func proofmode_into_invariant_drop_emp {S : gFunctors}
+    (W : wsatGS S) (N : Namespace) (P : iProp S) :
+    PMIntoInvariant ((inv W N P) ∗ mkProperEmp) W N P \cowith
+  | into_invariant => sep_elim_l_ent (inv W N P) mkProperEmp
+
+\func proofmode_into_accessor_drop_emp {S : gFunctors}
+    (W : wsatGS S) (E1 E2 : coPset) (P Close : iProp S) :
+    PMIntoAccessor
+      ((mkProperFUpd W E1 E2 (P ∗ Close)) ∗ mkProperEmp)
+      W E1 E2 P Close \cowith
+  | into_accessor => sep_elim_l_ent
+      (mkProperFUpd W E1 E2 (P ∗ Close)) mkProperEmp
+
+\func proofmode_timeless_emp {M : UCMRA} : PMTimeless M mkProperEmp =>
+  pm_timeless_direct mkProperEmp timeless_emp
