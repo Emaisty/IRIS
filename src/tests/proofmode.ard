@@ -88,7 +88,7 @@
     (P Q R : ProperUPred M) :
   (((proofmode_wrapped_or P Q) ∗ (P -∗ R)) ∗ (Q -∗ R)) ⊢ R =>
   ipm $ iIntros "HLeft HWQ" $ iDestruct "HLeft" "HCase HWP" $
-    iDestruct "HCase" "HP | HQ" P Q
+    iDestruct "HCase" "HP | HQ"
       (iApply "HWP" $ iExact "HP")
       (iApply "HWQ" $ iExact "HQ")
 
@@ -565,8 +565,26 @@
 \func proofmode_wrapped_and {M : UCMRA}
     (P Q : ProperUPred M) : ProperUPred M => mkProperAnd P Q
 
+\func proofmode_twice_wrapped_and {M : UCMRA}
+    (P Q : ProperUPred M) : ProperUPred M => proofmode_wrapped_and P Q
+
+\func proofmode_notation_wrapped_and {M : UCMRA}
+    (P Q : ProperUPred M) : ProperUPred M => P ∧ Q
+
 \lemma proofmode_split_wrapped_and {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ proofmode_wrapped_and P Q =>
+  ipm $ iIntros "HP HQ" $
+    iSplitL "" (iExact "HP") (iExact "HQ")
+
+\lemma proofmode_split_twice_wrapped_and {M : UCMRA}
+    (P Q : ProperUPred M) :
+  (P ∗ Q) ⊢ proofmode_twice_wrapped_and P Q =>
+  ipm $ iIntros "HP HQ" $
+    iSplitL "" (iExact "HP") (iExact "HQ")
+
+\lemma proofmode_split_notation_wrapped_and {M : UCMRA}
+    (P Q : ProperUPred M) :
+  (P ∗ Q) ⊢ proofmode_notation_wrapped_and P Q =>
   ipm $ iIntros "HP HQ" $
     iSplitL "" (iExact "HP") (iExact "HQ")
 

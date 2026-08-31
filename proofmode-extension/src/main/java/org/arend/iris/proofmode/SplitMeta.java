@@ -44,14 +44,30 @@ abstract class SplitMeta extends ExactMeta {
 
   protected record BuiltSplit(ConcreteExpression term, Set<String> found) {}
 
-  private boolean accepts(ExpressionTypechecker typechecker,
-      ConcreteExpression expression, CoreExpression expectedType) {
-    return Boolean.TRUE.equals(typechecker.withCurrentState(tc -> {
-      boolean[] hasError = { false };
-      TypedExpression result = tc.withErrorReporter(error -> hasError[0] = true,
-          checker -> checker.typecheck(expression, expectedType));
-      return result != null && !hasError[0];
-    }));
+  private CoreExpression @Nullable [] inferAndTargets(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      CoreExpression environment) {
+    return typechecker.withCurrentState(tc -> {
+      var factory = contextData.getFactory();
+      List<ConcreteArgument> args = new ArrayList<>();
+      args.add(factory.arg(factory.hole(), false));
+      args.add(factory.arg(factory.core(environment.computeTyped()), false));
+      args.add(factory.arg(factory.hole(), true));
+      args.add(factory.arg(factory.hole(), true));
+      TypedExpression typed = tc.withErrorReporter(error -> {}, checker ->
+          checker.typecheck(factory.app(factory.ref(pmSplitAnd), args),
+              contextData.getExpectedType()));
+      CoreExpression expression = typed == null ? null
+          : dereference(tc, typed.getExpression());
+      if (!(expression instanceof CoreFunCallExpression call)
+          || !call.getDefinition().getName().equals("pm_split_and")
+          || call.getDefCallArguments().size() < 4) return null;
+      var callArgs = call.getDefCallArguments();
+      return new CoreExpression[] {
+          dereference(tc, callArgs.get(callArgs.size() - 4)),
+          dereference(tc, callArgs.get(callArgs.size() - 3))
+      };
+    });
   }
 
   protected @Nullable BuiltSplit buildSplit(ExpressionTypechecker typechecker,
@@ -114,18 +130,33 @@ abstract class SplitMeta extends ExactMeta {
     CoreExpression target = weakHead(typechecker, goal.target());
     List<ConcreteExpression> arguments = explicitArguments(contextData);
     var factory = contextData.getFactory();
-    List<ConcreteArgument> andArgs = new ArrayList<>();
-    andArgs.add(factory.arg(factory.hole(), false));
-    andArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
-    andArgs.add(factory.arg(arguments.get(1), true));
-    andArgs.add(factory.arg(arguments.get(2), true));
-    ConcreteExpression andCall = factory.app(factory.ref(pmSplitAnd), andArgs);
     boolean directAnd = target instanceof CoreFunCallExpression conjunction
         && conjunction.getDefinition() == mkProperAnd;
     boolean directSep = target instanceof CoreFunCallExpression separation
         && separation.getDefinition() == mkProperSep;
-    if (directAnd || !directSep && selected.isEmpty()
-        && accepts(typechecker, andCall, contextData.getExpectedType())) {
+    CoreExpression leftAnd = directAnd
+        ? ((CoreFunCallExpression) target).getDefCallArguments().get(
+            ((CoreFunCallExpression) target).getDefCallArguments().size() - 2)
+        : null;
+    CoreExpression rightAnd = directAnd
+        ? ((CoreFunCallExpression) target).getDefCallArguments().getLast() : null;
+    CoreExpression[] inferredAnd = !directAnd && !directSep
+        ? inferAndTargets(typechecker, contextData, goal.environment()) : null;
+    if (inferredAnd != null) {
+      leftAnd = inferredAnd[0];
+      rightAnd = inferredAnd[1];
+    }
+    List<ConcreteArgument> andArgs = new ArrayList<>();
+    andArgs.add(factory.arg(factory.hole(), false));
+    andArgs.add(factory.arg(factory.core(goal.environment().computeTyped()), false));
+    if (leftAnd != null && rightAnd != null) {
+      andArgs.add(factory.arg(factory.core(leftAnd.computeTyped()), false));
+      andArgs.add(factory.arg(factory.core(rightAnd.computeTyped()), false));
+    }
+    andArgs.add(factory.arg(arguments.get(1), true));
+    andArgs.add(factory.arg(arguments.get(2), true));
+    ConcreteExpression andCall = factory.app(factory.ref(pmSplitAnd), andArgs);
+    if (directAnd || inferredAnd != null) {
       if (!selected.isEmpty()) {
         typechecker.getErrorReporter().report(new TypecheckingError(
             "Ordinary conjunction duplicates the whole context; use an empty split pattern",

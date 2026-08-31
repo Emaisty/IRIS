@@ -48,7 +48,7 @@
 \import iris_heap_lang.lib.syntax
 \import iris_heap_lang.lib.spawn
 \import iris_heap_lang.lib.spawn_proof
-\import iris.proofmode.heap_lang (pm_wp_expr_eq, pm_wp_let)
+\import iris.proofmode.heap_lang (pm_wp_let)
 \import stdpp.coPset
 \import stdpp.namespaces
 \import stdpp.pmap (xH, xO, xI, pos_len, pos_pad, pos_pad_len, pmap_depth', plookup', plookup'_beyond_depth)
@@ -58,7 +58,7 @@
 \import iris.proofmode.Meta (ipm, iIntros, iDestruct, iExact, iFrame,
   iAssumption, iApply, iSplitL, iLeft, iRight, iAssert, iClear, iEmpIntro, iNext,
   iSpecialize, iExists, iPureIntro, iRewrite, iMod, iModIntro,
-  wp_apply, wp_smart_apply, wp_bind, wp_lam, wp_pure, wp_pures)
+  wp_apply, wp_smart_apply, wp_bind, wp_lam, wp_let, wp_pure, wp_pures)
 
 -- Counter namespace and the public mask used by all three operations.
 \func mscN : Namespace => ndot nroot (xI xH)
@@ -1928,59 +1928,6 @@
       namePrefix name nameSuffix namesEq namePrefixLen hi)
     (\lam rw => msc_load_opened H G gam a i name lower rw)
 
-\func msc_sum_loop_unfold (a T i acc : Nat) : Expr =>
-  If (NatEq (Val (natV i)) (Val (natV T)))
-    (Val (natV acc))
-    (letE nL
-      (LocAdd (Val (LitV (LitLoc a))) (Val (natV i)))
-      (letE nN (Load (Var nL))
-        (letE nNextI
-          (NatAdd (Val (natV i)) (Val (natV 1)))
-          (letE nNextAcc
-            (NatAdd (Val (natV acc)) (Var nN))
-            (app4 (Val msc_sum_loop)
-              (Val (LitV (LitLoc a))) (Val (natV T))
-              (Var nNextI) (Var nNextAcc))))))
-
-\func msc_sum_loop_unfold_acc (a T i : Nat) : Expr =>
-  If (NatEq (Val (natV i)) (Val (natV T)))
-    (Var nAcc)
-    (letE nL
-      (LocAdd (Val (LitV (LitLoc a))) (Val (natV i)))
-      (letE nN (Load (Var nL))
-        (letE nNextI
-          (NatAdd (Val (natV i)) (Val (natV 1)))
-          (letE nNextAcc
-            (NatAdd (Var nAcc) (Var nN))
-            (app4 (Val msc_sum_loop)
-              (Val (LitV (LitLoc a))) (Val (natV T))
-              (Var nNextI) (Var nNextAcc))))))
-
--- Four beta steps expose one iteration of the concrete recursive scan.
-\lemma msc_sum_loop_unfold_wp {S : gFunctors}
-    (H : irisGS natCountable S) (a T i acc : Nat)
-    (Phi : Value -> iProp S) :
-  (WP H mscE (msc_sum_loop_unfold a T i acc) Phi) ⊢
-    (WP H mscE
-      (app4 (Val msc_sum_loop)
-        (Val (LitV (LitLoc a))) (Val (natV T))
-        (Val (natV i)) (Val (natV acc))) Phi) =>
-  \let
-    | Core => msc_sum_loop_unfold a T i acc
-    | AccBody => msc_sum_loop_unfold_acc a T i
-    | VAcc => natV acc
-    | coreEq : Core = subst nAcc VAcc AccBody => idp
-    | finish : (WP H mscE Core Phi) ⊢
-        (WP H mscE
-          (App (Val (LamV nAcc AccBody)) (Val VAcc)) Phi) =>
-        ipm $ wp_lam $
-          wp_apply (pm_wp_expr_eq H mscE Core
-            (subst nAcc VAcc AccBody) Phi coreEq) $ iAssumption
-  \in ipm $ iIntros "HCore" $
-    wp_bind $ wp_bind $ wp_bind $
-    wp_pure $ wp_pure $ wp_pure $
-    wp_apply finish $ iExact "HCore"
-
 \func msc_sum_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a : Nat)
@@ -2081,8 +2028,7 @@
                 ((mkProperPure (nat_sum nil <= nat_sum reads)) ∗
                   (msc_lbs G reads (nil {gname}))))
       \in ipm $ iIntros "HInv HEmp" $
-          wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size
-            (length prefix) acc Post) $
+          wp_lam $ wp_lam $ wp_lam $
           wp_bind $
           wp_apply (wp_nat_eq_true H mscE (length prefix)
             gam.msc_size indexEq (\lam v =>
@@ -2177,9 +2123,6 @@
             \lam n headLe =>
               \let
                 | Head => msc_shard_lb G name n
-                | AccBody => app4 (Val msc_sum_loop)
-                    (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
-                    (Val (natV (index Nat.+ 1))) (Var nNextAcc)
                 | CallComputed => app4 (Val msc_sum_loop)
                     (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
                     (Val (natV (index Nat.+ 1)))
@@ -2197,9 +2140,7 @@
                           (Val (natV (acc Nat.+ n)))) Post))
                       (inv callIndexEq) (recurFor n headLe)
               \in ipm $ iIntros "HHead HRest" $
-                  wp_pure $ wp_pure $ wp_pure $ wp_pure $
-                  wp_apply (wp_lam_beta H mscE nNextAcc AccBody
-                    (natV (acc Nat.+ n)) Post) $
+                  wp_let $ wp_let $
                   wp_apply recurseComputed $
                   iFrame "HHead" $ iExact "HRest"
         | loadContinue : \Pi (v : Value) -> ((LoadPost v) ∗ Rest) ⊢
@@ -2225,7 +2166,7 @@
             (WP H mscE
               (App (Val (LamV nN BodyN)) (Val v)) Post) =>
             \lam v => ipm $
-              wp_apply (wp_lam_beta H mscE nN BodyN v Post) $
+              wp_lam $
               wp_apply (loadContinue v) $ iAssumption
         | loadSpec : (Inv ∗ Head0) ⊢
             (WP H mscE LoadExpr LoadPost) =>
@@ -2242,7 +2183,7 @@
                   iFrame "HInv" $ iExact "HHead")
                 (iFrame "HInv" $ iExact "HTail")
       \in ipm $ iIntros "HInv HHead HTail" $
-          wp_apply (msc_sum_loop_unfold_wp H a gam.msc_size index acc Post) $
+          wp_lam $ wp_lam $ wp_lam $
           wp_bind $
           wp_apply (wp_nat_eq_false H mscE index gam.msc_size
             indexNe (\lam v =>
@@ -3367,96 +3308,6 @@
             iEmpIntro
             (iExact "HLaterPair")))
 
-\lemma msc_read_seq_bind {S : gFunctors}
-    (H : irisGS natCountable S) (resolveExpr : Expr)
-    (actual : Nat) (Post : Value -> iProp S) :
-  (WP H mscE resolveExpr (\lam ignored =>
-      WP H mscE
-        (App (Val (LamV nIgnore (Val (natV actual)))) (Val ignored)) Post)) ⊢
-    (WP H mscE (seqE resolveExpr (Val (natV actual))) Post) =>
-  \let
-    | LetLam => LamV nIgnore (Val (natV actual))
-    | LamPost : Value -> iProp S => \lam vf =>
-        WP H mscE (App (Val vf) resolveExpr) Post
-  \in ipm $ iIntros "HBound" $
-    wp_apply (wp_bind_app_l H mscE
-      (Lam nIgnore (Val (natV actual))) resolveExpr Post) $
-    wp_apply (wp_lam_expr H mscE nIgnore
-      (Val (natV actual)) LamPost) $
-    wp_apply (wp_value_intro H mscE LetLam LamPost) $
-    wp_apply (wp_bind_app_r H mscE LetLam resolveExpr Post) $
-    iExact "HBound"
-
-\lemma msc_read_registered_sequence_wp {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a : Nat) (reads : List Nat)
-    (gamQ : gname) (id : Nat) (Q : Nat -> iProp S)
-    (p : ProphId) (resolves : List ProphPayload) :
-  ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)) ∗
-      ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-          (msc_inv H G gam a)) ∗
-        ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-          ((proph H.iris_proph_map p resolves) ∗
-            ((ghost_map_elem (msc_requestGS G gam) id
-                (msc_proph_total resolves, gamQ)) ∗
-              (msc_lbs G reads gam.msc_shard_names)))))) ⊢
-    (WP H mscE
-      (seqE
-        (resolveProphE (Val (LitV (LitProphecy p)))
-          (Val (natV (nat_sum reads))))
-        (Val (natV (nat_sum reads))))
-      (msc_read_core_post H G gam a Q)) =>
-  \let
-    | Public => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
-    | Resources => Public ∗
-        (|> (Q (nat_sum reads)))
-    | ResolveExpr => resolveProphE (Val (LitV (LitProphecy p)))
-        (Val (natV (nat_sum reads)))
-    | Post => msc_read_core_post H G gam a Q
-    | continue : \Pi (ignored : Value) -> Resources ⊢
-        (WP H mscE
-          (App (Val (LamV nIgnore (Val (natV (nat_sum reads)))))
-            (Val ignored)) Post) =>
-        \lam ignored => msc_read_finish_sequence H G gam a (nat_sum reads) Q ignored
-  \in ipm $ iIntros "HResources" $
-    wp_apply (msc_read_seq_bind H ResolveExpr (nat_sum reads) Post) $
-    wp_apply (wp_mono H mscE ResolveExpr (\lam _ => Resources)
-      (\lam ignored => WP H mscE
-        (App (Val (LamV nIgnore (Val (natV (nat_sum reads)))))
-          (Val ignored)) Post) continue) $
-    wp_apply (msc_read_resolve_registered_wp H G gam a reads
-      gamQ id Q p resolves) $
-    iExact "HResources"
-
-\lemma msc_read_unregistered_sequence_wp {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a initial actual : Nat)
-    (Q : Nat -> iProp S) (p : ProphId)
-    (resolves : List ProphPayload) :
-  ((proph H.iris_proph_map p resolves) ∗
-      ((mkProperPure (initial <= actual)) ∗
-        (mkProperPure (nat_lt (msc_proph_total resolves) initial)))) ⊢
-    (WP H mscE
-      (seqE
-        (resolveProphE (Val (LitV (LitProphecy p)))
-          (Val (natV actual)))
-        (Val (natV actual)))
-      (msc_read_core_post H G gam a Q)) =>
-  \let
-    | ResolveExpr => resolveProphE (Val (LitV (LitProphecy p)))
-        (Val (natV actual))
-    | Post => msc_read_core_post H G gam a Q
-    | Continue : Value -> iProp S => \lam ignored =>
-        WP H mscE
-          (App (Val (LamV nIgnore (Val (natV actual)))) (Val ignored)) Post
-  \in ipm $ iIntros "HResources" $
-    wp_apply (msc_read_seq_bind H ResolveExpr actual Post) $
-    wp_apply (msc_read_resolve_unregistered_wp H p resolves
-      initial actual Continue) $
-    iExact "HResources"
-
 \lemma msc_read_registered_scan_branch {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a initial : Nat)
@@ -3499,8 +3350,11 @@
         (wp_apply (inv_dup_ent H.iris_wsat mscN (msc_inv H G gam a)) $
           iExact "HInv")
         (iDestruct "HInvPair" "HInv1 HInv2" $
-          wp_apply (msc_read_registered_sequence_wp H G gam a reads gamQ id
-            Q p resolves) $
+          wp_lam $
+          wp_smart_apply (msc_read_resolve_registered_wp H G gam a reads
+            gamQ id Q p resolves)
+            (\lam ignored => msc_read_finish_sequence H G gam a
+              (nat_sum reads) Q ignored) $
           iFrame "HInv1 HInv2 HSaved HToken HElem" $ iExact "HLBs")
 
 \lemma msc_read_unregistered_scan_branch {S : gFunctors}
@@ -3531,8 +3385,11 @@
       iDestruct "HUnregistered" "HPred HP" Pred P $
       iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
-      wp_apply (msc_read_unregistered_sequence_wp H G gam a initial
-        (nat_sum reads) Q p resolves) $
+      wp_lam $
+      wp_apply (msc_read_resolve_unregistered_wp H p resolves initial
+        (nat_sum reads) (\lam ignored => WP H mscE
+          (App (Val (LamV nIgnore (Val (natV (nat_sum reads)))))
+            (Val ignored)) (msc_read_core_post H G gam a Q))) $
       iFrame "HToken HBound" $ iExact "HPred"
 
 \lemma msc_read_after_scan_wp {S : gFunctors}
@@ -3672,39 +3529,6 @@
             (iFrame "HProph" $ iExact "HLBs")
             (iExact "HCase")))
 
-\lemma msc_read_size_let_wp {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (a : Nat) (w : msc_read_witness gam) (gamQ : gname)
-    (P : iProp S) (Q : Nat -> iProp S) (prophValue : Value) :
-  (msc_read_prepared H G gam a w gamQ P Q prophValue) ⊢
-    (WP H mscE
-      (letE nT
-        (Snd (Val
-          (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
-        (letE nR
-          (app4 (Val msc_sum_loop)
-            (Val (LitV (LitLoc a))) (Var nT)
-            (Val (natV 0)) (Val (natV 0)))
-          (seqE (resolveProphE (Val prophValue) (Var nR)) (Var nR))))
-      (msc_read_core_post H G gam a Q)) =>
-  \let
-    | CounterV => PairV (LitV (LitLoc a)) (natV gam.msc_size)
-    | Body => letE nR
-        (app4 (Val msc_sum_loop)
-          (Val (LitV (LitLoc a))) (Var nT)
-          (Val (natV 0)) (Val (natV 0)))
-        (seqE (resolveProphE (Val prophValue) (Var nR)) (Var nR))
-    | Post => msc_read_core_post H G gam a Q
-    | PhiT : Value -> iProp S => \lam sizeValue =>
-        WP H mscE (subst nT sizeValue Body) Post
-  \in ipm $
-      wp_apply (pm_wp_let H mscE nT (Snd (Val CounterV)) Body Post) $
-      wp_apply (wp_snd_pair H mscE (LitV (LitLoc a))
-        (natV gam.msc_size) PhiT) $
-      wp_apply (wp_value_intro H mscE (natV gam.msc_size) PhiT) $
-      wp_apply (msc_read_prepared_scan_wp H G gam a w gamQ P Q prophValue) $
-      iAssumption
-
 \lemma msc_read_fields_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (w : msc_read_witness gam) (gamQ : gname)
@@ -3724,23 +3548,9 @@
               (resolveProphE (Val prophValue) (Var nR))
               (Var nR)))))
       (msc_read_core_post H G gam a Q)) =>
-  \let
-    | CounterV => PairV (LitV (LitLoc a)) (natV gam.msc_size)
-    | Body => letE nT (Snd (Val CounterV))
-        (letE nR
-          (app4 (Val msc_sum_loop)
-            (Var nA) (Var nT) (Val (natV 0)) (Val (natV 0)))
-          (seqE (resolveProphE (Val prophValue) (Var nR)) (Var nR)))
-    | Post => msc_read_core_post H G gam a Q
-    | PhiA : Value -> iProp S => \lam addressValue =>
-        WP H mscE (subst nA addressValue Body) Post
-  \in ipm $
-      wp_apply (pm_wp_let H mscE nA (Fst (Val CounterV)) Body Post) $
-      wp_apply (wp_fst_pair H mscE (LitV (LitLoc a))
-        (natV gam.msc_size) PhiA) $
-      wp_apply (wp_value_intro H mscE (LitV (LitLoc a)) PhiA) $
-      wp_apply (msc_read_size_let_wp H G gam a w gamQ P Q prophValue) $
-      iAssumption
+  ipm $ wp_let $ wp_let $
+    wp_apply (msc_read_prepared_scan_wp H G gam a w gamQ P Q prophValue) $
+    iAssumption
 
 \lemma msc_read_after_new_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -3773,32 +3583,6 @@
       wp_apply (msc_read_fields_wp H G gam a w gamQ P Q prophValue) $
       iExact "HPrepared"
 
-\lemma msc_read_body_wp {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (a : Nat) (P : iProp S) (Q : Nat -> iProp S) :
-  ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)) ∗
-      ((msc_read_shift H G gam P Q) ∗ P)) ⊢
-    (WP H mscE
-      (letE nP NewProph
-        (letE nA
-          (Fst (Val
-            (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
-          (letE nT
-            (Snd (Val
-              (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
-            (letE nR
-              (app4 (Val msc_sum_loop)
-                (Var nA) (Var nT) (Val (natV 0)) (Val (natV 0)))
-              (seqE
-                (resolveProphE (Var nP) (Var nR))
-                (Var nR))))))
-      (msc_read_core_post H G gam a Q)) =>
-  ipm $ wp_smart_apply (msc_read_start_new H G gam a P Q)
-    (\lam prophValue =>
-      msc_read_after_new_wp H G gam a P Q prophValue) $
-    iAssumption
-
 \lemma msc_read_specialized_wp {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (P : iProp S) (Q : Nat -> iProp S) :
@@ -3809,20 +3593,10 @@
       (App (Val msc_read)
         (Val (PairV (LitV (LitLoc a)) (natV gam.msc_size))))
       (msc_read_core_post H G gam a Q)) =>
-  \let
-    | CounterV => PairV (LitV (LitLoc a)) (natV gam.msc_size)
-    | Body => letE nP NewProph
-        (letE nA (Fst (Var nC))
-          (letE nT (Snd (Var nC))
-            (letE nR
-              (app4 (Val msc_sum_loop)
-                (Var nA) (Var nT) (Val (natV 0)) (Val (natV 0)))
-              (seqE
-                (resolveProphE (Var nP) (Var nR))
-                (Var nR)))))
-    | Post => msc_read_core_post H G gam a Q
-  \in ipm $ wp_apply (wp_lam_beta H mscE nC Body CounterV Post) $
-      wp_apply (msc_read_body_wp H G gam a P Q) $ iAssumption
+  ipm $ wp_lam $
+    wp_smart_apply (msc_read_start_new H G gam a P Q)
+      (\lam prophValue => msc_read_after_new_wp H G gam a P Q prophValue) $
+    iAssumption
 
 \func msc_read_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -4324,56 +4098,12 @@
     (Q : Nat -> iProp S) (v : Value) : iProp S =>
   (mkProperPure (v = unitV)) ∧ (msc_incr_result Q)
 
-\lemma msc_incr_specialized_wp {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a i : Nat) (hi : nat_lt i gam.msc_size)
-    (P : iProp S) (Q : Nat -> iProp S) :
-  ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)) ∗
-      ((msc_incr_shift H G gam P Q) ∗ P)) ⊢
-    (WP H mscE
-      (app2 (Val msc_incr)
-        (Val (PairV (LitV (LitLoc a)) (natV gam.msc_size)))
-        (Val (natV i)))
-      (msc_incr_core_post Q)) =>
-  \let | resultPost : (msc_incr_result Q) ⊢
-      (msc_incr_core_post Q unitV) =>
-      (BIuPredMixin (iResUR S)).bi_mixin_and_intro (msc_incr_result Q)
-        (mkProperPure (unitV = unitV)) (msc_incr_result Q)
-        (\lam _ _ _ _ => idp) (properUPred_ent_refl (msc_incr_result Q))
-  \in ipm $ wp_pures $
-    wp_smart_apply (msc_incr_faa_wp H G gam a i hi P Q)
-      (\lam _ => ipm $ wp_pures $ wp_apply resultPost $ iAssumption) $
-    iAssumption
-
 \func msc_incr_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (c h : Value) (Q : Nat -> iProp S) (v : Value) : iProp S =>
   (mkProperPure (v = unitV)) ∧
     ((msc_is_counter H G gam c) ∗
       ((msc_handle G gam h) ∗ (msc_incr_result Q)))
-
-\lemma msc_incr_post_frame {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (c h : Value) (Q : Nat -> iProp S) (v : Value) :
-  ((msc_incr_core_post Q v) ∗
-      ((msc_is_counter H G gam c) ∗ (msc_handle G gam h))) ⊢
-    (msc_incr_post H G gam c h Q v) =>
-  \let
-    | PureV => mkProperPure {iResUR S} (v = unitV)
-    | Result => msc_incr_result Q
-    | CorePost => PureV ∧ Result
-    | Public => (msc_is_counter H G gam c) ∗ (msc_handle G gam h)
-    | Source => CorePost ∗ Public
-    | TargetBody => (msc_is_counter H G gam c) ∗
-        ((msc_handle G gam h) ∗ Result)
-  \in ipm $ iIntros "HCore HPublic" $
-      iSplitL ""
-        (wp_apply (and_elim_l_ent PureV Result) $ iExact "HCore")
-        (iAssert "HResult" "HCore" Result
-          (wp_apply (and_elim_r_ent PureV Result) $ iExact "HCore")
-          (iDestruct "HPublic" "HCounter HHandle" $
-            iFrame "HCounter HHandle" $ iExact "HResult"))
 
 \lemma msc_incr_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -4416,10 +4146,24 @@
               (app2 (Val msc_incr)
                 (Val (CounterV a)) (Val (HandleV i)))
               (msc_incr_core_post Q) Public)
-            (\lam v => msc_incr_post_frame H G gam c h Q v) $
+            (\lam v => ipm $ iIntros "HCorePost HPublicPost" $
+              iSplitL ""
+                (wp_apply (and_elim_l_ent
+                  (mkProperPure {iResUR S} (v = unitV))
+                  (msc_incr_result Q)) $ iExact "HCorePost")
+                (iAssert "HResult" "HCorePost" (msc_incr_result Q)
+                  (wp_apply (and_elim_r_ent
+                    (mkProperPure {iResUR S} (v = unitV))
+                    (msc_incr_result Q)) $ iExact "HCorePost")
+                  (iDestruct "HPublicPost" "HCounterPost HHandlePost" $
+                    iFrame "HCounterPost HHandlePost" $
+                    iExact "HResult"))) $
           iSplitL "HCore"
-            (wp_apply (msc_incr_specialized_wp H G gam a i hi P Q) $
-              iExact "HCore")
+            (wp_pures $
+              wp_smart_apply (msc_incr_faa_wp H G gam a i hi P Q)
+                (\lam _ => ipm $ wp_pures $
+                  iSplitL "" (iPureIntro $ idp) iAssumption) $
+              iAssumption)
             (iExact "HPublic")
   \in ipm $ iIntros "HShift HCounter HHandle HP" $
       iDestruct "HCounter" "#HCounter HCounterSource"
@@ -4732,10 +4476,7 @@
                     (properUPred_ent_refl Block)
               | pairProgram : (Post (PairV locV (natV T))) ⊢
                   (WP H mscE PairExpr Post) =>
-                  ipm $
-                    wp_apply (wp_pair_values H mscE locV (natV T) Post) $
-                    wp_apply (wp_value_intro H mscE
-                      (PairV locV (natV T)) Post) $ iAssumption
+                  ipm $ wp_pures $ iAssumption
               | initialized : Resources ⊢ (WP H mscE PairExpr Post) =>
                   ipm $
                     wp_apply (fupd_wp H mscE PairExpr Post) $
@@ -4763,12 +4504,7 @@
         (Pair (Var nA) (Val (natV T)))
     | Post => msc_new_counter_post H G T
     | Ghosts => msc_initial_ghosts G T
-  \in ipm $
-      wp_apply (wp_lam_beta H mscE nT
-        (letE nA
-          (AllocN (Var nT) (Val (natV 0)))
-          (Pair (Var nA) (Var nT)))
-        (natV T) Post) $
+  \in ipm $ wp_lam $
       wp_apply (wp_bupd H mscE Body Post) $
       wp_apply (bupd_mono Ghosts (WP H mscE Body Post)
         (msc_new_counter_with_ghosts H G T positive)) $
@@ -5620,10 +5356,7 @@
                 base old c h v
         \in ipm $ wp_apply (msc_client1_incr_spec H G gam gamM gamD
           base (suc old) c h) $ wp_apply resources $ iAssumption
-  \in ipm $ wp_apply (pm_wp_let H mscE nIgnore Incr Incr SecondPost) $
-      wp_apply (wp_mono H mscE Incr FirstPost
-        (\lam v => WP H mscE Incr SecondPost) continue) $
-      wp_apply first $ iAssumption
+  \in ipm $ wp_smart_apply first continue $ iAssumption
 
 \lemma msc_client1_incr_twice_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5635,22 +5368,9 @@
     (WP H mscE (app2 (Val msc_incr_twice) (Val c) (Val h))
       (msc_client1_incr_post H G gam gamM gamD base
         (suc old) c h)) =>
-  \let
-    | Pre => (msc_client_public H G gam gamM gamD base) ∗
-        ((msc_is_counter H G gam c) ∗
-          ((msc_handle G gam h) ∗
-            (ghost_map_elem (msc_clientGS G gamM) 1 (old, gamD))))
-    | Incr => app2 (Val msc_incr) (Val c) (Val h)
-    | BodyAt => seqE Incr Incr
-    | Post => msc_client1_incr_post H G gam gamM gamD base
-        (suc old) c h
-    | body : Pre ⊢ (WP H mscE BodyAt Post) =>
-        msc_client1_incr_twice_body_spec H G gam gamM gamD
-          base old c h
-    | Goal => WP H mscE
-        (app2 (Val msc_incr_twice) (Val c) (Val h)) Post
-  \in (ipm $ wp_lam $ wp_lam $
-      wp_apply body $ iAssumption : Pre ⊢ Goal)
+  ipm $ wp_lam $ wp_lam $
+    wp_apply (msc_client1_incr_twice_body_spec H G gam gamM gamD
+      base old c h) $ iAssumption
 
 \lemma msc_client2_incr_twice_body_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5688,10 +5408,7 @@
                 base old c h v
         \in ipm $ wp_apply (msc_client2_incr_spec H G gam gamM gamD
           base (suc old) c h) $ wp_apply resources $ iAssumption
-  \in ipm $ wp_apply (pm_wp_let H mscE nIgnore Incr Incr SecondPost) $
-      wp_apply (wp_mono H mscE Incr FirstPost
-        (\lam v => WP H mscE Incr SecondPost) continue) $
-      wp_apply first $ iAssumption
+  \in ipm $ wp_smart_apply first continue $ iAssumption
 
 \lemma msc_client2_incr_twice_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5703,22 +5420,9 @@
     (WP H mscE (app2 (Val msc_incr_twice) (Val c) (Val h))
       (msc_client2_incr_post H G gam gamM gamD base
         (suc old) c h)) =>
-  \let
-    | Pre => (msc_client_public H G gam gamM gamD base) ∗
-        ((msc_is_counter H G gam c) ∗
-          ((msc_handle G gam h) ∗
-            (ghost_map_elem (msc_clientGS G gamM) 2 (old, gamD))))
-    | Incr => app2 (Val msc_incr) (Val c) (Val h)
-    | BodyAt => seqE Incr Incr
-    | Post => msc_client2_incr_post H G gam gamM gamD base
-        (suc old) c h
-    | body : Pre ⊢ (WP H mscE BodyAt Post) =>
-        msc_client2_incr_twice_body_spec H G gam gamM gamD
-          base old c h
-    | Goal => WP H mscE
-        (app2 (Val msc_incr_twice) (Val c) (Val h)) Post
-  \in (ipm $ wp_lam $ wp_lam $
-      wp_apply body $ iAssumption : Pre ⊢ Goal)
+  ipm $ wp_lam $ wp_lam $
+    wp_apply (msc_client2_incr_twice_body_spec H G gam gamM gamD
+      base old c h) $ iAssumption
 
 \func msc_client1_twice_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
@@ -5729,40 +5433,6 @@
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (gamM gamD : gname) (base : Nat) (c h : Value) : Value -> iProp S =>
   msc_client2_incr_post H G gam gamM gamD base 1 c h
-
-\lemma msc_client1_thunk_spec {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (gamM gamD : gname) (base : Nat) (c h : Value) :
-  ((msc_client_public H G gam gamM gamD base) ∗
-      ((msc_is_counter H G gam c) ∗
-        ((msc_handle G gam h) ∗
-          (ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD))))) ⊢
-    (WP H mscE
-      (App
-        (Val (LamV nIgnore
-          (app2 (Val msc_incr_twice) (Val c) (Val h))))
-        (Val unitV))
-      (msc_client1_twice_post H G gam gamM gamD base c h)) =>
-  ipm $ wp_lam $
-    wp_apply (msc_client1_incr_twice_spec H G gam gamM gamD base 0 c h) $
-    iAssumption
-
-\lemma msc_client2_thunk_spec {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (gamM gamD : gname) (base : Nat) (c h : Value) :
-  ((msc_client_public H G gam gamM gamD base) ∗
-      ((msc_is_counter H G gam c) ∗
-        ((msc_handle G gam h) ∗
-          (ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD))))) ⊢
-    (WP H mscE
-      (App
-        (Val (LamV nIgnore
-          (app2 (Val msc_incr_twice) (Val c) (Val h))))
-        (Val unitV))
-      (msc_client2_twice_post H G gam gamM gamD base c h)) =>
-  ipm $ wp_lam $
-    wp_apply (msc_client2_incr_twice_spec H G gam gamM gamD base 0 c h) $
-    iAssumption
 
 \lemma msc_parallel_increments_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
@@ -5812,9 +5482,11 @@
         (msc_client2_twice_post H G gam gamM gamD base c h2) F1 F2
   \in (ipm $ wp_apply parRule $ iIntros "HPre1 HPre2" $
       iSplitL "HPre1"
-        (wp_apply (msc_client1_thunk_spec H G gam gamM gamD base c h1) $
+        (wp_lam $ wp_apply (msc_client1_incr_twice_spec H G gam gamM gamD
+          base 0 c h1) $
           iExact "HPre1")
-        (wp_apply (msc_client2_thunk_spec H G gam gamM gamD base c h2) $
+        (wp_lam $ wp_apply (msc_client2_incr_twice_spec H G gam gamM gamD
+          base 0 c h2) $
           iExact "HPre2") : (Pre1 ∗ Pre2) ⊢ Goal)
 
 \lemma msc_client_insert_two {S : gFunctors}
@@ -6421,10 +6093,10 @@
     | thunks : Pre ⊢ PreWP =>
         ipm $ iIntros "HPre1 HPre2" $
           iSplitL "HPre1"
-            (wp_apply (msc_client1_thunk_spec H G gam gamM gamD
-              base c h1) $ iExact "HPre1")
-            (wp_apply (msc_client2_thunk_spec H G gam gamM gamD
-              base c h2) $ iExact "HPre2")
+            (wp_lam $ wp_apply (msc_client1_incr_twice_spec H G gam gamM
+              gamD base 0 c h1) $ iExact "HPre1")
+            (wp_lam $ wp_apply (msc_client2_incr_twice_spec H G gam gamM
+              gamD base 0 c h2) $ iExact "HPre2")
     | parRule : PreWP ⊢ (WP H mscE ParE PairPost) =>
         par_lam_spec H SG FPI
           (msc_client1_twice_post H G gam gamM gamD base c h1)
@@ -6435,10 +6107,7 @@
     | continue : \Pi (returned : Value) -> (PairPost returned) ⊢ (WP H mscE ReadE Post) => \lam returned =>
         msc_parallel_then_read H G gam gamM gamD base c h1 h2 returned
     | Goal => WP H mscE (seqE ParE ReadE) Post
-  \in (ipm $ wp_apply (pm_wp_let H mscE nIgnore ParE ReadE Post) $
-      wp_apply (wp_mono H mscE ParE PairPost
-        (\lam returned => WP H mscE ReadE Post) continue) $
-      wp_apply parallel $ iAssumption : Pre ⊢ Goal)
+  \in (ipm $ wp_smart_apply parallel continue $ iAssumption : Pre ⊢ Goal)
 
 \lemma msc_two_incr_twice_read_spec {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (SG : spawnG S)
@@ -6467,17 +6136,15 @@
     | H2 => msc_handle G gam h2
     | E1 => ghost_map_elem (msc_clientGS G gamM) 1 (0, gamD)
     | E2 => ghost_map_elem (msc_clientGS G gamM) 2 (0, gamD)
-    | Pre1 => Public ∗ (C ∗ (H1 ∗ E1))
-    | Pre2 => Public ∗ (C ∗ (H2 ∗ E2))
-    | Pre => Pre1 ∗ Pre2
-    | Q : Nat -> iProp S => msc_client_read_Q G gam base
-    | Handles => H1 ∗ H2
-    | Post => wp_frame_post (msc_read_post H G gam c Q) Handles
-    | B1 => app2 (Val msc_incr_twice) (Val c) (Val h1)
-    | B2 => app2 (Val msc_incr_twice) (Val c) (Val h2)
-    | ParE => app2 (Val par) (Lam nIgnore B1) (Lam nIgnore B2)
-    | ReadE => App (Val msc_read) (Val c)
-    | BodyAt => seqE ParE ReadE
+    | Pre => (Public ∗ (C ∗ (H1 ∗ E1))) ∗
+        (Public ∗ (C ∗ (H2 ∗ E2)))
+    | Post => wp_frame_post
+        (msc_read_post H G gam c (msc_client_read_Q G gam base)) (H1 ∗ H2)
+    | BodyAt => seqE
+        (app2 (Val par)
+          (Lam nIgnore (app2 (Val msc_incr_twice) (Val c) (Val h1)))
+          (Lam nIgnore (app2 (Val msc_incr_twice) (Val c) (Val h2))))
+        (App (Val msc_read) (Val c))
     | Goal => WP H mscE
         (app3 (Val msc_two_incr_twice_read)
           (Val c) (Val h1) (Val h2)) Post
