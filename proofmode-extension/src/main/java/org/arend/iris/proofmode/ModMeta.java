@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
@@ -15,10 +16,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.List;
 
 final class ModMeta extends ExactMeta {
+  @Dependency(name = "PMIntoUpdate")
+  private CoreClassDefinition pmIntoUpdate;
   @Dependency(name = "pm_mod")
   private ArendRef pmMod;
+  @Dependency(name = "pm_mod_into_update")
+  private ArendRef pmModIntoUpdate;
   @Dependency(name = "pm_fupd")
   private ArendRef pmFUpd;
   @Dependency(name = "properUPred_ent_refl")
@@ -31,7 +37,13 @@ final class ModMeta extends ExactMeta {
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
-    if (!requireCount(typechecker, contextData, 3)) return null;
+    List<ConcreteExpression> explicit = explicitArguments(contextData);
+    if (explicit.size() < 3 || explicit.size() > 4) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Expected an update name, result name, optional PMIntoUpdate evidence, and continuation",
+          contextData.getMarker()));
+      return null;
+    }
     String requested = stringArgument(typechecker, contextData, 0);
     String introduced = stringArgument(typechecker, contextData, 1);
     if (requested == null || introduced == null) return null;
@@ -51,7 +63,13 @@ final class ModMeta extends ExactMeta {
     }
     CoreExpression proposition = weakHead(typechecker,
         resolved.selection().proposition());
-    if (!(proposition instanceof CoreFunCallExpression update)) {
+    ClassEvidence evidence = explicit.size() == 4
+        ? classEvidence(typechecker, contextData, explicit.get(2),
+            pmIntoUpdate, "PMIntoUpdate") : null;
+    if (explicit.size() == 4 && evidence == null) return null;
+    CoreFunCallExpression update = proposition instanceof CoreFunCallExpression call
+        ? call : null;
+    if (evidence == null && update == null) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "iMod expected an update hypothesis", contextData.getMarker()));
       return null;
@@ -63,15 +81,15 @@ final class ModMeta extends ExactMeta {
       return null;
     }
 
-    if (update.getDefinition() == mkProperFUpd
+    if (evidence == null && update.getDefinition() == mkProperFUpd
         && targetUpdate.getDefinition() == mkProperFUpd
         && update.getDefCallArguments().size() >= 4
         && targetUpdate.getDefCallArguments().size() >= 4) {
       return invokeFancy(typechecker, contextData, resolved, proposition,
           update, targetUpdate, introduced);
     }
-    if (update.getDefinition() != mkProperBUpd
-        || update.getDefCallArguments().isEmpty()) {
+    if (evidence == null && (update.getDefinition() != mkProperBUpd
+        || update.getDefCallArguments().isEmpty())) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "iMod expected a basic or fancy update hypothesis",
           contextData.getMarker()));
@@ -84,13 +102,24 @@ final class ModMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    CoreExpression body = update.getDefCallArguments().getLast();
+    CoreExpression body = evidence == null
+        ? update.getDefCallArguments().getLast() : classField(evidence, "Q");
+    if (body == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMIntoUpdate evidence", contextData.getMarker()));
+      return null;
+    }
     CoreExpression targetBody = targetUpdate.getDefCallArguments().getLast();
     var factory = contextData.getFactory();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression refl = factory.app(factory.ref(entailmentRefl), reflArgs);
+    ConcreteExpression into;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      into = evidence.term();
+    }
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -99,9 +128,10 @@ final class ModMeta extends ExactMeta {
     args.add(factory.arg(name(contextData, introduced), true));
     args.add(factory.arg(factory.core(body.computeTyped()), false));
     args.add(factory.arg(factory.core(targetBody.computeTyped()), false));
-    args.add(factory.arg(refl, true));
-    args.add(factory.arg(explicitArguments(contextData).get(2), true));
-    return typechecker.typecheck(factory.app(factory.ref(pmMod), args),
+    args.add(factory.arg(into, true));
+    args.add(factory.arg(explicit.getLast(), true));
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmMod : pmModIntoUpdate), args),
         contextData.getExpectedType());
   }
 

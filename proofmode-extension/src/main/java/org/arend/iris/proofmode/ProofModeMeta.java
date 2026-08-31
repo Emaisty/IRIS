@@ -8,6 +8,7 @@ import org.arend.ext.core.expr.CoreAppExpression;
 import org.arend.ext.core.expr.CoreClassCallExpression;
 import org.arend.ext.core.expr.CoreConCallExpression;
 import org.arend.ext.core.expr.CoreExpression;
+import org.arend.ext.core.expr.CoreFieldCallExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
 import org.arend.ext.core.expr.CoreInferenceReferenceExpression;
 import org.arend.ext.core.expr.CoreLamExpression;
@@ -71,6 +72,21 @@ abstract class ProofModeMeta extends BaseMetaDefinition {
                 typechecker.getFactory().core(
                     application.getArgument().computeTyped()))));
         if (reduced != null) return weakHead(typechecker, reduced);
+      }
+    }
+    if (result instanceof CoreFieldCallExpression fieldCall) {
+      CoreExpression argument = dereference(typechecker, fieldCall.getArgument());
+      CoreClassCallExpression classCall = argument instanceof CoreNewExpression newExpression
+          ? newExpression.getClassCall()
+          : argument instanceof CoreClassCallExpression call ? call : null;
+      if (classCall != null) {
+        CoreExpression implementation = classCall.getClosedImplementation(
+            fieldCall.getDefinition());
+        if (implementation == null) {
+          implementation = classCall.getImplementation(fieldCall.getDefinition(),
+              argument.computeTyped());
+        }
+        if (implementation != null) return weakHead(typechecker, implementation);
       }
     }
     if (result instanceof CoreFunCallExpression

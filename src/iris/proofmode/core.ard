@@ -1478,74 +1478,302 @@
 
 -- Proof-mode class boundary.  Instances contain only kernel-checked
 -- entailments; Java metas merely ask Arend to synthesize their applications.
-\class PMFromAssumption (\classifying M : UCMRA) (P Q : ProperUPred M)
+\class PMFromAssumption \noclassifying
+    (M : UCMRA) (P Q : ProperUPred M)
   | from_assumption : P ⊢ Q
 
-\class PMIntoPure (\classifying M : UCMRA) (P : ProperUPred M) (phi : \Prop)
+\lemma pm_exact_from_assumption_spatial {M : UCMRA}
+    (envs : PMEnvs M) (selection : PMSelection envs.spatial)
+    {Q : ProperUPred M}
+    (instance : PMFromAssumption M selection.selected_prop Q)
+  : envs_entails envs Q =>
+  pm_ent_apply instance.from_assumption (pm_exact_spatial envs selection)
+
+\lemma pm_exact_from_assumption_intuitionistic {M : UCMRA}
+    (envs : PMEnvs M)
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {Q : ProperUPred M}
+    (instance : PMFromAssumption M selection.persistent_prop Q)
+  : envs_entails envs Q =>
+  pm_ent_apply instance.from_assumption
+    (pm_exact_intuitionistic envs selection)
+
+\class PMIntoPure \noclassifying
+    (M : UCMRA) (P : ProperUPred M) (phi : \Prop)
   | into_pure : P ⊢ mkProperPure phi
 
-\class PMFromPure (\classifying M : UCMRA) (P : ProperUPred M) (phi : \Prop)
+\class PMFromPure \noclassifying
+    (M : UCMRA) (P : ProperUPred M) (phi : \Prop)
   | from_pure : phi -> mkProperEmp ⊢ P
 
-\class PMIntoPersistent (\classifying M : UCMRA) (P Q : ProperUPred M)
+\class PMIntoPersistent \noclassifying
+    (M : UCMRA) (P Q : ProperUPred M)
   | into_persistent : P ⊢ (<#> Q)
 
-\class PMFromSep (\classifying M : UCMRA) (P Q R : ProperUPred M)
+\class PMFromSep \noclassifying
+    (M : UCMRA) (P Q R : ProperUPred M)
   | from_sep : P ⊢ (Q ∗ R)
 
-\class PMIntoAnd (\classifying M : UCMRA) (P Q R : ProperUPred M)
+\class PMIntoAnd \noclassifying
+    (M : UCMRA) (P Q R : ProperUPred M)
   | into_and : P ⊢ (Q ∧ R)
 
-\class PMIntoOr (\classifying M : UCMRA) (P Q R : ProperUPred M)
+\class PMIntoOr \noclassifying
+    (M : UCMRA) (P Q R : ProperUPred M)
   | into_or : P ⊢ (Q ∨ R)
 
-\class PMIntoWand (\classifying M : UCMRA) (P Q R : ProperUPred M)
+\class PMIntoWand \noclassifying
+    (M : UCMRA) (P Q R : ProperUPred M)
   | into_wand : P ⊢ (Q -∗ R)
 
-\class PMIntoLater (\classifying M : UCMRA) (P Q : ProperUPred M)
+\class PMIntoLater \noclassifying
+    (M : UCMRA) (P Q : ProperUPred M)
   | into_later : P ⊢ (|> Q)
 
-\class PMFromLater (\classifying M : UCMRA) (P Q : ProperUPred M)
+\class PMFromLater \noclassifying
+    (M : UCMRA) (P Q : ProperUPred M)
   | from_later : (|> P) ⊢ Q
 
-\class PMTimeless (\classifying M : UCMRA) (P : ProperUPred M)
+\class PMTimeless \noclassifying (M : UCMRA) (P : ProperUPred M)
   | pm_timeless : (|> P) ⊢ (mkProperExceptZero P)
 
-\class PMFromExist (\classifying M : UCMRA) {A : \Set0}
+\class PMFromExist \noclassifying (M : UCMRA) {A : \Set0}
     (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | from_exist : (mkProperExist A Phi) ⊢ P
 
-\class PMIntoExist (\classifying M : UCMRA) {A : \Set0}
-    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+\class PMIntoExist \noclassifying (M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | into_exist : P ⊢ (mkProperExist A Phi)
 
-\class PMFromExist1 (\classifying M : UCMRA) {A : \Set1}
+\class PMFromExist1 \noclassifying (M : UCMRA) {A : \Set1}
     (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | from_exist1 : (mkProperExist1 A Phi) ⊢ P
 
-\class PMIntoExist1 (\classifying M : UCMRA) {A : \Set1}
-    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+\class PMIntoExist1 \noclassifying (M : UCMRA) {A : \Set1}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | into_exist1 : P ⊢ (mkProperExist1 A Phi)
 
-\class PMIntoForall (\classifying M : UCMRA) {A : \Set0}
+\class PMIntoForall \noclassifying (M : UCMRA) {A : \Set0}
     (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | into_forall : P ⊢ (mkProperForall A Phi)
 
-\class PMFromForall (\classifying M : UCMRA) {A : \Set0}
-    (P : ProperUPred M) (Phi : A -> ProperUPred M) (name : PMName)
+\class PMFromForall \noclassifying (M : UCMRA) {A : \Set0}
+    (P : ProperUPred M) (Phi : A -> ProperUPred M)
   | from_forall : (mkProperForall A Phi) ⊢ P
 
-\class PMFrame (\classifying M : UCMRA) (R P Q : ProperUPred M)
-  | frame : P ⊢ (R ∗ Q)
+\class PMFrame \noclassifying
+    (M : UCMRA) (R P Q : ProperUPred M)
+  | frame : (R ∗ Q) ⊢ P
 
-\class PMIntoUpdate (\classifying M : UCMRA) (P Q : ProperUPred M)
+\class PMIntoUpdate \noclassifying
+    (M : UCMRA) (P Q : ProperUPred M)
   | into_update : P ⊢ (|==> Q)
 
-\class PMIntoInvariant (\classifying M : UCMRA) (P Q Close : ProperUPred M)
+\class PMIntoInvariant \noclassifying
+    (M : UCMRA) (P Q Close : ProperUPred M)
   | into_invariant : P ⊢ (Q ∗ Close)
 
-\class PMIntoAccessor (\classifying M : UCMRA) (P Q Close : ProperUPred M)
+\class PMIntoAccessor \noclassifying
+    (M : UCMRA) (P Q Close : ProperUPred M)
   | into_accessor : P ⊢ (Q ∗ Close)
+
+\lemma pm_destruct_from_sep {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (left right : PMName)
+    {P Q R : ProperUPred M}
+    (instance : PMFromSep M selection.selected_prop P Q)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc (pm_snoc selection.selected_rest left P) right Q
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_sep selection left right instance.from_sep next
+
+\lemma pm_destruct_into_pure {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) {phi : \Prop}
+    {R : ProperUPred M}
+    (instance : PMIntoPure M selection.selected_prop phi)
+    (next : phi -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_pure selection instance.into_pure next
+
+\lemma pm_pure_intro_from {M : UCMRA} {envs : PMEnvs M}
+    {P : ProperUPred M} {phi : \Prop}
+    (instance : PMFromPure M P phi) (proof : phi)
+  : envs_entails envs P =>
+  pm_ent_apply (instance.from_pure proof) pm_emp_intro
+
+\lemma pm_destruct_into_persistent {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P R : ProperUPred M}
+    (instance : PMIntoPersistent M selection.selected_prop P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => pm_snoc envs.intuitionistic name P
+        | spatial => selection.selected_rest
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_persistent selection name instance.into_persistent next
+
+\lemma pm_destruct_into_persistent_copy {M : UCMRA}
+    {envs : PMEnvs M} (selection : PMSelection envs.spatial)
+    (persistent_name copy_name : PMName) {P R : ProperUPred M}
+    (instance : PMIntoPersistent M selection.selected_prop P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => pm_snoc envs.intuitionistic persistent_name P
+        | spatial => pm_snoc selection.selected_rest copy_name P
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_persistent_copy selection persistent_name copy_name
+    instance.into_persistent next
+
+\lemma pm_destruct_into_or {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial)
+    (left_name right_name : PMName) {P Q R : ProperUPred M}
+    (instance : PMIntoOr M selection.selected_prop P Q)
+    (left : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest left_name P
+      }) R)
+    (right : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest right_name Q
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_or selection left_name right_name instance.into_or left right
+
+\lemma pm_apply_into_wand {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) {P Q : ProperUPred M}
+    (instance : PMIntoWand M selection.selected_prop P Q)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      }) P)
+  : envs_entails envs Q =>
+  pm_apply_wand selection instance.into_wand next
+
+\lemma pm_apply_into_wand_intuitionistic {M : UCMRA}
+    {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {P Q : ProperUPred M}
+    (instance : PMIntoWand M selection.persistent_prop P Q)
+    (next : envs_entails envs P)
+  : envs_entails envs Q =>
+  pm_apply_wand_intuitionistic selection instance.into_wand next
+
+\lemma pm_specialize_into_wand {M : UCMRA} {envs : PMEnvs M}
+    (wand_selection : PMSelection envs.spatial)
+    (argument_selection : PMSelection wand_selection.selected_rest)
+    (name : PMName) {P Q R : ProperUPred M}
+    (instance : PMIntoWand M wand_selection.selected_prop P Q)
+    (is_argument : argument_selection.selected_prop ⊢ P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc argument_selection.selected_rest name Q
+      }) R)
+  : envs_entails envs R =>
+  pm_specialize wand_selection argument_selection name
+    instance.into_wand is_argument next
+
+\lemma pm_specialize_into_wand_intuitionistic {M : UCMRA}
+    {envs : PMEnvs M}
+    (wand_selection : PMPersistentSelection envs.intuitionistic)
+    (argument_selection : PMSelection envs.spatial)
+    (name : PMName) {P Q R : ProperUPred M}
+    (instance : PMIntoWand M wand_selection.persistent_prop P Q)
+    (is_argument : argument_selection.selected_prop ⊢ P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc argument_selection.selected_rest name Q
+      }) R)
+  : envs_entails envs R =>
+  pm_specialize_intuitionistic wand_selection argument_selection name
+    instance.into_wand is_argument next
+
+\lemma pm_destruct_into_exist {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {A : \Set0} {Phi : A -> ProperUPred M} {R : ProperUPred M}
+    (instance : PMIntoExist M selection.selected_prop Phi)
+    (next : \Pi (a : A) -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name (Phi a)
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_exist selection name instance.into_exist next
+
+\lemma pm_destruct_into_exist1 {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {A : \Set1} {Phi : A -> ProperUPred M} {R : ProperUPred M}
+    (instance : PMIntoExist1 M selection.selected_prop Phi)
+    (next : \Pi (a : A) -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name (Phi a)
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_exist1 selection name instance.into_exist1 next
+
+\lemma pm_destruct_into_exist_intuitionistic {M : UCMRA}
+    {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    (name : PMName) {A : \Set0}
+    {Phi : A -> ProperUPred M} {R : ProperUPred M}
+    (instance : PMIntoExist M selection.persistent_prop Phi)
+    (next : \Pi (a : A) -> envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => pm_snoc selection.persistent_rest name (Phi a)
+        | spatial => envs.spatial
+      }) R)
+  : envs_entails envs R =>
+  pm_destruct_exist_intuitionistic selection name instance.into_exist next
+
+\lemma pm_frame_with_spatial {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) {P Q : ProperUPred M}
+    (instance : PMFrame M selection.selected_prop P Q)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => selection.selected_rest
+      }) Q)
+  : envs_entails envs P =>
+  pm_ent_apply instance.frame (pm_frame_spatial selection next)
+
+\lemma pm_frame_with_intuitionistic {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMPersistentSelection envs.intuitionistic)
+    {P Q : ProperUPred M}
+    (instance : PMFrame M selection.persistent_prop P Q)
+    (next : envs_entails envs Q)
+  : envs_entails envs P =>
+  pm_ent_apply instance.frame (pm_frame_intuitionistic selection next)
+
+\lemma pm_next_from {M : UCMRA} {envs : PMEnvs M}
+    {P Q : ProperUPred M} (instance : PMFromLater M P Q)
+    (next : envs_entails envs P)
+  : envs_entails envs Q =>
+  pm_ent_apply instance.from_later (pm_next next)
+
+\lemma pm_mod_into_update {M : UCMRA} {envs : PMEnvs M}
+    (selection : PMSelection envs.spatial) (name : PMName)
+    {P Q : ProperUPred M}
+    (instance : PMIntoUpdate M selection.selected_prop P)
+    (next : envs_entails
+      (\new PMEnvs M {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc selection.selected_rest name P
+      }) (|==> Q))
+  : envs_entails envs (|==> Q) =>
+  pm_mod selection name instance.into_update next
 
 \func pm_from_assumption_refl {M : UCMRA} (P : ProperUPred M)
   : PMFromAssumption M P P \cowith
@@ -1582,8 +1810,8 @@
   | from_exist => properUPred_ent_refl (mkProperExist A Phi)
 
 \func pm_into_exist_direct {M : UCMRA} {A : \Set0}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMIntoExist M (mkProperExist A Phi) Phi name \cowith
+    (Phi : A -> ProperUPred M)
+  : PMIntoExist M (mkProperExist A Phi) Phi \cowith
   | into_exist => properUPred_ent_refl (mkProperExist A Phi)
 
 \func pm_from_exist1_direct {M : UCMRA} {A : \Set1}
@@ -1592,8 +1820,8 @@
   | from_exist1 => properUPred_ent_refl (mkProperExist1 A Phi)
 
 \func pm_into_exist1_direct {M : UCMRA} {A : \Set1}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMIntoExist1 M (mkProperExist1 A Phi) Phi name \cowith
+    (Phi : A -> ProperUPred M)
+  : PMIntoExist1 M (mkProperExist1 A Phi) Phi \cowith
   | into_exist1 => properUPred_ent_refl (mkProperExist1 A Phi)
 
 \func pm_into_forall_direct {M : UCMRA} {A : \Set0}
@@ -1602,8 +1830,8 @@
   | into_forall => properUPred_ent_refl (mkProperForall A Phi)
 
 \func pm_from_forall_direct {M : UCMRA} {A : \Set0}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMFromForall M (mkProperForall A Phi) Phi name \cowith
+    (Phi : A -> ProperUPred M)
+  : PMFromForall M (mkProperForall A Phi) Phi \cowith
   | from_forall => properUPred_ent_refl (mkProperForall A Phi)
 
 \func pm_frame_direct {M : UCMRA} (R Q : ProperUPred M)

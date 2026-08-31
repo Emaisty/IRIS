@@ -24,6 +24,7 @@
 \import stdpp.namespaces
 \import iris.proofmode.core
 \import iris.proofmode.Meta
+\import tests.proofmode_custom_instances
 
 \lemma proofmode_start_smoke {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ (P ∗ Q) =>
@@ -263,6 +264,119 @@
 \lemma proofmode_pure_intro {M : UCMRA} (P : ProperUPred M)
     (phi : \Prop) (h : phi)
   : P ⊢ mkProperPure phi => ipm $ iPureIntro $ h
+
+\lemma proofmode_exact_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) : (P ∗ Q) ⊢ P =>
+  ipm $ iIntros "HPair" $
+    iExact "HPair" (proofmode_from_assumption_sep_left P Q)
+
+\lemma proofmode_assumption_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) : (P ∗ Q) ⊢ P =>
+  ipm $ iIntros "HPair" $
+    iAssumption (proofmode_from_assumption_sep_left P Q)
+
+\lemma proofmode_exact_class_intuitionistic {M : UCMRA}
+    (P Q : ProperUPred M) :
+  ((<#> (P ∗ Q)) ∗ mkProperEmp) ⊢ P =>
+  ipm $ iIntros "HU HE" $ iDestruct "HU" "#HPair" $
+    iExact "HPair" (proofmode_from_assumption_sep_left P Q)
+
+\func proofmode_exact_class_wrong_target_fails {M : UCMRA}
+    (P Q : ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HPair" $
+    iExact "HPair" (proofmode_from_assumption_sep_left P Q)
+    : (P ∗ Q) ⊢ Q)
+
+\lemma proofmode_destruct_sep_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    ((P ∗ Q) ∗ mkProperEmp) ⊢ (P ∗ Q) =>
+  ipm $ iIntros "HSource" $
+    iDestruct "HSource" "HP HQ" (proofmode_from_sep_drop_emp P Q) $
+    iFrame
+
+\func proofmode_destruct_sep_class_wrong_source_fails {M : UCMRA}
+    (P Q : ProperUPred M) : \Sigma =>
+  fails (ipm $ iIntros "HPair" $
+    iDestruct "HPair" "HP HQ" (proofmode_from_sep_drop_emp P Q) $
+    iFrame
+    : (P ∗ Q) ⊢ (P ∗ Q))
+
+\lemma proofmode_destruct_pure_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) (phi : \Prop) :
+    (((mkProperPure phi) ∧ P) ∗ Q) ⊢ Q =>
+  ipm $ iIntros "HSource HQ" $
+    iDestruct "HSource" "%" (proofmode_into_pure_and_left phi P) $
+    \lam _ => iExact "HQ"
+
+\lemma proofmode_pure_intro_class_instance {M : UCMRA}
+    (phi : \Prop) (h : phi) :
+    mkProperEmp {M} ⊢ ((mkProperPure {M} phi) ∧ mkProperEmp {M}) =>
+  ipm $ iPureIntro (proofmode_from_pure_and_emp {M} phi) $ h
+
+\lemma proofmode_persistent_class_instance {M : UCMRA}
+    (P : ProperUPred M) :
+    ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HSource" $
+    iDestruct "HSource" "#HP"
+      (proofmode_into_persistent_drop_emp P) $
+    iSplitL "" (iExact "HP") (iExact "HP")
+
+\lemma proofmode_persistent_copy_class_instance {M : UCMRA}
+    (P : ProperUPred M) :
+    ((<#> P) ∗ mkProperEmp) ⊢ (P ∗ P) =>
+  ipm $ iIntros "HSource" $
+    iDestruct "HSource" "#HPersistent HCopy"
+      (proofmode_into_persistent_drop_emp P) $
+    iFrame "HCopy" $ iExact "HPersistent"
+
+\lemma proofmode_or_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    ((P ∨ Q) ∗ mkProperEmp) ⊢ (P ∨ Q) =>
+  ipm $ iIntros "HSource" $
+    iDestruct "HSource" "HP | HQ" (proofmode_into_or_drop_emp P Q)
+      (iLeft $ iExact "HP")
+      (iRight $ iExact "HQ")
+
+\lemma proofmode_apply_wand_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    (((P -∗ Q) ∗ mkProperEmp) ∗ P) ⊢ Q =>
+  ipm $ iIntros "HW HP" $
+    iApply "HW" (proofmode_into_wand_drop_emp P Q) $
+    iExact "HP"
+
+\lemma proofmode_specialize_wand_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) :
+    (((P -∗ Q) ∗ mkProperEmp) ∗ P) ⊢ Q =>
+  ipm $ iIntros "HW HP" $
+    iSpecialize "HW" "HP" "HQ" (proofmode_into_wand_drop_emp P Q) $
+    iExact "HQ"
+
+\lemma proofmode_exist_class_instance {M : UCMRA}
+    (Phi : Nat -> ProperUPred M) :
+    ((mkProperExist Nat Phi) ∗ mkProperEmp) ⊢ mkProperExist Nat Phi =>
+  ipm $ iIntros "HSource" $
+    iDestruct "HSource" "HPhi" (proofmode_into_exist_drop_emp Phi) $
+    \lam n => iExists n $ iExact "HPhi"
+
+\lemma proofmode_frame_class_instance {M : UCMRA}
+    (R Q P : ProperUPred M) :
+    (R ∗ Q) ⊢ ((R ∗ Q) ∨ P) =>
+  ipm $ iIntros "HR HQ" $
+    iFrame "HR" (proofmode_frame_or_left R Q P) $
+    iExact "HQ"
+
+\lemma proofmode_next_class_instance {M : UCMRA}
+    (P Q : ProperUPred M) : P ⊢ ((|> P) ∨ Q) =>
+  ipm $ iIntros "HP" $
+    iNext (proofmode_from_later_or_left P Q) $
+    iExact "HP"
+
+\lemma proofmode_update_class_instance {M : UCMRA}
+    (P : ProperUPred M) :
+    ((|==> P) ∗ mkProperEmp) ⊢ (|==> P) =>
+  ipm $ iIntros "HSource" $
+    iMod "HSource" "HP" (proofmode_into_update_drop_emp P) $
+    iModIntro $ iExact "HP"
 
 \lemma proofmode_assumption {M : UCMRA} (P Q : ProperUPred M)
   : (P ∗ Q) ⊢ P => ipm $ iIntros "HP HQ" $ iAssumption

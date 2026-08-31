@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreClassCallExpression;
 import org.arend.ext.core.expr.CoreExpression;
@@ -18,13 +19,21 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.List;
 
 final class SpecializeMeta extends ExactMeta {
+  @Dependency(name = "PMIntoWand")
+  private CoreClassDefinition pmIntoWand;
+
   @Dependency(name = "pm_specialize")
   private ArendRef pmSpecialize;
 
   @Dependency(name = "pm_specialize_intuitionistic")
   private ArendRef pmSpecializeIntuitionistic;
+  @Dependency(name = "pm_specialize_into_wand")
+  private ArendRef pmSpecializeIntoWand;
+  @Dependency(name = "pm_specialize_into_wand_intuitionistic")
+  private ArendRef pmSpecializeIntoWandIntuitionistic;
 
   @Dependency(name = "pm_delete")
   private ArendRef pmDelete;
@@ -46,7 +55,13 @@ final class SpecializeMeta extends ExactMeta {
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
-    if (!requireCount(typechecker, contextData, 4)) return null;
+    List<ConcreteExpression> explicit = explicitArguments(contextData);
+    if (explicit.size() < 4 || explicit.size() > 5) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Expected wand, argument, result, optional PMIntoWand evidence, and continuation",
+          contextData.getMarker()));
+      return null;
+    }
     String wandName = stringArgument(typechecker, contextData, 0);
     String argumentName = stringArgument(typechecker, contextData, 1);
     String resultName = stringArgument(typechecker, contextData, 2);
@@ -66,15 +81,28 @@ final class SpecializeMeta extends ExactMeta {
     if (wandSelection == null) return null;
     CoreExpression wandProposition = weakHead(typechecker,
         wandSelection.selection().proposition());
-    if (!(wandProposition instanceof CoreFunCallExpression wand)
-        || !wand.getDefinition().getName().equals(mkProperWand.getName())
-        || wand.getDefCallArguments().size() < 3) {
+    ClassEvidence evidence = explicit.size() == 5
+        ? classEvidence(typechecker, contextData, explicit.get(3),
+            pmIntoWand, "PMIntoWand") : null;
+    if (explicit.size() == 5 && evidence == null) return null;
+    CoreFunCallExpression wand = wandProposition instanceof CoreFunCallExpression call
+        && call.getDefinition().getName().equals(mkProperWand.getName())
+        && call.getDefCallArguments().size() >= 3 ? call : null;
+    if (evidence == null && wand == null) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "iSpecialize expected a wand hypothesis", contextData.getMarker()));
       return null;
     }
-    CoreExpression domain = wand.getDefCallArguments().get(wand.getDefCallArguments().size() - 2);
-    CoreExpression codomain = wand.getDefCallArguments().getLast();
+    CoreExpression domain = evidence == null
+        ? wand.getDefCallArguments().get(wand.getDefCallArguments().size() - 2)
+        : classField(evidence, "Q");
+    CoreExpression codomain = evidence == null
+        ? wand.getDefCallArguments().getLast() : classField(evidence, "R");
+    if (domain == null || codomain == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMIntoWand evidence", contextData.getMarker()));
+      return null;
+    }
 
     CoreExpression environment = wandSelection.environment();
     CoreClassCallExpression envClass = environment instanceof CoreNewExpression newExpression
@@ -134,11 +162,15 @@ final class SpecializeMeta extends ExactMeta {
     args.add(factory.arg(factory.core(domain.computeTyped()), false));
     args.add(factory.arg(factory.core(codomain.computeTyped()), false));
     args.add(factory.arg(factory.core(wandSelection.target().computeTyped()), false));
-    args.add(factory.arg(refl(contextData, wandProposition), true));
+    args.add(factory.arg(evidence == null
+        ? refl(contextData, wandProposition) : evidence.term(), true));
     args.add(factory.arg(refl(contextData, argumentProposition), true));
-    args.add(factory.arg(explicitArguments(contextData).get(3), true));
-    return typechecker.typecheck(factory.app(factory.ref(wandSelection.persistent()
-            ? pmSpecializeIntuitionistic : pmSpecialize), args),
+    args.add(factory.arg(explicit.getLast(), true));
+    ArendRef lemma = wandSelection.persistent()
+        ? evidence == null ? pmSpecializeIntuitionistic
+            : pmSpecializeIntoWandIntuitionistic
+        : evidence == null ? pmSpecialize : pmSpecializeIntoWand;
+    return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
   }
 }

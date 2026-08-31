@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreClassField;
 import org.arend.ext.core.definition.CoreConstructor;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
@@ -27,6 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 class ExactMeta extends ProofModeMeta {
+  @Dependency(name = "PMFromAssumption")
+  protected CoreClassDefinition pmFromAssumption;
+
+  @Dependency(name = "pm_exact_from_assumption_spatial")
+  protected ArendRef pmExactFromAssumptionSpatial;
+
+  @Dependency(name = "pm_exact_from_assumption_intuitionistic")
+  protected ArendRef pmExactFromAssumptionIntuitionistic;
+
   @Dependency(name = "pm_exact_spatial")
   protected ArendRef pmExactSpatial;
 
@@ -197,10 +207,48 @@ class ExactMeta extends ProofModeMeta {
     }
   }
 
-  protected record ResolvedSelection(CoreExpression environment,
+  protected record ResolvedSelection(CoreExpression model,
+      CoreExpression environment,
       BuiltSelection selection, boolean persistent, CoreExpression target) {}
 
-  protected record GoalData(CoreExpression environment, CoreExpression target) {}
+  protected record GoalData(CoreExpression model, CoreExpression environment,
+      CoreExpression target) {}
+
+  protected record ClassEvidence(CoreClassCallExpression classCall,
+      ConcreteExpression term) {}
+
+  protected @Nullable ClassEvidence classEvidence(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      ConcreteExpression expression, CoreClassDefinition expected,
+      String label) {
+    ClassEvidence result = tryClassEvidence(typechecker, contextData,
+        expression, expected);
+    if (result == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Expected " + label + " evidence", contextData.getMarker()));
+    }
+    return result;
+  }
+
+  protected @Nullable ClassEvidence tryClassEvidence(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      ConcreteExpression expression, CoreClassDefinition expected) {
+    TypedExpression typed = typechecker.typecheck(expression, null);
+    CoreExpression type = typed == null ? null
+        : weakHead(typechecker, typed.getType());
+    if (!(type instanceof CoreClassCallExpression classCall)
+        || !classCall.getDefinition().getName().equals(expected.getName())) {
+      return null;
+    }
+    return new ClassEvidence(classCall, contextData.getFactory().core(typed));
+  }
+
+  protected @Nullable CoreExpression classField(ClassEvidence evidence,
+      String name) {
+    CoreClassField field = evidence.classCall().getDefinition().findField(name);
+    return field == null ? null
+        : evidence.classCall().getClosedImplementation(field);
+  }
 
   protected @Nullable GoalData resolveGoal(ExpressionTypechecker typechecker,
       ContextData contextData) {
@@ -218,6 +266,7 @@ class ExactMeta extends ProofModeMeta {
       return null;
     }
     return new GoalData(dereference(typechecker,
+        goal.getDefCallArguments().getFirst()), dereference(typechecker,
         goal.getDefCallArguments().get(1)), goal.getDefCallArguments().getLast());
   }
 
@@ -251,32 +300,77 @@ class ExactMeta extends ProofModeMeta {
           contextData.getMarker()));
       return null;
     }
-    return new ResolvedSelection(environment, selected, persistent,
+    return new ResolvedSelection(goal.model(), environment, selected, persistent,
         goal.target());
+  }
+
+  private @Nullable CoreExpression assumptionType(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      CoreExpression model, CoreExpression source, CoreExpression target) {
+    var factory = contextData.getFactory();
+    CoreExpression reducedSource = weakHead(typechecker, source);
+    List<ConcreteArgument> classArgs = new ArrayList<>();
+    classArgs.add(factory.arg(factory.core(model.computeTyped()), true));
+    classArgs.add(factory.arg(factory.core(reducedSource.computeTyped()), true));
+    classArgs.add(factory.arg(factory.core(target.computeTyped()), true));
+    TypedExpression expected = typechecker.typecheckType(factory.app(
+        factory.ref(pmFromAssumption.getRef()), classArgs));
+    return expected == null ? null : expected.getExpression();
   }
 
   protected @Nullable TypedExpression finishExact(ExpressionTypechecker typechecker,
       ContextData contextData, ResolvedSelection resolved) {
+    return finishExact(typechecker, contextData, resolved, null);
+  }
+
+  protected @Nullable TypedExpression finishExact(ExpressionTypechecker typechecker,
+      ContextData contextData, ResolvedSelection resolved,
+      @Nullable ConcreteExpression evidence) {
     var factory = contextData.getFactory();
+    boolean direct = evidence == null;
+    TypedExpression instance = null;
+    if (!direct) {
+      CoreExpression expected = assumptionType(typechecker, contextData,
+          resolved.model(), resolved.selection().proposition(),
+          resolved.target());
+      if (expected == null) return null;
+      instance = typechecker.typecheck(evidence, expected);
+      if (instance == null) return null;
+    }
     List<ConcreteArgument> callArgs = new ArrayList<>();
     callArgs.add(factory.arg(factory.hole(), false));
     callArgs.add(factory.arg(factory.core(resolved.environment().computeTyped()), true));
     callArgs.add(factory.arg(resolved.selection().term(), true));
-    return typechecker.typecheck(factory.app(factory.ref(resolved.persistent()
-        ? pmExactIntuitionistic : pmExactSpatial), callArgs),
+    ArendRef lemma;
+    if (direct) {
+      lemma = resolved.persistent() ? pmExactIntuitionistic : pmExactSpatial;
+    } else {
+      callArgs.add(factory.arg(factory.hole(), false));
+      callArgs.add(factory.arg(factory.core(instance), true));
+      lemma = resolved.persistent() ? pmExactFromAssumptionIntuitionistic
+          : pmExactFromAssumptionSpatial;
+    }
+    return typechecker.typecheck(factory.app(factory.ref(lemma), callArgs),
         contextData.getExpectedType());
   }
 
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
-    if (!requireCount(typechecker, contextData, 1)) return null;
+    List<ConcreteExpression> arguments = explicitArguments(contextData);
+    if (arguments.size() < 1 || arguments.size() > 2) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Expected a hypothesis name and optional PMFromAssumption evidence",
+          contextData.getMarker()));
+      return null;
+    }
     String requested = stringArgument(typechecker, contextData, 0);
     if (requested == null) return null;
 
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
 
-    return finishExact(typechecker, contextData, resolved);
+    return finishExact(typechecker, contextData, resolved,
+        arguments.size() == 2 ? arguments.get(1) : null);
   }
 }

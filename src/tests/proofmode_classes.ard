@@ -53,27 +53,27 @@
   : PMFromExist M (mkProperExist A Phi) Phi => pm_from_exist_direct {M} {A} Phi
 
 \func proofmode_class_into_exist {M : UCMRA} {A : \Set0}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMIntoExist M (mkProperExist A Phi) Phi name =>
-  pm_into_exist_direct {M} {A} Phi name
+    (Phi : A -> ProperUPred M)
+  : PMIntoExist M (mkProperExist A Phi) Phi =>
+  pm_into_exist_direct {M} {A} Phi
 
 \func proofmode_class_from_exist1 {M : UCMRA} {A : \Set1}
     (Phi : A -> ProperUPred M)
   : PMFromExist1 M (mkProperExist1 A Phi) Phi => pm_from_exist1_direct {M} {A} Phi
 
 \func proofmode_class_into_exist1 {M : UCMRA} {A : \Set1}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMIntoExist1 M (mkProperExist1 A Phi) Phi name =>
-  pm_into_exist1_direct {M} {A} Phi name
+    (Phi : A -> ProperUPred M)
+  : PMIntoExist1 M (mkProperExist1 A Phi) Phi =>
+  pm_into_exist1_direct {M} {A} Phi
 
 \func proofmode_class_into_forall {M : UCMRA} {A : \Set0}
     (Phi : A -> ProperUPred M)
   : PMIntoForall M (mkProperForall A Phi) Phi => pm_into_forall_direct {M} {A} Phi
 
 \func proofmode_class_from_forall {M : UCMRA} {A : \Set0}
-    (Phi : A -> ProperUPred M) (name : PMName)
-  : PMFromForall M (mkProperForall A Phi) Phi name =>
-  pm_from_forall_direct {M} {A} Phi name
+    (Phi : A -> ProperUPred M)
+  : PMFromForall M (mkProperForall A Phi) Phi =>
+  pm_from_forall_direct {M} {A} Phi
 
 \func proofmode_class_frame {M : UCMRA} (R Q : ProperUPred M)
   : PMFrame M R (R ∗ Q) Q => pm_frame_direct R Q

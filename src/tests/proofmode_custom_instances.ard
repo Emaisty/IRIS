@@ -1,0 +1,66 @@
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.big_op
+\import iris.bi.updates
+\import iris.proofmode.core
+
+-- A downstream proof-mode extension used by the integration tests.
+\func proofmode_from_assumption_sep_left {M : UCMRA}
+    (P Q : ProperUPred M) :
+    PMFromAssumption M (P ∗ Q) P \cowith
+  | from_assumption => sep_elim_l_ent P Q
+
+\func proofmode_from_sep_drop_emp {M : UCMRA}
+    (P Q : ProperUPred M) :
+    PMFromSep M ((P ∗ Q) ∗ mkProperEmp) P Q \cowith
+  | from_sep => sep_elim_l_ent (P ∗ Q) mkProperEmp
+
+\func proofmode_into_pure_and_left {M : UCMRA}
+    (phi : \Prop) (P : ProperUPred M) :
+    PMIntoPure M ((mkProperPure phi) ∧ P) phi \cowith
+  | into_pure =>
+      (BIuPredMixin M).bi_mixin_and_elim_l (mkProperPure phi) P
+
+\func proofmode_from_pure_and_emp {M : UCMRA} (phi : \Prop) :
+    PMFromPure M ((mkProperPure phi) ∧ mkProperEmp) phi \cowith
+  | from_pure => \lam h =>
+      (BIuPredMixin M).bi_mixin_and_intro mkProperEmp
+        (mkProperPure phi) mkProperEmp
+        ((BIuPredMixin M).bi_mixin_pure_intro phi mkProperEmp h)
+        (properUPred_ent_refl mkProperEmp)
+
+\func proofmode_into_persistent_drop_emp {M : UCMRA}
+    (P : ProperUPred M) :
+    PMIntoPersistent M ((<#> P) ∗ mkProperEmp) P \cowith
+  | into_persistent => sep_elim_l_ent (<#> P) mkProperEmp
+
+\func proofmode_into_or_drop_emp {M : UCMRA}
+    (P Q : ProperUPred M) :
+    PMIntoOr M ((P ∨ Q) ∗ mkProperEmp) P Q \cowith
+  | into_or => sep_elim_l_ent (P ∨ Q) mkProperEmp
+
+\func proofmode_into_wand_drop_emp {M : UCMRA}
+    (P Q : ProperUPred M) :
+    PMIntoWand M ((P -∗ Q) ∗ mkProperEmp) P Q \cowith
+  | into_wand => sep_elim_l_ent (P -∗ Q) mkProperEmp
+
+\func proofmode_into_exist_drop_emp {M : UCMRA} {A : \Set0}
+    (Phi : A -> ProperUPred M) :
+    PMIntoExist M ((mkProperExist A Phi) ∗ mkProperEmp) Phi \cowith
+  | into_exist => sep_elim_l_ent (mkProperExist A Phi) mkProperEmp
+
+\func proofmode_frame_or_left {M : UCMRA}
+    (R Q P : ProperUPred M) :
+    PMFrame M R ((R ∗ Q) ∨ P) Q \cowith
+  | frame => or_intro_l_ent (R ∗ Q) P
+
+\func proofmode_from_later_or_left {M : UCMRA}
+    (P Q : ProperUPred M) :
+    PMFromLater M P ((|> P) ∨ Q) \cowith
+  | from_later => or_intro_l_ent (|> P) Q
+
+\func proofmode_into_update_drop_emp {M : UCMRA}
+    (P : ProperUPred M) :
+    PMIntoUpdate M ((|==> P) ∗ mkProperEmp) P \cowith
+  | into_update => sep_elim_l_ent (|==> P) mkProperEmp

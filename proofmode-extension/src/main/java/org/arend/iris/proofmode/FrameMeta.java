@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreClassCallExpression;
 import org.arend.ext.core.expr.CoreExpression;
@@ -20,11 +21,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class FrameMeta extends ExactMeta {
+  @Dependency(name = "PMFrame")
+  private CoreClassDefinition pmFrame;
+
   @Dependency(name = "pm_frame_spatial")
   private ArendRef pmFrameSpatial;
 
   @Dependency(name = "pm_frame_intuitionistic")
   private ArendRef pmFrameIntuitionistic;
+  @Dependency(name = "pm_frame_with_spatial")
+  private ArendRef pmFrameWithSpatial;
+  @Dependency(name = "pm_frame_with_intuitionistic")
+  private ArendRef pmFrameWithIntuitionistic;
 
   @Dependency(name = "pm_emp_intro")
   private ArendRef pmEmpIntro;
@@ -37,9 +45,9 @@ final class FrameMeta extends ExactMeta {
       @NotNull ContextData contextData) {
     List<ConcreteExpression> explicit = explicitArguments(contextData);
     if (explicit.isEmpty()) return autoFrame(typechecker, contextData);
-    if (explicit.size() != 2) {
+    if (explicit.size() < 2 || explicit.size() > 3) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "iFrame expects no arguments or a quoted pattern and continuation",
+          "iFrame expects no arguments or a quoted pattern, optional PMFrame evidence, and continuation",
           contextData.getMarker()));
       return null;
     }
@@ -47,6 +55,12 @@ final class FrameMeta extends ExactMeta {
     if (requested == null) return null;
     String[] names = requested.trim().split("\\s+");
     if (names.length > 1) {
+      if (explicit.size() == 3) {
+        typechecker.getErrorReporter().report(new TypecheckingError(
+            "Explicit PMFrame evidence frames one hypothesis",
+            contextData.getMarker()));
+        return null;
+      }
       ConcreteExpression next = explicit.get(1);
       var factory = contextData.getFactory();
       for (int i = names.length - 1; i >= 0; i--) {
@@ -58,8 +72,21 @@ final class FrameMeta extends ExactMeta {
     ResolvedSelection resolved = resolveNamed(typechecker, contextData, requested);
     if (resolved == null) return null;
     var factory = contextData.getFactory();
+    ClassEvidence evidence = explicit.size() == 3
+        ? classEvidence(typechecker, contextData, explicit.get(1),
+            pmFrame, "PMFrame") : null;
+    if (explicit.size() == 3 && evidence == null) return null;
     CoreExpression target = weakHead(typechecker, resolved.target());
-    ConcreteExpression residual = target instanceof CoreFunCallExpression sep
+    CoreExpression evidenceTarget = evidence == null ? null : classField(evidence, "P");
+    CoreExpression evidenceResidual = evidence == null ? null : classField(evidence, "Q");
+    if (evidence != null && (evidenceTarget == null || evidenceResidual == null)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMFrame evidence", contextData.getMarker()));
+      return null;
+    }
+    ConcreteExpression residual = evidence != null
+        ? factory.core(evidenceResidual.computeTyped())
+        : target instanceof CoreFunCallExpression sep
         && sep.getDefinition() == mkProperSep
         && sep.getDefCallArguments().size() >= 3
         ? factory.core(sep.getDefCallArguments().getLast().computeTyped())
@@ -68,10 +95,16 @@ final class FrameMeta extends ExactMeta {
     args.add(factory.arg(factory.hole(), false));
     args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
     args.add(factory.arg(resolved.selection().term(), true));
+    if (evidence != null) {
+      args.add(factory.arg(factory.core(evidenceTarget.computeTyped()), false));
+    }
     args.add(factory.arg(residual, false));
-    args.add(factory.arg(explicit.get(1), true));
-    return typechecker.typecheck(factory.app(factory.ref(resolved.persistent()
-            ? pmFrameIntuitionistic : pmFrameSpatial), args),
+    if (evidence != null) args.add(factory.arg(evidence.term(), true));
+    args.add(factory.arg(explicit.getLast(), true));
+    ArendRef lemma = resolved.persistent()
+        ? evidence == null ? pmFrameIntuitionistic : pmFrameWithIntuitionistic
+        : evidence == null ? pmFrameSpatial : pmFrameWithSpatial;
+    return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
   }
 

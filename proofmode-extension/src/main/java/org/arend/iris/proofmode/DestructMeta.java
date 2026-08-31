@@ -2,6 +2,7 @@ package org.arend.iris.proofmode;
 
 import org.arend.ext.concrete.expr.ConcreteArgument;
 import org.arend.ext.concrete.expr.ConcreteExpression;
+import org.arend.ext.core.definition.CoreClassDefinition;
 import org.arend.ext.core.definition.CoreFunctionDefinition;
 import org.arend.ext.core.expr.CoreExpression;
 import org.arend.ext.core.expr.CoreFunCallExpression;
@@ -17,13 +18,24 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 
 final class DestructMeta extends ExactMeta {
+  @Dependency(name = "PMFromSep")
+  private CoreClassDefinition pmFromSep;
+
   @Dependency(name = "pm_destruct_sep")
   private ArendRef pmDestructSep;
+  @Dependency(name = "pm_destruct_from_sep")
+  private ArendRef pmDestructFromSep;
 
   @Dependency(name = "pm_destruct_persistent")
   private ArendRef pmDestructPersistent;
   @Dependency(name = "pm_destruct_persistent_copy")
   private ArendRef pmDestructPersistentCopy;
+  @Dependency(name = "PMIntoPersistent")
+  private CoreClassDefinition pmIntoPersistent;
+  @Dependency(name = "pm_destruct_into_persistent")
+  private ArendRef pmDestructIntoPersistent;
+  @Dependency(name = "pm_destruct_into_persistent_copy")
+  private ArendRef pmDestructIntoPersistentCopy;
 
   @Dependency(name = "pm_destruct_exist")
   private ArendRef pmDestructExist;
@@ -31,15 +43,33 @@ final class DestructMeta extends ExactMeta {
   private ArendRef pmDestructExist1;
   @Dependency(name = "pm_destruct_exist_intuitionistic")
   private ArendRef pmDestructExistIntuitionistic;
+  @Dependency(name = "PMIntoExist")
+  private CoreClassDefinition pmIntoExist;
+  @Dependency(name = "PMIntoExist1")
+  private CoreClassDefinition pmIntoExist1;
+  @Dependency(name = "pm_destruct_into_exist")
+  private ArendRef pmDestructIntoExist;
+  @Dependency(name = "pm_destruct_into_exist1")
+  private ArendRef pmDestructIntoExist1;
+  @Dependency(name = "pm_destruct_into_exist_intuitionistic")
+  private ArendRef pmDestructIntoExistIntuitionistic;
 
   @Dependency(name = "pm_destruct_pure")
   private ArendRef pmDestructPure;
+  @Dependency(name = "PMIntoPure")
+  private CoreClassDefinition pmIntoPure;
+  @Dependency(name = "pm_destruct_into_pure")
+  private ArendRef pmDestructIntoPure;
 
   @Dependency(name = "pm_destruct_and_pure_l")
   private ArendRef pmDestructAndPureLeft;
 
   @Dependency(name = "pm_destruct_or")
   private ArendRef pmDestructOr;
+  @Dependency(name = "PMIntoOr")
+  private CoreClassDefinition pmIntoOr;
+  @Dependency(name = "pm_destruct_into_or")
+  private ArendRef pmDestructIntoOr;
 
   @Dependency(name = "properUPred_ent_refl")
   private ArendRef entailmentRefl;
@@ -63,6 +93,65 @@ final class DestructMeta extends ExactMeta {
 
   @Dependency(name = "mkProperOr")
   private CoreFunctionDefinition mkProperOr;
+
+  private record SepEvidence(CoreExpression left, CoreExpression right,
+      ConcreteExpression term) {}
+
+  private record PureEvidence(CoreExpression fact, ConcreteExpression term) {}
+
+  private record ExistEvidence(CoreExpression carrier, CoreExpression family,
+      ConcreteExpression term, boolean universeOne) {}
+
+  private @Nullable SepEvidence sepEvidence(ExpressionTypechecker typechecker,
+      ContextData contextData, ConcreteExpression expression) {
+    ClassEvidence checked = classEvidence(typechecker, contextData,
+        expression, pmFromSep, "PMFromSep");
+    if (checked == null) return null;
+    CoreExpression left = classField(checked, "Q");
+    CoreExpression right = classField(checked, "R");
+    if (left == null || right == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMFromSep evidence", contextData.getMarker()));
+      return null;
+    }
+    return new SepEvidence(left, right, checked.term());
+  }
+
+  private @Nullable PureEvidence pureEvidence(ExpressionTypechecker typechecker,
+      ContextData contextData, ConcreteExpression expression) {
+    ClassEvidence checked = tryClassEvidence(typechecker, contextData,
+        expression, pmIntoPure);
+    if (checked == null) return null;
+    CoreExpression fact = classField(checked, "phi");
+    if (fact == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMIntoPure evidence", contextData.getMarker()));
+      return null;
+    }
+    return new PureEvidence(fact, checked.term());
+  }
+
+  private @Nullable ExistEvidence existEvidence(ExpressionTypechecker typechecker,
+      ContextData contextData, ConcreteExpression expression) {
+    ClassEvidence checked = tryClassEvidence(typechecker, contextData,
+        expression, pmIntoExist);
+    boolean universeOne = false;
+    if (checked == null) {
+      checked = tryClassEvidence(typechecker, contextData,
+          expression, pmIntoExist1);
+      universeOne = true;
+    }
+    if (checked == null) return null;
+    CoreExpression carrier = classField(checked, "A");
+    CoreExpression family = classField(checked, "Phi");
+    if (carrier == null || family == null) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect existential proof-mode evidence",
+          contextData.getMarker()));
+      return null;
+    }
+    return new ExistEvidence(carrier, family, checked.term(), universeOne);
+  }
 
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
@@ -133,9 +222,9 @@ final class DestructMeta extends ExactMeta {
     }
     String[] branchNames = trimmedPattern.split("\\|", -1);
     if (branchNames.length == 2) {
-      if (explicit.size() != 4 && explicit.size() != 6) {
+      if (explicit.size() < 4 || explicit.size() > 6) {
         typechecker.getErrorReporter().report(new TypecheckingError(
-            "Disjunction iDestruct expects two branch continuations and optional propositions",
+            "Disjunction iDestruct expects two branch continuations and optional PMIntoOr evidence or propositions",
             contextData.getMarker()));
         return null;
       }
@@ -163,7 +252,8 @@ final class DestructMeta extends ExactMeta {
       return destructPure(typechecker, contextData, resolved, proposition,
           pure, trimmedPattern, explicitShape, continuation);
     }
-    if (proposition instanceof CoreFunCallExpression and
+    if (explicit.size() == 3
+        && proposition instanceof CoreFunCallExpression and
         && and.getDefinition() == mkProperAnd
         && and.getDefCallArguments().size() >= 3) {
       CoreExpression left = weakHead(typechecker,
@@ -175,6 +265,12 @@ final class DestructMeta extends ExactMeta {
             proposition, and, pure, requested, trimmedPattern, continuation);
       }
     }
+    String[] inferredNames = trimmedPattern.split("\\s+");
+    if (explicit.size() == 4 && inferredNames.length == 1
+        && !trimmedPattern.isEmpty() && !trimmedPattern.equals("%")) {
+      return destructExist(typechecker, contextData, resolved, proposition,
+          null, requested, trimmedPattern, explicitShape, continuation);
+    }
     if (proposition instanceof CoreFunCallExpression sep
         && sep.getDefinition() == mkProperSep
         && sep.getDefCallArguments().size() >= 3) {
@@ -185,7 +281,6 @@ final class DestructMeta extends ExactMeta {
       return destructPure(typechecker, contextData, resolved, proposition,
           null, trimmedPattern, explicitShape, continuation);
     }
-    String[] inferredNames = trimmedPattern.split("\\s+");
     if (inferredNames.length == 1 && !trimmedPattern.isEmpty()) {
       return destructExist(typechecker, contextData, resolved, proposition,
           null, requested, trimmedPattern, explicitShape, continuation);
@@ -269,18 +364,33 @@ final class DestructMeta extends ExactMeta {
       return null;
     }
     var factory = contextData.getFactory();
-    CoreExpression left = or == null ? null
+    ClassEvidence evidence = explicit.size() == 5
+        ? classEvidence(typechecker, contextData, explicit.get(2),
+            pmIntoOr, "PMIntoOr") : null;
+    if (explicit.size() == 5 && evidence == null) return null;
+    CoreExpression left = evidence != null ? classField(evidence, "Q") : or == null ? null
         : or.getDefCallArguments().get(or.getDefCallArguments().size() - 2);
-    CoreExpression right = or == null ? null : or.getDefCallArguments().getLast();
+    CoreExpression right = evidence != null ? classField(evidence, "R") : or == null
+        ? null : or.getDefCallArguments().getLast();
+    if (evidence != null && (left == null || right == null)) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Cannot inspect PMIntoOr evidence", contextData.getMarker()));
+      return null;
+    }
     ConcreteExpression explicitLeft = explicit.size() == 6 ? explicit.get(2) : null;
     ConcreteExpression explicitRight = explicit.size() == 6 ? explicit.get(3) : null;
     ConcreteExpression leftContinuation = explicit.get(explicit.size() - 2);
     ConcreteExpression rightContinuation = explicit.getLast();
 
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    ConcreteExpression into;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      into = evidence.term();
+    }
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -296,7 +406,8 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(into, true));
     args.add(factory.arg(leftContinuation, true));
     args.add(factory.arg(rightContinuation, true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructOr), args),
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmDestructOr : pmDestructIntoOr), args),
         contextData.getExpectedType());
   }
 
@@ -327,20 +438,31 @@ final class DestructMeta extends ExactMeta {
           contextData.getMarker()));
       return null;
     }
-    if ((explicitLeft == null) != (explicitRight == null)) {
+    SepEvidence evidence = explicitLeft != null && explicitRight == null
+        ? sepEvidence(typechecker, contextData, explicitLeft) : null;
+    if (explicitLeft != null && explicitRight == null && evidence == null) {
+      return null;
+    }
+    if (explicitLeft == null && explicitRight != null) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "Explicit separating-conjunction iDestruct expects both propositions",
           contextData.getMarker()));
       return null;
     }
-    CoreExpression left = sep == null ? null
+    CoreExpression left = evidence != null ? evidence.left() : sep == null ? null
         : sep.getDefCallArguments().get(sep.getDefCallArguments().size() - 2);
-    CoreExpression right = sep == null ? null : sep.getDefCallArguments().getLast();
+    CoreExpression right = evidence != null ? evidence.right() : sep == null
+        ? null : sep.getDefCallArguments().getLast();
     var factory = contextData.getFactory();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression split = factory.app(factory.ref(entailmentRefl), reflArgs);
+    ConcreteExpression split;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      split = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      split = evidence.term();
+    }
 
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
@@ -348,14 +470,15 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(resolved.selection().term(), true));
     args.add(factory.arg(name(contextData, names[0]), true));
     args.add(factory.arg(name(contextData, names[1]), true));
-    args.add(factory.arg(explicitLeft != null ? explicitLeft : left == null
+    args.add(factory.arg(evidence == null && explicitLeft != null ? explicitLeft : left == null
         ? factory.hole() : factory.core(left.computeTyped()), false));
-    args.add(factory.arg(explicitRight != null ? explicitRight : right == null
+    args.add(factory.arg(evidence == null && explicitRight != null ? explicitRight : right == null
         ? factory.hole() : factory.core(right.computeTyped()), false));
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(split, true));
     args.add(factory.arg(continuation, true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructSep), args),
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmDestructSep : pmDestructFromSep), args),
         contextData.getExpectedType());
   }
 
@@ -393,14 +516,28 @@ final class DestructMeta extends ExactMeta {
       return null;
     }
     var factory = contextData.getFactory();
-    CoreExpression carrier = exists == null ? null
+    ExistEvidence evidence = explicitFamily == null ? null
+        : existEvidence(typechecker, contextData, explicitFamily);
+    boolean useUniverseOne = evidence != null ? evidence.universeOne() : universeOne;
+    if (evidence != null && resolved.persistent() && useUniverseOne) {
+      typechecker.getErrorReporter().report(new TypecheckingError(
+          "Set1 existential evidence is not supported in the intuitionistic context",
+          contextData.getMarker()));
+      return null;
+    }
+    CoreExpression carrier = evidence != null ? evidence.carrier() : exists == null ? null
         : exists.getDefCallArguments().get(exists.getDefCallArguments().size() - 2);
-    CoreExpression family = exists == null ? null
+    CoreExpression family = evidence != null ? evidence.family() : exists == null ? null
         : exists.getDefCallArguments().getLast();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    ConcreteExpression into;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      into = evidence.term();
+    }
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
     args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
@@ -408,13 +545,17 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(name(contextData, introduced), true));
     args.add(factory.arg(carrier == null ? factory.hole()
         : factory.core(carrier.computeTyped()), false));
-    args.add(factory.arg(explicitFamily != null ? explicitFamily : family == null
+    args.add(factory.arg(evidence == null && explicitFamily != null ? explicitFamily : family == null
         ? factory.hole() : factory.core(family.computeTyped()), false));
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(into, true));
     args.add(factory.arg(continuation, true));
-    ArendRef lemma = resolved.persistent() ? pmDestructExistIntuitionistic
-        : universeOne ? pmDestructExist1 : pmDestructExist;
+    ArendRef lemma = resolved.persistent()
+        ? evidence == null ? pmDestructExistIntuitionistic
+            : pmDestructIntoExistIntuitionistic
+        : useUniverseOne
+            ? evidence == null ? pmDestructExist1 : pmDestructIntoExist1
+            : evidence == null ? pmDestructExist : pmDestructIntoExist;
     return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
   }
@@ -436,21 +577,30 @@ final class DestructMeta extends ExactMeta {
       return null;
     }
     var factory = contextData.getFactory();
-    CoreExpression fact = pure == null ? null : pure.getDefCallArguments().getLast();
-    var reflArgs = new ArrayList<ConcreteArgument>();
-    reflArgs.add(factory.arg(factory.hole(), false));
-    reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
-    ConcreteExpression into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    PureEvidence evidence = explicitFact == null ? null
+        : pureEvidence(typechecker, contextData, explicitFact);
+    CoreExpression fact = evidence != null ? evidence.fact() : pure == null
+        ? null : pure.getDefCallArguments().getLast();
+    ConcreteExpression into;
+    if (evidence == null) {
+      var reflArgs = new ArrayList<ConcreteArgument>();
+      reflArgs.add(factory.arg(factory.hole(), false));
+      reflArgs.add(factory.arg(factory.core(proposition.computeTyped()), true));
+      into = factory.app(factory.ref(entailmentRefl), reflArgs);
+    } else {
+      into = evidence.term();
+    }
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
     args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
     args.add(factory.arg(resolved.selection().term(), true));
-    args.add(factory.arg(explicitFact != null ? explicitFact : fact == null
+    args.add(factory.arg(evidence == null && explicitFact != null ? explicitFact : fact == null
         ? factory.hole() : factory.core(fact.computeTyped()), false));
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(into, true));
     args.add(factory.arg(continuation, true));
-    return typechecker.typecheck(factory.app(factory.ref(pmDestructPure), args),
+    return typechecker.typecheck(factory.app(factory.ref(evidence == null
+            ? pmDestructPure : pmDestructIntoPure), args),
         contextData.getExpectedType());
   }
 
@@ -502,31 +652,46 @@ final class DestructMeta extends ExactMeta {
         resolved.selection().proposition());
     CoreExpression body = null;
     ConcreteExpression persistent;
+    boolean classEvidence = false;
     if (explicit.size() == 4) {
-      TypedExpression typedPersistent = typechecker.typecheck(explicit.get(2), null);
-      if (typedPersistent == null) return null;
-      CoreExpression persistentType = weakHead(typechecker,
-          typedPersistent.getType());
-      if (!(persistentType instanceof CoreFunCallExpression entailment)
-          || !entailment.getDefinition().getName().equals("properUPred_ent")
-          || entailment.getDefCallArguments().size() < 3) {
-        typechecker.getErrorReporter().report(new TypecheckingError(
-            "Explicit persistence rule must be an entailment",
-            contextData.getMarker()));
-        return null;
+      ClassEvidence evidence = tryClassEvidence(typechecker, contextData,
+          explicit.get(2), pmIntoPersistent);
+      if (evidence != null) {
+        body = classField(evidence, "Q");
+        if (body == null) {
+          typechecker.getErrorReporter().report(new TypecheckingError(
+              "Cannot inspect PMIntoPersistent evidence",
+              contextData.getMarker()));
+          return null;
+        }
+        persistent = evidence.term();
+        classEvidence = true;
+      } else {
+        TypedExpression typedPersistent = typechecker.typecheck(explicit.get(2), null);
+        if (typedPersistent == null) return null;
+        CoreExpression persistentType = weakHead(typechecker,
+            typedPersistent.getType());
+        if (!(persistentType instanceof CoreFunCallExpression entailment)
+            || !entailment.getDefinition().getName().equals("properUPred_ent")
+            || entailment.getDefCallArguments().size() < 3) {
+          typechecker.getErrorReporter().report(new TypecheckingError(
+              "Explicit persistence rule must be an entailment or PMIntoPersistent evidence",
+              contextData.getMarker()));
+          return null;
+        }
+        CoreExpression conclusion = weakHead(typechecker,
+            entailment.getDefCallArguments().getLast());
+        if (!(conclusion instanceof CoreFunCallExpression persistently)
+            || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
+            || persistently.getDefCallArguments().size() < 2) {
+          typechecker.getErrorReporter().report(new TypecheckingError(
+              "Explicit persistence rule must conclude a persistently proposition",
+              contextData.getMarker()));
+          return null;
+        }
+        body = persistently.getDefCallArguments().getLast();
+        persistent = factory.core(typedPersistent);
       }
-      CoreExpression conclusion = weakHead(typechecker,
-          entailment.getDefCallArguments().getLast());
-      if (!(conclusion instanceof CoreFunCallExpression persistently)
-          || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
-          || persistently.getDefCallArguments().size() < 2) {
-        typechecker.getErrorReporter().report(new TypecheckingError(
-            "Explicit persistence rule must conclude a persistently proposition",
-            contextData.getMarker()));
-        return null;
-      }
-      body = persistently.getDefCallArguments().getLast();
-      persistent = factory.core(typedPersistent);
     } else {
       if (!(proposition instanceof CoreFunCallExpression persistently)
           || !persistently.getDefinition().getName().equals(mkProperPersistently.getName())
@@ -556,8 +721,10 @@ final class DestructMeta extends ExactMeta {
     args.add(factory.arg(factory.core(resolved.target().computeTyped()), false));
     args.add(factory.arg(persistent, true));
     args.add(factory.arg(explicit.getLast(), true));
-    return typechecker.typecheck(factory.app(factory.ref(copyName == null
-        ? pmDestructPersistent : pmDestructPersistentCopy), args),
+    ArendRef lemma = copyName == null
+        ? classEvidence ? pmDestructIntoPersistent : pmDestructPersistent
+        : classEvidence ? pmDestructIntoPersistentCopy : pmDestructPersistentCopy;
+    return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
   }
 }
