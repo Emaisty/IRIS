@@ -376,8 +376,6 @@
           (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
             ((msc_counter_auth G gam r) ∗ (Q r))))
     | OldPure => mkProperPure {iResUR S} (nat_lt n r)
-    | OldBody => Saved ∗
-        (P ∗ (Wd ∗ OldPure))
     | State => msc_read_state H G gam (suc n) (r, gamQ)
   \in ipm $ iIntros "HA HSaved HP HW HOldPure" $
       iDestruct "HOldPure" "%" $ \lam hlt =>
@@ -401,7 +399,6 @@
     | A => msc_counter_auth G gam (suc n)
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | OldPure => mkProperPure {iResUR S} (r <= n)
-    | OldBody => Saved ∗ ((Q r) ∗ OldPure)
     | State => msc_read_state H G gam (suc n) (r, gamQ)
   \in ipm $ iIntros "HA HSaved HQ HOldPure" $
       iDestruct "HOldPure" "%" $ \lam hle =>
@@ -481,9 +478,7 @@
       | Rs' => big_sepL (\lam e =>
           msc_read_state H G gam (suc n) e.2) entries
       | Target => A ∗ (R' ∗ Rs')
-      | proof : (A ∗ (R ∗ Rs)) ⊢
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask Target) =>
-        ipm $ iIntros "HA HR HRs" $
+    \in ipm $ iIntros "HA HR HRs" $
           iAssert "HAdvanceRest" "HA HRs"
             (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
               (A ∗ Rs'))
@@ -502,7 +497,6 @@
                   iDestruct "HHead'" "HA HR'" $
                   wp_apply (fupd_intro H.iris_wsat msc_open_mask Target) $
                   iFrame "HA HR'" $ iExact "HRs'"))
-    \in proof
 \lemma msc_read_states_advance {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (n : Nat)
@@ -626,13 +620,10 @@
       ((msc_requests H G gam total (gdelete id requests)) ∗
         (|> (Q r)))) =>
   \let
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | Elem => ghost_map_elem (msc_requestGS G gam) id (r, gamQ)
     | Map => ghost_map_auth (msc_requestGS G gam) qp_one requests
     | Map' => ghost_map_auth (msc_requestGS G gam) qp_one
         (gdelete id requests)
-    | States => big_sepM requests (\lam _ request =>
-        msc_read_state H G gam total request)
     | State => msc_read_state H G gam total (r, gamQ)
     | Rest => big_sepM (gdelete id requests) (\lam _ request =>
         msc_read_state H G gam total request)
@@ -681,11 +672,6 @@
         P)) ⊢
     (msc_read_state H G gam total (r, gamQ)) =>
   \let
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | W => <#>
-        (((msc_counter_auth G gam r) ∗ P) -∗
-          (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-            ((msc_counter_auth G gam r) ∗ (Q r))))
     | PendingP : iProp S -> iProp S => \lam P' =>
         mkProperExist1 (Nat -> iProp S) (\lam Q' =>
           (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q') ∗
@@ -717,7 +703,6 @@
   ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗ (Q r)) ⊢
     (msc_read_state H G gam total (r, gamQ)) =>
   \let
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | DoneQ : (Nat -> iProp S) -> iProp S => \lam Q' =>
         (saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q') ∗
           ((Q' r) ∗ (mkProperPure (r <= total)))
@@ -746,7 +731,6 @@
     | Map' => ghost_map_auth (msc_requestGS G gam) qp_one
         (ginsert id (r, gamQ) requests)
     | Elem => ghost_map_elem (msc_requestGS G gam) id (r, gamQ)
-    | State => msc_read_state H G gam total (r, gamQ)
     | States => big_sepM requests (\lam _ request =>
         msc_read_state H G gam total request)
     | States' => big_sepM (ginsert id (r, gamQ) requests)
@@ -952,9 +936,9 @@
         | Target => mkProperExist (List gname) TargetBody
         | combine : (New ∗ Old) ⊢ Target =>
             ipm $ iIntros "HNew HOld" $
-              iDestruct "HNew" "HNewBody" NewBody $ \lam gam =>
+              iDestruct "HNew" "HNewBody" $ \lam gam =>
               iDestruct "HNewBody" "HAuth HLB" $
-              iDestruct "HOld" "HOldBody" OldBody $ \lam gams =>
+              iDestruct "HOld" "HOldBody" $ \lam gams =>
               iDestruct "HOldBody" "HLen HAuths" $
               iDestruct "HLen" "%" $ \lam hlen =>
               iExists (gam :: gams) TargetBody $
@@ -1033,8 +1017,6 @@
         | LXS => msc_lbs G xs gams
         | AY => mono_nat_auth_own G.msc_mono_natG gam qp_one y
         | AYS => msc_mono_auths G ys gams
-        | Head => AY ∗ LX
-        | Tail => LXS ∗ AYS
         | HeadBound => mkProperPure {iResUR S} (\Sigma
             (qp_one.qp_val RatField.<= RatField.ide) (x <= y))
         | TailBound => mkProperPure {iResUR S}
@@ -1249,12 +1231,10 @@
     ((msc_incr_now H G gam a i w) ∗
       (msc_incr_after H G gam a i w)) =>
   \let
-    | Auth => msc_counter_auth G gam (msc_incr_total w)
     | Cells => pointsto_array H.iris_gen_heap suc a
         (map natV (msc_incr_ns w))
     | Monos => msc_mono_auths G (msc_incr_ns w)
         (w.incr_name_prefix ++ w.incr_name :: w.incr_name_suffix)
-    | Requests => msc_requests H G gam (msc_incr_total w) w.incr_requests
     | Now => msc_incr_now H G gam a i w
     | ArrayRest => pointsto_array_rest H.iris_gen_heap suc a
         (map natV w.incr_prefix) (map natV w.incr_suffix)
@@ -1262,9 +1242,6 @@
         w.incr_name qp_one w.incr_old
     | MonoRest => msc_mono_rest G w.incr_prefix w.incr_name_prefix
         w.incr_suffix w.incr_name_suffix
-    | Core0 => Auth ∗ ((Cells ∗ Monos) ∗ Requests)
-    | Target => Now ∗
-        (Auth ∗ (ArrayRest ∗ (Mono ∗ (MonoRest ∗ Requests))))
     | cells : Cells ⊢ (Now ∗ ArrayRest) =>
         transport (\lam values => (pointsto_array H.iris_gen_heap suc a values) ⊢
           (Now ∗ ArrayRest))
@@ -1290,8 +1267,7 @@
         msc_mono_auths_extract G w.incr_prefix w.incr_name_prefix
           w.incr_old w.incr_name w.incr_suffix w.incr_name_suffix
           (w.incr_prefix_len *> inv w.incr_name_prefix_len)
-    | proof : Core0 ⊢ Target =>
-      ipm $ iIntros "HAuth HRest" $
+  \in ipm $ iIntros "HAuth HRest" $
         iDestruct "HRest" "HShards HRequests" $
         iDestruct "HShards" "HCells HMonos" $
         iAssert "HCellsFocused" "HCells" (Now ∗ ArrayRest)
@@ -1302,7 +1278,6 @@
               iDestruct "HMonosFocused" "HMono HMonoRest" $
               iFrame "HNow HAuth HArrayRest HMono HMonoRest" $
                 iExact "HRequests"))
-  \in proof
 \func msc_load_witness {S : gFunctors} (gam : msc_name) (i : Nat)
     (name : gname) : \Set0 =>
   \Sigma (w : msc_incr_witness {S} gam i) (w.incr_name = name)
@@ -1347,8 +1322,6 @@
                   | incr_names_len => inv (pmap length namesEq) *> hnames
                 }
             | rw : msc_load_witness {S} gam i name => (w, idp)
-            | BodyNs => msc_inv_body_names H G gam a
-                (msc_incr_ns w) gam.msc_shard_names requests
             | BodyFocused => msc_inv_body_names H G gam a
                 (msc_incr_ns w)
                 (w.incr_name_prefix ++ w.incr_name :: w.incr_name_suffix)
@@ -1531,10 +1504,7 @@
               wp_apply (pure_intro_sep_ent
                 (length gam.msc_shard_names = gam.msc_size) namesLen
                 (Auth ∗ ((Array ∗ Monos) ∗ Requests))) $
-              iFrame "HAuth" $
-                iSplitL "HArray HMonos"
-                  (iFrame "HArray" $ iExact "HMonos")
-                  (iExact "HRequests"))))
+              iFrame "HAuth HArray HMonos HRequests")))
 
 \func msc_load_post {S : gFunctors} (G : mscG S)
     (name : gname) (lower : Nat) (returned : Value) : iProp S =>
@@ -1565,46 +1535,20 @@
     | Current => msc_shard_lb G name w.incr_old
     | Bound => mkProperPure (lower <= w.incr_old)
     | Source => After ∗ LB0
-    | MonoTail => Mono ∗
-        ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-            w.incr_suffix w.incr_name_suffix) ∗
-          (msc_requests H G gam (msc_incr_total w) w.incr_requests))
-    | ArrayTail => (pointsto_array_rest H.iris_gen_heap suc a
-          (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗ MonoTail
     | monoOf : After ⊢ Mono =>
-        (ipm $ iIntros "HAuth HArrayTail" $
-          iDestruct "HArrayTail" "HArrayRest HMonoTail" $
-          iDestruct "HMonoTail" "HMono HRest" $ iExact "HMono" :
-          ((msc_counter_auth G gam (msc_incr_total w)) ∗ ArrayTail) ⊢ Mono)
-    | currentOf : After ⊢ Current =>
+        ipm $ iIntros "HAuth HArray HMono HMonoRest HRequests" $
+          iExact "HMono"
+    | currentPersistent : After ⊢
+        (<#> Current) =>
         ipm $ iIntros "HAfter" $
+          wp_apply (mono_nat_lb_own_persistent G.msc_mono_natG
+            name w.incr_old) $
           wp_apply (transport (\lam nm => Mono ⊢
                 (msc_shard_lb G nm w.incr_old))
               rw.2
               (mono_nat_lb_own_get G.msc_mono_natG
                 w.incr_name qp_one w.incr_old)) $
           wp_apply monoOf $ iExact "HAfter"
-    | currentPersistent : After ⊢
-        (<#> Current) =>
-        ipm $ iIntros "HAfter" $
-          wp_apply (mono_nat_lb_own_persistent G.msc_mono_natG
-            name w.incr_old) $
-          wp_apply currentOf $ iExact "HAfter"
-    | sourceCurrent : Source ⊢
-        (Source ∗ Current) =>
-        persistent_consequence_frame_ent Source Current
-          (ipm $ iIntros "HAfter HLB0" $
-            wp_apply currentPersistent $ iExact "HAfter")
-    | renameLB : LB0 ⊢ NamedLB =>
-        transport (\lam nm => LB0 ⊢
-            (msc_shard_lb G nm lower))
-          (inv rw.2) (properUPred_ent_refl LB0)
-    | validLB : (Mono ∗ NamedLB) ⊢
-        (mkProperPure
-          (\Sigma (qp_one.qp_val RatField.<= RatField.ide)
-            (lower <= w.incr_old))) =>
-        mono_nat_lb_own_valid G.msc_mono_natG
-          w.incr_name qp_one w.incr_old lower
     | projectBound :
         (mkProperPure
           (\Sigma (qp_one.qp_val RatField.<= RatField.ide)
@@ -1615,92 +1559,30 @@
           iAssert "HMono" "HAfter" Mono
             (wp_apply monoOf $ iExact "HAfter")
             (iAssert "HNamedLB" "HLB0" NamedLB
-              (wp_apply renameLB $ iExact "HLB0")
+              (wp_apply (transport (\lam nm => LB0 ⊢
+                    (msc_shard_lb G nm lower))
+                  (inv rw.2) (properUPred_ent_refl LB0)) $
+                iExact "HLB0")
               (wp_apply projectBound $
-                wp_apply validLB $
+                wp_apply (mono_nat_lb_own_valid G.msc_mono_natG
+                  w.incr_name qp_one w.incr_old lower) $
                 iFrame "HMono" $ iExact "HNamedLB"))
-    | withBound : (Source ∗ Current) ⊢
-        (Bound ∗ (Source ∗ Current)) =>
-        pure_consequence_frame_ent (Source ∗ Current)
-          (lower <= w.incr_old)
-          (ipm $ iIntros "HSource HCurrent" $
-            wp_apply boundOf $ iExact "HSource")
     | Target => After ∗ (Current ∗ Bound)
-  \in ipm $ iIntros "HAfter HLB0" $
-      iAssert "HSourceCurrent" "HAfter HLB0" (Source ∗ Current)
-        (wp_apply sourceCurrent $
-          iFrame "HAfter" $ iExact "HLB0")
-        (iDestruct "HSourceCurrent" "HSource HCurrent" $
+    | prepared : Source ⊢ (Bound ∗ (Source ∗ Current)) =>
+        ipm $
+          wp_apply (pure_consequence_frame_ent (Source ∗ Current)
+            (lower <= w.incr_old)
+            (ipm $ iIntros "HSource HCurrent" $
+              wp_apply boundOf $ iExact "HSource")) $
+          wp_apply (persistent_consequence_frame_ent Source Current
+            (ipm $ iIntros "HAfter HLB0" $
+              wp_apply currentPersistent $ iExact "HAfter")) $
+          iAssumption
+    | finish : (Bound ∗ (Source ∗ Current)) ⊢ Target =>
+        ipm $ iIntros "HBound HSource HCurrent" $
           iDestruct "HSource" "HAfter HLB0" $
-          iAssert "HBounded" "HAfter HLB0 HCurrent"
-            (Bound ∗ (Source ∗ Current))
-            (wp_apply withBound $
-              iSplitL "HAfter HLB0"
-                (iFrame "HAfter" $ iExact "HLB0")
-                (iExact "HCurrent"))
-            (iDestruct "HBounded" "HBound HSourceCurrent" $
-              iDestruct "HSourceCurrent" "HSource HCurrent" $
-              iDestruct "HSource" "HAfter HLB0" $
-              iFrame "HAfter HCurrent" $ iExact "HBound"))
-
-\lemma msc_load_transition {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a i : Nat) (name : gname) (lower : Nat)
-    (rw : msc_load_witness {S} gam i name) :
-  ((msc_incr_now H G gam a i rw.1) ∗
-      ((msc_incr_after H G gam a i rw.1) ∗
-        (((|> (msc_inv H G gam a)) -∗
-            (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)) ∗
-          (msc_shard_lb G name lower)))) ⊢
-    (|==>
-      (mkProperFUpd H.iris_wsat msc_open_mask mscE
-        (msc_load_post G name lower (natV rw.1.incr_old)))) =>
-  \let
-    | w => rw.1
-    | Cell => msc_incr_now H G gam a i w
-    | After => msc_incr_after H G gam a i w
-    | Inv => msc_inv H G gam a
-    | LaterInv => |> Inv
-    | Close => LaterInv -∗
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-    | LB0 => msc_shard_lb G name lower
-    | Current => msc_shard_lb G name w.incr_old
-    | Bound => mkProperPure (lower <= w.incr_old)
-    | ResultResources => Current ∗ Bound
-    | Post => msc_load_post G name lower (natV w.incr_old)
-    | FocusSource => After ∗ LB0
-    | makePost : (mkProperEmp ∗ ResultResources) ⊢ Post =>
-        ipm $ iIntros "HEmp HResult" $
-          iDestruct "HResult" "HCurrent HBound" $
-          iExists w.incr_old (\lam n =>
-            (mkProperPure (natV w.incr_old = natV n)) ∗
-              ((msc_shard_lb G name n) ∗
-                (mkProperPure (lower <= n)))) $
-          iSplitL "" (iPureIntro $ idp)
-            (iFrame "HCurrent" $ iExact "HBound")
-  \in ipm $ iIntros "HCell HRest" $
-      iDestruct "HRest" "HAfter HCloseLB" $
-      iDestruct "HCloseLB" "HClose HLB0" $
-      wp_apply (bupd_intro
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)) $
-      iAssert "HObserved" "HAfter HLB0" (After ∗ ResultResources)
-        (wp_apply (msc_load_after_observe H G gam a i name lower rw) $
-          iFrame "HAfter" $ iExact "HLB0")
-        (iDestruct "HObserved" "HAfter HResult" $
-          iAssert "HInv" "HCell HAfter" Inv
-            (wp_apply (msc_incr_reinsert H G gam a i w
-                w.incr_old w.incr_ns_len) $
-              iFrame "HCell" $ iExact "HAfter")
-            (iAssert "HLater" "HInv" LaterInv
-              (iNext $ iExact "HInv")
-              (iSpecialize "HClose" "HLater" "HUpdate" $
-                wp_apply (fupd_mono H.iris_wsat msc_open_mask mscE
-                  (mkProperEmp ∗ ResultResources) Post makePost) $
-                wp_apply (fupd_frame_r H.iris_wsat msc_open_mask mscE
-                  mkProperEmp ResultResources) $
-                iSplitL "HUpdate"
-                  (iExact "HUpdate")
-                  (iExact "HResult"))))
+          iFrame "HAfter HCurrent" $ iExact "HBound"
+  \in ipm $ wp_apply finish $ wp_apply prepared $ iAssumption
 
 \lemma msc_load_opened {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -1730,12 +1612,44 @@
           (msc_load_post G name lower returned)
     | Source => ((Now ∗ (|> After)) ∗ Close) ∗ LB0
     | Ready => Now ∗ (|> LoadAfter)
+    | Inv => msc_inv H G gam a
+    | LaterInv => |> Inv
+    | Current => msc_shard_lb G name w.incr_old
+    | Bound => mkProperPure (lower <= w.incr_old)
+    | ResultResources => Current ∗ Bound
+    | Post => msc_load_post G name lower (natV w.incr_old)
+    | Transition => |==> (mkProperFUpd H.iris_wsat
+        msc_open_mask mscE Post)
+    | transition : (Now ∗ LoadAfter) ⊢ Transition =>
+        ipm $ iIntros "HCell HAfter HClose HLB0" $
+          wp_apply (bupd_intro
+            (mkProperFUpd H.iris_wsat msc_open_mask mscE Post)) $
+          iAssert "HObserved" "HAfter HLB0" (After ∗ ResultResources)
+            (wp_apply (msc_load_after_observe H G gam a i name lower rw) $
+              iFrame "HAfter" $ iExact "HLB0")
+            (iDestruct "HObserved" "HAfter HResult" $
+              iAssert "HInv" "HCell HAfter" Inv
+                (wp_apply (msc_incr_reinsert H G gam a i w
+                    w.incr_old w.incr_ns_len) $
+                  iFrame "HCell" $ iExact "HAfter")
+                (iAssert "HLater" "HInv" LaterInv
+                  (iNext $ iExact "HInv")
+                  (iSpecialize "HClose" "HLater" "HUpdate" $
+                    iMod "HUpdate" "HEmp" $
+                    wp_apply (fupd_intro H.iris_wsat mscE Post) $
+                    iDestruct "HResult" "HCurrent HBound" $
+                    iExists w.incr_old (\lam n =>
+                      (mkProperPure (natV w.incr_old = natV n)) ∗
+                        ((msc_shard_lb G name n) ∗
+                          (mkProperPure (lower <= n)))) $
+                    iSplitL "" (iPureIntro $ idp) $
+                      iFrame "HCurrent" $ iExact "HBound")))
     | load : Ready ⊢
         (WP H msc_open_mask
           (Load (Val (LitV (LitLoc (a Nat.+ i))))) PhiLoad) =>
         wp_load_later_frame H msc_open_mask (a Nat.+ i)
           (DfracOwn qp_one) (natV w.incr_old) LoadAfter PhiLoad
-          (msc_load_transition H G gam a i name lower rw)
+          transition
   \in (ipm $ wp_apply load $ iIntros "HCore HLB" $
       iDestruct "HCore" "HNowAfter HClose" $
       iDestruct "HNowAfter" "HNow HLaterAfter" $
@@ -1769,15 +1683,6 @@
     (msc_sum_post H G gam a
       (lowerHead :: lowerTail) (name :: names) acc v) =>
   \let
-    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
-    | Head => msc_shard_lb G name n
-    | TailBody : List Nat -> iProp S => \lam reads =>
-        (mkProperPure
-            (v = natV ((acc Nat.+ n) Nat.+ nat_sum reads))) ∗
-          ((mkProperPure (length reads = length names)) ∗
-            ((mkProperPure (nat_sum lowerTail <= nat_sum reads)) ∗
-              (msc_lbs G reads names)))
     | AllBody : List Nat -> iProp S => \lam reads =>
         (mkProperPure
             (v = natV (acc Nat.+ nat_sum reads))) ∗
@@ -1788,7 +1693,7 @@
   \in ipm $ iIntros "HPost HHead" $
       iDestruct "HPost" "HInv HTailExists" $
       iFrame "HInv" $
-      iDestruct "HTailExists" "HTail" TailBody $ \lam reads =>
+      iDestruct "HTailExists" "HTail" $ \lam reads =>
       iDestruct "HTail" "HVal HRest" $
       iDestruct "HVal" "%" $ \lam hv =>
       iDestruct "HRest" "HLen HRest" $
@@ -1821,8 +1726,6 @@
   \elim names, lower
   | nil, nil =>
       \let
-        | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-            (msc_inv H G gam a)
         | Post => msc_sum_post H G gam a nil nil acc
         | indexEq : length prefix = gam.msc_size => inv sizeEq
         | Then => Val (natV acc)
@@ -1837,8 +1740,6 @@
                   (app4 (Val msc_sum_loop)
                     (Val (LitV (LitLoc a))) (Val (natV gam.msc_size))
                     (Var nNextI) (Var nNextAcc)))))
-        | Cond => NatEq (Val (natV (length prefix)))
-            (Val (natV gam.msc_size))
         | ResultBody : List Nat -> iProp S => \lam reads =>
             (mkProperPure
                 (natV acc = natV (acc Nat.+ nat_sum reads))) ∗
@@ -1905,10 +1806,6 @@
             (LocAdd (Val (LitV (LitLoc a))) (Val (natV index)))
             (letE nN (Load (Var nL)) BodyN)
         | Then => Val (natV acc)
-        | Cond => NatEq (Val (natV index))
-            (Val (natV gam.msc_size))
-        | IHPhi : Value -> iProp S =>
-            msc_sum_post H G gam a lowerTail names (acc Nat.+ lowerHead)
         | recurFor : \Pi (n : Nat) -> lowerHead <= n -> ((msc_shard_lb G name n) ∗ Rest) ⊢
             (WP H mscE
               (app4 (Val msc_sum_loop)
@@ -2168,10 +2065,7 @@
         iExact "HShiftAll")
       (wp_apply (msc_request_register H G gam total predicted gamQ
         requests P Q hle) $
-        iFrame "HAuth HMap" $
-        iSplitL "HSaved HShift HP"
-          (iFrame "HSaved HShift" $ iExact "HP")
-          (iExact "HStates"))
+        iFrame "HAuth HMap HSaved HShift HP HStates")
 \lemma msc_read_register_or_keep {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a predicted : Nat) (gamQ : gname) (w : msc_read_witness gam)
@@ -2188,17 +2082,9 @@
               gamQ P)))) =>
   \let
     | Total => nat_sum w.read_initial
-    | LenN => mkProperPure {iResUR S}
-        (length w.read_initial = gam.msc_size)
-    | LenNames => mkProperPure {iResUR S}
-        (length gam.msc_shard_names = gam.msc_size)
     | Auth => msc_counter_auth G gam Total
-    | Shards => msc_shards H G a w.read_initial gam.msc_shard_names
-    | Requests0 => msc_requests H G gam Total w.read_requests
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | Shift => msc_read_shift H G gam P Q
-    | Body0 => msc_read_after H G gam a w
-    | Client => Saved ∗ (Shift ∗ P)
     | Target => mkProperExist
         (Gmap Nat natCountable (\Sigma Nat gname)) (\lam requests =>
           (msc_inv_body_names H G gam a w.read_initial
@@ -2215,10 +2101,7 @@
             (ghost_map_elem (msc_requestGS G gam) id
               (predicted, gamQ)))
     | Updated => mkProperExist Nat UpdatedBody
-    | proof : (Body0 ∗ Client) ⊢
-        (mkProperFUpd H.iris_wsat
-          msc_open_mask msc_open_mask Target) =>
-      \case LinearOrder.dec<_<= predicted Total \with {
+  \in \case LinearOrder.dec<_<= predicted Total \with {
         | inl hlt =>
           ipm $ iIntros "HBody HClient" $
             iDestruct "HClient" "HSaved HShift HP" $
@@ -2254,7 +2137,6 @@
                       (iPureIntro $ hle)
                       (iExists id $ iExact "HElem")))
       }
-  \in proof
 \func msc_read_new_raw {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (w : msc_read_witness gam) (v : Value) : iProp S =>
@@ -2280,130 +2162,6 @@
             (msc_read_case G gam (msc_proph_total resolves)
               (nat_sum w.read_initial) gamQ P)))))
 
-\lemma msc_read_raw_continue {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
-    (a : Nat) (w : msc_read_witness gam) (gamQ : gname)
-    (P : iProp S) (Q : Nat -> iProp S) (v : Value)
-    (Close : iProp S)
-    (closeEq : Close = ((|> (msc_inv H G gam a)) -∗
-      (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))) :
-  ((msc_read_new_raw H G gam a w v) ∗
-      (Close ∗
-        ((iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-            (msc_inv H G gam a)) ∗
-          ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-            ((saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q) ∗
-              ((msc_read_shift H G gam P Q) ∗ P)))))) ⊢
-    (mkProperFUpd H.iris_wsat msc_open_mask mscE
-      (msc_read_prepared H G gam a w gamQ P Q v)) =>
-  \let
-    | ResolveBody : ProphId -> List ProphPayload -> iProp S =>
-        \lam p resolves =>
-          (mkProperPure (v = LitV (LitProphecy p))) ∗
-            ((proph H.iris_proph_map p resolves) ∗
-              (msc_read_after H G gam a w))
-    | ProphBody : ProphId -> iProp S => \lam p =>
-        mkProperExist (List ProphPayload) (ResolveBody p)
-    | Body => msc_read_after H G gam a w
-    | LBs => msc_lbs G w.read_initial gam.msc_shard_names
-    | PublicInv => iris.base_logic.lib.invariants.inv
-        H.iris_wsat mscN (msc_inv H G gam a)
-    | InvP => msc_inv H G gam a
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | Shift => msc_read_shift H G gam P Q
-    | RegisteredBody : List ProphPayload ->
-        Gmap Nat natCountable (\Sigma Nat gname) -> iProp S =>
-        \lam resolves requests =>
-          (msc_inv_body_names H G gam a w.read_initial
-            gam.msc_shard_names requests) ∗
-          (msc_read_case G gam (msc_proph_total resolves)
-            (nat_sum w.read_initial) gamQ P)
-    | Registered : List ProphPayload -> iProp S => \lam resolves =>
-        mkProperExist
-          (Gmap Nat natCountable (\Sigma Nat gname))
-          (RegisteredBody resolves)
-    | Goal : Value -> iProp S => \lam pv =>
-        mkProperFUpd H.iris_wsat msc_open_mask mscE
-          (msc_read_prepared H G gam a w gamQ P Q pv)
-    | close : (Close ∗ (|> InvP)) ⊢
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp) =>
-        transport (\lam C => (C ∗ (|> InvP)) ⊢
-          (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))
-          (Paths.inv closeEq)
-          (wand_elim_ent (|> InvP)
-            (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp))
-    | proof :
-        ((msc_read_new_raw H G gam a w v) ∗
-          (Close ∗ (PublicInv ∗
-            (Saved ∗ (Saved ∗ (Shift ∗ P)))))) ⊢ Goal v =>
-      ipm $ iIntros "HRaw HFrame" $
-        iDestruct "HRaw" "HProph" ProphBody $ \lam p =>
-        iDestruct "HProph" "HResolve" (ResolveBody p) $ \lam resolves =>
-        iDestruct "HResolve" "HEq HTokenBody" $
-        iDestruct "HTokenBody" "HToken HBody" $
-        iDestruct "HFrame"
-          "HClose HPublicInv HSavedClose HSavedRegister HShift HP" $
-        iDestruct "HEq" "%" $ \lam valueEq =>
-        iRewrite valueEq Goal $
-        iAssert "HBodyLBs" "HBody" (Body ∗ LBs)
-          (wp_apply (msc_read_snapshot H G gam a w) $
-            iExact "HBody")
-          (iDestruct "HBodyLBs" "HBody HLBs" $
-            iAssert "HEqRefl" ""
-              (mkProperPure {iResUR S}
-                (LitV (LitProphecy p) = LitV (LitProphecy p)))
-              (iPureIntro $ idp)
-              (iAssert "HRegisteredUpdate"
-                "HBody HSavedRegister HShift HP"
-                (mkProperFUpd H.iris_wsat
-                  msc_open_mask msc_open_mask (Registered resolves))
-                (wp_apply (msc_read_register_or_keep H G gam a
-                  (msc_proph_total resolves) gamQ w P Q) $
-                  iFrame "HBody HSavedRegister HShift" $ iExact "HP")
-                (iMod "HRegisteredUpdate" "HRegistered" $
-                  iDestruct "HRegistered" "HRegisteredBody"
-                    (RegisteredBody resolves) $ \lam requests =>
-                  iDestruct "HRegisteredBody" "HBody HCase" $
-                  iAssert "HLaterInv" "HBody" (|> InvP)
-                    (wp_apply (proper_later_intro InvP) $
-                      wp_apply (msc_read_rebuild H G gam a w requests) $
-                      iExact "HBody")
-                    (iAssert "HCloseUpdate" "HClose HLaterInv"
-                      (mkProperFUpd H.iris_wsat
-                        msc_open_mask mscE mkProperEmp)
-                      (wp_apply close $
-                        iFrame "HClose" $ iExact "HLaterInv")
-                      (iMod "HCloseUpdate" "HEmp" $
-                        wp_apply (fupd_intro H.iris_wsat mscE
-                          (msc_read_prepared H G gam a w gamQ P Q
-                            (LitV (LitProphecy p)))) $
-                        iExists p (\lam p0 =>
-                          mkProperExist (List ProphPayload) (\lam resolves0 =>
-                            (PublicInv ∗ Saved) ∗
-                              ((mkProperPure
-                                (LitV (LitProphecy p) =
-                                  LitV (LitProphecy p0))) ∗
-                                (((proph H.iris_proph_map p0 resolves0) ∗
-                                    LBs) ∗
-                                  (msc_read_case G gam
-                                    (msc_proph_total resolves0)
-                                    (nat_sum w.read_initial) gamQ P))))) $
-                        iExists resolves (\lam resolves0 =>
-                          (PublicInv ∗ Saved) ∗
-                            ((mkProperPure
-                              (LitV (LitProphecy p) =
-                                LitV (LitProphecy p))) ∗
-                              (((proph H.iris_proph_map p resolves0) ∗ LBs) ∗
-                                (msc_read_case G gam
-                                  (msc_proph_total resolves0)
-                                  (nat_sum w.read_initial) gamQ P)))) $
-                        iSplitL "HPublicInv HSavedClose"
-                          (iFrame "HPublicInv" $ iExact "HSavedClose")
-                          (iSplitL "HEqRefl" (iExact "HEqRefl") $
-                            iSplitL "HToken HLBs"
-                              (iFrame "HToken" $ iExact "HLBs")
-                              (iExact "HCase")))))))
-  \in proof
 \func msc_read_new_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S) (gam : msc_name)
     (a : Nat) (P : iProp S) (Q : Nat -> iProp S) (v : Value) : iProp S =>
@@ -2435,7 +2193,7 @@
         (saved_pred_alloc G.msc_saved_predG Q DfracDiscarded ()) $
         iEmpIntro)
       (iMod "HSavedUpdate" "HSavedExists" $
-        iDestruct "HSavedExists" "HSaved" SavedF $ \lam gamQ =>
+        iDestruct "HSavedExists" "HSaved" $ \lam gamQ =>
         iDestruct "HInv" "#HInv"
           (inv_persistent H.iris_wsat mscN (msc_inv H G gam a)) $
         iDestruct "HSaved" "#HSaved"
@@ -2487,6 +2245,112 @@
                             iExists resolves (ResolveBody p) $
                             iSplitL "" (iPureIntro $ idp) $
                             iFrame "HToken" $ iExact "HBody")
+                  | LBs => msc_lbs G w.read_initial gam.msc_shard_names
+                  | RegisteredBody : List ProphPayload ->
+                      Gmap Nat natCountable (\Sigma Nat gname) -> iProp S =>
+                      \lam resolves requests =>
+                        (msc_inv_body_names H G gam a w.read_initial
+                          gam.msc_shard_names requests) ∗
+                        (msc_read_case G gam (msc_proph_total resolves)
+                          (nat_sum w.read_initial) gamQ P)
+                  | Registered : List ProphPayload -> iProp S =>
+                      \lam resolves => mkProperExist
+                        (Gmap Nat natCountable (\Sigma Nat gname))
+                        (RegisteredBody resolves)
+                  | continue : \Pi (v : Value) ->
+                      (Raw v ∗ Frame) ⊢ Prepared v => \lam v =>
+                      \let
+                        | ResolveBody : ProphId ->
+                            List ProphPayload -> iProp S => \lam p resolves =>
+                              (mkProperPure
+                                  (v = LitV (LitProphecy p))) ∗
+                                ((proph H.iris_proph_map p resolves) ∗ Body)
+                        | ProphBody : ProphId -> iProp S => \lam p =>
+                            mkProperExist (List ProphPayload)
+                              (ResolveBody p)
+                      \in ipm $ iIntros "HRaw HFrame" $
+                        iDestruct "HRaw" "HProph" ProphBody $ \lam p =>
+                        iDestruct "HProph" "HResolve"
+                          (ResolveBody p) $ \lam resolves =>
+                        iDestruct "HResolve" "HEq HTokenBody" $
+                        iDestruct "HTokenBody" "HToken HBody" $
+                        iDestruct "HFrame"
+                          "HClose HPublicInv HSavedClose HSavedRegister HShift HP" $
+                        iDestruct "HEq" "%" $ \lam valueEq =>
+                        iRewrite valueEq Prepared $
+                        iAssert "HBodyLBs" "HBody" (Body ∗ LBs)
+                          (wp_apply (msc_read_snapshot H G gam a w) $
+                            iExact "HBody")
+                          (iDestruct "HBodyLBs" "HBody HLBs" $
+                            iAssert "HEqRefl" ""
+                              (mkProperPure {iResUR S}
+                                (LitV (LitProphecy p) =
+                                  LitV (LitProphecy p)))
+                              (iPureIntro $ idp)
+                              (iAssert "HRegisteredUpdate"
+                                "HBody HSavedRegister HShift HP"
+                                (mkProperFUpd H.iris_wsat msc_open_mask
+                                  msc_open_mask (Registered resolves))
+                                (wp_apply (msc_read_register_or_keep H G gam a
+                                  (msc_proph_total resolves) gamQ w P Q) $
+                                  iFrame "HBody HSavedRegister HShift" $
+                                  iExact "HP")
+                                (iMod "HRegisteredUpdate" "HRegistered" $
+                                  iDestruct "HRegistered" "HRegisteredBody"
+                                    (RegisteredBody resolves) $ \lam requests =>
+                                  iDestruct "HRegisteredBody" "HBody HCase" $
+                                  iAssert "HLaterInv" "HBody" (|> InvP)
+                                    (wp_apply (proper_later_intro InvP) $
+                                      wp_apply (msc_read_rebuild H G gam a
+                                        w requests) $
+                                      iExact "HBody")
+                                    (iAssert "HCloseUpdate"
+                                      "HClose HLaterInv"
+                                      (mkProperFUpd H.iris_wsat
+                                        msc_open_mask mscE mkProperEmp)
+                                      (wp_apply (wand_elim_ent (|> InvP)
+                                        (mkProperFUpd H.iris_wsat
+                                          msc_open_mask mscE mkProperEmp)) $
+                                        iFrame "HClose" $
+                                        iExact "HLaterInv")
+                                      (iMod "HCloseUpdate" "HEmp" $
+                                        wp_apply (fupd_intro H.iris_wsat mscE
+                                          (msc_read_prepared H G gam a w
+                                            gamQ P Q
+                                            (LitV (LitProphecy p)))) $
+                                        iExists p (\lam p0 =>
+                                          mkProperExist (List ProphPayload)
+                                            (\lam resolves0 =>
+                                              (Inv ∗ Saved) ∗
+                                                ((mkProperPure
+                                                  (LitV (LitProphecy p) =
+                                                    LitV (LitProphecy p0))) ∗
+                                                  (((proph H.iris_proph_map
+                                                      p0 resolves0) ∗ LBs) ∗
+                                                    (msc_read_case G gam
+                                                      (msc_proph_total resolves0)
+                                                      (nat_sum w.read_initial)
+                                                      gamQ P))))) $
+                                        iExists resolves (\lam resolves0 =>
+                                          (Inv ∗ Saved) ∗
+                                            ((mkProperPure
+                                              (LitV (LitProphecy p) =
+                                                LitV (LitProphecy p))) ∗
+                                              (((proph H.iris_proph_map p
+                                                  resolves0) ∗ LBs) ∗
+                                                (msc_read_case G gam
+                                                  (msc_proph_total resolves0)
+                                                  (nat_sum w.read_initial)
+                                                  gamQ P)))) $
+                                        iSplitL "HPublicInv HSavedClose"
+                                          (iFrame "HPublicInv" $
+                                            iExact "HSavedClose")
+                                          (iSplitL "HEqRefl"
+                                            (iExact "HEqRefl") $
+                                            iSplitL "HToken HLBs"
+                                              (iFrame "HToken" $
+                                                iExact "HLBs")
+                                              (iExact "HCase")))))))
                 \in ipm $ iIntros "HOpened" $
                   wp_apply (wp_mono H msc_open_mask NewProph Prepared
                     (\lam v => mkProperFUpd H.iris_wsat
@@ -2499,8 +2363,7 @@
                   iDestruct "HOpened" "HPreNew HClose" $
                   wp_apply (wp_mono H msc_open_mask NewProph
                     (wp_frame_post Raw Frame) Prepared
-                    (\lam v => msc_read_raw_continue H G gam a w gamQ P Q v
-                      Close idp)) $
+                    continue) $
                   wp_apply (wp_frame_r H msc_open_mask NewProph Raw Frame) $
                   iSplitL "HPreNew"
                     (wp_apply base $ iExact "HPreNew")
@@ -2574,25 +2437,9 @@
     (gam : msc_name) (a : Nat) (w : msc_read_witness gam) :
   (msc_read_after H G gam a w) ⊢
     (msc_mono_auths G w.read_initial gam.msc_shard_names) =>
-  \let
-    | LenN => mkProperPure {iResUR S}
-        (length w.read_initial = gam.msc_size)
-    | LenNames => mkProperPure {iResUR S}
-        (length gam.msc_shard_names = gam.msc_size)
-    | Auth => msc_counter_auth G gam (nat_sum w.read_initial)
-    | Cells => pointsto_array H.iris_gen_heap suc a
-        (map natV w.read_initial)
-    | Monos => msc_mono_auths G w.read_initial gam.msc_shard_names
-    | Requests => msc_requests H G gam (nat_sum w.read_initial)
-        w.read_requests
-    | Source => LenN ∗
-        (LenNames ∗
-          (Auth ∗ ((Cells ∗ Monos) ∗ Requests)))
-    | proof : Source ⊢ Monos =>
-        ipm $ iIntros "HLenN HLenNames HAuth HShards HRequests" $
-          iDestruct "HShards" "HCells HMonos" $
-          iExact "HMonos"
-  \in proof
+  ipm $ iIntros "HLenN HLenNames HAuth HShards HRequests" $
+      iDestruct "HShards" "HCells HMonos" $
+      iExact "HMonos"
 
 \lemma msc_read_after_focus_requests {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -2603,22 +2450,8 @@
           ((msc_counter_auth G gam (nat_sum w.read_initial)) ∗
             (msc_shards H G a w.read_initial gam.msc_shard_names)))) ∗
       (msc_requests H G gam (nat_sum w.read_initial) w.read_requests)) =>
-  \let
-    | A => mkProperPure {iResUR S}
-        (length w.read_initial = gam.msc_size)
-    | B => mkProperPure {iResUR S}
-        (length gam.msc_shard_names = gam.msc_size)
-    | C => msc_counter_auth G gam (nat_sum w.read_initial)
-    | D => msc_shards H G a w.read_initial gam.msc_shard_names
-    | E => msc_requests H G gam (nat_sum w.read_initial) w.read_requests
-    | Source => A ∗ (B ∗ (C ∗ (D ∗ E)))
-    | Target => (A ∗ (B ∗ (C ∗ D))) ∗ E
-    | proof : Source ⊢ Target =>
-        ipm $ iIntros "HA HB HC HD HE" $
-          iSplitL "HA HB HC HD"
-            iFrame
-            (iExact "HE")
-  \in proof
+  ipm $ iIntros "HA HB HC HD HE" $
+    iFrame "HA HB HC HD HE"
 
 \lemma msc_read_scan_final_bound {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -2646,15 +2479,7 @@
             (msc_shards H G a w.read_initial gam.msc_shard_names)))) ∗
       (msc_requests H G gam (nat_sum w.read_initial) requests)) ⊢
     (msc_inv H G gam a) =>
-  \let
-    | A => mkProperPure {iResUR S}
-        (length w.read_initial = gam.msc_size)
-    | B => mkProperPure {iResUR S}
-        (length gam.msc_shard_names = gam.msc_size)
-    | C => msc_counter_auth G gam (nat_sum w.read_initial)
-    | D => msc_shards H G a w.read_initial gam.msc_shard_names
-    | E => msc_requests H G gam (nat_sum w.read_initial) requests
-  \in ipm $ iIntros "HFixed HRequests" $
+  ipm $ iIntros "HFixed HRequests" $
     iDestruct "HFixed" "HA HB HC HD" $
     wp_apply (msc_read_rebuild H G gam a w requests) $
     iFrame "HA HB HC HD" $ iExact "HRequests"
@@ -2673,8 +2498,6 @@
         (|> (Q (nat_sum reads))))) =>
   \let
     | Actual => nat_sum reads
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | Elem => ghost_map_elem (msc_requestGS G gam) id (Actual, gamQ)
     | LBs => msc_lbs G reads gam.msc_shard_names
     | Body => msc_read_after H G gam a final
     | Requests => msc_requests H G gam (nat_sum final.read_initial)
@@ -2688,10 +2511,7 @@
             (msc_shards H G a final.read_initial gam.msc_shard_names)))
     | Bound => mkProperPure {iResUR S}
         (Actual <= nat_sum final.read_initial)
-    | Source => Saved ∗ (Elem ∗ (LBs ∗ Body))
-    | Target => (msc_inv H G gam a) ∗ (|> (Q Actual))
-    | proof : Source ⊢ (|==> Target) =>
-      ipm $ iIntros "HSaved HElem HLBs HBody" $
+  \in ipm $ iIntros "HSaved HElem HLBs HBody" $
         iAssert "HBoundResources" "HLBs HBody"
           (Bound ∗ (LBs ∗ Body))
           (wp_apply (pure_consequence_frame_ent (LBs ∗ Body)
@@ -2720,7 +2540,6 @@
                           (gdelete id final.read_requests)) $
                           iFrame "HFixed" $ iExact "HRequests'")
                         (iExact "HLaterQ"))))
-  \in proof
 \lemma msc_read_close_registered {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a actual : Nat) (Q : Nat -> iProp S) :
@@ -2782,16 +2601,9 @@
           (|> (Q (nat_sum reads)))))) =>
   \let
     | Actual => nat_sum reads
-    | Body => msc_read_after H G gam a final
-    | Close => (|> (msc_inv H G gam a)) -∗
-        (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
-    | Public => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | ElemPred => ghost_map_elem (msc_requestGS G gam) id
         (msc_proph_total resolves, gamQ)
     | ElemActual => ghost_map_elem (msc_requestGS G gam) id (Actual, gamQ)
-    | LBs => msc_lbs G reads gam.msc_shard_names
     | RequestResult => (msc_inv H G gam a) ∗ (|> (Q Actual))
   \in ipm $ iIntros "HResolve HRest" $
     iDestruct "HResolve" "HPure HRemaining" $
@@ -2846,7 +2658,6 @@
           (|> (Q (nat_sum reads)))))) =>
   \let
     | Body => msc_read_after H G gam a final
-    | LaterBody => |> Body
     | Close => (|> (msc_inv H G gam a)) -∗
         (mkProperFUpd H.iris_wsat msc_open_mask mscE mkProperEmp)
     | Public => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
@@ -2945,7 +2756,6 @@
       (resolveProphE (Val (LitV (LitProphecy p))) (Val (natV actual)))
       R) =>
   \let
-    | Token => proph H.iris_proph_map p resolves
     | Bounds => (mkProperPure {iResUR S} (initial <= actual)) ∗
         (mkProperPure (nat_lt (msc_proph_total resolves) initial))
     | Expr0 => resolveProphE (Val (LitV (LitProphecy p)))
@@ -3052,20 +2862,10 @@
   \let
     | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
         (msc_inv H G gam a)
-    | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
-    | Token => proph H.iris_proph_map p resolves
-    | Pred => mkProperPure {iResUR S}
-        (initial <= msc_proph_total resolves)
-    | Bound => mkProperPure {iResUR S} (initial <= nat_sum reads)
-    | LBs => msc_lbs G reads gam.msc_shard_names
-    | ElemF : Nat -> iProp S => \lam id =>
-        ghost_map_elem (msc_requestGS G gam) id
-          (msc_proph_total resolves, gamQ)
-    | Elems => mkProperExist Nat ElemF
   \in ipm $ iIntros "HRegistered HCommon" $
-      iDestruct "HRegistered" "HPred HElems" Pred Elems $
+      iDestruct "HRegistered" "HPred HElems" $
       iDestruct "HPred" "%" $ \lam _ =>
-      iDestruct "HElems" "HElem" ElemF $ \lam id =>
+      iDestruct "HElems" "HElem" $ \lam id =>
       iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       iDestruct "HBound" "%" $ \lam _ =>
@@ -3099,13 +2899,8 @@
           (Val (natV (nat_sum reads))))
         (Val (natV (nat_sum reads))))
       (msc_read_core_post H G gam a Q)) =>
-  \let
-    | Pred => mkProperPure {iResUR S}
-        (nat_lt (msc_proph_total resolves) initial)
-    | Token => proph H.iris_proph_map p resolves
-    | Bound => mkProperPure {iResUR S} (initial <= nat_sum reads)
-  \in ipm $ iIntros "HUnregistered HCommon" $
-      iDestruct "HUnregistered" "HPred HP" Pred P $
+  ipm $ iIntros "HUnregistered HCommon" $
+      iDestruct "HUnregistered" "HPred HP" $
       iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       wp_lam $
@@ -3127,8 +2922,6 @@
         (Val v))
       (msc_read_core_post H G gam a Q)) =>
   \let
-    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
-        (msc_inv H G gam a)
     | Saved => saved_pred_own G.msc_saved_predG gamQ DfracDiscarded Q
     | Token => proph H.iris_proph_map p resolves
     | Case => msc_read_case G gam (msc_proph_total resolves)
@@ -3136,12 +2929,6 @@
     | Sum => msc_sum_post H G gam a w.read_initial
         gam.msc_shard_names 0 v
     | Rest => Saved ∗ (Token ∗ Case)
-    | ReadsBody : List Nat -> iProp S => \lam reads =>
-        (mkProperPure (v = natV (nat_sum reads))) ∗
-          ((mkProperPure (length reads = length gam.msc_shard_names)) ∗
-            ((mkProperPure
-                (nat_sum w.read_initial <= nat_sum reads)) ∗
-              (msc_lbs G reads gam.msc_shard_names)))
     | Goal : Value -> iProp S => \lam result =>
         WP H mscE
           (seqE
@@ -3155,7 +2942,7 @@
   \in ipm $ iDestruct "" "HSum HRest" Sum Rest $
       iDestruct "HSum" "HInv HReads" $
       iDestruct "HRest" "HSaved HToken HCase" $
-      iDestruct "HReads" "HRead" ReadsBody $ \lam reads =>
+      iDestruct "HReads" "HRead" $ \lam reads =>
       iDestruct "HRead" "HValue HLength HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
       iDestruct "HLength" "%" $ \lam _ =>
@@ -3327,136 +3114,6 @@
         (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
           ((msc_counter_auth G gam (suc total)) ∗ (Q total)))))
 
-\lemma msc_incr_mono_step {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a i : Nat) (w : msc_incr_witness {S} gam i)
-    (X : iProp S) :
-  ((msc_incr_after H G gam a i w) ∗ X) ⊢
-    (|==>
-      (((msc_counter_auth G gam (msc_incr_total w)) ∗
-          ((pointsto_array_rest H.iris_gen_heap suc a
-              (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗
-            ((mono_nat_auth_own G.msc_mono_natG
-                w.incr_name qp_one (suc w.incr_old)) ∗
-              ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                  w.incr_suffix w.incr_name_suffix) ∗
-                (msc_requests H G gam (msc_incr_total w)
-                  w.incr_requests))))) ∗ X)) =>
-  \let
-    | Auth => msc_counter_auth G gam (msc_incr_total w)
-    | ArrayRest => pointsto_array_rest H.iris_gen_heap suc a
-        (map natV w.incr_prefix) (map natV w.incr_suffix)
-    | Mono0 => mono_nat_auth_own G.msc_mono_natG
-        w.incr_name qp_one w.incr_old
-    | Mono1 => mono_nat_auth_own G.msc_mono_natG
-        w.incr_name qp_one (suc w.incr_old)
-    | LB => mono_nat_lb_own G.msc_mono_natG w.incr_name (suc w.incr_old)
-    | MonoRest => msc_mono_rest G w.incr_prefix w.incr_name_prefix
-        w.incr_suffix w.incr_name_suffix
-    | Requests => msc_requests H G gam (msc_incr_total w) w.incr_requests
-    | Tail => MonoRest ∗ Requests
-    | Source => (Auth ∗
-        (ArrayRest ∗ (Mono0 ∗ Tail))) ∗ X
-    | TargetBody => (Auth ∗ (ArrayRest ∗ (Mono1 ∗ Tail))) ∗ X
-    | proof : Source ⊢ (|==> TargetBody) =>
-        ipm $ iIntros "HMain HX" $
-          iDestruct "HMain" "HAuth HArray HMono HTail" $
-          iAssert "HMonoUpdate" "HMono" (|==> (Mono1 ∗ LB))
-            (wp_apply (mono_nat_own_update G.msc_mono_natG
-              w.incr_name w.incr_old (suc w.incr_old)
-              (nat_le_suc_self w.incr_old)) $
-              iExact "HMono")
-            (iMod "HMonoUpdate" "HUpdated" $
-              iDestruct "HUpdated" "HMono1 HLB" $
-              iModIntro $
-              iSplitL "HAuth HArray HMono1 HTail"
-                iFrame
-                (iExact "HX"))
-  \in proof
-
-\lemma msc_incr_client_requests_step {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S)
-    (gam : msc_name) (a i : Nat) (w : msc_incr_witness {S} gam i)
-    (P : iProp S) (Q : Nat -> iProp S) :
-  (((msc_counter_auth G gam (msc_incr_total w)) ∗
-        ((pointsto_array_rest H.iris_gen_heap suc a
-            (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗
-          ((mono_nat_auth_own G.msc_mono_natG
-              w.incr_name qp_one (suc w.incr_old)) ∗
-            ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                w.incr_suffix w.incr_name_suffix) ∗
-              (msc_requests H G gam (msc_incr_total w)
-                w.incr_requests))))) ∗
-      ((msc_incr_shift H G gam P Q) ∗ P)) ⊢
-    (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-      (((msc_counter_auth G gam (suc (msc_incr_total w))) ∗
-          ((pointsto_array_rest H.iris_gen_heap suc a
-              (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗
-            ((mono_nat_auth_own G.msc_mono_natG
-                w.incr_name qp_one (suc w.incr_old)) ∗
-              ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                  w.incr_suffix w.incr_name_suffix) ∗
-                (msc_requests H G gam (suc (msc_incr_total w))
-                  w.incr_requests))))) ∗
-        (Q (msc_incr_total w)))) =>
-  \let
-    | Total => msc_incr_total w
-    | Auth0 => msc_counter_auth G gam Total
-    | Auth1 => msc_counter_auth G gam (suc Total)
-    | ArrayRest => pointsto_array_rest H.iris_gen_heap suc a
-        (map natV w.incr_prefix) (map natV w.incr_suffix)
-    | Mono => mono_nat_auth_own G.msc_mono_natG
-        w.incr_name qp_one (suc w.incr_old)
-    | MonoRest => msc_mono_rest G w.incr_prefix w.incr_name_prefix
-        w.incr_suffix w.incr_name_suffix
-    | Requests0 => msc_requests H G gam Total w.incr_requests
-    | Requests1 => msc_requests H G gam (suc Total) w.incr_requests
-    | VS => msc_incr_shift H G gam P Q
-    | QR => Q Total
-    | ClientShift => mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-        (Auth1 ∗ QR)
-    | RequestsShift => mkProperFUpd H.iris_wsat
-        msc_open_mask msc_open_mask (Auth1 ∗ Requests1)
-    | RestNoReq => ArrayRest ∗ (Mono ∗ MonoRest)
-    | FinalSource => (Auth1 ∗ Requests1) ∗ (QR ∗ RestNoReq)
-    | TargetBody => (Auth1 ∗
-          (ArrayRest ∗
-            (Mono ∗ (MonoRest ∗ Requests1)))) ∗ QR
-    | finish : FinalSource ⊢ TargetBody =>
-        ipm $ iIntros "HAuthRequests HResultRest" $
-          iDestruct "HAuthRequests" "HAuth HRequests" $
-          iDestruct "HResultRest" "HResult HRest" $
-          iDestruct "HRest" "HArray HMonoTail" $
-          iDestruct "HMonoTail" "HMono HMonoRest" $
-          iSplitL "HAuth HArray HMono HMonoRest HRequests"
-            iFrame
-            (iExact "HResult")
-  \in ipm $ iIntros "HMain HShift HP" $
-    iDestruct "HMain" "HAuth0 HArray HMono HMonoRest HRequests0" $
-    iAssert "HClientUpdate" "HShift HAuth0 HP" ClientShift
-      (wp_apply (persistently_wand_elim_ent (Auth0 ∗ P) ClientShift) $
-        iSplitL "HShift"
-          (wp_apply (forall_elim_ent (\lam total =>
-            <#>
-              (((msc_counter_auth G gam total) ∗ P) -∗
-                (mkProperFUpd H.iris_wsat msc_open_mask msc_open_mask
-                  ((msc_counter_auth G gam (suc total)) ∗ (Q total)))))
-            Total) $ iExact "HShift")
-          (iFrame "HAuth0" $ iExact "HP"))
-      (iMod "HClientUpdate" "HAuthResult" $
-        iDestruct "HAuthResult" "HAuth1 HResult" $
-        iAssert "HRequestsUpdate" "HAuth1 HRequests0" RequestsShift
-          (wp_apply (msc_requests_advance H G gam Total
-            w.incr_requests) $
-            iFrame "HAuth1" $ iExact "HRequests0")
-          (iMod "HRequestsUpdate" "HAuthRequests" $
-            iDestruct "HAuthRequests" "HAuth1 HRequests1" $
-            wp_apply (fupd_intro H.iris_wsat msc_open_mask TargetBody) $
-            wp_apply finish $
-            iSplitL "HAuth1 HRequests1"
-              (iFrame "HAuth1" $ iExact "HRequests1")
-              iFrame))
-
 \func msc_incr_faa_after {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (gam : msc_name) (a i : Nat) (w : msc_incr_witness {S} gam i)
@@ -3490,36 +3147,90 @@
     | PhiFAA : Value -> iProp S => \lam _ =>
         mkProperFUpd H.iris_wsat msc_open_mask mscE (msc_incr_result Q)
     | Ready => Now ∗ (|> FaaAfter)
-    | faa : Ready ⊢
-        (WP H msc_open_mask
-          (FAA (Val (LitV (LitLoc (a Nat.+ i)))) (Val (natV 1)))
-          PhiFAA) =>
-        wp_faa_later_frame H msc_open_mask (a Nat.+ i)
-          w.incr_old 1 FaaAfter PhiFAA
-          (\let
+    | Cell => pointsto_full H.iris_gen_heap (a Nat.+ i)
+        (natV (suc w.incr_old))
+    | Transition => |==> (mkProperFUpd H.iris_wsat
+        msc_open_mask mscE (msc_incr_result Q))
+    | transition : (Cell ∗ FaaAfter) ⊢ Transition =>
+          \let
             | Total => msc_incr_total w
-            | Cell => pointsto_full H.iris_gen_heap (a Nat.+ i)
-                (natV (suc w.incr_old))
-            | After1 => (msc_counter_auth G gam Total) ∗
-                ((pointsto_array_rest H.iris_gen_heap suc a
-                    (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗
-                  ((mono_nat_auth_own G.msc_mono_natG
-                      w.incr_name qp_one (suc w.incr_old)) ∗
-                    ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                        w.incr_suffix w.incr_name_suffix) ∗
-                      (msc_requests H G gam Total w.incr_requests))))
-            | Core => (msc_counter_auth G gam (suc Total)) ∗
-                ((pointsto_array_rest H.iris_gen_heap suc a
-                    (map natV w.incr_prefix) (map natV w.incr_suffix)) ∗
-                  ((mono_nat_auth_own G.msc_mono_natG
-                      w.incr_name qp_one (suc w.incr_old)) ∗
-                    ((msc_mono_rest G w.incr_prefix w.incr_name_prefix
-                        w.incr_suffix w.incr_name_suffix) ∗
-                      (msc_requests H G gam (suc Total)
-                        w.incr_requests))))
+            | Auth0 => msc_counter_auth G gam Total
+            | Auth1 => msc_counter_auth G gam (suc Total)
+            | ArrayRest => pointsto_array_rest H.iris_gen_heap suc a
+                (map natV w.incr_prefix) (map natV w.incr_suffix)
+            | Mono => mono_nat_auth_own G.msc_mono_natG
+                w.incr_name qp_one (suc w.incr_old)
+            | LB => mono_nat_lb_own G.msc_mono_natG
+                w.incr_name (suc w.incr_old)
+            | MonoRest => msc_mono_rest G w.incr_prefix
+                w.incr_name_prefix w.incr_suffix w.incr_name_suffix
+            | Requests0 => msc_requests H G gam Total w.incr_requests
+            | Requests1 => msc_requests H G gam
+                (suc Total) w.incr_requests
+            | After1 => Auth0 ∗
+                (ArrayRest ∗ (Mono ∗ (MonoRest ∗ Requests0)))
+            | Core => Auth1 ∗
+                (ArrayRest ∗ (Mono ∗ (MonoRest ∗ Requests1)))
             | QR => Q Total
             | Step => mkProperFUpd H.iris_wsat
                 msc_open_mask msc_open_mask (Core ∗ QR)
+            | ClientShift => mkProperFUpd H.iris_wsat
+                msc_open_mask msc_open_mask (Auth1 ∗ QR)
+            | RequestsShift => mkProperFUpd H.iris_wsat
+                msc_open_mask msc_open_mask (Auth1 ∗ Requests1)
+            | RestNoReq => ArrayRest ∗ (Mono ∗ MonoRest)
+            | FinalSource => (Auth1 ∗ Requests1) ∗ (QR ∗ RestNoReq)
+            | finish : FinalSource ⊢ (Core ∗ QR) =>
+                ipm $ iIntros "HAuthRequests HResultRest" $
+                  iDestruct "HAuthRequests" "HAuth HRequests" $
+                  iDestruct "HResultRest" "HResult HRest" $
+                  iDestruct "HRest" "HArray HMonoTail" $
+                  iDestruct "HMonoTail" "HMono HMonoRest" $
+                  iFrame "HAuth HArray HMono HMonoRest HRequests HResult"
+            | monoStep : (After ∗ K) ⊢ (|==> (After1 ∗ K)) =>
+                ipm $ iIntros "HMain HK" $
+                  iDestruct "HMain" "HAuth HArray HMono0 HTail" $
+                  iAssert "HMonoUpdate" "HMono0" (|==> (Mono ∗ LB))
+                    (wp_apply (mono_nat_own_update G.msc_mono_natG
+                      w.incr_name w.incr_old (suc w.incr_old)
+                      (nat_le_suc_self w.incr_old)) $
+                      iExact "HMono0")
+                    (iMod "HMonoUpdate" "HUpdated" $
+                      iDestruct "HUpdated" "HMono HLB" $
+                      iModIntro $
+                      iFrame "HAuth HArray HMono HTail HK")
+            | clientStep : (After1 ∗ K) ⊢ Step =>
+                ipm $ iIntros "HMain HK" $
+                  iDestruct "HK" "HShift HP" $
+                  iDestruct "HMain"
+                    "HAuth0 HArray HMono HMonoRest HRequests0" $
+                  iAssert "HClientUpdate" "HShift HAuth0 HP" ClientShift
+                    (wp_apply (persistently_wand_elim_ent
+                      (Auth0 ∗ P) ClientShift) $
+                      iSplitL "HShift"
+                        (wp_apply (forall_elim_ent (\lam total =>
+                          <#> (((msc_counter_auth G gam total) ∗ P) -∗
+                            (mkProperFUpd H.iris_wsat
+                              msc_open_mask msc_open_mask
+                              ((msc_counter_auth G gam (suc total)) ∗
+                                (Q total))))) Total) $
+                          iExact "HShift")
+                        (iFrame "HAuth0" $ iExact "HP"))
+                    (iMod "HClientUpdate" "HAuthResult" $
+                      iDestruct "HAuthResult" "HAuth1 HResult" $
+                      iAssert "HRequestsUpdate" "HAuth1 HRequests0"
+                        RequestsShift
+                        (wp_apply (msc_requests_advance H G gam Total
+                          w.incr_requests) $
+                          iFrame "HAuth1" $ iExact "HRequests0")
+                        (iMod "HRequestsUpdate" "HAuthRequests" $
+                          iDestruct "HAuthRequests"
+                            "HAuth1 HRequests1" $
+                          wp_apply (fupd_intro H.iris_wsat
+                            msc_open_mask (Core ∗ QR)) $
+                          wp_apply finish $
+                          iFrame
+                            "HAuth1 HArray HMono HMonoRest HRequests1 HResult"))
             | NextTotal => nat_sum (msc_incr_ns_next w)
             | CoreAt : Nat -> iProp S => \lam total =>
                 Cell ∗
@@ -3549,13 +3260,11 @@
             iDestruct "HCloseK" "HClose HK" $
             iAssert "HStepUpdate" "HAfter HK" (|==> Step)
               (iAssert "HMonoUpdate" "HAfter HK" (|==> (After1 ∗ K))
-                (wp_apply (msc_incr_mono_step H G gam a i w K) $
+                (wp_apply monoStep $
                   iFrame "HAfter" $ iExact "HK")
                 (iMod "HMonoUpdate" "HReady" $
                   iModIntro $
-                  wp_apply (msc_incr_client_requests_step
-                    H G gam a i w P Q) $
-                  iExact "HReady"))
+                  wp_apply clientStep $ iExact "HReady"))
               (iMod "HStepUpdate" "HStep" $
                 iModIntro $
                 iMod "HStep" "HCoreResult" $
@@ -3569,7 +3278,13 @@
                       wp_apply (fupd_intro H.iris_wsat mscE
                         (msc_incr_result Q)) $
                       wp_apply (exist_intro_ent Q Total) $
-                      iExact "HResult"))))
+                      iExact "HResult")))
+    | faa : Ready ⊢
+        (WP H msc_open_mask
+          (FAA (Val (LitV (LitLoc (a Nat.+ i)))) (Val (natV 1)))
+          PhiFAA) =>
+        wp_faa_later_frame H msc_open_mask (a Nat.+ i)
+          w.incr_old 1 FaaAfter PhiFAA transition
   \in ipm $ iIntros "HOpened HK" $
     iDestruct "HOpened" "HNowLater HClose" $
     iDestruct "HNowLater" "HNow HLaterAfter" $
@@ -3679,9 +3394,7 @@
       iRewrite eqC GoalC $
       iRewrite eqH (GoalH a) $
       wp_apply (run a i hi) $
-      iSplitL "HInv HShift HP"
-        (iFrame "HInv HShift" $ iExact "HP")
-        (iFrame "HCounter" $ iExact "HHandle")
+      iFrame "HInv HShift HP HCounter HHandle"
 
 -- All non-physical resources created by `msc_new_counter`, packaged around
 -- one counter name.  Keeping this allocation independent of WP is useful for
@@ -3755,74 +3468,6 @@
       ((msc_counter_auth G gam 0) ∗
         (msc_counter_frag G gam qp_one 0)))
 
-\lemma msc_initial_ghosts_array_to_frag_inv {S : gFunctors}
-    (H : irisGS natCountable S) (G : mscG S) (T a : Nat) :
-  ((msc_initial_ghosts G T) ∗
-      (pointsto_array H.iris_gen_heap suc a
-        (replicate T (natV 0)))) ⊢
-    (mkProperExist1 msc_name (\lam gam =>
-      (mkProperPure (gam.msc_size = T)) ∗
-        ((msc_counter_frag G gam qp_one 0) ∗
-          (msc_inv H G gam a)))) =>
-  \let
-    | GhostAt : msc_name -> iProp S => \lam gam =>
-        (mkProperPure (gam.msc_size = T)) ∗
-          (msc_initial_fixed G gam T)
-    | ResultAt : msc_name -> iProp S => \lam gam =>
-        (mkProperPure (gam.msc_size = T)) ∗
-          ((msc_counter_frag G gam qp_one 0) ∗
-            (msc_inv H G gam a))
-  \in ipm $ iIntros "HGhosts HArray" $
-      iDestruct "HGhosts" "HGhostAt" GhostAt $ \lam gam =>
-      iDestruct "HGhostAt" "HSize HFixed" $
-      iDestruct "HSize" "%" $ \lam hsize =>
-      iExists gam ResultAt $
-      iSplitL "" (iPureIntro $ hsize) $
-      \let
-        | hlenNs : length (replicate T 0) = gam.msc_size =>
-            length_replicate *> inv hsize
-        | InvNs : List Nat -> iProp S => \lam ns =>
-            mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
-              (\lam requests => msc_inv_body_names H G gam a ns
-                gam.msc_shard_names requests)
-        | InvRequests : Gmap Nat natCountable (\Sigma Nat gname) -> iProp S =>
-            \lam requests =>
-              (mkProperPure (length (replicate T 0) = gam.msc_size)) ∗
-                ((mkProperPure
-                    (length gam.msc_shard_names = gam.msc_size)) ∗
-                  ((msc_counter_auth G gam (nat_sum (replicate T 0))) ∗
-                    ((msc_shards H G a (replicate T 0)
-                        gam.msc_shard_names) ∗
-                      (msc_requests H G gam
-                        (nat_sum (replicate T 0)) requests))))
-        | Req => ghost_map_auth (msc_requestGS G gam) qp_one gempty
-        | reqEmp : Req ⊢ msc_requests H G gam 0 gempty =>
-            attach_valid_r_ent Req (mkProperEmp {iResUR S})
-              (properUPred_ent_refl (mkProperEmp {iResUR S}))
-      \in iDestruct "HFixed" "HLenMono HReqAuthFrag" $
-        iDestruct "HLenMono" "HLen HMono" $
-        iDestruct "HReqAuthFrag" "HReq HAuthFrag" $
-        iDestruct "HAuthFrag" "HAuth HFrag" $
-        iDestruct "HLen" "%" $ \lam hlen =>
-        iFrame "HFrag" $
-        iExists (replicate T 0) InvNs $
-        iExists gempty InvRequests $
-        iSplitL "" (iPureIntro $ hlenNs) $
-        iSplitL "" (iPureIntro $ hlen *> inv hsize) $
-        iSplitL "HAuth"
-          (iRewrite (nat_sum_replicate_zero T)
-            (\lam total => msc_counter_auth G gam total) $
-            iExact "HAuth") $
-        iSplitL "HArray HMono"
-          (iRewrite (map_natV_replicate_zero T)
-            (\lam values =>
-              (pointsto_array H.iris_gen_heap suc a values) ∗
-                (msc_mono_auths G (replicate T 0) gam.msc_shard_names)) $
-            iFrame "HArray" $ iExact "HMono") $
-        iRewrite (nat_sum_replicate_zero T)
-          (\lam total => msc_requests H G gam total gempty) $
-        wp_apply reqEmp $ iExact "HReq"
-
 \func msc_new_counter_post {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
     (T : Nat) (c : Value) : iProp S =>
@@ -3878,6 +3523,70 @@
                   (mkProperPure (gam.msc_size = T)) ∗
                     ((msc_counter_frag G gam qp_one 0) ∗
                       (msc_inv H G gam l)))
+              | initialize : Resources ⊢ Mid =>
+                  \let
+                    | GhostAt : msc_name -> iProp S => \lam gam =>
+                        (mkProperPure (gam.msc_size = T)) ∗
+                          (msc_initial_fixed G gam T)
+                    | ResultAt : msc_name -> iProp S => \lam gam =>
+                        (mkProperPure (gam.msc_size = T)) ∗
+                          ((msc_counter_frag G gam qp_one 0) ∗
+                            (msc_inv H G gam l))
+                  \in ipm $ iIntros "HGhosts HArray" $
+                    iDestruct "HGhosts" "HGhostAt" GhostAt $ \lam gam =>
+                    iDestruct "HGhostAt" "HSize HFixed" $
+                    iDestruct "HSize" "%" $ \lam hsize =>
+                    iExists gam ResultAt $
+                    iSplitL "" (iPureIntro $ hsize) $
+                    \let
+                      | InvNs : List Nat -> iProp S => \lam ns =>
+                          mkProperExist
+                            (Gmap Nat natCountable (\Sigma Nat gname))
+                            (\lam requests => msc_inv_body_names H G gam l ns
+                              gam.msc_shard_names requests)
+                      | InvRequests :
+                          Gmap Nat natCountable (\Sigma Nat gname) -> iProp S =>
+                          \lam requests =>
+                            (mkProperPure
+                              (length (replicate T 0) = gam.msc_size)) ∗
+                              ((mkProperPure
+                                (length gam.msc_shard_names = gam.msc_size)) ∗
+                                ((msc_counter_auth G gam
+                                    (nat_sum (replicate T 0))) ∗
+                                  ((msc_shards H G l (replicate T 0)
+                                      gam.msc_shard_names) ∗
+                                    (msc_requests H G gam
+                                      (nat_sum (replicate T 0)) requests))))
+                      | Req => ghost_map_auth (msc_requestGS G gam)
+                          qp_one gempty
+                    \in iDestruct "HFixed" "HLenMono HReqAuthFrag" $
+                      iDestruct "HLenMono" "HLen HMono" $
+                      iDestruct "HReqAuthFrag" "HReq HAuthFrag" $
+                      iDestruct "HAuthFrag" "HAuth HFrag" $
+                      iDestruct "HLen" "%" $ \lam hlen =>
+                      iFrame "HFrag" $
+                      iExists (replicate T 0) InvNs $
+                      iExists gempty InvRequests $
+                      iSplitL ""
+                        (iPureIntro $ length_replicate *> inv hsize) $
+                      iSplitL "" (iPureIntro $ hlen *> inv hsize) $
+                      iSplitL "HAuth"
+                        (iRewrite (nat_sum_replicate_zero T)
+                          (\lam total => msc_counter_auth G gam total) $
+                          iExact "HAuth") $
+                      iSplitL "HArray HMono"
+                        (iRewrite (map_natV_replicate_zero T)
+                          (\lam values =>
+                            (pointsto_array H.iris_gen_heap suc l values) ∗
+                              (msc_mono_auths G (replicate T 0)
+                                gam.msc_shard_names)) $
+                          iFrame "HArray" $ iExact "HMono") $
+                      iRewrite (nat_sum_replicate_zero T)
+                        (\lam total => msc_requests H G gam total gempty) $
+                      wp_apply (attach_valid_r_ent Req
+                        (mkProperEmp {iResUR S})
+                        (properUPred_ent_refl (mkProperEmp {iResUR S}))) $
+                      iExact "HReq"
               | blockToArray : Block ⊢ Array =>
                   transport (\lam A => Block ⊢ A)
                     (pointsto_block_replicate
@@ -3897,12 +3606,10 @@
                   \in ipm $ iIntros "HMid" $
                     iDestruct "HMid" "HResources" Family $ \lam gam =>
                     \let
-                      | Frag => msc_counter_frag G gam qp_one 0
                       | Body => msc_inv H G gam l
                       | Inv => iris.base_logic.lib.invariants.inv
                           H.iris_wsat mscN Body
                       | PairResult => PairV locV (natV T)
-                      | Counter => msc_is_counter H G gam PairResult
                       | CounterFamily : Loc -> iProp S => \lam l0 =>
                           (mkProperPure (PairResult =
                               PairV (LitV (LitLoc l0))
@@ -3914,34 +3621,26 @@
                             ((msc_is_counter H G gam0 PairResult) ∗
                               ((msc_handles G gam0) ∗
                                 (msc_counter_frag G gam0 qp_one 0)))
-                      | counterIntro : gam.msc_size = T -> Inv ⊢ Counter =>
-                          \lam hsize => ipm $ iIntros "HInv" $
-                            iExists l CounterFamily $
-                            iSplitL ""
-                              (iPureIntro $ pmap (PairV locV)
-                                (pmap natV (inv hsize)))
-                              (iExact "HInv")
-                      | assemble : gam.msc_size = T -> (Inv ∗ Frag) ⊢
-                          (Post PairResult) =>
-                          \lam hsize => ipm $ iIntros "HInv HFrag" $
-                            wp_apply (exist1_intro_ent ResultFamily gam) $
-                            iSplitL "" (iPureIntro $ hsize)
-                              (iSplitL "HInv"
-                                (wp_apply (counterIntro hsize) $
-                                  iExact "HInv")
-                                (iSplitL ""
-                                  (wp_apply (msc_make_handles G gam) $
-                                    iEmpIntro)
-                                  (iExact "HFrag")))
                     \in iDestruct "HResources" "HSize HFrag HBody" $
                       iDestruct "HSize" "%" $ \lam hsize =>
-                      wp_apply (fupd_mono H.iris_wsat mscE mscE
-                        (Inv ∗ Frag) (Post PairResult) (assemble hsize)) $
-                      wp_apply (fupd_frame_r H.iris_wsat mscE mscE Inv Frag) $
-                      iSplitL "HBody"
+                      iAssert "HInvUpdate" "HBody"
+                        (mkProperFUpd H.iris_wsat mscE mscE Inv)
                         (wp_apply (inv_alloc H.iris_wsat mscN mscE Body) $
                           iNext $ iExact "HBody")
-                        (iExact "HFrag")
+                        (iMod "HInvUpdate" "HInv" $
+                          wp_apply (fupd_intro H.iris_wsat mscE
+                            (Post PairResult)) $
+                          wp_apply (exist1_intro_ent ResultFamily gam) $
+                          iSplitL "" (iPureIntro $ hsize) $
+                          iSplitL "HInv"
+                            (iExists l CounterFamily $
+                              iSplitL ""
+                                (iPureIntro $ pmap (PairV locV)
+                                  (pmap natV (inv hsize)))
+                                (iExact "HInv"))
+                            (iSplitL ""
+                              (wp_apply (msc_make_handles G gam) $ iEmpIntro)
+                              (iExact "HFrag")))
               | initialized : Resources ⊢ (WP H mscE PairExpr Post) =>
                   ipm $
                     wp_apply (fupd_wp H mscE PairExpr Post) $
@@ -3949,8 +3648,7 @@
                       (Post (PairV locV (natV T)))
                       (WP H mscE PairExpr Post) pairProgram) $
                     wp_apply finish $
-                    wp_apply (msc_initial_ghosts_array_to_frag_inv H G T l) $
-                    iAssumption
+                    wp_apply initialize $ iAssumption
             \in iDestruct "HWitness" "% HBlock" $ \lam heq =>
               iRewrite heq Goal $
               wp_apply initialized $
@@ -4307,9 +4005,7 @@
                 iDestruct "HTotal" "%" $ \lam ht =>
                 wp_apply (msc_client_pending_key_commit G gam gamM gamD key
                   base total old k1 k2 m stored1 stored2 external ht) $
-                iSplitL "HA HD"
-                  (iFrame "HA" $ iExact "HD")
-                  (iFrame "HC" $ iExact "HB")))
+                iFrame "HA HD HC HB"))
 
 \lemma msc_client_done_core_conflict {S : gFunctors}
     (G : mscG S) (gamM : gname) (m : Gmap Nat natCountable
@@ -4846,15 +4542,6 @@
   \let
     | Psi1 => msc_client1_twice_post H G gam gamM gamD base c h1
     | Psi2 => msc_client2_twice_post H G gam gamM gamD base c h2
-    | R1 => (msc_client_public H G gam gamM gamD base) ∗
-        ((msc_is_counter H G gam c) ∗
-          ((msc_handle G gam h1) ∗
-            (ghost_map_elem (msc_clientGS G gamM) 1 (2, gamD))))
-    | R2 => (msc_client_public H G gam gamM gamD base) ∗
-        ((msc_is_counter H G gam c) ∗
-          ((msc_handle G gam h2) ∗
-            (ghost_map_elem (msc_clientGS G gamM) 2 (2, gamD))))
-    | Source => par_pair_post Psi1 Psi2 returned
     | PairForV1 : Value -> iProp S => \lam v1 =>
         mkProperExist Value (\lam v2 =>
           (mkProperPure (returned = PairV v1 v2)) ∗
@@ -4862,7 +4549,7 @@
     | PairForV2 : Value -> Value -> iProp S => \lam v1 v2 =>
         (mkProperPure (returned = PairV v1 v2)) ∗
           ((Psi1 v1) ∗ (Psi2 v2))
-  \in (ipm $ iIntros "HPair" $
+  \in ipm $ iIntros "HPair" $
       iDestruct "HPair" "HForV1" PairForV1 $ \lam v1 =>
       iDestruct "HForV1" "HForV2" (PairForV2 v1) $ \lam v2 =>
       iDestruct "HForV2" "HEq HPsis" $ iClear "HEq" $
@@ -4871,7 +4558,7 @@
         (wp_apply (msc_client_incr_post_resources H G gam gamM gamD
           1 base 1 c h1 v1) $ iExact "HPsi1")
         (wp_apply (msc_client_incr_post_resources H G gam gamM gamD
-          2 base 1 c h2 v2) $ iExact "HPsi2") : Source ⊢ (R1 ∗ R2))
+          2 base 1 c h2 v2) $ iExact "HPsi2")
 
 \func msc_client_read_Q {S : gFunctors} (G : mscG S)
     (gam : msc_name) (base total : Nat) : iProp S =>
@@ -4895,16 +4582,10 @@
           (msc_client_read_Q G gam base total)))) =>
   \let
     | GM => msc_clientGS G gamM
-    | A => ghost_map_auth GM qp_one m
-    | E1 => ghost_map_elem GM 1 (2, gamD)
-    | E2 => ghost_map_elem GM 2 (2, gamD)
     | m1 => gdelete 1 m
     | m12 => gdelete 2 m1
     | A1 => ghost_map_auth GM qp_one m1
     | A12 => ghost_map_auth GM qp_one m12
-    | C => msc_counter_auth G gam total
-    | F => msc_counter_frag G gam qp_one (base Nat.+ k1 Nat.+ k2)
-    | Source => (A ∗ (E1 ∗ E2)) ∗ (C ∗ F)
     | absent1 : glookup m12 1 = nothing =>
         glookup_delete_ne 2 1 m1 nat_two_ne_one *>
           glookup_delete_eq 1 m
@@ -4915,36 +4596,13 @@
           (mkProperPure (glookup map 1 = nothing)) ∗
             ((mkProperPure (glookup map 2 = nothing)) ∗
               (ghost_map_auth (msc_clientGS G gamM) qp_one map))
-    | makeDone : A12 ⊢
-        (msc_client_inv G gam gamM gamD base) =>
-        ipm $ iIntros "HMap" $
-          wp_apply (or_intro_r_ent
-            (msc_client_pending G gam gamM gamD base) Done) $
-          iExists m12 DoneMap $
-          iSplitL "" (iPureIntro $ absent1) $
-          iSplitL "" (iPureIntro $ absent2) $ iExact "HMap"
     | totalEq : total = base Nat.+ 4 =>
         htotal *> pmap (\lam z => base Nat.+ z Nat.+ k2) hk1 *>
           pmap (\lam z => base Nat.+ 2 Nat.+ z) hk2
     | indexEq : base Nat.+ k1 Nat.+ k2 = base Nat.+ 4 =>
         pmap (\lam z => base Nat.+ z Nat.+ k2) hk1 *>
           pmap (\lam z => base Nat.+ 2 Nat.+ z) hk2
-    | toQ : F ⊢ (msc_client_read_Q G gam base total) =>
-        transport
-          (\lam n => (msc_counter_frag G gam qp_one n) ⊢
-            ((mkProperPure (total = base Nat.+ 4)) ∗
-              (msc_counter_frag G gam qp_one (base Nat.+ 4))))
-          (inv indexEq)
-          (pure_intro_sep_ent (total = base Nat.+ 4) totalEq
-            (msc_counter_frag G gam qp_one (base Nat.+ 4)))
-    | makeQ : (C ∗ F) ⊢
-        (C ∗ (msc_client_read_Q G gam base total)) =>
-        ipm $ iIntros "HC HF" $ iFrame "HC" $
-          wp_apply toQ $ iExact "HF"
-    | Target => (msc_client_inv G gam gamM gamD base) ∗
-        (C ∗ (msc_client_read_Q G gam base total))
-    | proof : Source ⊢ (|==> Target) =>
-      ipm $ iIntros "HMapElems HCounter" $
+  \in ipm $ iIntros "HMapElems HCounter" $
         iDestruct "HMapElems" "HMap HElems" $
         iDestruct "HElems" "HE1 HE2" $
         iDestruct "HCounter" "HC HF" $
@@ -4958,10 +4616,20 @@
               (iMod "HDelete2" "HMap12" $
                 iModIntro $
                 iSplitL "HMap12"
-                  (wp_apply makeDone $ iExact "HMap12")
-                  (wp_apply makeQ $
-                    iFrame "HC" $ iExact "HF")))
-  \in proof
+                  (wp_apply (or_intro_r_ent
+                      (msc_client_pending G gam gamM gamD base) Done) $
+                    iExists m12 DoneMap $
+                    iSplitL "" (iPureIntro $ absent1) $
+                    iSplitL "" (iPureIntro $ absent2) $ iExact "HMap12")
+                  (iFrame "HC" $
+                    wp_apply (transport
+                      (\lam n => (msc_counter_frag G gam qp_one n) ⊢
+                        ((mkProperPure (total = base Nat.+ 4)) ∗
+                          (msc_counter_frag G gam qp_one (base Nat.+ 4))))
+                      (inv indexEq)
+                      (pure_intro_sep_ent (total = base Nat.+ 4) totalEq
+                        (msc_counter_frag G gam qp_one (base Nat.+ 4)))) $
+                    iExact "HF")))
 \lemma msc_client_read_pending_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
     (base total : Nat) :
@@ -4978,11 +4646,6 @@
     | E1 => ghost_map_elem GM 1 (2, gamD)
     | E2 => ghost_map_elem GM 2 (2, gamD)
     | C => msc_counter_auth G gam total
-    | X => C ∗ (E1 ∗ E2)
-    | Source => (msc_client_pending G gam gamM gamD base) ∗ X
-    | Target => |==>
-        ((msc_client_inv G gam gamM gamD base) ∗
-          (C ∗ (msc_client_read_Q G gam base total)))
     | PendingK1 : Nat -> iProp S => \lam k1 =>
         mkProperExist Nat (\lam k2 =>
           mkProperExist (Gmap Nat natCountable (\Sigma Nat gname))
@@ -4994,19 +4657,12 @@
         Gmap Nat natCountable (\Sigma Nat gname) -> iProp S =>
         \lam k1 k2 m =>
           msc_client_pending_at G gam gamM gamD base k1 k2 m
-  \in (ipm $ iIntros "HPending HX" $
+  \in ipm $ iIntros "HPending HX" $
       iDestruct "HPending" "HPendingK1" PendingK1 $ \lam k1 =>
       iDestruct "HPendingK1" "HPendingK2" (PendingK2 k1) $ \lam k2 =>
       iDestruct "HPendingK2" "HPendingMap" (PendingMap k1 k2) $ \lam m =>
       \let
-        | H1 => mkProperPure {iResUR S}
-            (glookup m 1 = just (k1, gamD))
-        | H2 => mkProperPure {iResUR S}
-            (glookup m 2 = just (k2, gamD))
         | A => ghost_map_auth GM qp_one m
-        | E1 => ghost_map_elem GM 1 (2, gamD)
-        | E2 => ghost_map_elem GM 2 (2, gamD)
-        | C => msc_counter_auth G gam total
         | F => msc_counter_frag G gam qp_one
             (base Nat.+ k1 Nat.+ k2)
         | lookup1 => glookup m 1 = just (2, gamD)
@@ -5051,9 +4707,7 @@
                         gamD stored1 ext1)
                       (msc_client_lookup_nat_agree m 2 k2 2
                         gamD stored2 ext2) ht) $
-                    iSplitL "HA HE1 HE2"
-                      (iFrame "HA HE1" $ iExact "HE2")
-                      (iFrame "HC" $ iExact "HF")))) : Source ⊢ Target)
+                    iFrame "HA HE1 HE2 HC HF")))
 
 \lemma msc_client_read_done_step {S : gFunctors}
     (G : mscG S) (gam : msc_name) (gamM gamD : gname)
@@ -5071,8 +4725,6 @@
     | E1 => ghost_map_elem GM 1 (2, gamD)
     | E2 => ghost_map_elem GM 2 (2, gamD)
     | C => msc_counter_auth G gam total
-    | X => C ∗ (E1 ∗ E2)
-    | Source => (msc_client_done G gamM) ∗ X
     | Target => |==>
         ((msc_client_inv G gam gamM gamD base) ∗
           (C ∗ (msc_client_read_Q G gam base total)))
@@ -5081,7 +4733,7 @@
           (mkProperPure (glookup m 1 = nothing)) ∗
             ((mkProperPure (glookup m 2 = nothing)) ∗
               (ghost_map_auth GM qp_one m))
-  \in (ipm $ iIntros "HDone HX" $
+  \in ipm $ iIntros "HDone HX" $
       iDestruct "HDone" "HDoneMap" DoneMap $ \lam m =>
       iDestruct "HDoneMap" "HAbsent1 HRest" $
       iDestruct "HRest" "HAbsent2 HMap" $
@@ -5091,9 +4743,7 @@
       iDestruct "HElems" "HE1 HE2" $
       wp_apply (msc_client_done_core_conflict G gamM m 1 2 gamD
         (C ∗ E2) Target absent) $
-      iSplitL "HMap" (iExact "HMap") $
-      iSplitL "HC HE2" (iFrame "HC" $ iExact "HE2") $
-      iExact "HE1" : Source ⊢ Target)
+      iFrame "HMap HC HE2 HE1"
 
 \lemma msc_client_read_shift {S : gFunctors}
     (H : irisGS natCountable S) (G : mscG S)
@@ -5173,7 +4823,6 @@
     | R1 => Public ∗ (C ∗ (H1 ∗ E1))
     | R2 => Public ∗ (C ∗ (H2 ∗ E2))
     | ReadPost => msc_read_post H G gam c Q
-    | ReadWP => WP H mscE (App (Val msc_read) (Val c)) ReadPost
     | Source => par_pair_post
         (msc_client1_twice_post H G gam gamM gamD base c h1)
         (msc_client2_twice_post H G gam gamM gamD base c h2) returned

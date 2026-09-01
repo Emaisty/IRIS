@@ -34,20 +34,38 @@ final class FrameMeta extends ExactMeta {
   @Dependency(name = "pm_frame_with_intuitionistic")
   private ArendRef pmFrameWithIntuitionistic;
 
+  @Dependency(name = "pm_frame_direct")
+  private ArendRef pmFrameDirect;
+  @Dependency(name = "pm_frame_right_direct")
+  private ArendRef pmFrameRightDirect;
+  @Dependency(name = "pm_frame_exact")
+  private ArendRef pmFrameExact;
+  @Dependency(name = "pm_frame_sep_l")
+  private ArendRef pmFrameSepLeft;
+  @Dependency(name = "pm_frame_sep_r")
+  private ArendRef pmFrameSepRight;
+
   @Dependency(name = "pm_emp_intro")
   private ArendRef pmEmpIntro;
+  @Dependency(name = "mkProperEmp")
+  private ArendRef mkProperEmp;
 
   @Dependency(name = "mkProperSep")
   private CoreFunctionDefinition mkProperSep;
+  @Dependency(name = "mkProperSep")
+  private ArendRef mkProperSepRef;
+
+  private record SynthesizedFrame(ConcreteExpression residual,
+      ConcreteExpression evidence) {}
 
   @Override
   public @Nullable TypedExpression invokeMeta(@NotNull ExpressionTypechecker typechecker,
       @NotNull ContextData contextData) {
     List<ConcreteExpression> explicit = explicitArguments(contextData);
     if (explicit.isEmpty()) return autoFrame(typechecker, contextData);
-    if (explicit.size() < 2 || explicit.size() > 3) {
+    if (explicit.size() > 3) {
       typechecker.getErrorReporter().report(new TypecheckingError(
-          "iFrame expects no arguments or a quoted pattern, optional PMFrame evidence, and continuation",
+          "iFrame expects a quoted pattern, optional PMFrame evidence, and optional continuation",
           contextData.getMarker()));
       return null;
     }
@@ -61,7 +79,8 @@ final class FrameMeta extends ExactMeta {
             contextData.getMarker()));
         return null;
       }
-      ConcreteExpression next = explicit.get(1);
+      ConcreteExpression next = explicit.size() == 1
+          ? contextData.getFactory().meta("iFrame", this) : explicit.get(1);
       var factory = contextData.getFactory();
       for (int i = names.length - 1; i >= 0; i--) {
         next = factory.app(factory.meta("iFrame", this), true,
@@ -77,35 +96,96 @@ final class FrameMeta extends ExactMeta {
             pmFrame, "PMFrame") : null;
     if (explicit.size() == 3 && evidence == null) return null;
     CoreExpression target = weakHead(typechecker, resolved.target());
-    CoreExpression evidenceTarget = evidence == null ? null : classField(evidence, "P");
+    CoreExpression evidenceTarget = evidence == null ? target : classField(evidence, "P");
     CoreExpression evidenceResidual = evidence == null ? null : classField(evidence, "Q");
     if (evidence != null && (evidenceTarget == null || evidenceResidual == null)) {
       typechecker.getErrorReporter().report(new TypecheckingError(
           "Cannot inspect PMFrame evidence", contextData.getMarker()));
       return null;
     }
+    SynthesizedFrame synthesized = evidence == null
+        ? synthesizeFrame(typechecker, contextData,
+            resolved.selection().proposition(), target)
+        : null;
+    boolean useEvidence = evidence != null || synthesized != null;
     ConcreteExpression residual = evidence != null
         ? factory.core(evidenceResidual.computeTyped())
+        : synthesized != null ? synthesized.residual()
         : target instanceof CoreFunCallExpression sep
-        && sep.getDefinition() == mkProperSep
-        && sep.getDefCallArguments().size() >= 3
-        ? factory.core(sep.getDefCallArguments().getLast().computeTyped())
-        : factory.hole();
+            && sep.getDefinition() == mkProperSep
+            && sep.getDefCallArguments().size() >= 3
+            ? factory.core(sep.getDefCallArguments().getLast().computeTyped())
+            : factory.hole();
     var args = new ArrayList<ConcreteArgument>();
     args.add(factory.arg(factory.hole(), false));
     args.add(factory.arg(factory.core(resolved.environment().computeTyped()), false));
     args.add(factory.arg(resolved.selection().term(), true));
-    if (evidence != null) {
+    if (useEvidence) {
       args.add(factory.arg(factory.core(evidenceTarget.computeTyped()), false));
     }
     args.add(factory.arg(residual, false));
-    if (evidence != null) args.add(factory.arg(evidence.term(), true));
-    args.add(factory.arg(explicit.getLast(), true));
+    if (useEvidence) {
+      args.add(factory.arg(evidence != null
+          ? evidence.term() : synthesized.evidence(), true));
+    }
+    args.add(factory.arg(explicit.size() == 1
+        ? factory.meta("iFrame", this) : explicit.getLast(), true));
     ArendRef lemma = resolved.persistent()
-        ? evidence == null ? pmFrameIntuitionistic : pmFrameWithIntuitionistic
-        : evidence == null ? pmFrameSpatial : pmFrameWithSpatial;
+        ? useEvidence ? pmFrameWithIntuitionistic : pmFrameIntuitionistic
+        : useEvidence ? pmFrameWithSpatial : pmFrameSpatial;
     return typechecker.typecheck(factory.app(factory.ref(lemma), args),
         contextData.getExpectedType());
+  }
+
+  private @Nullable SynthesizedFrame synthesizeFrame(
+      ExpressionTypechecker typechecker, ContextData contextData,
+      CoreExpression resource, CoreExpression target) {
+    var factory = contextData.getFactory();
+    CoreExpression normalizedResource = dereference(typechecker, resource);
+    CoreExpression normalizedTarget = weakHead(typechecker, target);
+    ConcreteExpression resourceExpr = factory.core(normalizedResource.computeTyped());
+    if (normalizedResource.compare(normalizedTarget,
+        org.arend.ext.core.ops.CMP.EQ)) {
+      return new SynthesizedFrame(factory.ref(mkProperEmp),
+          factory.app(factory.ref(pmFrameExact), true, resourceExpr));
+    }
+    if (!(normalizedTarget instanceof CoreFunCallExpression sep)
+        || sep.getDefinition() != mkProperSep
+        || sep.getDefCallArguments().size() < 3) return null;
+    CoreExpression left = dereference(typechecker,
+        sep.getDefCallArguments().get(sep.getDefCallArguments().size() - 2));
+    CoreExpression right = dereference(typechecker, sep.getDefCallArguments().getLast());
+    ConcreteExpression leftExpr = factory.core(left.computeTyped());
+    ConcreteExpression rightExpr = factory.core(right.computeTyped());
+    if (normalizedResource.compare(left, org.arend.ext.core.ops.CMP.EQ)) {
+      return new SynthesizedFrame(rightExpr,
+          factory.app(factory.ref(pmFrameDirect), true,
+              resourceExpr, rightExpr));
+    }
+    if (normalizedResource.compare(right, org.arend.ext.core.ops.CMP.EQ)) {
+      return new SynthesizedFrame(leftExpr,
+          factory.app(factory.ref(pmFrameRightDirect), true,
+              resourceExpr, leftExpr));
+    }
+    SynthesizedFrame inLeft = synthesizeFrame(typechecker, contextData,
+        normalizedResource, left);
+    if (inLeft != null) {
+      ConcreteExpression residual = factory.app(factory.ref(mkProperSepRef), true,
+          inLeft.residual(), rightExpr);
+      return new SynthesizedFrame(residual,
+          factory.app(factory.ref(pmFrameSepLeft), true,
+              resourceExpr, leftExpr, inLeft.residual(), rightExpr,
+              inLeft.evidence()));
+    }
+    SynthesizedFrame inRight = synthesizeFrame(typechecker, contextData,
+        normalizedResource, right);
+    if (inRight == null) return null;
+    ConcreteExpression residual = factory.app(factory.ref(mkProperSepRef), true,
+        leftExpr, inRight.residual());
+    return new SynthesizedFrame(residual,
+        factory.app(factory.ref(pmFrameSepRight), true,
+            resourceExpr, leftExpr, rightExpr, inRight.residual(),
+            inRight.evidence()));
   }
 
   private @Nullable TypedExpression autoFrame(ExpressionTypechecker typechecker,

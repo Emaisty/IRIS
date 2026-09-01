@@ -2037,3 +2037,27 @@
 \func pm_frame_direct {M : UCMRA} (R Q : ProperUPred M)
   : PMFrame M R (R ∗ Q) Q \cowith
   | frame => properUPred_ent_refl (R ∗ Q)
+
+\func pm_frame_right_direct {M : UCMRA} (R P : ProperUPred M)
+  : PMFrame M R (P ∗ R) P \cowith
+  | frame => sep_comm_ent R P
+
+\func pm_frame_exact {M : UCMRA} (R : ProperUPred M)
+  : PMFrame M R R mkProperEmp \cowith
+  | frame => sep_elim_l_ent R mkProperEmp
+
+\func pm_frame_sep_l {M : UCMRA} (R P Q T : ProperUPred M)
+    (instance : PMFrame M R P Q)
+  : PMFrame M R (P ∗ T) (Q ∗ T) \cowith
+  | frame => properUPred_ent_trans (R ∗ (Q ∗ T))
+      ((R ∗ Q) ∗ T) (P ∗ T)
+      (sep_assoc_r_ent R Q T)
+      (sep_mono_l_ent (R ∗ Q) P T instance.frame)
+
+\func pm_frame_sep_r {M : UCMRA} (R P T Q : ProperUPred M)
+    (instance : PMFrame M R T Q)
+  : PMFrame M R (P ∗ T) (P ∗ Q) \cowith
+  | frame => properUPred_ent_trans (R ∗ (P ∗ Q))
+      (P ∗ (R ∗ Q)) (P ∗ T)
+      (sep_swap_ent R P Q)
+      (sep_mono_r_ent P (R ∗ Q) T instance.frame)

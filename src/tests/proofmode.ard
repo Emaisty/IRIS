@@ -225,6 +225,16 @@
   ipm $ iIntros "HP HQR" $ iDestruct "HQR" "HQ HR" $
     iFrame "HP HQ" $ iExact "HR"
 
+\lemma proofmode_frame_nested_left {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ (Q ∗ R)) ⊢ ((P ∗ Q) ∗ R) =>
+  ipm $ iIntros "HP HQ HR" $ iFrame "HP HQ HR"
+
+\lemma proofmode_frame_nested_right_first {M : UCMRA}
+    (P Q R : ProperUPred M) :
+  (P ∗ (Q ∗ R)) ⊢ (P ∗ (Q ∗ R)) =>
+  ipm $ iIntros "HP HQ HR" $ iFrame "HR HP HQ"
+
 \lemma proofmode_frame_auto_emp {M : UCMRA} (P : ProperUPred M)
   : P ⊢ (P ∗ mkProperEmp) =>
   ipm $ iIntros "HP" $ iFrame
