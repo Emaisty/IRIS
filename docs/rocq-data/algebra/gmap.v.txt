@@ -50,7 +50,7 @@ gmap_core_id'		missing	qol
 gmap_disjoint_ne		missing	qol
 gmap_dist		missing	qol
 gmap_dom_ne		missing	qol
-gmap_empty_discrete		missing	qol
+gmap_empty_discrete	iris.algebra.gmap:gmap_empty_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 gmap_fmap_cmra_morphism	iris.algebra.gmap_functor:gmap_fmap_cmra_morphism	direct	qol
 gmap_fmap_mono		missing	qol
 gmap_fmap_ne		missing	qol
@@ -70,7 +70,7 @@ gmap_op_valid0_disjoint		missing	qol
 gmap_op_valid_disjoint		missing	qol
 gmap_pcore_instance	iris.algebra.gmap:GmapCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
 gmap_singleton_core_id	iris.algebra.gmap:gmap_singleton_core_id	direct	qol
-gmap_singleton_discrete		missing	qol
+gmap_singleton_discrete	iris.algebra.gmap:gmap_singleton_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 gmap_ucmra_mixin	iris.algebra.gmap:GmapUCMRA	analogue	foundational	The unital laws are fields of GmapUCMRA rather than a separate Rocq mixin.
 gmap_union_dist_eq		missing	qol
 gmap_union_ne		missing	qol

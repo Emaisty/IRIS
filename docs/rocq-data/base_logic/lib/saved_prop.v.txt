@@ -19,14 +19,14 @@ saved_anything_update_2		missing	qol
 saved_anything_update_halves		missing	qol
 saved_anything_valid		missing	qol
 saved_anything_valid_2		missing	qol
-saved_pred_agree		missing	qol
-saved_pred_alloc		missing	qol
+saved_pred_agree	iris.base_logic.lib.saved_pred:saved_pred_agree	direct	qol	Saved-predicate specialization with savedPredG/savedPredSigma and later agreement; generic savedAnything and saved_prop APIs remain separate missing work.
+saved_pred_alloc	iris.base_logic.lib.saved_pred:saved_pred_alloc	direct	qol	Saved-predicate specialization with savedPredG/savedPredSigma and later agreement; generic savedAnything and saved_prop APIs remain separate missing work.
 saved_pred_alloc_cofinite		missing	qol
 saved_pred_alloc_strong		missing	qol
 saved_pred_as_fractional		missing	qol
-saved_pred_discarded_persistent		missing	qol
+saved_pred_discarded_persistent	iris.base_logic.lib.saved_pred:saved_pred_discarded_persistent	direct	qol	Saved-predicate specialization with savedPredG/savedPredSigma and later agreement; generic savedAnything and saved_prop APIs remain separate missing work.
 saved_pred_fractional		missing	qol
-saved_pred_own		missing	foundational
+saved_pred_own	iris.base_logic.lib.saved_pred:saved_pred_own	direct	foundational	Saved-predicate specialization with savedPredG/savedPredSigma and later agreement; generic savedAnything and saved_prop APIs remain separate missing work.
 saved_pred_own_contractive		missing	qol
 saved_pred_persist		missing	qol
 saved_pred_unpersist		missing	qol

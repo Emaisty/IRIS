@@ -1,0 +1,9 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (49ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (13ms)
+
+--- Typechecking iris.bi.derived_laws ---
+[WARNING] iris.bi.derived_laws:2:9: Definition '||' is already imported from module iris.bi.interface
+  In: \import Logic
+--- Done (5830ms) ---

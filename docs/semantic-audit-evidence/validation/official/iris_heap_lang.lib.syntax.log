@@ -1,0 +1,11 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (38ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (14ms)
+
+--- Typechecking iris_heap_lang.lib.syntax ---
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+--- Done (6674ms) ---

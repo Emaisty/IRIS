@@ -1,17 +1,17 @@
 add_modal_fupd_wp		missing	qol
-elim_acc_wp_atomic		missing	qol
+elim_acc_wp_atomic	iris.proofmode.heap_lang:pm_wp_accessor	analogue	qol	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
 elim_acc_wp_nonatomic		missing	qol
-elim_modal_bupd_wp		missing	qol
-elim_modal_fupd_wp		missing	qol
-elim_modal_fupd_wp_atomic		missing	qol
+elim_modal_bupd_wp	iris.program_logic.weakestpre:wp_bupd	analogue	qol	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
+elim_modal_fupd_wp	iris.program_logic.lifting:fupd_wp	analogue	qol	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
+elim_modal_fupd_wp_atomic	iris.program_logic.weakestpre:wp_atomic	analogue	qol	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
 elim_modal_fupd_wp_atomic_wrong_mask		missing	qol
 elim_modal_fupd_wp_wrong_mask		missing	qol
-frame_wp		missing	qol
+frame_wp	iris.program_logic.weakestpre:wp_frame_r	analogue	qol	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
 fupd_wp	iris.program_logic.lifting:fupd_wp	direct	qol
-irisGS_gen		missing	foundational
+irisGS_gen	iris.program_logic.weakestpre:irisGS	analogue	foundational	Concrete HeapLang masked WP with world/heap/prophecy resources and a fork postcondition; the general Rocq language/stuckness interface is not exposed.
 is_except_0_wp		missing	qol
 wp'	iris.program_logic.weakestpre:wp	analogue	foundational	Arend exposes the generic weakest-precondition function directly rather than through Rocq sealing and notation.
-wp_atomic		missing	qol
+wp_atomic	iris.program_logic.weakestpre:wp_atomic	analogue	qol	Concrete HeapLang masked WP with world/heap/prophecy resources and a fork postcondition; the general Rocq language/stuckness interface is not exposed.
 wp_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
 wp_bind	iris.program_logic.lifting:wp_bind	direct	foundational
 wp_bind_inv		missing	foundational
@@ -20,7 +20,7 @@ wp_credit_access		missing	qol
 wp_def	iris.program_logic.weakestpre:wp	analogue	foundational	The Arend wp/fixed-point construction plays the role of Rocq wp_def without the sealing wrapper.
 wp_flip_mono'		missing	qol
 wp_frame_l		missing	qol
-wp_frame_r		missing	qol
+wp_frame_r	iris.program_logic.weakestpre:wp_frame_r	analogue	qol	Concrete HeapLang masked WP with world/heap/prophecy resources and a fork postcondition; the general Rocq language/stuckness interface is not exposed.
 wp_frame_step_l		missing	qol
 wp_frame_step_l'		missing	qol
 wp_frame_step_r		missing	qol
@@ -43,7 +43,7 @@ wp_stuck_weaken		missing	qol
 wp_unfold	iris.program_logic.weakestpre:wp_unfold	direct	foundational
 wp_unseal		not-needed	qol	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
 wp_value	iris.program_logic.weakestpre:wp_value	direct	foundational
-wp_value'		missing	foundational
+wp_value'	iris.program_logic.weakestpre:wp_value_intro	analogue	foundational	Explicit rule/bridge for the concrete masked WP; no full Rocq proof-mode instance interface is claimed.
 wp_value_fupd		missing	foundational
 wp_value_fupd'		missing	foundational
 wp_wand		missing	qol

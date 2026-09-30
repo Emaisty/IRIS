@@ -1,0 +1,43 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (36ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (11ms)
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/private/tmp/iris-arend-20260930/official/cli/build/libs/cli-1.12.0-full.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+[INFO] Binary cache: 156 loaded out of 156 candidates, 352 deferred box fix(es)
+[WARNING] Cannot load binary cache for module 'iris.algebra.frac' during definition body loading
+  org.arend.ext.serialization.DeserializationException: Definition Arith.Rat:Rat is not loaded
+	at org.arend.module.serialization.SimpleCallTargetProvider.getCallTarget(SimpleCallTargetProvider.java:46)
+	at org.arend.module.serialization.CallTargetProvider.getCallTarget(CallTargetProvider.java:16)
+	at org.arend.module.serialization.ExpressionDeserialization.readDataCall(ExpressionDeserialization.java:515)
+	at org.arend.module.serialization.ExpressionDeserialization.readExpr(ExpressionDeserialization.java:412)
+	at org.arend.module.serialization.ExpressionDeserialization.readPi(ExpressionDeserialization.java:559)
+	at org.arend.module.serialization.DefinitionDeserialization.fillInClassDefinition(DefinitionDeserialization.java:123)
+	at org.arend.module.serialization.DefinitionDeserialization.fillInDefinition(DefinitionDeserialization.java:48)
+	at org.arend.module.serialization.ModuleDeserialization.readModule(ModuleDeserialization.java:78)
+	at org.arend.frontend.library.BinaryLoader.loadBinaryCache(BinaryLoader.java:136)
+	at org.arend.frontend.ConsoleMain.run(ConsoleMain.java:530)
+	at org.arend.frontend.ConsoleMain.main(ConsoleMain.java:1091)
+
+  In: iris.algebra.frac
+[WARNING] Cannot load binary cache for module 'iris.algebra.dfrac' during definition body loading
+  org.arend.ext.serialization.DeserializationException: Definition iris.algebra.frac:Qp is not loaded
+	at org.arend.module.serialization.SimpleCallTargetProvider.getCallTarget(SimpleCallTargetProvider.java:46)
+	at org.arend.module.serialization.CallTargetProvider.getCallTarget(CallTargetProvider.java:16)
+	at org.arend.module.serialization.ExpressionDeserialization.readClassCall(ExpressionDeserialization.java:521)
+	at org.arend.module.serialization.ExpressionDeserialization.readExpr(ExpressionDeserialization.java:413)
+	at org.arend.module.serialization.ExpressionDeserialization.readParameters(ExpressionDeserialization.java:181)
+	at org.arend.module.serialization.DefinitionDeserialization.fillInDataDefinition(DefinitionDeserialization.java:284)
+	at org.arend.module.serialization.DefinitionDeserialization.fillInDefinition(DefinitionDeserialization.java:49)
+	at org.arend.module.serialization.ModuleDeserialization.readModule(ModuleDeserialization.java:78)
+	at org.arend.frontend.library.BinaryLoader.loadBinaryCache(BinaryLoader.java:136)
+	at org.arend.frontend.ConsoleMain.run(ConsoleMain.java:530)
+	at org.arend.frontend.ConsoleMain.main(ConsoleMain.java:1091)
+
+  In: iris.algebra.dfrac
+[INFO] Binary cache: 2 loaded, 2 failed out of 4 candidates
+
+--- Typechecking iris.algebra.dfrac ---
+--- Done (2817ms) ---

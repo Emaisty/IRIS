@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- Generated from README.md by scripts/build-docs.py. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iris in Arend — Iris in Arend</title>
+  <link rel="stylesheet" href="styles.css?v=e00f286">
+</head>
+<body>
+  <nav class="guide-nav" aria-label="Documentation">
+    <a href="index.html">Porting status</a> ·
+    <a href="implementation.html">Implementation</a> ·
+    <a href="proofmode.html">Proof mode</a> ·
+    <a href="build.html#build">Build</a> ·
+    <a href="README.html">Documentation maintenance</a>
+  </nav>
+  <main class="guide">
+<h1 id="iris-in-arend">Iris in Arend</h1>
+<p>An Arend port of Rocq Iris, with step-indexed resource algebras, recursive <code>iProp</code>, ownership, invariants, masked weakest preconditions, thread-pool adequacy, and an Arend-native proof mode.</p>
+<p>The <code>full-arend-native-proof-mode</code> branch was merged into <code>main</code> at <a href="https://github.com/Emaisty/IRIS/commit/e00f2867886b928e6cd420959cf39e0d3975cb8e"><code>e00f286</code></a> on 2026-09-30. It adds the parallel modular counter and its proofs, spawn/join, ghost libraries, numeric HeapLang binders, and Java metas that construct kernel-checked Arend proof terms. This is a working core and client port; coverage of the full upstream Rocq library remains partial.</p>
+<ul>
+<li><a href="implementation.html">Implementation and merge audit</a>: module layout, public definitions, completed examples, and remaining scope.</li>
+<li><a href="proofmode.html">Proof-mode guide</a>: imports, tactic syntax, evidence classes, and HeapLang automation.</li>
+<li><a href="index.html">Definition-by-definition status</a>: mappings against the pinned Rocq snapshot, including narrower Arend analogues.</li>
+<li><a href="README.html">Documentation maintenance</a>: status categories and how to serve the dashboard.</li>
+</ul>
+<h2 id="build">Build</h2>
+<p>Run from the repository root. The build requires a JDK with Java 21 support, <code>arend-lib</code> installed under <code>~/.arend/libs</code> (or <code>AREND_LIBDIR</code>), and an Arend CLI jar compatible with the extension API. <code>arend.yaml</code> declares language version 1.12. The build scripts default to the local patched checker at <code>~/Projects/Arend/cli/build/libs/cli-1.12.0-full.jar</code>; that jar is not distributed in this repository. The scripts document the argument-first conversion fix as a requirement for the recursive Iris model.</p>
+<pre><code>export AREND_JAR=/absolute/path/to/cli-1.12.0-full.jar
+export AREND_LIBDIR=&quot;$HOME/.arend/libs&quot;
+./scripts/build-proofmode-extension.sh
+java -Xmx16g -jar &quot;$AREND_JAR&quot; -L &quot;$AREND_LIBDIR&quot; tests.proofmode
+java -Xmx16g -jar &quot;$AREND_JAR&quot; -L &quot;$AREND_LIBDIR&quot; examples.parallel_counter_client</code></pre>
+<p>The extension is built into <code>ext/</code>; its registered virtual module is <code>iris.proofmode.Meta</code>. There is no <code>src/iris/proofmode/Meta.ard</code> to generate. Rebuild the extension after changing its Java sources.</p>
+<p>For the dependency-ordered project check, which also builds the extension:</p>
+<pre><code>./scripts/typecheck-all.sh
+AREND_RECOMPILE=1 AREND_SERIALIZE=1 ./scripts/typecheck-all.sh</code></pre>
+<p>The script fails on errors, unfilled goals, nonzero Java exits, or missing completion markers. It reports the number of modules actually attempted.</p>
+<p>The <a href="typecheck-2026-09-30.html">2026-09-30 toolchain audit</a> rebuilt the latest official master and a variant with the String and guarded conversion changes. The patched source check passed 80 of 82 modules, including the current core, proof mode, and counter client. The two legacy factorial modules failed with 164 diagnostics; no goals were reported. The official full run timed out; individual source checks passed 63 modules and timed out on 19 at two minutes per module. See the audit for exact revisions, cache checks, logs, and reproduction commands.</p>
+  </main>
+</body>
+</html>

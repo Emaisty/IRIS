@@ -1,0 +1,15 @@
+{
+  "modules": 82,
+  "official": {
+    "passed": 63,
+    "timeout": 19
+  },
+  "patched": {
+    "passed": 80,
+    "errors": 2
+  },
+  "official_goals": 0,
+  "patched_error_diagnostics": 164,
+  "inputs_unchanged": true,
+  "notes": "Official diagnostic counts include dependencies and can repeat across target modules."
+}

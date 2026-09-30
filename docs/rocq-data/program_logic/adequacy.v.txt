@@ -1,8 +1,8 @@
 adequate	iris.program_logic.adequacy:Adequate	analogue	foundational	Adequate is the Arend record containing result correctness and thread-pool safety.
 adequate_alt		missing	qol
-adequate_tp_safe		missing	qol
+adequate_tp_safe	iris.program_logic.adequacy:Adequate.adequate_not_stuck	analogue	qol	Scheduled ThreadSteps over the concrete HeapLang pool with observations and fork resources; value extraction concerns the main thread, while safety covers the entire pool.
 steps_sum		missing	foundational
-wp_adequacy	iris.program_logic.adequacy:wp_adequacy	direct	foundational
+wp_adequacy	iris.program_logic.adequacy:wp_adequacy; iris.program_logic.adequacy:wp_adequacy_with_fork	direct	foundational	Result correctness and safety of every reachable thread; the with_fork variant supplies an inhabited fork postcondition. Neither theorem asserts termination.
 wp_adequacy_gen		missing	foundational
 wp_invariance		missing	foundational
 wp_invariance_gen		missing	foundational
@@ -10,6 +10,6 @@ wp_not_stuck	iris.program_logic.adequacy:Adequate.adequate_not_stuck	analogue	qo
 wp_step	iris.program_logic.weakestpre:wp_step	direct	foundational
 wp_strong_adequacy		missing	foundational
 wp_strong_adequacy_gen		missing	foundational
-wptp_postconditions		missing	qol
-wptp_preservation		missing	qol
-wptp_step		missing	qol
+wptp_postconditions	iris.program_logic.adequacy:wp_thread_steps_value	analogue	qol	Scheduled ThreadSteps over the concrete HeapLang pool with observations and fork resources; value extraction concerns the main thread, while safety covers the entire pool.
+wptp_preservation	iris.program_logic.adequacy:wp_thread_pool_preservation	analogue	qol	Scheduled ThreadSteps over the concrete HeapLang pool with observations and fork resources; value extraction concerns the main thread, while safety covers the entire pool.
+wptp_step	iris.program_logic.adequacy:wp_thread_pool_step	analogue	qol	Scheduled ThreadSteps over the concrete HeapLang pool with observations and fork resources; value extraction concerns the main thread, while safety covers the entire pool.

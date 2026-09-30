@@ -58,7 +58,7 @@ async function loadData() {
 }
 
 function sectionStats(item) {
-  if (item.ignored) return `out of scope ${item.total}/${item.total}`;
+  if (item.ignored > 0 && item.ignored === item.total) return `out of scope ${item.total}/${item.total}`;
   const implemented = item.direct + item.analogue;
   const relevant = item.total - item["not-needed"] - item.ignored;
   return `${implemented}/${relevant} (${percent(implemented, relevant)}%)`;
@@ -119,7 +119,7 @@ function renderFile(file) {
 
 function renderFolder(folder) {
   return `
-    <div class="folder-section${folder.ignored ? " ignored-section" : ""}">
+    <div class="folder-section${folder.ignored > 0 && folder.ignored === folder.total ? " ignored-section" : ""}">
       <div class="section-header" onclick="toggle(this)">
         <span class="arrow">&#9654;</span>
         <code class="folder-name">${escapeHtml(folder.name)}</code>

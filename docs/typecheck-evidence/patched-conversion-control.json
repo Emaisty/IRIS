@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/private/tmp/iris-arend-20260930/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java",
+    "-Xmx12g",
+    "-Xss16m",
+    "-jar",
+    "/private/tmp/iris-arend-20260930/patched/cli/build/libs/cli-1.12.0-full.jar",
+    "-L",
+    "/private/tmp/iris-arend-20260930/patched",
+    "-r",
+    "iris.base_logic.lib.saved_pred"
+  ],
+  "cwd": "/private/tmp/iris-arend-20260930/runs/patched/IRIS",
+  "source_only": true,
+  "started_utc": "2026-09-30T14:02:35.907699+00:00",
+  "timeout_seconds": 120,
+  "pid": 85433,
+  "exit_code": 0,
+  "timed_out": false,
+  "elapsed_seconds": 85.078,
+  "errors": 0,
+  "goals": 0,
+  "completion_markers": 1,
+  "runtime_failure": false,
+  "passed": true
+}

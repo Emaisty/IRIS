@@ -39,20 +39,20 @@ max_Z_ra_mixin		missing	foundational
 max_Z_unit_instance		missing	foundational
 max_Z_validN_instance		missing	foundational
 max_Z_valid_instance		missing	foundational
-max_nat		missing	foundational
-max_natO		missing	foundational
-max_natR		missing	foundational
-max_natUR		missing	foundational
+max_nat	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_natO	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_natR	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_natUR	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
 max_nat_cmra_discrete		missing	qol
-max_nat_core_id		missing	qol
-max_nat_op		missing	foundational
-max_nat_op_instance		missing	foundational
-max_nat_pcore_instance		missing	foundational
-max_nat_ra_mixin		missing	foundational
-max_nat_ucmra_mixin		missing	foundational
-max_nat_unit_instance		missing	foundational
-max_nat_validN_instance		missing	foundational
-max_nat_valid_instance		missing	foundational
+max_nat_core_id	iris.algebra.lib.mono_nat:max_nat_core_id	analogue	qol	CoreId proof for the unwrapped Nat carrier of MaxNatUCMRA.
+max_nat_op	iris.algebra.lib.mono_nat:max_nat	analogue	foundational	Recursive maximum operation used by MaxNatUCMRA on the unwrapped Nat carrier.
+max_nat_op_instance	iris.algebra.lib.mono_nat:max_nat	analogue	foundational	Recursive maximum operation used by MaxNatUCMRA on the unwrapped Nat carrier.
+max_nat_pcore_instance	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_nat_ra_mixin	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_nat_ucmra_mixin	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_nat_unit_instance	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_nat_validN_instance	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
+max_nat_valid_instance	iris.algebra.lib.mono_nat:MaxNatUCMRA	analogue	foundational	Bundled UCMRA on Nat with max as operation, zero unit, identity core, and trivial validity; no MaxNat wrapper record.
 min_nat		missing	foundational
 min_natO		missing	foundational
 min_natR		missing	foundational

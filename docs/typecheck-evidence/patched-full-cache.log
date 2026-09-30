@@ -1,0 +1,1049 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (68ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (18ms)
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.program_logic.lifting:21:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.program_logic.lifting:29:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.gmap_functor:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.ghost_map:8:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.gen_heap:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] tests.fact:17:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.fact:14:9: Definition 'heap_update' is already imported from module iris_heap_lang.lang
+  In: \import tests.fact.heap
+[WARNING] iris.base_logic.lib.wsat_alloc:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris_heap_lang.lib.spawn_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris_heap_lang.lib.spawn_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.lib.gmap_view_functor:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_client:13:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_client:18:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.base_logic.lib.own:16:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.proofmode:26:9: Definition 'wp_fork' is already imported from module iris.program_logic.lifting
+  In: \import iris.proofmode.Meta
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.bi.updates:9:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.derived_laws:2:9: Definition '||' is already imported from module iris.bi.interface
+  In: \import Logic
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.program_logic.weakestpre:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] examples.parallel_counter_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.fact.program_logic:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact.program_logic:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.fact.program_logic:17:9: Definition 'heap_update' is already imported from module iris_heap_lang.lang
+  In: \import tests.fact.heap
+[WARNING] iris.bi.big_op:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.fact.heap:15:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact.heap:19:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.program_logic.adequacy:27:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.ghost_map:11:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.ghost_map:11:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.ghost_map:11:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.proofmode.heap_lang:8:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/private/tmp/iris-arend-20260930/patched/cli/build/libs/cli-1.12.0-full.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+[INFO] Binary cache: 80 loaded out of 80 candidates, 314 deferred box fix(es)
+
+--- Typechecking IRIS ---
+[1/82] Typechecking iris.bi.derived_laws[2/82] Typechecking iris.bi.updates     [3/82] Typechecking iris.bi.derived_laws_later[4/82] Typechecking iris.bi.big_op            [5/82] Typechecking iris.bi.interface[6/82] Typechecking iris.base_logic.upred[7/82] Typechecking iris.base_logic.lib.wsat_alloc[8/82] Typechecking iris.base_logic.lib.invariants[9/82] Typechecking iris.base_logic.lib.wsat_sigma[10/82] Typechecking iris.base_logic.lib.saved_pred[11/82] Typechecking iris.base_logic.lib.wsat      [12/82] Typechecking iris.base_logic.lib.fancy_updates_mask[13/82] Typechecking iris.base_logic.lib.fancy_updates     [14/82] Typechecking iris.base_logic.lib.proph_map    [15/82] Typechecking iris.base_logic.lib.gfunctors[16/82] Typechecking iris.base_logic.lib.mono_nat [17/82] Typechecking iris.base_logic.lib.own     [18/82] Typechecking iris.base_logic.lib.gen_heap[19/82] Typechecking iris.base_logic.lib.ghost_map[20/82] Typechecking iris.base_logic.lib.iprop    [21/82] Typechecking iris.base_logic.notation [22/82] Typechecking iris.proofmode.core     [23/82] Typechecking iris.proofmode.heap_lang[24/82] Typechecking iris.program_logic.weakestpre[25/82] Typechecking iris.program_logic.lifting   [26/82] Typechecking iris.program_logic.adequacy[27/82] Typechecking iris.program_logic.iris_sigma[28/82] Typechecking iris.algebra.view            [29/82] Typechecking iris.algebra.prod[30/82] Typechecking iris.algebra.agree[31/82] Typechecking iris.algebra.cofe_solver[32/82] Typechecking iris.algebra.gmap_functor[33/82] Typechecking iris.algebra.coPset      [34/82] Typechecking iris.algebra.cmra  [35/82] Typechecking iris.algebra.gmap[36/82] Typechecking iris.algebra.ofe [37/82] Typechecking iris.algebra.auth[38/82] Typechecking iris.algebra.gmap_updates[39/82] Typechecking iris.algebra.functions   [40/82] Typechecking iris.algebra.lib.gmap_view[41/82] Typechecking iris.algebra.lib.gmap_view_functor[42/82] Typechecking iris.algebra.lib.mono_nat         [43/82] Typechecking iris.algebra.lib.frac_auth[44/82] Typechecking iris.algebra.excl         [45/82] Typechecking iris.algebra.gset[46/82] Typechecking iris.algebra.frac[47/82] Typechecking iris.algebra.dfrac[48/82] Typechecking iris.algebra.option[49/82] Typechecking iris_heap_lang.lang_ectx[50/82] Typechecking iris_heap_lang.lang_subst[51/82] Typechecking iris_heap_lang.lang      [52/82] Typechecking iris_heap_lang.lib.spawn[53/82] Typechecking iris_heap_lang.lib.spawn_proof[54/82] Typechecking iris_heap_lang.lib.syntax     [55/82] Typechecking iris_heap_lang.lib.array [56/82] Typechecking tests.parallel_primitives[57/82] Typechecking tests.saved_pred         [58/82] Typechecking tests.proofmode [59/82] Typechecking tests.proofmode_wp_primitives[60/82] Typechecking tests.proofmode_custom_instances[61/82] Typechecking tests.proofmode_env             [62/82] Typechecking tests.prophecy     [63/82] Typechecking tests.mono_nat[64/82] Typechecking tests.proofmode_classes[65/82] Typechecking tests.generic_heap     [66/82] Typechecking tests.fact.heap   [67/82] Typechecking tests.fact.program_logic
+[ERROR] tests.fact.program_logic:137:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:141:28: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:187:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:194:35: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:202:11: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (z, dz))
+[ERROR] tests.fact.program_logic:201:11: Some clauses are missing
+  truncP a a' i
+  In: \case h_auth_k \with {
+        | inP (z, dz) => 
+          \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                 cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+               | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                 (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+               | a' : M.E => op {M} (op {M} authNew frag) z
+               | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+               transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                 (inclN_refl_ucmra k authNew)
+               | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+               | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+               inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                 (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+          \in inP (a', hv_new_z_yf, hsep)
+      }
+[ERROR] tests.fact.program_logic:190:5: Cannot infer type of parameter 'hv_auth'
+  In: \lam n a_auth hv_auth h_auth k k_le_n yf hv_auth_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authNew : M.E => heap_auth newMap
+             | frag : M.E => heap_frag l v
+             | h_auth_k : inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth oldMap) k a_auth => inclN_le (heap_auth oldMap) a_auth n k h_auth k_le_n
+        \in \case h_auth_k \with {
+              | inP (z, dz) => 
+                \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                       cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+                     | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                       (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+                     | a' : M.E => op {M} (op {M} authNew frag) z
+                     | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                     transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                       (inclN_refl_ucmra k authNew)
+                     | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+                     | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                     inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                       (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+                \in inP (a', hv_new_z_yf, hsep)
+            })
+[ERROR] tests.fact.program_logic:190:5: Cannot infer an expression
+  In: \lam n a_auth hv_auth h_auth k k_le_n yf hv_auth_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authNew : M.E => heap_auth newMap
+             | frag : M.E => heap_frag l v
+             | h_auth_k : inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth oldMap) k a_auth => inclN_le (heap_auth oldMap) a_auth n k h_auth k_le_n
+        \in \case h_auth_k \with {
+              | inP (z, dz) => 
+                \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                       cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+                     | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                       (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+                     | a' : M.E => op {M} (op {M} authNew frag) z
+                     | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                     transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                       (inclN_refl_ucmra k authNew)
+                     | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+                     | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                     inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                       (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+                \in inP (a', hv_new_z_yf, hsep)
+            })
+[ERROR] tests.fact.program_logic:179:8: The type of a lemma must be a proposition
+  Actual level: \Type
+  In: own_heap_alloc_bupd
+[ERROR] tests.fact.program_logic:243:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:250:35: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:266:15: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (zA, dzA))
+[ERROR] tests.fact.program_logic:266:30: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (zF, dzF))
+[ERROR] tests.fact.program_logic:265:11: Some clauses are missing
+  truncP a a' i, u
+  inP (zA, dzA), truncP a a' i
+  In: \case h_auth, h_frag \with {
+        | inP (zA, dzA), inP (zF, dzF) => 
+          \let | z : M.E => op {M} zA zF
+               | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                 cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+               | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+               ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                 (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                 (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                 (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                   (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                       (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                   (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                   (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                   (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+               | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                 (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+               | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+               | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                 cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+               | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                 heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+               | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+               | a' : M.E => op {M} (op {M} authNew fragNew) z
+               | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+               transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                 (inclN_refl_ucmra k authNew)
+               | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+               | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+               inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                 (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+               h_frag_new_z)
+          \in inP (a', hv_new_z_yf, hsep_new)
+      }
+[ERROR] tests.fact.program_logic:264:11: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (a_auth, a_frag, dist_a, h_auth, h_frag))
+[ERROR] tests.fact.program_logic:263:11: Some clauses are missing
+  truncP a a' i
+  In: \case hsep_k \with {
+        | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+          | inP (zA, dzA), inP (zF, dzF) => 
+            \let | z : M.E => op {M} zA zF
+                 | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                   cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                 | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                 ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                   (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                   (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                     (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                     (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                         (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                     (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                     (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                     (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                     (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                 | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                   (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                 | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                 | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                   cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                 | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                   heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                 | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                 | a' : M.E => op {M} (op {M} authNew fragNew) z
+                 | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                 transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                   (inclN_refl_ucmra k authNew)
+                 | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                 | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                 inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                   (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                 h_frag_new_z)
+            \in inP (a', hv_new_z_yf, hsep_new)
+        }
+      }
+[ERROR] tests.fact.program_logic:246:5: Cannot infer type of parameter 'hv_a'
+  In: \lam n a hv_a hsep k k_le_n yf hv_a_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authOld : M.E => heap_auth oldMap
+             | fragOld : M.E => heap_frag l old
+             | authNew : M.E => heap_auth newMap
+             | fragNew : M.E => heap_frag l v
+             | hsep_k : upred_holds {mkProperSep (own_heap_auth sigma) (pointsTo l old)} k a => upred_mono {mkProperSep (own_heap_auth sigma) (pointsTo l old)} n k a a hsep
+               (inP (unit {M}, 
+               ofe_dist_trans {M} k a a (op {M} a (unit {M})) (ofe_dist_refl {M} k a) (ofe_dist_sym {M} k (op {M} a (unit {M})) a (ucmra_unit_right_id_dist k a)))) 
+             k_le_n
+        \in \case hsep_k \with {
+              | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+                | inP (zA, dzA), inP (zF, dzF) => 
+                  \let | z : M.E => op {M} zA zF
+                       | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                         cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                       | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                       ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                         (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                         (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                         (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                           (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                               (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                           (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                           (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                           (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                       | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                         (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                       | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                       | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                         cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                       | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                         heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                       | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                       | a' : M.E => op {M} (op {M} authNew fragNew) z
+                       | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                       transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                         (inclN_refl_ucmra k authNew)
+                       | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                       | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                       inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                         (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                       h_frag_new_z)
+                  \in inP (a', hv_new_z_yf, hsep_new)
+              }
+            })
+[ERROR] tests.fact.program_logic:246:5: Cannot infer an expression
+  In: \lam n a hv_a hsep k k_le_n yf hv_a_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authOld : M.E => heap_auth oldMap
+             | fragOld : M.E => heap_frag l old
+             | authNew : M.E => heap_auth newMap
+             | fragNew : M.E => heap_frag l v
+             | hsep_k : upred_holds {mkProperSep (own_heap_auth sigma) (pointsTo l old)} k a => upred_mono {mkProperSep (own_heap_auth sigma) (pointsTo l old)} n k a a hsep
+               (inP (unit {M}, 
+               ofe_dist_trans {M} k a a (op {M} a (unit {M})) (ofe_dist_refl {M} k a) (ofe_dist_sym {M} k (op {M} a (unit {M})) a (ucmra_unit_right_id_dist k a)))) 
+             k_le_n
+        \in \case hsep_k \with {
+              | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+                | inP (zA, dzA), inP (zF, dzF) => 
+                  \let | z : M.E => op {M} zA zF
+                       | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                         cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                       | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                       ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                         (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                         (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                         (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                           (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                               (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                           (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                           (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                           (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                       | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                         (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                       | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                       | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                         cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                       | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                         heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                       | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                       | a' : M.E => op {M} (op {M} authNew fragNew) z
+                       | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                       transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                         (inclN_refl_ucmra k authNew)
+                       | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                       | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                       inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                         (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                       h_frag_new_z)
+                  \in inP (a', hv_new_z_yf, hsep_new)
+              }
+            })
+[ERROR] tests.fact.program_logic:235:8: The type of a lemma must be a proposition
+  Actual level: \Type
+  In: own_heap_store_bupd
+[ERROR] tests.fact.program_logic:368:50: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:413:47: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:418:47: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:454:71: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:457:71: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:461:62: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:433:9: Type mismatch
+  Expected type:
+    \Pi (m : Nat) -> \Pi (a : E) -> m <= n -> validN m a -> \Sigma (wp_pre_body {cnt} f e Phi (to_val e) m a -> upred_holds {wp_pre {cnt} g e Phi} m a) 
+      (upred_holds {wp_pre {cnt} g e Phi} m a -> upred_holds {wp_pre {cnt} f e Phi} m a)
+  Actual type:
+    \Pi (m : Nat) ->
+    \Pi (a : E) -> m <= n -> validN m a -> \Sigma ((\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => LHS_nothing
+      }) m a -> upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => RHS_nothing}} m a)
+        (upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => RHS_nothing}} m a ->
+        upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => LHS_nothing}} m a)
+  In: \case to_val e \as tv \return upredDist n (\case tv \with {  | just v => mkProperBUpd (Phi v)  | nothing => LHS_nothing})
+        (\case tv \with {  | just v => mkProperBUpd (Phi v)  | nothing => RHS_nothing}) \with {
+        | just _ => \lam m a hm hv => (\lam h => h, \lam h => h)
+        | nothing => upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) n wand_body_f wand_body_g
+          (\lam sigma => (
+          \let body_dist : \Pi (k : Nat) -> k < n -> upredDist {HeapCMRA Loc cnt Value} k (mkProperForall Expr (step_body_f sigma)) (mkProperForall Expr (step_body_g sigma)) =>
+                 \lam k hk => upredDist_forall {HeapCMRA Loc cnt Value} Expr k (step_body_f sigma) (step_body_g sigma)
+                 (\lam e2 => upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) k 
+                 (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi)))) 
+                 (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
+                   (\lam sigma2 =>
+                 upredDist_impl_r {HeapCMRA Loc cnt Value} k (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))) 
+                         (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi)))
+                     (bupd_ne k (mkProperSep (own_heap_auth sigma2) (f e2 Phi)) (mkProperSep (own_heap_auth sigma2) (g e2 Phi)) 
+                     (upredDist_sep_r {HeapCMRA Loc cnt Value} k (own_heap_auth sigma2) (f e2 Phi) (g e2 Phi) (hdl k hk e2 Phi)))))
+          \in upredDist_wand_r {HeapCMRA Loc cnt Value} n (own_heap_auth sigma) 
+                (mkProperBUpd (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma))))) 
+                (mkProperBUpd (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_g sigma)))))
+                  (bupd_ne n (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma)))) 
+                  (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_g sigma))))
+                    (upredDist_and_r {HeapCMRA Loc cnt Value} n (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma))) 
+                    (mkProperLater (mkProperForall Expr (step_body_g sigma))) 
+                    (upredDist_later {HeapCMRA Loc cnt Value} n (mkProperForall Expr (step_body_f sigma)) (mkProperForall Expr (step_body_g sigma)) body_dist)))))
+      }
+[ERROR] tests.fact.program_logic:571:6: Type mismatch
+  Expected type:
+    \Pi (n : Nat) -> \Pi (a : E) -> validN n a -> \Sigma (upred_holds {wp {cnt} (Val v) Phi} n a ->
+      \Pi (k : Nat) -> k <= n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))) 
+    (upred_holds {mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)} n a -> upred_holds {wp {cnt} (Val v) Phi} n a)
+  Actual type:
+    \Pi (n : Nat) ->
+    \Pi (a : E) -> validN n a -> \Sigma (upred_holds {wp {cnt} (Val v) Phi} n a -> upred_holds {wp_pre_body {cnt} (wp {cnt}) (Val v) Phi (just {Value} v)} n a) 
+      (upred_holds {wp_pre {cnt} (wp {cnt}) (Val v) Phi} n a -> upred_holds {wp {cnt} (Val v) Phi} n a)
+  In: wp_unfold (Val v) Phi
+[ERROR] tests.fact.program_logic:639:17: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= 0 -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} 0 a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} 0 a) peq hp
+[ERROR] tests.fact.program_logic:648:33: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} 0 a
+  In: hpN
+[ERROR] tests.fact.program_logic:685:17: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= suc n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} (suc n) a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} (suc n) a) peq hp
+[ERROR] tests.fact.program_logic:694:31: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} (suc n) a
+  In: hpN
+[ERROR] tests.fact.program_logic:759:38: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e' sigma nil
+[ERROR] tests.fact.program_logic:761:7: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:776:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[WARNING] tests.fact.program_logic:1240:42: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[ERROR] tests.fact.program_logic:1201:16: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1251:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1274:16: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1289:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1293:21: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1306:16: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:915:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1063:28: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => h @ i
+      }
+[ERROR] tests.fact.program_logic:1340:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1531:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1711:9: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1714:42: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1719:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1723:21: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1695:5: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1698:38: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1700:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1736:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1757:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1778:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1784:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1807:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1813:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1836:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1842:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1851:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1873:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1879:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1902:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1908:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1917:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1939:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1945:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1954:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1975:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Rec f x body) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2007:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Lam x body) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2038:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (IsZero (Val (natV 0))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2063:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (IsZero (Val (natV (suc n)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2088:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Pred (Val (natV (suc n)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2122:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (If (Val (LitV (LitBool true))) thenE elseE) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2151:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2180:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2215:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2254:7: Some clauses are missing
+  LitProphecy p
+  In: lit_nat_default
+[ERROR] tests.fact.program_logic:2274:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Mul (Val (natV a)) (Val (natV b))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2313:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (RecS f x body idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:54: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2313:32: Cannot infer parameter 'p4' of definition 'RecS'
+  In: RecS f x body idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2334:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (LamS x body idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2334:32: Cannot infer parameter 'p4' of definition 'LamS'
+  In: LamS x body idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2351:8: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (BetaS x body v idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:51: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2351:28: Cannot infer parameter 'p4' of definition 'BetaS'
+  In: BetaS x body v idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2387:8: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (RecBetaS f x body v idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:56: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2387:28: Cannot infer parameter 'p4' of definition 'RecBetaS'
+  In: RecBetaS f x body v idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2427:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IsZeroZeroS idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2427:32: Cannot infer parameter 'p4' of definition 'IsZeroZeroS'
+  In: IsZeroZeroS idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2447:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IsZeroPosS n idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:53: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2447:32: Cannot infer parameter 'p4' of definition 'IsZeroPosS'
+  In: IsZeroPosS n idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2466:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (PredS n idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:48: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2466:32: Cannot infer parameter 'p4' of definition 'PredS'
+  In: PredS n idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2486:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (MulS a b idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:49: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2486:32: Cannot infer parameter 'p4' of definition 'MulS'
+  In: MulS a b idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2523:25: Type mismatch
+  Expected type: \Pi (k1 : Nat) -> k1 <= k -> \Pi (yf : E) -> validN k1 (op b yf) -> TruncP (\Sigma (a' : E) (validN k1 (op a' yf)) (upred_holds {Phi v} k1 a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} k b
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} k b) peq hpre_b
+[ERROR] tests.fact.program_logic:2541:45: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2570:30: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} k a_wp
+  In: hpre_none
+[ERROR] tests.fact.program_logic:2532:15: Type mismatch
+  Expected type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} n a
+    Actual type:
+    \Pi (sigma : ?type-of-sigma) -> \Pi (m : Nat) -> m LinearOrder.<= n -> \Pi (a_auth : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) ->
+      AuthValidN {GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Value))} m
+        (\case a.1, a_auth.1 \with {  | nothing, me2 => me2  | me1, nothing => me1
+        | just e1, just e2 => just {Excl (Gmap Loc cnt (Maybe (Excl Value)))} (excl_op {Gmap Loc cnt (Maybe (Excl Value))} e1 e2)}, op a.2 a_auth.2) ->
+      TruncP (\Sigma (z : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) 
+        (dist m a_auth (op (heap_auth {Nat} {cnt} {Value} (heap_state_to_gmap {cnt} sigma)) z))) ->
+      \Pi (k : Nat) -> k Preorder.<= m -> \Pi (yf : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) ->
+        validN k (op (M.op a a_auth) yf) -> TruncP (\Sigma (a' : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) (validN k (op a' yf)) 
+          (upred_holds {{?error}} k a'))
+  In: \lam sigma m m_le_n a_auth hv_op h_auth => (
+        \let | core : ProperUPred M => mkProperAnd (mkProperPure (Reducible e sigma))
+               (mkProperLater (mkProperForall Expr  (\lam e2 => mkProperForall (State cnt) 
+               (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))))))
+             | hbupd_wp_m : upred_holds {mkProperBUpd (wp e Phi)} m a => upred_mono {mkProperBUpd (wp e Phi)} n m a a hbupd_wp (inclN_refl_ucmra m a) m_le_n
+             | hsep : upred_holds {mkProperSep (mkProperBUpd (wp e Phi)) (own_heap_auth sigma)} m (op {M} a a_auth) =>
+               inP (a, a_auth, ofe_dist_refl {M} m (op {M} a a_auth), hbupd_wp_m, h_auth)
+             | h_ent : properUPred_ent (mkProperSep (wp e Phi) (own_heap_auth sigma)) (mkProperBUpd core) => \lam k c hv_c hsep_wp_auth => (\case hsep_wp_auth \with {
+               | inP (a_wp, a_auth2, dist_c, hwp_a, hauth2) => 
+                 \let | hv_wp_auth : validN {M} k (op {M} a_wp a_auth2) => cmra_validN_ne {M} k c (op {M} a_wp a_auth2) dist_c hv_c
+                      | hv_wp : validN {M} k a_wp => cmra_validN_op_l {M} k a_wp a_auth2 hv_wp_auth
+                      | hpre_wp : upred_holds {wp_pre wp e Phi} k a_wp => (wp_unfold e Phi k a_wp hv_wp).1 hwp_a
+                      | hpre_none : upred_holds {wp_pre_body wp e Phi nothing} k a_wp => transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} k a_wp) peq hpre_wp
+                      | hbupd_core_at_op : upred_holds {mkProperBUpd core} k (op {M} a_wp a_auth2) => hpre_none sigma k <=-refl a_auth2 hv_wp_auth hauth2
+                 \in upred_mono {mkProperBUpd core} k k (op {M} a_wp a_auth2) c hbupd_core_at_op (inclN_of_dist_unit k (op {M} a_wp a_auth2) c dist_c) <=-refl
+             })
+        \in bupd_frame_trans (wp e Phi) (own_heap_auth sigma) core h_ent m (op {M} a a_auth) hv_op hsep)
+[ERROR] tests.fact.program_logic:2647:16: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= 0 -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {wp {cnt} (fill K (Val v)) Phi} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (just {Value} v)} 0 a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e (wp_bind_post K Phi) tv'} 0 a) peq hp
+[ERROR] tests.fact.program_logic:2671:35: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (nothing {Value})} 0 a
+  In: src_none
+[ERROR] tests.fact.program_logic:2713:16: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= suc n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {wp {cnt} (fill K (Val v)) Phi} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (just {Value} v)} (suc n) a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e (wp_bind_post K Phi) tv'} (suc n) a) peq hp
+[ERROR] tests.fact.program_logic:2738:35: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (nothing {Value})} (suc n) a
+  In: src_none
+[68/82] Typechecking tests.notation[69/82] Typechecking tests.frac_auth[70/82] Typechecking tests.ghost_map[71/82] Typechecking tests.fact     
+[ERROR] tests.fact:240:9: Expressions are not equal
+  Left: 
+    If (IsZero (Val (LitV (LitInt (pos (suc k')))))) (Load (Val (LitV (LitLoc l))))
+      (App (Lam ignoreName (App (App (Val (RecV factName nName (Lam lName (If (IsZero (Var nName)) (Load (Var lName)) 
+      (App (Lam ignoreName (App (App (Var factName) (Pred (Var nName))) (Var lName))) (Store (Var lName) (Mul (Load (Var lName)) (Var nName)))))))) 
+    (Pred (Val (LitV (LitInt (pos (suc k'))))))) (Val (LitV (LitLoc l))))) 
+    (Store (Val (LitV (LitLoc l))) (Mul (Load (Val (LitV (LitLoc l)))) (Val (LitV (LitInt (pos (suc k'))))))))
+  Right: normalized
+  In: idp
+[ERROR] tests.fact:343:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IfTrueS _ _ idp idp idp {idp})
+[ERROR] tests.fact:343:32: Cannot infer parameter 't' of definition 'IfTrueS'
+  In: IfTrueS
+[ERROR] tests.fact:343:32: Cannot infer parameter 'f' of definition 'IfTrueS'
+  In: IfTrueS
+[ERROR] tests.fact:343:22: Cannot infer parameter 'e2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:48: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:343:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:343:32: Cannot infer parameter 'p4' of definition 'IfTrueS'
+  In: IfTrueS _ _ idp idp idp {idp}
+[ERROR] tests.fact:379:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (BetaS lName _ _ idp idp idp {idp})
+[ERROR] tests.fact:379:32: Cannot infer parameter 'body' of definition 'BetaS'
+  In: BetaS
+[ERROR] tests.fact:379:32: Cannot infer parameter 'v' of definition 'BetaS'
+  In: BetaS
+[ERROR] tests.fact:379:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:56: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:379:32: Cannot infer parameter 'p4' of definition 'BetaS'
+  In: BetaS lName _ _ idp idp idp {idp}
+[ERROR] tests.fact:542:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IfFalseS _ _ idp idp idp {idp})
+[ERROR] tests.fact:542:32: Cannot infer parameter 't' of definition 'IfFalseS'
+  In: IfFalseS
+[ERROR] tests.fact:542:32: Cannot infer parameter 'f' of definition 'IfFalseS'
+  In: IfFalseS
+[ERROR] tests.fact:542:22: Cannot infer parameter 'e2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:49: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:542:53: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:542:32: Cannot infer parameter 'p4' of definition 'IfFalseS'
+  In: IfFalseS _ _ idp idp idp {idp}
+[72/82] Typechecking tests.proofmode_wp_pures[73/82] Typechecking examples.parallel_counter_proof[74/82] Typechecking examples.parallel_counter_model[75/82] Typechecking examples.parallel_counter      [76/82] Typechecking examples.parallel_counter_ghost[77/82] Typechecking examples.parallel_counter_client[78/82] Typechecking iris_deprecated.program_logic.hoare[79/82] Typechecking stdpp.namespaces                   [80/82] Typechecking stdpp.finite_coPset[81/82] Typechecking stdpp.coPset       [82/82] Typechecking stdpp.pmap  
+[·] iris.base_logic.lib.fancy_updates_mask
+[ ] tests.parallel_primitives
+[ ] iris.algebra.auth
+[ ] iris.base_logic.lib.gfunctors
+[ ] stdpp.namespaces
+[ ] iris.program_logic.iris_sigma
+[ ] iris.algebra.gmap
+[·] iris.program_logic.lifting
+[ ] iris.algebra.coPset
+[·] iris.algebra.gmap_functor
+[ ] iris.algebra.cofe_solver
+[ ] iris.algebra.frac
+[ ] tests.proofmode_wp_primitives
+[ ] iris.algebra.lib.mono_nat
+[ ] tests.frac_auth
+[·] iris.base_logic.lib.wsat
+[·] iris.base_logic.lib.ghost_map
+[·] iris.base_logic.lib.gen_heap
+[·] iris.base_logic.lib.wsat_sigma
+[✗] tests.fact
+[·] iris.base_logic.lib.wsat_alloc
+[·] iris_heap_lang.lib.spawn_proof
+[·] iris.algebra.lib.gmap_view
+[ ] tests.notation
+[·] iris.base_logic.lib.invariants
+[·] iris.algebra.lib.gmap_view_functor
+[ ] tests.mono_nat
+[ ] examples.parallel_counter
+[ ] iris.algebra.functions
+[·] examples.parallel_counter_model
+[·] examples.parallel_counter_client
+[·] iris.base_logic.lib.own
+[ ] iris.algebra.prod
+[·] iris.base_logic.upred
+[ ] iris_heap_lang.lib.syntax
+[·] tests.proofmode
+[ ] stdpp.finite_coPset
+[ ] iris.bi.derived_laws_later
+[ ] iris.algebra.ofe
+[ ] tests.proofmode_custom_instances
+[·] iris.base_logic.lib.fancy_updates
+[ ] iris_deprecated.program_logic.hoare
+[·] iris.base_logic.lib.saved_pred
+[·] iris.bi.updates
+[ ] iris.base_logic.notation
+[·] iris.bi.derived_laws
+[ ] iris.algebra.option
+[ ] iris.algebra.gset
+[·] iris.base_logic.lib.mono_nat
+[ ] tests.prophecy
+[ ] stdpp.coPset
+[ ] tests.saved_pred
+[ ] tests.proofmode_classes
+[·] iris.program_logic.weakestpre
+[ ] iris.base_logic.lib.iprop
+[ ] iris.algebra.lib.frac_auth
+[ ] iris.algebra.view
+[·] examples.parallel_counter_proof
+[ ] tests.proofmode_wp_pures
+[ ] iris.algebra.dfrac
+[ ] iris.bi.interface
+[ ] iris_heap_lang.lang_ectx
+[ ] tests.generic_heap
+[✗] tests.fact.program_logic
+[ ] examples.parallel_counter_ghost
+[·] iris.bi.big_op
+[ ] iris_heap_lang.lang_subst
+[·] tests.fact.heap
+[·] iris.algebra.gmap_updates
+[ ] iris.algebra.cmra
+[·] iris.program_logic.adequacy
+[·] tests.ghost_map
+[ ] tests.proofmode_env
+[ ] iris.algebra.agree
+[·] iris.base_logic.lib.proph_map
+[·] iris.proofmode.heap_lang
+[ ] stdpp.pmap
+[ ] iris_heap_lang.lib.array
+[ ] iris.proofmode.core
+[·] iris.algebra.excl
+[ ] iris_heap_lang.lib.spawn
+[·] iris_heap_lang.lang
+Number of modules with errors: 2
+--- Done (26.7s) ---
+[INFO] Persisted 0 module(s), 2 skipped (had errors) (80 up-to-date)

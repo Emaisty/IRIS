@@ -1,0 +1,5963 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (37ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (11ms)
+
+--- Typechecking IRIS ---
+[1/82] Typechecking iris.bi.derived_laws
+[WARNING] iris.bi.derived_laws:2:9: Definition '||' is already imported from module iris.bi.interface
+  In: \import Logic
+[2/82] Typechecking iris.bi.updates
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:9:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[3/82] Typechecking iris.bi.derived_laws_later
+[WARNING] iris.bi.big_op:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[4/82] Typechecking iris.bi.big_op[5/82] Typechecking iris.bi.interface[6/82] Typechecking iris.base_logic.upred[7/82] Typechecking iris.base_logic.lib.wsat_alloc
+[WARNING] iris.base_logic.lib.wsat:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.gmap_functor:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.own:16:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[8/82] Typechecking iris.base_logic.lib.invariants
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.invariants:590:8: Function can be declared as a lemma
+  In: own_inv_acc_prepare
+[WARNING] iris.base_logic.lib.invariants:767:8: Function can be declared as a lemma
+  In: own_inv_alloc_reshape
+[WARNING] iris.base_logic.lib.fancy_updates:37:8: Function can be declared as a lemma
+  In: fupd_ne
+[WARNING] iris.base_logic.lib.invariants:891:8: Function can be declared as a lemma
+  In: inv_inner_ne
+[WARNING] iris.base_logic.lib.invariants:1268:8: Function can be declared as a lemma
+  In: inv_alter_inner
+[WARNING] iris.base_logic.lib.invariants:1446:8: Function can be declared as a lemma
+  In: split_l_wand_valid
+[WARNING] iris.base_logic.lib.invariants:1460:8: Function can be declared as a lemma
+  In: split_r_wand_valid
+[WARNING] iris.base_logic.lib.invariants:2152:8: Function can be declared as a lemma
+  In: inv_alloc_open_elim
+[WARNING] iris.base_logic.lib.invariants:2414:8: Function can be declared as a lemma
+  In: inv_combine_inner
+[WARNING] iris.base_logic.lib.invariants:2570:8: Function can be declared as a lemma
+  In: inv_combine_dup_inner
+[9/82] Typechecking iris.base_logic.lib.wsat_sigma
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.lib.gmap_view_functor:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[10/82] Typechecking iris.base_logic.lib.saved_pred
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[11/82] Typechecking iris.base_logic.lib.wsat[12/82] Typechecking iris.base_logic.lib.fancy_updates_mask[13/82] Typechecking iris.base_logic.lib.fancy_updates     [14/82] Typechecking iris.base_logic.lib.proph_map    
+[WARNING] iris.base_logic.lib.gen_heap:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[15/82] Typechecking iris.base_logic.lib.gfunctors[16/82] Typechecking iris.base_logic.lib.mono_nat 
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[17/82] Typechecking iris.base_logic.lib.own[18/82] Typechecking iris.base_logic.lib.gen_heap[19/82] Typechecking iris.base_logic.lib.ghost_map
+[WARNING] iris.base_logic.lib.ghost_map:8:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[20/82] Typechecking iris.base_logic.lib.iprop[21/82] Typechecking iris.base_logic.notation [22/82] Typechecking iris.proofmode.core     [23/82] Typechecking iris.proofmode.heap_lang
+[WARNING] iris.proofmode.heap_lang:8:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.program_logic.weakestpre:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.program_logic.lifting:21:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.program_logic.lifting:29:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[24/82] Typechecking iris.program_logic.weakestpre[25/82] Typechecking iris.program_logic.lifting   
+[WARNING] iris_heap_lang.lang_ectx:1901:57: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[WARNING] iris_heap_lang.lang_ectx:2030:39: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[WARNING] iris_heap_lang.lang_ectx:2464:90: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[26/82] Typechecking iris.program_logic.adequacy
+[WARNING] iris.program_logic.adequacy:27:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[27/82] Typechecking iris.program_logic.iris_sigma[28/82] Typechecking iris.algebra.view            [29/82] Typechecking iris.algebra.prod[30/82] Typechecking iris.algebra.agree[31/82] Typechecking iris.algebra.cofe_solver[32/82] Typechecking iris.algebra.gmap_functor[33/82] Typechecking iris.algebra.coPset      [34/82] Typechecking iris.algebra.cmra  [35/82] Typechecking iris.algebra.gmap[36/82] Typechecking iris.algebra.ofe [37/82] Typechecking iris.algebra.auth[38/82] Typechecking iris.algebra.gmap_updates[39/82] Typechecking iris.algebra.functions   [40/82] Typechecking iris.algebra.lib.gmap_view[41/82] Typechecking iris.algebra.lib.gmap_view_functor[42/82] Typechecking iris.algebra.lib.mono_nat         [43/82] Typechecking iris.algebra.lib.frac_auth[44/82] Typechecking iris.algebra.excl         [45/82] Typechecking iris.algebra.gset[46/82] Typechecking iris.algebra.frac[47/82] Typechecking iris.algebra.dfrac[48/82] Typechecking iris.algebra.option[49/82] Typechecking iris_heap_lang.lang_ectx[50/82] Typechecking iris_heap_lang.lang_subst[51/82] Typechecking iris_heap_lang.lang      [52/82] Typechecking iris_heap_lang.lib.spawn[53/82] Typechecking iris_heap_lang.lib.spawn_proof
+[WARNING] iris_heap_lang.lib.spawn_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris_heap_lang.lib.spawn_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[54/82] Typechecking iris_heap_lang.lib.syntax[55/82] Typechecking iris_heap_lang.lib.array [56/82] Typechecking tests.parallel_primitives[57/82] Typechecking tests.saved_pred         [58/82] Typechecking tests.proofmode 
+[WARNING] tests.proofmode:26:9: Definition 'wp_fork' is already imported from module iris.program_logic.lifting
+  In: \import iris.proofmode.Meta
+[59/82] Typechecking tests.proofmode_wp_primitives[60/82] Typechecking tests.proofmode_custom_instances[61/82] Typechecking tests.proofmode_env             [62/82] Typechecking tests.prophecy     [63/82] Typechecking tests.mono_nat[64/82] Typechecking tests.proofmode_classes[65/82] Typechecking tests.generic_heap     [66/82] Typechecking tests.fact.heap   
+[WARNING] tests.fact.heap:15:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact.heap:19:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[67/82] Typechecking tests.fact.program_logic
+[WARNING] tests.fact.program_logic:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact.program_logic:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.fact.program_logic:17:9: Definition 'heap_update' is already imported from module iris_heap_lang.lang
+  In: \import tests.fact.heap
+[ERROR] tests.fact.program_logic:137:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:141:28: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:187:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:194:35: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:202:11: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (z, dz))
+[ERROR] tests.fact.program_logic:201:11: Some clauses are missing
+  truncP a a' i
+  In: \case h_auth_k \with {
+        | inP (z, dz) => 
+          \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                 cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+               | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                 (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+               | a' : M.E => op {M} (op {M} authNew frag) z
+               | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+               transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                 (inclN_refl_ucmra k authNew)
+               | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+               | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+               inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                 (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+          \in inP (a', hv_new_z_yf, hsep)
+      }
+[ERROR] tests.fact.program_logic:190:5: Cannot infer type of parameter 'hv_auth'
+  In: \lam n a_auth hv_auth h_auth k k_le_n yf hv_auth_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authNew : M.E => heap_auth newMap
+             | frag : M.E => heap_frag l v
+             | h_auth_k : inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth oldMap) k a_auth => inclN_le (heap_auth oldMap) a_auth n k h_auth k_le_n
+        \in \case h_auth_k \with {
+              | inP (z, dz) => 
+                \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                       cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+                     | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                       (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+                     | a' : M.E => op {M} (op {M} authNew frag) z
+                     | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                     transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                       (inclN_refl_ucmra k authNew)
+                     | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+                     | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                     inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                       (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+                \in inP (a', hv_new_z_yf, hsep)
+            })
+[ERROR] tests.fact.program_logic:190:5: Cannot infer an expression
+  In: \lam n a_auth hv_auth h_auth k k_le_n yf hv_auth_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authNew : M.E => heap_auth newMap
+             | frag : M.E => heap_frag l v
+             | h_auth_k : inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth oldMap) k a_auth => inclN_le (heap_auth oldMap) a_auth n k h_auth k_le_n
+        \in \case h_auth_k \with {
+              | inP (z, dz) => 
+                \let | hv_old_z_yf : validN {M} k (op {M} (op {M} (heap_auth oldMap) z) yf) =>
+                       cmra_validN_ne {M} k (op {M} a_auth yf) (op {M} (op {M} (heap_auth oldMap) z) yf) (cmra_op_ne_2 {M} yf k a_auth (op {M} (heap_auth oldMap) z) dz) hv_auth_yf
+                     | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew frag) z) yf) => heap_auth_alloc_validN k oldMap l v z yf 
+                       (heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) fresh) hv_old_z_yf
+                     | a' : M.E => op {M} (op {M} authNew frag) z
+                     | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                     transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                       (inclN_refl_ucmra k authNew)
+                     | h_frag_z : upred_holds {pointsTo l v} k (op {M} frag z) => inclN_op_l k frag z
+                     | hsep : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                     inP (authNew, op {M} frag z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew frag) z) (op {M} authNew (op {M} frag z)) (ofe_dist_refl {M} k a') 
+                       (ofe_dist_sym {M} k (op {M} authNew (op {M} frag z)) (op {M} (op {M} authNew frag) z) (cmra_assoc_dist k authNew frag z)), h_auth_new, h_frag_z)
+                \in inP (a', hv_new_z_yf, hsep)
+            })
+[ERROR] tests.fact.program_logic:179:8: The type of a lemma must be a proposition
+  Actual level: \Type
+  In: own_heap_alloc_bupd
+[ERROR] tests.fact.program_logic:243:25: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:250:35: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => heap_update (heap {sigma}) l v
+      }
+[ERROR] tests.fact.program_logic:266:15: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (zA, dzA))
+[ERROR] tests.fact.program_logic:266:30: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (zF, dzF))
+[ERROR] tests.fact.program_logic:265:11: Some clauses are missing
+  truncP a a' i, u
+  inP (zA, dzA), truncP a a' i
+  In: \case h_auth, h_frag \with {
+        | inP (zA, dzA), inP (zF, dzF) => 
+          \let | z : M.E => op {M} zA zF
+               | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                 cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+               | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+               ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                 (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                 (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                 (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                   (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                       (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                   (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                   (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                   (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+               | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                 (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+               | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+               | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                 cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+               | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                 heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+               | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+               | a' : M.E => op {M} (op {M} authNew fragNew) z
+               | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+               transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                 (inclN_refl_ucmra k authNew)
+               | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+               | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+               inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                 (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+               h_frag_new_z)
+          \in inP (a', hv_new_z_yf, hsep_new)
+      }
+[ERROR] tests.fact.program_logic:264:11: Pattern matching on squashed data type 'TruncP' is allowed only in \sfunc and \scase
+  In: (inP (a_auth, a_frag, dist_a, h_auth, h_frag))
+[ERROR] tests.fact.program_logic:263:11: Some clauses are missing
+  truncP a a' i
+  In: \case hsep_k \with {
+        | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+          | inP (zA, dzA), inP (zF, dzF) => 
+            \let | z : M.E => op {M} zA zF
+                 | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                   cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                 | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                 ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                   (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                   (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                   (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                     (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                     (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                         (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                     (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                     (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                     (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                     (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                 | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                   (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                 | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                 | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                   cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                 | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                   heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                 | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                 | a' : M.E => op {M} (op {M} authNew fragNew) z
+                 | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                 transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                   (inclN_refl_ucmra k authNew)
+                 | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                 | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                 inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                   (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                 h_frag_new_z)
+            \in inP (a', hv_new_z_yf, hsep_new)
+        }
+      }
+[ERROR] tests.fact.program_logic:246:5: Cannot infer type of parameter 'hv_a'
+  In: \lam n a hv_a hsep k k_le_n yf hv_a_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authOld : M.E => heap_auth oldMap
+             | fragOld : M.E => heap_frag l old
+             | authNew : M.E => heap_auth newMap
+             | fragNew : M.E => heap_frag l v
+             | hsep_k : upred_holds {mkProperSep (own_heap_auth sigma) (pointsTo l old)} k a => upred_mono {mkProperSep (own_heap_auth sigma) (pointsTo l old)} n k a a hsep
+               (inP (unit {M}, 
+               ofe_dist_trans {M} k a a (op {M} a (unit {M})) (ofe_dist_refl {M} k a) (ofe_dist_sym {M} k (op {M} a (unit {M})) a (ucmra_unit_right_id_dist k a)))) 
+             k_le_n
+        \in \case hsep_k \with {
+              | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+                | inP (zA, dzA), inP (zF, dzF) => 
+                  \let | z : M.E => op {M} zA zF
+                       | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                         cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                       | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                       ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                         (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                         (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                         (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                           (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                               (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                           (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                           (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                           (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                       | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                         (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                       | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                       | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                         cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                       | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                         heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                       | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                       | a' : M.E => op {M} (op {M} authNew fragNew) z
+                       | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                       transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                         (inclN_refl_ucmra k authNew)
+                       | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                       | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                       inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                         (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                       h_frag_new_z)
+                  \in inP (a', hv_new_z_yf, hsep_new)
+              }
+            })
+[ERROR] tests.fact.program_logic:246:5: Cannot infer an expression
+  In: \lam n a hv_a hsep k k_le_n yf hv_a_yf => (
+        \let | M => HeapCMRA Loc cnt Value
+             | oldMap => heap_state_to_gmap sigma
+             | newState : State cnt => \new State cnt {
+               | heap => heap_update (heap {sigma}) l v
+             }
+             | newMap => heap_update oldMap l v
+             | authOld : M.E => heap_auth oldMap
+             | fragOld : M.E => heap_frag l old
+             | authNew : M.E => heap_auth newMap
+             | fragNew : M.E => heap_frag l v
+             | hsep_k : upred_holds {mkProperSep (own_heap_auth sigma) (pointsTo l old)} k a => upred_mono {mkProperSep (own_heap_auth sigma) (pointsTo l old)} n k a a hsep
+               (inP (unit {M}, 
+               ofe_dist_trans {M} k a a (op {M} a (unit {M})) (ofe_dist_refl {M} k a) (ofe_dist_sym {M} k (op {M} a (unit {M})) a (ucmra_unit_right_id_dist k a)))) 
+             k_le_n
+        \in \case hsep_k \with {
+              | inP (a_auth, a_frag, dist_a, h_auth, h_frag) => \case h_auth, h_frag \with {
+                | inP (zA, dzA), inP (zF, dzF) => 
+                  \let | z : M.E => op {M} zA zF
+                       | dist_auth_frag : dist {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) =>
+                         cmra_op_ne_both {M} k a_auth (op {M} authOld zA) a_frag (op {M} fragOld zF) dzA dzF
+                       | rearr_inner_dist : dist {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) =>
+                       ofe_dist_trans {M} k (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld fragOld) z)
+                         (ofe_dist_sym {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) 
+                         (cmra_assoc_dist k authOld zA (op {M} fragOld zF)))
+                         (ofe_dist_trans {M} k (op {M} authOld (op {M} zA (op {M} fragOld zF))) (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} (op {M} authOld fragOld) z) 
+                           (cmra_op_ne {M} authOld k (op {M} zA (op {M} fragOld zF)) (op {M} (op {M} zA fragOld) zF) (cmra_assoc_dist k zA fragOld zF))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} zA fragOld) zF)) (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} (op {M} authOld fragOld) z)
+                               (cmra_op_ne {M} authOld k (op {M} (op {M} zA fragOld) zF) (op {M} (op {M} fragOld zA) zF) 
+                           (cmra_op_ne_2 {M} zF k (op {M} zA fragOld) (op {M} fragOld zA) (cmra_comm_dist {M} k zA fragOld)))
+                           (ofe_dist_trans {M} k (op {M} authOld (op {M} (op {M} fragOld zA) zF)) (op {M} authOld (op {M} fragOld z)) (op {M} (op {M} authOld fragOld) z)
+                           (cmra_op_ne {M} authOld k (op {M} (op {M} fragOld zA) zF) (op {M} fragOld z) 
+                           (ofe_dist_sym {M} k (op {M} fragOld z) (op {M} (op {M} fragOld zA) zF) (cmra_assoc_dist k fragOld zA zF))) (cmra_assoc_dist k authOld fragOld z))))
+                       | dist_a_old : dist {M} k a (op {M} (op {M} authOld fragOld) z) => ofe_dist_trans {M} k a (op {M} a_auth a_frag) (op {M} (op {M} authOld fragOld) z) dist_a
+                         (ofe_dist_trans {M} k (op {M} a_auth a_frag) (op {M} (op {M} authOld zA) (op {M} fragOld zF)) (op {M} (op {M} authOld fragOld) z) dist_auth_frag rearr_inner_dist)
+                       | dist_a_yf_old : dist {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) => cmra_op_ne_2 {M} yf k a (op {M} (op {M} authOld fragOld) z) dist_a_old
+                       | hv_old_z_yf : validN {M} k (op {M} (op {M} (op {M} authOld fragOld) z) yf) =>
+                         cmra_validN_ne {M} k (op {M} a yf) (op {M} (op {M} (op {M} authOld fragOld) z) yf) dist_a_yf_old hv_a_yf
+                       | lookup_oldMap : glookup oldMap l = just (just (excl old)) =>
+                         heap_state_to_gmap_lookup sigma l *> pmap (\lam o => (\case o \with {  | nothing => nothing  | just w => just (just (excl w))})) lookup
+                       | hv_new_z_yf : validN {M} k (op {M} (op {M} (op {M} authNew fragNew) z) yf) => heap_auth_store_validN k oldMap l old v z yf lookup_oldMap hv_old_z_yf
+                       | a' : M.E => op {M} (op {M} authNew fragNew) z
+                       | h_auth_new : upred_holds {own_heap_auth newState} k authNew =>
+                       transport (\lam mm => inclN {M} {\new Op M.E {  | op => op {M}}} (heap_auth mm) k authNew) (inv (heap_state_to_gmap_update sigma l v)) 
+                         (inclN_refl_ucmra k authNew)
+                       | h_frag_new_z : upred_holds {pointsTo l v} k (op {M} fragNew z) => inclN_op_l k fragNew z
+                       | hsep_new : upred_holds {mkProperSep (own_heap_auth newState) (pointsTo l v)} k a' =>
+                       inP (authNew, op {M} fragNew z,  ofe_dist_trans {M} k a' (op {M} (op {M} authNew fragNew) z) (op {M} authNew (op {M} fragNew z)) (ofe_dist_refl {M} k a') 
+                         (ofe_dist_sym {M} k (op {M} authNew (op {M} fragNew z)) (op {M} (op {M} authNew fragNew) z) (cmra_assoc_dist k authNew fragNew z)), h_auth_new, 
+                       h_frag_new_z)
+                  \in inP (a', hv_new_z_yf, hsep_new)
+              }
+            })
+[ERROR] tests.fact.program_logic:235:8: The type of a lemma must be a proposition
+  Actual level: \Type
+  In: own_heap_store_bupd
+[ERROR] tests.fact.program_logic:368:50: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:413:47: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:418:47: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:454:71: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:457:71: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:461:62: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:433:9: Type mismatch
+  Expected type:
+    \Pi (m : Nat) -> \Pi (a : E) -> m <= n -> validN m a -> \Sigma (wp_pre_body {cnt} f e Phi (to_val e) m a -> upred_holds {wp_pre {cnt} g e Phi} m a) 
+      (upred_holds {wp_pre {cnt} g e Phi} m a -> upred_holds {wp_pre {cnt} f e Phi} m a)
+  Actual type:
+    \Pi (m : Nat) ->
+    \Pi (a : E) -> m <= n -> validN m a -> \Sigma ((\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => LHS_nothing
+      }) m a -> upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => RHS_nothing}} m a)
+        (upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => RHS_nothing}} m a ->
+        upred_holds {\case to_val e \with {  | just v => mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)  | nothing => LHS_nothing}} m a)
+  In: \case to_val e \as tv \return upredDist n (\case tv \with {  | just v => mkProperBUpd (Phi v)  | nothing => LHS_nothing})
+        (\case tv \with {  | just v => mkProperBUpd (Phi v)  | nothing => RHS_nothing}) \with {
+        | just _ => \lam m a hm hv => (\lam h => h, \lam h => h)
+        | nothing => upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) n wand_body_f wand_body_g
+          (\lam sigma => (
+          \let body_dist : \Pi (k : Nat) -> k < n -> upredDist {HeapCMRA Loc cnt Value} k (mkProperForall Expr (step_body_f sigma)) (mkProperForall Expr (step_body_g sigma)) =>
+                 \lam k hk => upredDist_forall {HeapCMRA Loc cnt Value} Expr k (step_body_f sigma) (step_body_g sigma)
+                 (\lam e2 => upredDist_forall {HeapCMRA Loc cnt Value} (State cnt) k 
+                 (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi)))) 
+                 (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi))))
+                   (\lam sigma2 =>
+                 upredDist_impl_r {HeapCMRA Loc cnt Value} k (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (f e2 Phi))) 
+                         (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (g e2 Phi)))
+                     (bupd_ne k (mkProperSep (own_heap_auth sigma2) (f e2 Phi)) (mkProperSep (own_heap_auth sigma2) (g e2 Phi)) 
+                     (upredDist_sep_r {HeapCMRA Loc cnt Value} k (own_heap_auth sigma2) (f e2 Phi) (g e2 Phi) (hdl k hk e2 Phi)))))
+          \in upredDist_wand_r {HeapCMRA Loc cnt Value} n (own_heap_auth sigma) 
+                (mkProperBUpd (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma))))) 
+                (mkProperBUpd (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_g sigma)))))
+                  (bupd_ne n (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma)))) 
+                  (mkProperAnd (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_g sigma))))
+                    (upredDist_and_r {HeapCMRA Loc cnt Value} n (mkProperPure (Reducible e sigma)) (mkProperLater (mkProperForall Expr (step_body_f sigma))) 
+                    (mkProperLater (mkProperForall Expr (step_body_g sigma))) 
+                    (upredDist_later {HeapCMRA Loc cnt Value} n (mkProperForall Expr (step_body_f sigma)) (mkProperForall Expr (step_body_g sigma)) body_dist)))))
+      }
+[ERROR] tests.fact.program_logic:571:6: Type mismatch
+  Expected type:
+    \Pi (n : Nat) -> \Pi (a : E) -> validN n a -> \Sigma (upred_holds {wp {cnt} (Val v) Phi} n a ->
+      \Pi (k : Nat) -> k <= n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))) 
+    (upred_holds {mkProperBUpd {HeapCMRA Loc cnt Value} (Phi v)} n a -> upred_holds {wp {cnt} (Val v) Phi} n a)
+  Actual type:
+    \Pi (n : Nat) ->
+    \Pi (a : E) -> validN n a -> \Sigma (upred_holds {wp {cnt} (Val v) Phi} n a -> upred_holds {wp_pre_body {cnt} (wp {cnt}) (Val v) Phi (just {Value} v)} n a) 
+      (upred_holds {wp_pre {cnt} (wp {cnt}) (Val v) Phi} n a -> upred_holds {wp {cnt} (Val v) Phi} n a)
+  In: wp_unfold (Val v) Phi
+[ERROR] tests.fact.program_logic:639:17: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= 0 -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} 0 a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} 0 a) peq hp
+[ERROR] tests.fact.program_logic:648:33: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} 0 a
+  In: hpN
+[ERROR] tests.fact.program_logic:685:17: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= suc n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {Phi v} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} (suc n) a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} (suc n) a) peq hp
+[ERROR] tests.fact.program_logic:694:31: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} (suc n) a
+  In: hpN
+[ERROR] tests.fact.program_logic:759:38: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e' sigma nil
+[ERROR] tests.fact.program_logic:761:7: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:776:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[WARNING] tests.fact.program_logic:1240:42: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[ERROR] tests.fact.program_logic:1201:16: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1251:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1274:16: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1289:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1293:21: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Load (Val (LitV (LitLoc l)))) sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1306:16: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep (Load (Val (LitV (LitLoc l)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:915:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1063:28: The following fields are not implemented: usedProph
+  In: \new State cnt {
+        | heap => h @ i
+      }
+[ERROR] tests.fact.program_logic:1340:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1531:59: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1711:9: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1714:42: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1719:15: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1723:21: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1695:5: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1698:38: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1700:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:1736:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1757:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1778:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1784:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1807:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1813:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1836:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1842:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1851:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1873:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1879:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1902:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1908:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1917:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1939:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep e1' sigma e2' sigma2 nil
+[ERROR] tests.fact.program_logic:1945:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1954:29: Type mismatch
+  Expected type: I -> Maybe Value
+    Actual type: BaseStep {cnt} e1' sigma e2' sigma2 (nil {Expr}) base -> to_val e1' = nothing {Value}
+  In: base_val_stuck {cnt} e1' sigma e2' sigma2 (nil {Expr}) base
+[ERROR] tests.fact.program_logic:1975:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Rec f x body) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2007:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Lam x body) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2038:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (IsZero (Val (natV 0))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2063:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (IsZero (Val (natV (suc n)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2088:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Pred (Val (natV (suc n)))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2122:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (If (Val (LitV (LitBool true))) thenE elseE) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2151:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (If (Val (LitV (LitBool false))) thenE elseE) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2180:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2215:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2254:7: Some clauses are missing
+  LitProphecy p
+  In: lit_nat_default
+[ERROR] tests.fact.program_logic:2274:11: Type mismatch
+  Expected type: \Type
+    Actual type: List Observation -> \Prop
+  In: BaseStep (Mul (Val (natV a)) (Val (natV b))) sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2313:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (RecS f x body idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2313:54: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2313:32: Cannot infer parameter 'p4' of definition 'RecS'
+  In: RecS f x body idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2334:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (LamS x body idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2334:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2334:32: Cannot infer parameter 'p4' of definition 'LamS'
+  In: LamS x body idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2351:8: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (BetaS x body v idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:18: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2351:51: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2351:28: Cannot infer parameter 'p4' of definition 'BetaS'
+  In: BetaS x body v idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2387:8: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (RecBetaS f x body v idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:18: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2387:56: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2387:28: Cannot infer parameter 'p4' of definition 'RecBetaS'
+  In: RecBetaS f x body v idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2427:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IsZeroZeroS idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2427:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2427:32: Cannot infer parameter 'p4' of definition 'IsZeroZeroS'
+  In: IsZeroZeroS idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2447:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IsZeroPosS n idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2447:53: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2447:32: Cannot infer parameter 'p4' of definition 'IsZeroPosS'
+  In: IsZeroPosS n idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2466:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (PredS n idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2466:48: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2466:32: Cannot infer parameter 'p4' of definition 'PredS'
+  In: PredS n idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2486:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (MulS a b idp idp idp {idp})
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact.program_logic:2486:49: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact.program_logic:2486:32: Cannot infer parameter 'p4' of definition 'MulS'
+  In: MulS a b idp idp idp {idp}
+[ERROR] tests.fact.program_logic:2523:25: Type mismatch
+  Expected type: \Pi (k1 : Nat) -> k1 <= k -> \Pi (yf : E) -> validN k1 (op b yf) -> TruncP (\Sigma (a' : E) (validN k1 (op a' yf)) (upred_holds {Phi v} k1 a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (just {Value} v)} k b
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} k b) peq hpre_b
+[ERROR] tests.fact.program_logic:2541:45: Type mismatch
+  Expected type: \Prop
+    Actual type: List Observation -> \Prop
+  In: PrimStep e sigma e2 sigma2 nil
+[ERROR] tests.fact.program_logic:2570:30: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} k a_wp
+  In: hpre_none
+[ERROR] tests.fact.program_logic:2532:15: Type mismatch
+  Expected type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e Phi (nothing {Value})} n a
+    Actual type:
+    \Pi (sigma : ?type-of-sigma) -> \Pi (m : Nat) -> m LinearOrder.<= n -> \Pi (a_auth : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) ->
+      AuthValidN {GmapUCMRA Loc cnt (ExclUCMRA (DiscreteOFE Value))} m
+        (\case a.1, a_auth.1 \with {  | nothing, me2 => me2  | me1, nothing => me1
+        | just e1, just e2 => just {Excl (Gmap Loc cnt (Maybe (Excl Value)))} (excl_op {Gmap Loc cnt (Maybe (Excl Value))} e1 e2)}, op a.2 a_auth.2) ->
+      TruncP (\Sigma (z : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) 
+        (dist m a_auth (op (heap_auth {Nat} {cnt} {Value} (heap_state_to_gmap {cnt} sigma)) z))) ->
+      \Pi (k : Nat) -> k Preorder.<= m -> \Pi (yf : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) ->
+        validN k (op (M.op a a_auth) yf) -> TruncP (\Sigma (a' : \Sigma (Maybe (Excl (Gmap Loc cnt (Maybe (Excl Value))))) (Gmap Loc cnt (Maybe (Excl Value)))) (validN k (op a' yf)) 
+          (upred_holds {{?error}} k a'))
+  In: \lam sigma m m_le_n a_auth hv_op h_auth => (
+        \let | core : ProperUPred M => mkProperAnd (mkProperPure (Reducible e sigma))
+               (mkProperLater (mkProperForall Expr  (\lam e2 => mkProperForall (State cnt) 
+               (\lam sigma2 => mkProperImpl (mkProperPure (PrimStep e sigma e2 sigma2 nil)) (mkProperBUpd (mkProperSep (own_heap_auth sigma2) (wp e2 Phi)))))))
+             | hbupd_wp_m : upred_holds {mkProperBUpd (wp e Phi)} m a => upred_mono {mkProperBUpd (wp e Phi)} n m a a hbupd_wp (inclN_refl_ucmra m a) m_le_n
+             | hsep : upred_holds {mkProperSep (mkProperBUpd (wp e Phi)) (own_heap_auth sigma)} m (op {M} a a_auth) =>
+               inP (a, a_auth, ofe_dist_refl {M} m (op {M} a a_auth), hbupd_wp_m, h_auth)
+             | h_ent : properUPred_ent (mkProperSep (wp e Phi) (own_heap_auth sigma)) (mkProperBUpd core) => \lam k c hv_c hsep_wp_auth => (\case hsep_wp_auth \with {
+               | inP (a_wp, a_auth2, dist_c, hwp_a, hauth2) => 
+                 \let | hv_wp_auth : validN {M} k (op {M} a_wp a_auth2) => cmra_validN_ne {M} k c (op {M} a_wp a_auth2) dist_c hv_c
+                      | hv_wp : validN {M} k a_wp => cmra_validN_op_l {M} k a_wp a_auth2 hv_wp_auth
+                      | hpre_wp : upred_holds {wp_pre wp e Phi} k a_wp => (wp_unfold e Phi k a_wp hv_wp).1 hwp_a
+                      | hpre_none : upred_holds {wp_pre_body wp e Phi nothing} k a_wp => transport (\lam tv' => upred_holds {wp_pre_body wp e Phi tv'} k a_wp) peq hpre_wp
+                      | hbupd_core_at_op : upred_holds {mkProperBUpd core} k (op {M} a_wp a_auth2) => hpre_none sigma k <=-refl a_auth2 hv_wp_auth hauth2
+                 \in upred_mono {mkProperBUpd core} k k (op {M} a_wp a_auth2) c hbupd_core_at_op (inclN_of_dist_unit k (op {M} a_wp a_auth2) c dist_c) <=-refl
+             })
+        \in bupd_frame_trans (wp e Phi) (own_heap_auth sigma) core h_ent m (op {M} a a_auth) hv_op hsep)
+[ERROR] tests.fact.program_logic:2647:16: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= 0 -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {wp {cnt} (fill K (Val v)) Phi} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (just {Value} v)} 0 a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e (wp_bind_post K Phi) tv'} 0 a) peq hp
+[ERROR] tests.fact.program_logic:2671:35: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (nothing {Value})} 0 a
+  In: src_none
+[ERROR] tests.fact.program_logic:2713:16: Type mismatch
+  Expected type: \Pi (k : Nat) -> k <= suc n -> \Pi (yf : E) -> validN k (op a yf) -> TruncP (\Sigma (a' : E) (validN k (op a' yf)) (upred_holds {wp {cnt} (fill K (Val v)) Phi} k a'))
+    Actual type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (just {Value} v)} (suc n) a
+  In: transport (\lam tv' => upred_holds {wp_pre_body wp e (wp_bind_post K Phi) tv'} (suc n) a) peq hp
+[ERROR] tests.fact.program_logic:2738:35: Expression is applied to an argument, but does not have a function type
+  Argument: sigma
+  Type: upred_holds {wp_pre_body {cnt} (wp {cnt}) e (wp_bind_post {cnt} K Phi) (nothing {Value})} (suc n) a
+  In: src_none
+[68/82] Typechecking tests.notation[69/82] Typechecking tests.frac_auth[70/82] Typechecking tests.ghost_map
+[WARNING] tests.ghost_map:11:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.ghost_map:11:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.ghost_map:11:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[71/82] Typechecking tests.fact
+[WARNING] tests.fact:17:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] tests.fact:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] tests.fact:14:9: Definition 'heap_update' is already imported from module iris_heap_lang.lang
+  In: \import tests.fact.heap
+[ERROR] tests.fact:240:9: Expressions are not equal
+  Left: 
+    If (IsZero (Val (LitV (LitInt (pos (suc k')))))) (Load (Val (LitV (LitLoc l))))
+      (App (Lam ignoreName (App (App (Val (RecV factName nName (Lam lName (If (IsZero (Var nName)) (Load (Var lName)) 
+      (App (Lam ignoreName (App (App (Var factName) (Pred (Var nName))) (Var lName))) (Store (Var lName) (Mul (Load (Var lName)) (Var nName)))))))) 
+    (Pred (Val (LitV (LitInt (pos (suc k'))))))) (Val (LitV (LitLoc l))))) 
+    (Store (Val (LitV (LitLoc l))) (Mul (Load (Val (LitV (LitLoc l)))) (Val (LitV (LitInt (pos (suc k'))))))))
+  Right: normalized
+  In: idp
+[ERROR] tests.fact:343:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IfTrueS _ _ idp idp idp {idp})
+[ERROR] tests.fact:343:32: Cannot infer parameter 't' of definition 'IfTrueS'
+  In: IfTrueS
+[ERROR] tests.fact:343:32: Cannot infer parameter 'f' of definition 'IfTrueS'
+  In: IfTrueS
+[ERROR] tests.fact:343:22: Cannot infer parameter 'e2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:343:48: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:343:52: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:343:32: Cannot infer parameter 'p4' of definition 'IfTrueS'
+  In: IfTrueS _ _ idp idp idp {idp}
+[ERROR] tests.fact:379:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (BetaS lName _ _ idp idp idp {idp})
+[ERROR] tests.fact:379:32: Cannot infer parameter 'body' of definition 'BetaS'
+  In: BetaS
+[ERROR] tests.fact:379:32: Cannot infer parameter 'v' of definition 'BetaS'
+  In: BetaS
+[ERROR] tests.fact:379:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:379:56: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:379:32: Cannot infer parameter 'p4' of definition 'BetaS'
+  In: BetaS lName _ _ idp idp idp {idp}
+[ERROR] tests.fact:542:12: Cannot infer type of parameter 's'
+  In: \lam s => BasePrim (IfFalseS _ _ idp idp idp {idp})
+[ERROR] tests.fact:542:32: Cannot infer parameter 't' of definition 'IfFalseS'
+  In: IfFalseS
+[ERROR] tests.fact:542:32: Cannot infer parameter 'f' of definition 'IfFalseS'
+  In: IfFalseS
+[ERROR] tests.fact:542:22: Cannot infer parameter 'e2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 's1' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 's2' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:22: Cannot infer parameter 'efs' of definition 'BasePrim'
+  In: BasePrim
+[ERROR] tests.fact:542:49: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:542:53: Cannot infer parameter 'a' of definition 'idp'
+  In: idp
+[ERROR] tests.fact:542:32: Cannot infer parameter 'p4' of definition 'IfFalseS'
+  In: IfFalseS _ _ idp idp idp {idp}
+[72/82] Typechecking tests.proofmode_wp_pures[73/82] Typechecking examples.parallel_counter_proof
+[WARNING] examples.parallel_counter_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[74/82] Typechecking examples.parallel_counter_model[75/82] Typechecking examples.parallel_counter      [76/82] Typechecking examples.parallel_counter_ghost[77/82] Typechecking examples.parallel_counter_client
+[WARNING] examples.parallel_counter_client:13:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_client:18:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[78/82] Typechecking iris_deprecated.program_logic.hoare[79/82] Typechecking stdpp.namespaces                   [80/82] Typechecking stdpp.finite_coPset[81/82] Typechecking stdpp.coPset       [82/82] Typechecking stdpp.pmap  
+[ ] iris.algebra.gset
+[ ] iris.algebra.view
+[·] iris.base_logic.lib.mono_nat
+[ ] tests.proofmode_wp_pures
+[ ] iris_deprecated.program_logic.hoare
+[ ] tests.prophecy
+[·] iris.base_logic.lib.fancy_updates
+[·] iris.base_logic.lib.saved_pred
+[ ] iris.bi.derived_laws_later
+[ ] tests.saved_pred
+[ ] iris.base_logic.notation
+[ ] iris_heap_lang.lib.spawn
+[ ] iris.algebra.lib.frac_auth
+[·] iris.bi.derived_laws
+[ ] tests.proofmode_classes
+[ ] iris.algebra.option
+[ ] iris.base_logic.lib.iprop
+[·] iris.program_logic.adequacy
+[ ] iris_heap_lang.lib.array
+[·] iris.proofmode.heap_lang
+[ ] iris.algebra.dfrac
+[·] examples.parallel_counter_proof
+[ ] tests.generic_heap
+[ ] stdpp.coPset
+[·] iris.program_logic.weakestpre
+[ ] examples.parallel_counter
+[·] iris.base_logic.lib.invariants
+[ ] iris.algebra.functions
+[ ] tests.proofmode_custom_instances
+[·] iris_heap_lang.lib.spawn_proof
+[ ] tests.notation
+[·] iris.base_logic.lib.own
+[ ] stdpp.finite_coPset
+[ ] tests.mono_nat
+[ ] iris_heap_lang.lib.syntax
+[ ] iris.algebra.prod
+[ ] iris.base_logic.lib.gfunctors
+[ ] stdpp.namespaces
+[·] tests.proofmode
+[·] iris.base_logic.upred
+[·] examples.parallel_counter_model
+[ ] iris.algebra.coPset
+[·] iris.algebra.lib.gmap_view
+[ ] iris.program_logic.iris_sigma
+[·] examples.parallel_counter_client
+[·] iris.base_logic.lib.fancy_updates_mask
+[ ] iris.algebra.ofe
+[ ] iris.algebra.gmap
+[·] iris.program_logic.lifting
+[✗] tests.fact
+[ ] tests.frac_auth
+[ ] iris.algebra.auth
+[·] iris.base_logic.lib.gen_heap
+[ ] iris.algebra.lib.mono_nat
+[·] iris.base_logic.lib.wsat
+[·] iris.base_logic.lib.wsat_sigma
+[ ] iris.proofmode.core
+[·] iris.algebra.lib.gmap_view_functor
+[·] iris.algebra.gmap_functor
+[ ] iris.algebra.agree
+[·] iris.base_logic.lib.wsat_alloc
+[ ] tests.proofmode_wp_primitives
+[ ] iris.algebra.cofe_solver
+[ ] iris.algebra.frac
+[ ] tests.parallel_primitives
+[·] iris.base_logic.lib.ghost_map
+[·] iris.algebra.gmap_updates
+[ ] iris.algebra.cmra
+[ ] examples.parallel_counter_ghost
+[·] iris_heap_lang.lang_ectx
+[·] iris.bi.big_op
+[ ] tests.proofmode_env
+[ ] iris.bi.interface
+[ ] iris_heap_lang.lang_subst
+[✗] tests.fact.program_logic
+[·] tests.fact.heap
+[·] iris.base_logic.lib.proph_map
+[·] iris.algebra.excl
+[·] iris_heap_lang.lang
+[ ] stdpp.pmap
+[·] iris.bi.updates
+[·] tests.ghost_map
+Number of modules with errors: 2
+--- Done (154m17s) ---
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/private/tmp/iris-arend-20260930/patched/cli/build/libs/cli-1.12.0-full.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+[INFO] Persisted 80 module(s), 2 skipped (had errors)
+
+msc_read_start_new: 31m57s
+proph_exclusive: 16m24s
+subG_irisGpreS: 15m58s
+init_from_allocations_with_fork: 15m54s
+proofmode_class_into_accessor: 15m33s
+pm_wp_inv: 15m28s
+msc_incr_spec: 15m18s
+msc_incr_reinsert: 15m8s
+state_interp_new_proph: 1m0s
+state_interp_resolve_proph: 57.1s
+state_interp_pointsto_update: 57.0s
+state_interp_alloc: 56.8s
+subG_proph_mapGpreS: 49.6s
+state_interp_proph_agree: 32.8s
+state_interp_pointsto_valid: 30.4s
+init_from_allocations: 28.6s
+wp_resolve_store: 26.4s
+inG_fold_unfold: 22.3s
+msc_client_read_pending_step: 20.1s
+pm_wp_accessor: 12.2s
+msc_incr_opened_faa: 10.5s
+inG_unfold: 9352ms
+fact_var_spec: 8783ms
+pm_into_accessor_inv_timeless: 7683ms
+proofmode_into_accessor_drop_emp: 7425ms
+pm_into_accessor_direct: 7335ms
+inG_unfold_fold: 5973ms
+msc_client_pending_step: 5008ms
+wp_thread_pool_reducible: 4693ms
+msc_read_spec: 4473ms
+msc_read_scan_wp: 4320ms
+msc_load_opened: 4218ms
+msc_read_register_or_keep: 4107ms
+msc_read_after_scan_wp: 4021ms
+wp_pre_mono: 4006ms
+msc_read_opened_resolve: 3517ms
+msc_request_take: 3410ms
+msc_parallel_then_read: 3149ms
+msc_new_counter_with_ghosts: 2997ms
+wp_load: 2966ms
+msc_read_finish_registered: 2965ms
+wp_store: 2938ms
+factorial_call_correct: 2886ms
+wp_alloc: 2876ms
+wp_thread_pool_step: 2850ms
+msc_sum_loop_suffix_wp: 2816ms
+rebuild_wp_forks: 2806ms
+inG_fold: 2791ms
+inG_unfold_mor: 2681ms
+msc_read_resolve_transition: 2680ms
+msc_incr_focus_resources: 2678ms
+inG_fold_mor: 2634ms
+msc_read_registered_scan_branch: 2556ms
+msc_request_register_done: 2501ms
+iProp_fold_unfold: 2407ms
+msc_load_after_observe: 2335ms
+msc_client_read_commit: 2290ms
+inv_alloc_open_assemble: 2254ms
+join_load_opened: 2250ms
+msc_read_after_focus_requests: 2162ms
+msc_read_register_core: 2160ms
+msc_sum_post_prepend: 2083ms
+msc_request_insert: 2052ms
+join_done_result_exact: 1997ms
+msc_pending_complete: 1929ms
+msc_read_after_monos: 1822ms
+wsat_alloc: 1803ms
+wp_fork: 1762ms
+CSemiringSolverModel.apply-axiom.apply-axiom': 1740ms
+msc_read_close_registered: 1659ms
+msc_client_ready_parallel_pre: 1649ms
+wp_pure_step: 1613ms
+wp_load: 1610ms
+msc_read_states_list_advance: 1574ms
+wp_thread_steps_value: 1567ms
+wp_forks_member: 1564ms
+iProp_unfold: 1547ms
+invariant_lookup_validN: 1536ms
+join_pending_exact: 1521ms
+wp_lam_beta_value_later_frame: 1511ms
+msc_client_read_done_step: 1504ms
+msc_lbs_sum_le: 1499ms
+msc_read_unregistered_scan_branch: 1481ms
+iProp_fold: 1461ms
+msc_read_rebuild_focused: 1451ms
+pm_wp_inv_timeless: 1340ms
+msc_request_register_state: 1317ms
+wp_resolve_skip_later_frame: 1301ms
+wp_load_later_frame: 1286ms
+wp_atomic_steps_mono: 1281ms
+wp_faa_later_frame: 1273ms
+wp_new_proph_later_frame: 1272ms
+wp_allocN: 1270ms
+wp_resolve_skip: 1270ms
+wp_store: 1269ms
+wp_faa: 1263ms
+pm_fupd: 1252ms
+wp_new_proph: 1243ms
+wp_alloc: 1230ms
+msc_mono_alloc_zeros: 1216ms
+msc_client_insert_two: 1176ms
+wp_frame_pre_step: 1160ms
+msc_requests_advance: 1158ms
+wp_frame_result_map_at: 1145ms
+msc_client_done_step: 1138ms
+ownI_auth_alloc: 1126ms
+msc_pending_wait: 1104ms
+wp_pre_contractive: 1081ms
+msc_client_incr_post_resources: 1039ms
+msc_request_register_pending: 1008ms
+msc_initialized_client_spec: 958ms
+wp_atomic_value_result: 944ms
+msc_read_snapshot: 880ms
+msc_done_take: 825ms
+msc_client_pending_commit: 804ms
+msc_read_finish_sequence: 786ms
+gen_heap_update_cmra: 747ms
+msc_done_advance: 716ms
+msc_new_counter_two_client_spec: 715ms
+wp_lift_atomic_later_frame: 712ms
+ghost_map_delete_cmra: 712ms
+wp_lift_atomic: 683ms
+wp_remove_empty_forks: 674ms
+gen_heap_alloc_cmra: 656ms
+wp_bind_pre_step: 642ms
+wp_forks_dist: 633ms
+wp_add_empty_forks: 624ms
+msc_mono_auths_extract: 604ms
+msc_saved_pred_apply: 562ms
+spawn_parent_fork: 562ms
+msc_read_state_take: 553ms
+msc_inv_split_decomposed: 544ms
+wp_forks_mono: 519ms
+msc_client_done_core_conflict: 519ms
+msc_client_ghost_setup: 497ms
+msc_client1_incr_spec: 479ms
+wsat_inv_alloc: 474ms
+msc_client2_incr_spec: 465ms
+ownI_core_id: 462ms
+msc_pending_intro: 459ms
+inv_iff: 458ms
+msc_client_read_shift: 441ms
+msc_mono_auths_insert: 438ms
+ghost_map_delete: 433ms
+wp_step: 432ms
+msc_client_shift: 429ms
+msc_client_setup: 426ms
+inv_alter: 408ms
+subG_savedPredG: 393ms
+msc_parallel_post_resources: 377ms
+invariant_lookup: 376ms
+wp_thread_pool_forks: 372ms
+msc_two_incr_twice_read_spec: 344ms
+inv_persistent: 338ms
+wp_prim_step: 333ms
+fupd_mask_close: 332ms
+msc_read_scan_final_bound: 328ms
+inv_combine_dup_inner: 328ms
+wp_step_result: 326ms
+fupd_close_chain: 321ms
+inv_exist_opened_except: 320ms
+ownI_dup: 315ms
+wp_thread_pool: 310ms
+persistently_iff_to_alter: 310ms
+saved_pred_agree: 308ms
+inv_combine_dup_l: 305ms
+msc_read_resolve_unregistered_wp: 299ms
+wp_frame_pre_zero: 295ms
+inv_exist_opened_except_at: 287ms
+PPRing.bezout->strictBezout: 284ms
+msc_parallel_increments_spec: 268ms
+inv_alter_inner: 258ms
+invariant_unfold_map_ginsert: 239ms
+pointsto_block_replicate: 238ms
+wp_frame_at_le: 228ms
+proofmode_fupd_mod: 222ms
+inv_contractive: 220ms
+proofmode_wp_pures_loc_add: 171ms
+proofmode_wp_value: 168ms
+proofmode_wp_bind_app_left: 167ms
+proofmode_wp_pures_value: 167ms
+msc_done_intro: 167ms
+msc_mono_auths_to_lbs: 167ms
+proofmode_wp_if_false: 167ms
+proofmode_wp_let_smart_apply: 167ms
+proofmode_wp_smart_apply: 166ms
+proofmode_wp_apply: 166ms
+proofmode_wp_bind_smart_apply: 166ms
+proofmode_wp_if_true: 165ms
+proofmode_wp_bind_app_right: 165ms
+msc_lbs_persistent: 165ms
+proofmode_wp_fork_rule: 165ms
+proofmode_wp_smart_apply_wrapped: 163ms
+ownI_alloc: 160ms
+ownI_alloc_open: 159ms
+own_inv_persistent: 156ms
+inv_split_l: 155ms
+inv_split_r: 153ms
+gen_heap_lookup_validN: 144ms
+msc_client_pending_intro: 143ms
+rat_alt_makeRat.aux: 142ms
+GCDDomain.Dec.loc_poly: 139ms
+par_lam_spec: 137ms
+spawn_store_child: 135ms
+ownI_close: 134ms
+ownI_open: 129ms
+WPContractiveFun: 122ms
+par_spec: 118ms
+msc_two_incr_twice_read_result_spec: 117ms
+invariant_unfold_map_lookup_just: 117ms
+par_body_spec: 116ms
+par_after_handle: 115ms
+inv_acc_strong_sealed: 115ms
+inv_exist_opened_except_suc: 115ms
+inv_combine_at_inner_mask: 115ms
+par_after_spawn: 114ms
+inv_acc_strong_close_peval: 114ms
+PID.adequate_kaplansky: 114ms
+inv_unfold_ent: 113ms
+proofmode_fupd_mod_mask_mismatch_fails: 112ms
+fupd_mask_subseteq: 112ms
+par_pair_values: 111ms
+except_0_inv: 111ms
+inv_fold_ent: 110ms
+own_inv_to_inv: 110ms
+wsat_inv_auth_validN: 109ms
+wsat_inv_auth_peval: 107ms
+subG_mscG: 107ms
+saved_pred_discarded_persistent: 105ms
+inv_alter_body: 105ms
+ownI: 105ms
+gmap_viewURF: 104ms
+ownI_holds_unfold: 103ms
+wsat: 103ms
+wsat_inv_frag_peval: 102ms
+saved_pred_alloc: 101ms
+dfracAgreeRF: 101ms
+gen_heap_auth_valid: 101ms
+wsat_invR_unseal: 97ms
+ModelCat.ColimitData.colimitMap: 93ms
+invariant_unfold_map: 85ms
+ModelCat.ColimitData.colimitCone: 82ms
+LocRing: 79ms
+ModelCat.ColimitData.isColimit: 76ms
+CRingBicat.modToRing: 76ms
+proofmode_wp_store_rule: 74ms
+heap_agree_gmap_valid: 74ms
+wp_atomic_inv_acc_timeless_exist_frame: 71ms
+inv_peval: 68ms
+proofmode_wp_faa_rule: 66ms
+msc_request_register: 63ms
+proofmode_accessor_class_instance: 63ms
+proofmode_inv_timeless_class_instance: 62ms
+proofmode_wp_resolve_rule: 62ms
+proofmode_wp_fork_rule_named: 61ms
+proofmode_wp_new_proph_rule: 60ms
+proofmode_accessor_class_wrong_source_fails: 60ms
+counter_block_is_array: 60ms
+proofmode_inv_timeless_wrong_body_fails: 60ms
+proofmode_wp_alloc_rule: 59ms
+proofmode_wp_allocN_rule: 59ms
+proofmode_inv_class_instance: 58ms
+pm_wp_smart_bind_item: 58ms
+proofmode_wp_load_rule: 58ms
+wp_adequacy_from_init: 57ms
+wp_adequacy_from_fork_init: 57ms
+msc_read_rebuild: 57ms
+wp_frame_r: 56ms
+proofmode_inv: 56ms
+sealedFUpd_peval: 56ms
+ModelCat.ColimitData.substInterpF: 56ms
+wp_reducible_from_init: 56ms
+inv_exist_choice: 56ms
+inv_exist_staged: 55ms
+wp_reducible_from_fork_init: 55ms
+proofmode_inv_class_wrong_source_fails: 55ms
+msc_read_case: 55ms
+own_heap_store_bupd: 55ms
+ModelCat: 54ms
+saved_pred_elem: 52ms
+split_r_wand_valid: 52ms
+saved_pred_own: 51ms
+split_l_wand_valid: 51ms
+GCDDomain.Dec: 51ms
+subG_ghost_mapGpreS: 49ms
+mono_nat_own_update: 49ms
+msc_client_read_post_result: 48ms
+msc_incr_post: 48ms
+Sort.Insertion.sort-perm.insert-comm.aux: 48ms
+msc_incr_core_post: 47ms
+wsat_invR_eq: 46ms
+wp_load.heap_auth_frag_agree: 44ms
+FactorRing: 44ms
+CRingBicat.ringtoMod: 42ms
+gmap_replace_includedN: 41ms
+Theory.congruence.induction: 40ms
+ModelCat.ColimitData.Colimit: 40ms
+heap_auth_alloc_validN: 37ms
+RatField: 37ms
+wp_pre_contractive: 34ms
+heap_auth_store_validN: 34ms
+gmap_viewUR_as_CMRA: 33ms
+WPFunCOFE: 33ms
+factorial_correct_Q: 30ms
+NatData.rp-returns-true-lemma': 28ms
+ghost_mapR: 28ms
+CGroupData.removeVar-lem: 28ms
+gmapURF: 27ms
+gen_heapR: 26ms
+GCDDomain.Dec.coprime-repr-aux: 25ms
+CRingBicat.CRingLimit: 25ms
+Theory.congruenceP.induction: 23ms
+IntegralDomain.Dec.fromNonZeroDivChain: 23ms
+NatData.rp-correctness-both-inside: 23ms
+wp_load.own_heap_auth_heap_eq: 23ms
+own_heap_alloc_bupd: 22ms
+RingLatticeColimit: 22ms
+gmap_view_dfrac_update_includedN: 22ms
+CRingBicat.catEquiv: 21ms
+wsat_invKit: 21ms
+FunctorCat: 20ms
+Pullback: 20ms
+wp_bupd: 20ms
+wsat_invV: 19ms
+gmap_viewO_map_cmra_morphism: 19ms
+MonoidBicat.catEquiv: 18ms
+HeapCMRA: 18ms
+NatData.rp-correctness-one-inside-right: 18ms
+proofmode_wp_pure_curried_three: 17ms
+ModelCat.ColimitData.interpret=map: 17ms
+factorial_correct': 17ms
+RingCat: 16ms
+join_load_transition: 16ms
+~-unlequiv: 16ms
+ModelCat.ColimitData.qinterpret=map: 15ms
+UPredBiBUpdFUpd: 15ms
+ModelCat.ColimitData.substInterpT: 15ms
+GmapCMRA: 15ms
+own_updatePM: 15ms
+own_unit: 15ms
+spawn_store_close: 15ms
+RatField.+=+': 15ms
+Iso: 14ms
+gen_heap_update: 14ms
+wp_bupd: 14ms
+Poly: 14ms
+LimitCRing: 13ms
+Tri: 13ms
+gmap_view_delete_includedN: 13ms
+IdealMonoid: 13ms
+StrictBezoutRing: 13ms
+CGroupSolverModel.interpretNF-correct: 13ms
+gmap_view_full_included_exact: 13ms
+EuclideanRingData.bezoutIdentity-fueled: 13ms
+gmap_view_frag_persist: 13ms
+FactorRing.+: 13ms
+heap_incl_trans: 13ms
+BezoutRing: 12ms
+wp_atomic: 12ms
+Ideal.closure-superset: 12ms
+LocRing.+: 12ms
+ArrayFinModule.basis: 12ms
+UPredBiFUpd: 12ms
+own_alloc_strong: 12ms
+DiscreteField: 12ms
+wp_pure_soundness_from_init: 12ms
+msc_client1_incr_twice_spec: 12ms
+Sort.RedBlack.sort=insert.toList_balanceRight: 12ms
+ht_conseq: 12ms
+wp_pure_soundness_from_fork_init: 11ms
+msc_client2_incr_twice_spec: 11ms
+own_alloc: 11ms
+LinearOrder.Dec: 11ms
+wp_step_iter_pure_soundness_suc: 11ms
+gmap_alloc_includedN: 11ms
+OrderedRing: 11ms
+heap_frame: 11ms
+proofmode_specialize: 11ms
+fill_step_inv_item_ctx_cons: 11ms
+solver_unfold_fold_chain: 11ms
+gmap_view_agree_kit: 11ms
+state_interp_store_resolve: 11ms
+Dec: 10ms
+NatData.rp-correctness-one-inside-left: 10ms
+Limit: 10ms
+state_interp_alloc_block: 10ms
+validN_sub_r: 10ms
+wp_rec_expr_lam_app2_to: 10ms
+FunctorPrecat: 10ms
+heap_agree: 10ms
+heap_exclusive: 10ms
+inv_combine_inner: 10ms
+MonoidBicat.modToMonoid: 10ms
+OrderedAbGroup: 10ms
+iRes_singleton_op: 10ms
+wp_atomic_inv_acc_timeless_frame: 10ms
+big_sepM_delete: 10ms
+gmap_view_alloc: 10ms
+gmap_viewUR: 10ms
+base_step_fill_item_absurd: 9ms
+SemiringSolverModel.Data.interpretNF_map: 9ms
+gmap_viewR: 9ms
+degree<_polyMap: 9ms
+limits<=pr+eq: 9ms
+CSemiringSolverModel.apply-axiom: 9ms
+ModelCat.ColimitData.modelExt: 9ms
+gmap_alloc_includedN.at_fresh: 9ms
+wp_mono: 9ms
+gmap_viewRF: 9ms
+Equalizer: 9ms
+FieldOfQuotients: 9ms
+CompletePrecat.applyEquiv: 9ms
+gmap_view_rel: 9ms
+proofmode_wp_pures_nested_contexts: 9ms
+wp_pre_body: 9ms
+join_lob_step: 9ms
+elemToIdeal: 8ms
+gmap_view_delete: 8ms
+wp_rec_expr_lam_app1_to: 8ms
+subG_mono_natG: 8ms
+ModelCat.ColimitData.modelExtHom: 8ms
+fupd_frame_r: 8ms
+rat_alt-inj: 8ms
+gmap_view_frag_dfrac_update: 8ms
+fupd_mask_frame_r: 8ms
+msc_read_resolve_registered_wp: 8ms
+MonoidLatticeColimit: 8ms
+proofmode_wp_lam_curried: 8ms
+ModelCat.limitStructureTruth: 8ms
+msc_read_scan_post: 8ms
+ModelCat.ColimitData.strExtF: 7ms
+Ideal.closureN-lem: 7ms
+wp_unfold: 7ms
+proofmode_wp_pure_one_context_at_a_time: 7ms
+EuclideanRingData: 7ms
+wp_nonval_ready: 7ms
+wp_rec_lam_app2_to: 7ms
+gmap_view_total_lookup_dist: 7ms
+AddMonoidLatticeColimit: 7ms
+gmap_view_rel_dfrac_update: 7ms
+wp_mono.wp_mono_at_le: 7ms
+polyEval_polyCoef: 7ms
+LimitCRing.limMap: 7ms
+gen_heapRF: 7ms
+wp_pre: 7ms
+MonoidBicat: 7ms
+IntEuclidean.isDivMod: 7ms
+join_load_wp: 7ms
+NatTrans.compose: 7ms
+SetCoequalizer: 7ms
+solver_fg_dist: 7ms
+gmap_cmra_extend_proof: 7ms
+wp_bind_at_le: 7ms
+pm_wp_let: 7ms
+MonoidBicat.monoidToMod: 7ms
+uPredOF: 6ms
+gen_heap_init: 6ms
+degree<_padd: 6ms
+proph_map_resolve_proph: 6ms
+fupd_elim_with_world: 6ms
+spawn_store_pair_child: 6ms
+gmap_fmap_cmra_morphism: 6ms
+join_done_token_exact: 6ms
+SplitMono: 6ms
+big_sepM_insert: 6ms
+solver_map_ff_gg: 6ms
+wp_mono.wp_pre_mono_step: 6ms
+BezoutRing.gcd_bezout: 6ms
+LinearlyOrderedSemiring.Dec: 6ms
+ht: 6ms
+gmap_view_full_frame_absent: 6ms
+ht_value: 6ms
+CRingBicat.modToRing.functor: 6ms
+spawn_spec: 6ms
+BIMixin: 6ms
+OrderedAddGroup.<-diff-mid: 6ms
+DiscretePrecat: 6ms
+gmap_view_rel_persist_full: 6ms
+own_heap_auth: 6ms
+gmap_view_both_dfrac_validN: 6ms
+proofmode_specialize_wand_class_instance: 6ms
+NatData.rp-returns-true-lemma.get-leaf-lemma: 6ms
+inv_timeless_bupd_update: 6ms
+spawn_after_alloc: 6ms
+wp_bind_pre_step: 6ms
+big_sepM_extract: 6ms
+LocMonoid.isLocalization: 6ms
+join_pending_continue: 5ms
+OrderedRing.Dec: 5ms
+subG_wsatSigma: 5ms
+msc_initial_ghosts_alloc: 5ms
+RingSolverModel.apply-axioms: 5ms
+subst_fact_zero_unfold: 5ms
+msc_modelR: 5ms
+wp_bind_at_le: 5ms
+counter_modelR: 5ms
+DiscreteOrderedField: 5ms
+ht_intro: 5ms
+gmap_view_source_stored: 5ms
+true_sep_drop: 5ms
+msc_read_scan_bound_wp: 5ms
+exist_elim_ent: 5ms
+sep_exist_l: 5ms
+Localization: 5ms
+gmap_view_auth_unpersist: 5ms
+ht_bind_ent: 5ms
+CGroupData.removeVars-correct.count-removeVar-lem: 5ms
+gmap_view_auth_persist: 5ms
+factorial_spec_Q: 5ms
+wp_rec_lam_app1_to: 5ms
+wp_pure_step: 5ms
+wp_lam_expr_app_r_to: 5ms
+AddMonoid.BigSum_suc: 5ms
+CGroupData.count-remove-lem: 5ms
+msc_client_pending_key_commit: 5ms
+CRingSolverModel.terms-equality-conv: 5ms
+GCDMonoid.gcd-ldistr_cancel: 5ms
+Sort.RedBlack.sort=insert.toList_balanceLeft: 5ms
+msc_new_counter_spec: 5ms
+LatticeAbGroup: 5ms
+ViewCMRA: 5ms
+CRingLatticeColimit: 5ms
+MonoidLatticeColimit.*: 5ms
+Preorder: 5ms
+CRingSolverModel.terms-equality: 5ms
+wp_thread_pool_preservation: 5ms
+EuclideanSemiringData.reduce*fueled-left: 5ms
+wp_bind_pre_zero: 5ms
+MonoidBicat.modToMonoid.functor: 5ms
+spawn_allocate_inv_run: 5ms
+IsEquiv=>contrFibers.fromSection: 5ms
+wp_mono.wp_pre_mono_zero: 5ms
+ModelCat.ColimitData.strExtT: 5ms
+indexedFanTheorem.step: 5ms
+pmap_to_list_tree_insert_decomp: 5ms
+pmapIsEquiv: 5ms
+proofmode_wp_pures: 5ms
+ghost_map_auth_timeless: 5ms
+CRingSolverModel.apply-axioms: 5ms
+own_inv_open_resources: 5ms
+proofmode_wp_lam_local_post: 5ms
+subst_fact_suc_after_store: 5ms
+proofmode_destruct_wrapped_or: 5ms
+fupd_wp_pre: 4ms
+wp_pred_suc: 4ms
+pmap_to_list_tree_delete_decomp: 4ms
+Cat.makeUnivalence: 4ms
+wp_iszero_suc: 4ms
+SliceCat: 4ms
+SetBicat: 4ms
+wp_lam_beta_to: 4ms
+msc_load_post: 4ms
+proph_map_new_proph: 4ms
+AbGroupLatticeColimit: 4ms
+ownE_impl_frame_combine: 4ms
+subst_fact_suc_else: 4ms
+AgreeCMRA: 4ms
+AbMonoid.BigSum_EPerm: 4ms
+proofmode_wp_lam_rule: 4ms
+agreeRF: 4ms
+proofmode_destruct_or: 4ms
+WPFunCOFE: 4ms
+equation.cSemiring: 4ms
+AddGroupCat: 4ms
+AuthCMRA: 4ms
+proofmode_wp_rec_rule: 4ms
+ht_pure_step: 4ms
+group_count-lem: 4ms
+IdealLattice: 4ms
+spawn_child: 4ms
+wp_bind_post: 4ms
+ProductPrecat: 4ms
+join_done_continue: 4ms
+msc_closed_client_wp: 4ms
+msc_inv_read_split: 4ms
+CompleteLattice: 4ms
+ht_post_conseq: 4ms
+gen_heap_frag_discrete: 4ms
+EuclideanSemiringData.reduce*fueled-right: 4ms
+Product: 4ms
+SlicePrecat: 4ms
+subst_fact_call_l_beta: 4ms
+frac_authR: 4ms
+solver_fold_unfold_dist: 4ms
+ModelCat.ColimitData.ColimitStr: 4ms
+wp_iszero_zero: 4ms
+Ring.isLocal-sum-char: 4ms
+Precat: 4ms
+wp_mul: 4ms
+Locale: 4ms
+CompletePrecat: 4ms
+AddMonoidLatticeColimit.+: 4ms
+Domain.nonZeroMonoid: 4ms
+AddMonoidCat: 4ms
+proofmode_specialize_intuitionistic_reuse: 4ms
+heap_auth: 4ms
+LimitMonoid: 4ms
+gmap_view_auth_dfrac_op: 4ms
+SemiringSolverModel.Data.collapse1-consistent: 4ms
+group-sorted.head-lem: 4ms
+wp: 4ms
+pointsto_array_extract: 4ms
+proofmode_destruct_many: 4ms
+factorial_spec: 4ms
+wp_bind_pre_zero: 4ms
+subG_gen_heapGpreS: 4ms
+FinCompletePrecat: 4ms
+WPFun: 4ms
+own_inv_close_world: 4ms
+wp_atomic_inv_acc: 4ms
+gmap_alloc_unit_singleton_updateP: 4ms
+GCDDomain.nonZeroGCDMonoid: 4ms
+MonoidCat: 4ms
+gmap_view_rel_map: 4ms
+proofmode_wp_pures_rec_beta: 4ms
+NatData.rp-count-leaves-lemma: 4ms
+GroupCat: 4ms
+spawn_token_then_run: 4ms
+BIuPredMixin: 4ms
+Domain.Dec.LDiv_TruncP: 4ms
+solver_unfold_chain_step: 4ms
+own_inv_alloc_open: 4ms
+proofmode_wp_load_nested_let: 4ms
+SumOFE: 4ms
+OrderedField: 4ms
+PID.domain_adequate': 4ms
+EuclideanDomain: 4ms
+subst_fact_public_k_beta: 3ms
+CRingBicat.theory: 3ms
+wp_rec: 3ms
+SemiringSolverModel.Data.remove0-consistent: 3ms
+gmap_view_rel_delete: 3ms
+ModelCat.ColimitData.thExt: 3ms
+SigmaFin.aux.f_sec: 3ms
+sep_frame_pointsTo: 3ms
+SigmaFin.aux.ret_f: 3ms
+locR: 3ms
+UnitlessMonoid.GCD-isProp: 3ms
+glookup_op.glookup_op_aux: 3ms
+RatField.finv: 3ms
+proph_map_agree: 3ms
+proofmode_env_insert_success: 3ms
+fanTheorem.allPaths-split: 3ms
+proofmode_env_delete_miss: 3ms
+BezoutRing.bezoutInv_coprime: 3ms
+CGroupData.removeVar-lem.sum-lem: 3ms
+AddGroupLatticeColimit: 3ms
+wp_lam: 3ms
+proofmode_apply_intuitionistic_reuse: 3ms
+count_perm: 3ms
+iPropO: 3ms
+gmap_view_frag_map_validN: 3ms
+CRingSolverModel: 3ms
+wp_step_iter_pure_soundness: 3ms
+homotopy_app-comm: 3ms
+wp_rec_beta: 3ms
+exist_intro_ent: 3ms
+GmapUCMRA: 3ms
+Ideal.closureN-lem.singleton-lem: 3ms
+gmap_view_fragR: 3ms
+gen_heap_valid: 3ms
+SemiringSolverModel.Data.perm-consistent: 3ms
+inv_acc: 3ms
+wp_bind_store_r: 3ms
+gmap_view_frag_core_id: 3ms
+Perm.perm-remove: 3ms
+Monoid.pow-comm: 3ms
+discrete_funURF: 3ms
+solver_gf: 3ms
+ownD_alloc_fresh: 3ms
+IntegralDomain.divQuotient_LDiv: 3ms
+gmap_view_map_compose_pair: 3ms
+Perm.perm-fin: 3ms
+LocRing.negative: 3ms
+IntRing.*-assoc: 3ms
+NatData.rp-returns-true-lemma-right: 3ms
+gmap_view_fragUR: 3ms
+wp_lam_beta: 3ms
+NatTrans.iso-inv: 3ms
+pathEquiv: 3ms
+pointsto_array_insert: 3ms
+Group.ipow_+.ipow_-: 3ms
+wp_lam_expr_app_to: 3ms
+wp_rec_beta_to: 3ms
+proofmode_exact_class_wrong_target_fails: 3ms
+ghost_map_agree_delete: 3ms
+LimitMonoid.limMap: 3ms
+frac_authUR: 3ms
+CGroupSolverModel.apply-axioms': 3ms
+msc_model_alloc: 3ms
+NatData.rp-returns-true-lemma: 3ms
+DivQuotient.DivQuotientGCDMonoid: 3ms
+gen_heap_alloc: 3ms
+ViewUCMRA: 3ms
+Perm.perm-fin.aux2: 3ms
+OptionOFE: 3ms
+wp_bind: 3ms
+NoetherianCRing: 3ms
+ExclUCMRA: 3ms
+pointsTo: 3ms
+wp_lam_expr_app_arg_to: 3ms
+proofmode_env_lookup_miss: 3ms
+iPropCOFE: 3ms
+proofmode_env_replace_tail: 3ms
+msc_is_counter_persistent: 3ms
+SemiringSolverModel.Data.interpretNF_multiply': 3ms
+gmap_view_replace: 3ms
+wp_value_intro: 3ms
+AbMonoid.BigSum_+: 3ms
+FactorRing.negative: 3ms
+bupd_pair_ent: 3ms
+fact_worker_post: 3ms
+inv_inner_ne: 3ms
+coPset_overlap_complete: 3ms
+wp_bind_mul_r: 3ms
+pmap_to_list_tree_decomp: 3ms
+wsat_inv_auth: 3ms
+ghost_map_auth: 3ms
+join_named_spec: 3ms
+own_inv_alloc: 3ms
+proofmode_env_delete_tail: 3ms
+TowerCOFE: 3ms
+ownI_open_keep: 3ms
+inv_acc_timeless: 3ms
+wp_bind_app_r: 3ms
+spawn_inv_done_token: 3ms
+HeapBI: 3ms
+ModelCat.limitStructure: 3ms
+own_inv_acc_open_i: 3ms
+mono_nat_own_alloc: 3ms
+wp_step_iter_one_frame_r: 3ms
+spawn_inv_done: 3ms
+proofmode_wp_let_beta_rule: 3ms
+wp_bind_item: 3ms
+wp_mono.wp_mono_aux: 3ms
+gmap_view_included_lookup_present: 3ms
+BezoutRing.bezoutArray_LDiv: 3ms
+gmap_alloc_updateP: 3ms
+proofmode_rewrite_persistent: 3ms
+NatData.rp-returns-true-lemma''': 3ms
+bupd_fupd: 3ms
+SemiringSolverModel: 3ms
+gmap_singleton_updatePM: 3ms
+UnitlessMonoid.div-eq: 3ms
+NatData.rp-returns-true-lemma-left: 3ms
+CRing.bezout_finitelyGenerated_principal: 3ms
+CGroupSolverModel.interpretNF-consistent': 3ms
+CGroupData.toList-correct: 3ms
+gmap_viewO_map_ne: 3ms
+pmap_ind.entries_of_tree_lookup_aux.lookup_at_xO.swap_inner_base: 3ms
+Perm.perm-map: 3ms
+subst_fact_suc_unfold: 3ms
+wp_bind_if: 3ms
+RingSolverModel.normalize-consistent: 3ms
+frac_auth_update_1_valid: 3ms
+solver_embed_g_later: 3ms
+coPset_overlap_comm: 2ms
+fupd_mask_close_unsealed: 2ms
+fupd_mask_frame: 2ms
+count_++: 2ms
+ProductPoset: 2ms
+makeRat.reduce2/=0: 2ms
+solver_unfold: 2ms
+solver_embed_coerce: 2ms
+CGroupData.simplify-correct: 2ms
+SemiringSolverModel.Data.interpretNF_++: 2ms
+CGroupSolverModel.apply-axioms: 2ms
+pmap_ind.entries_of_tree_lookup_aux.lookup_at_xI: 2ms
+proofmode_rename_persistent: 2ms
+SemiringSolverModel.Data.apply-axiom2: 2ms
+base_pure_head_eval_det: 2ms
+OrFin.aux.ret_f: 2ms
+spawn_inv_initial: 2ms
+CRingBicat.ringtoMod.functor: 2ms
+msc_read_state_advance_pair: 2ms
+wp_unfold: 2ms
+proofmode_frame_nested_right_first: 2ms
+gmap_view_frag_validN_1: 2ms
+fanTheorem.allPaths-bar-shift: 2ms
+gen_heapGpreS: 2ms
+Sort.Insertion.sort-sorted.insert-sorted: 2ms
+base_rec_beta_pure_det: 2ms
+OrderedCSemiring: 2ms
+iRes_singleton_dist: 2ms
+iResF: 2ms
+proofmode_connective_local_aliases: 2ms
+FreeStructure.qinj-surj: 2ms
+RingSolverModel.terms-equality: 2ms
+ht_alloc: 2ms
+solver_unfold_chain_cauchy: 2ms
+gmap_alloc_strong_updateP: 2ms
+heap_state_to_gmap_validN: 2ms
+proofmode_wp_pures_rec_expr: 2ms
+MatrixRing.product-gen_ide-left: 2ms
+wp_bind_mul_l: 2ms
+proofmode_frame_auto_composite: 2ms
+wp_value: 2ms
+Ideal.generatedBy-char: 2ms
+wp_rec_beta: 2ms
+solver_embed_coerce_laws: 2ms
+~-lequiv: 2ms
+URFunctor: 2ms
+proofmode_split_l: 2ms
+heap_replace_point_dist: 2ms
+LocMonoid.*: 2ms
+proofmode_destruct_sep_class_instance: 2ms
+Section.levelProp: 2ms
+Ideal.fromMonoidChainCondition: 2ms
+gmap_to_list_delete_decomp: 2ms
+gmap_core_id: 2ms
+cmra_transport: 2ms
+proofmode_destruct_persistent_exist: 2ms
+wp_bind_if: 2ms
+own_val_discrete: 2ms
+iRes_singleton_discrete: 2ms
+OptionCMRA: 2ms
+LinearlyOrderedAbGroup: 2ms
+proofmode_intros_many_wrapped: 2ms
+QPoly.~-isEquiv: 2ms
+subG_inG: 2ms
+fupd_mask_open_resources: 2ms
+subG_mscModelG: 2ms
+solver_gg_tower: 2ms
+subG_inv_l: 2ms
+gmap_view_map_validN_pair: 2ms
+proofmode_env_replace_miss: 2ms
+CMonoidSolverModel.perm-consistent: 2ms
+FinSet: 2ms
+LinearOrder.dec<=_reduce: 2ms
+solver_embed_tower_lower: 2ms
+own_inv_alloc_witness: 2ms
+wp_nat_eq_true: 2ms
+MeetSemilattice: 2ms
+ghost_map_alloc_empty_name: 2ms
+Sort.RedBlack.sort=insert.insert_++-right: 2ms
+RawViewCMRA: 2ms
+LModule.*c_zro-right: 2ms
+Model.theoremIsTrue: 2ms
+plookup'_merge': 2ms
+MonoidSolverModel.interpretNF_++: 2ms
+wp_thread_steps_reducible: 2ms
+wp_mono: 2ms
+glookup_core: 2ms
+PID: 2ms
+LModule.*c_zro-left: 2ms
+fupd_masks_proper: 2ms
+ModelCat.ModelPrecat: 2ms
+solver_f_tower: 2ms
+PolyDomain.#0-*: 2ms
+DiscreteFunUCMRA: 2ms
+iRes_singleton_core_id: 2ms
+msc_modelRF: 2ms
+Cat.transport_Hom_iso: 2ms
+pm_wp_smart_apply: 2ms
+fanTheorem.allPaths_++: 2ms
+FamPrecat: 2ms
+solver_fold_car_tower: 2ms
+pm_wp_smart_let: 2ms
+wp_nonval_intro: 2ms
+MatrixAlgebra.product_*c-comm-right: 2ms
+own_inv_close_token: 2ms
+eval_nat_eq_true: 2ms
+GCDDomain.Dec.gcd: 2ms
+Cat.transport_iso: 2ms
+DivQuotient.DivQuotientCancelMonoid: 2ms
+except_0_fupd: 2ms
+signum.*-comm: 2ms
+ModelCat.limitStructureInterp: 2ms
+pmap_ind.entries_of_tree_lookup_aux.lookup_at_xO: 2ms
+FamCat: 2ms
+SemiringSolverModel.Data.normalize-consistent: 2ms
+Equalizer.eqMono: 2ms
+OrderedCRing.Dec: 2ms
+ProdCMRA: 2ms
+Graph.FreeCat: 2ms
+LinearlyOrderedSemiring: 2ms
+Semiring.LDiv_BigSum: 2ms
+Fib.ext.retraction: 2ms
+Ideal.closure: 2ms
+gmap_view_auth_map_morphism: 2ms
+EPerm.eperm-++-comm: 2ms
+ExclCMRA: 2ms
+LinearOrder.dec<_reduce: 2ms
+PID.unitless_adequate': 2ms
+gmap_viewRF_apply_eq: 2ms
+own_updateP: 2ms
+mono_natUR: 2ms
+wp_bind_app_l: 2ms
+msc_auth_frag_update: 2ms
+pointsto_timeless: 2ms
+CRing.bezoutGCD: 2ms
+resolved_store_wp: 2ms
+NatData.simplify-correct: 2ms
+gmap_to_list_decomp: 2ms
+gpartial_alter.gpartial_alter_wf: 2ms
+gmap_lookup_included: 2ms
+proofmode_intros_many: 2ms
+proofmode_destruct_wrapped_exist: 2ms
+LinearlyOrderedAbMonoid: 2ms
+group_count-lem.group_nil-lem: 2ms
+gset_disj_CMRA: 2ms
+SemiringSolverModel.Data.mulCoef-consistent: 2ms
+solver_embed_project_g_later: 2ms
+BezoutRing.coprime_bezoutArray: 2ms
+QPoly.from~to=: 2ms
+solver_embed_project_f_later: 2ms
+Adjunction.eta_epsilon-equiv: 2ms
+MonoidBicat.theory: 2ms
+gmap_view_auth_discrete_at: 2ms
+Section.Section~Fiber: 2ms
+resolve_step_inv: 2ms
+pmap_insert_empty_to_list: 2ms
+GCD.reduce: 2ms
+PseudoCSemiring: 2ms
+solver_embed_tower_upper: 2ms
+Fib.make: 2ms
+app_values_pure_ctx_absurd: 2ms
+ownE_op: 2ms
+gnameO: 2ms
+PMIntoInvariant: 2ms
+wp_pair_values: 2ms
+subG: 2ms
+PMIntoAccessor: 2ms
+group-diff: 2ms
+wp_post_mono: 2ms
+proofmode_or_class_instance: 2ms
+coPset_singleton: 2ms
+gmap_cmra_pcore_mono_proof: 2ms
+gmap_to_agree_map_ginsert: 2ms
+proofmode_next_hypothesis_class_instance: 2ms
+TotalOrder: 2ms
+solver_g_embed_coerce_suc_suc: 2ms
+fupd_ne: 2ms
+ExclUOFE: 2ms
+Monoid.pow-comm1: 2ms
+gmap_eq.both_nothing_or_eq: 2ms
+solver_unfold_fold: 2ms
+coPset_disj_CMRA.op_assoc_CoPset: 2ms
+uPredOF_contractive: 2ms
+Sort.RedBlack.sort=insert.makeTree_insert: 2ms
+degree<=.toCoefs: 2ms
+ExclOFE: 2ms
+wp_step_iter_pure_soundness_zero: 2ms
+singleton_includedN_l: 2ms
+fupd_mask_mono: 2ms
+gmap_viewO_map: 2ms
+MatrixRing.product-gen-assoc: 2ms
+pm_wp_bind_item: 2ms
+FreeStructure.interpretF=substF: 2ms
+gmap_view_auth_validN: 2ms
+Precat.idtoiso: 2ms
+FreeModel: 2ms
+gmap_view_frag_unpersist: 2ms
+proofmode_specialize_mismatch_fails: 2ms
+bupd_close: 2ms
+remove1-inj: 2ms
+subG_inv_r: 2ms
+CMonoidSolverModel.apply-axiom: 2ms
+proofmode_split_r: 2ms
+fupd_trans: 2ms
+ldiv_int_nat: 2ms
+msc_pending_take_impossible: 2ms
+inv_alloc_open_elim: 2ms
+Ideal.closureN-lem.suc-eq: 2ms
+BoolLattice: 2ms
+ht_pre_conseq: 2ms
+IPseudoSemiring: 2ms
+gen_heapRF_contractive: 2ms
+Rat: 2ms
+Semiring: 2ms
+CGroupData.countVars-diff: 2ms
+DivQuotient.DivQuotientMonoid: 2ms
+RFunctor: 2ms
+own_inv_acc_prepare: 2ms
+ArrayLModule.BigSum-index: 2ms
+intMap.intCoef_diff: 2ms
+RatField.<-char-conv-aux: 2ms
+view_validN_op_l_pair: 2ms
+fupd_mask_subseteq_sealed: 2ms
+inv_combine: 2ms
+iResB: 2ms
+proofmode_destruct_exist_explicit_family: 2ms
+subG_spawnG: 2ms
+RingSolverModel: 2ms
+factorial_post: 2ms
+coPset_disj_CMRA: 2ms
+CatEquiv.op: 2ms
+wp_reducible: 2ms
+inv_acc_strong: 2ms
+proofmode_frame_nested_left: 2ms
+proofmode_destruct_pure_class_instance: 2ms
+RingSolverModel.terms-equality-conv: 2ms
+solver_f_embed_coerce_from_zero: 2ms
+CGroupData.countVars-correct: 2ms
+subG_app_r: 2ms
+CSemiringSolverModel: 2ms
+gmap_view_frag_validN: 2ms
+Monoid.Inv.factor-right: 2ms
+singleton_includedN_l.empty_absurd: 2ms
+gmap_view_matches_persist_full: 2ms
+pmap_ind.entries_of_tree_lookup_aux: 2ms
+IntEuclidean: 2ms
+iProp_result: 2ms
+ArrayDec.aux: 2ms
+glookup_of_pomap_pair: 2ms
+gen_heap_auth: 2ms
+BaseStep: 2ms
+EPerm.eperm_equiv: 2ms
+Equalizer.functor: 2ms
+padd=pzero: 2ms
+proofmode_destruct_and_class_instance: 2ms
+own_op_valid_at: 2ms
+gen_heap_interp: 2ms
+BezoutDomain.Dec: 2ms
+wp_approx_mono: 2ms
+BIBase: 2ms
+wp_nonval: 2ms
+HAEquiv.coh_f_ret_f=f_sec_f: 2ms
+wsatGpreS: 2ms
+SIP_Set: 2ms
+isProp: 2ms
+symmetric-rec: 2ms
+Sort.RedBlack.sort=insert.insert_++-left: 2ms
+WPFunDist: 2ms
+IntRing: 2ms
+gen_heap_frag: 2ms
+cmra_transport_unit_left_id: 2ms
+Field: 2ms
+msc_make_handles_from: 2ms
+lob_wand_apply_ent: 1ms
+proofmode_apply_wrapped_destination: 1ms
+cmra_morphism_comp: 1ms
+ownM_core_persistent: 1ms
+GmapViewAgreeKit: 1ms
+wp_load.LoadStepInv: 1ms
+gmap_view_rel_lookup: 1ms
+NatSemiring.*-comm: 1ms
+cycle.suc-inj: 1ms
+upredDist_sep_r: 1ms
+mono_nat_included: 1ms
+signum_iabs_eq: 1ms
+DiscreteFunCOFE: 1ms
+DivQuotient.map: 1ms
+Monoid.LDiv.product-right: 1ms
+Cat.transport_Hom_iso-left: 1ms
+ObOver: 1ms
+locM: 1ms
+TSetIm-elim: 1ms
+NatSemiring.+-comm: 1ms
+id_mod: 1ms
+msc_client2_incr_post: 1ms
+or_mono: 1ms
+IPseudoCSemiring: 1ms
+prodO_map_cmra_morphism.pcore_proof: 1ms
+CocompletePrecat: 1ms
+mscE: 1ms
+IntRing.positive_+: 1ms
+mono_nat_auth_update_valid: 1ms
+pm_mod: 1ms
+AbMonoid.FinSum_char: 1ms
+msc_handle: 1ms
+fupd_mono: 1ms
+EuclideanSemiringData.isPseudonorm.aux: 1ms
+base_load_atomic: 1ms
+intComm: 1ms
+option_op_ne_2: 1ms
+gmap_view_rel_holds: 1ms
+Sort.Sorted.tailSorted: 1ms
+DecSet: 1ms
+forall_elim': 1ms
+proofmode_frame_wrapped_sep: 1ms
+transport_path_pmap.conv: 1ms
+wp_bind_load: 1ms
+sep_assoc_r_ent: 1ms
+wp_bind: 1ms
+Structure.interpret: 1ms
+pointsto_array: 1ms
+isContr=>isProp: 1ms
+Domain.nonZero-cancel-left: 1ms
+LinearlyBiorderedAbMonoid: 1ms
+Ideal.sclosure-univ: 1ms
+emp_holds_all: 1ms
+Theory.congruenceP: 1ms
+GmapValidN: 1ms
+MatrixAlgebra.product_*c-comm-left: 1ms
+in_app: 1ms
+gmap_view_authO_map: 1ms
+msc_read_state_advance: 1ms
+solver_embed_mor: 1ms
+LeibnizOFE: 1ms
+LexicographicalList.<-irreflexive: 1ms
+BiEquiv.levelProp: 1ms
+PosetSemiring: 1ms
+inv_inner: 1ms
+counter_faa_wp: 1ms
+coPSubset_difference_of_disjoint: 1ms
+AddGroup.Dec: 1ms
+load_step_inv_ctx_item: 1ms
+ownD: 1ms
+solver_f_embed_coerce_suc_suc: 1ms
+proofmode_from_pure_and_emp: 1ms
+CGroupSolverModel.apply-axioms'.interpretNF_negative: 1ms
+StrictDomain: 1ms
+discrete_fun_singleton_core_id: 1ms
+plookup_pomap: 1ms
+partial_alter'_wf: 1ms
+proofmode_mod_intro: 1ms
+NatData.rp-preserves-nf: 1ms
+app_rec_ctx_absurd: 1ms
+solver_fold: 1ms
+proofmode_intros_smoke: 1ms
+LocMonoid: 1ms
+DiagramCone.coneCoh-lem: 1ms
+Ring.intCoef_neg: 1ms
+GroupSolverModel.interpret: 1ms
+msc_inv_incr_split: 1ms
+QPoly.~-isEquiv.lists-lem2: 1ms
+mono_nat_gFunctor: 1ms
+uPredOF_inhabited: 1ms
+msc_handle_persistent: 1ms
+NatSemiring.<_+-left: 1ms
+MatrixRing.product-gen-rdistr: 1ms
+Group.inverse_pow: 1ms
+ext: 1ms
+bounded-bar.induction: 1ms
+coPset_disj_CMRA.op_assoc_CoPset.rhs_invalid_via_XY: 1ms
+heap_package: 1ms
+NatData.find-fstLeafToRemoveInd.find-fstLeafToRemoveInd-rec: 1ms
+FinSet.skip: 1ms
+Perm: 1ms
+-'id: 1ms
+pm_assert: 1ms
+StoreStepInv: 1ms
+transport_path_pmap-right.conv: 1ms
+GCDMonoid.coprime_*_div: 1ms
+gnameCountable: 1ms
+ArrayLModule: 1ms
+wp_nat_add: 1ms
+OFEMorOFE: 1ms
+lift.aux: 1ms
+ownD_op: 1ms
+dfs_updateP_val_path: 1ms
+GmapOFE: 1ms
+pm_into_later_direct: 1ms
+cycle: 1ms
+DirectedSet: 1ms
+CRingCat: 1ms
+GCDMonoid: 1ms
+gmap_view_map_equiv_id_pair: 1ms
+wp_load.load_step_inv_ctx_item: 1ms
+solver_coerce: 1ms
+or_assoc: 1ms
+own_inv_acc: 1ms
+Theory.symmetry: 1ms
+proofmode_split_wrapped_sep_empty_left: 1ms
+natMap.func-+: 1ms
+GCDMonoid.gcd_pow_div: 1ms
+oIso: 1ms
+cmra_transport_validN: 1ms
+coPmem_union: 1ms
+PolyRing.ldistr: 1ms
+cmra_updateP_update_det: 1ms
+LinearlyOrderedCSemiring.Dec: 1ms
+iProp: 1ms
+pm_lob: 1ms
+msc_frag: 1ms
+ghost_map_insert: 1ms
+SymFin.fin_equiv: 1ms
+prop-pi: 1ms
+WeaklyNoetherianCRing: 1ms
+own: 1ms
+proofmode_assert: 1ms
+upredDist_or_r: 1ms
+pointsto_block: 1ms
+fork_post_inhabited: 1ms
+BIuPred: 1ms
+Ideal.sclosure-superset: 1ms
+nat_le_suc_self: 1ms
+ProdUCMRA: 1ms
+Retraction.Retraction~Fiber: 1ms
+MatrixRing: 1ms
+coPset_overlap_union_l: 1ms
+pm_exists1_from: 1ms
+own_inv_intro: 1ms
+sep_permute5: 1ms
+solver_fold_unfold: 1ms
+fact_closure_correct: 1ms
+EuclideanSemiringData.reduce_zro: 1ms
+wp_bind_fst: 1ms
+base_prim_step: 1ms
+wsat_inv_frag: 1ms
+drop.index: 1ms
+Fib.ext: 1ms
+JoinSemilatticeAbMonoid: 1ms
+nat_gcd-comm: 1ms
+Domain.ldiv_nonZero: 1ms
+mono_nat_auth_lb_valid: 1ms
+gmap_view_agree_option_included_dist: 1ms
+subPrecat: 1ms
+ownE_singleton_twice: 1ms
+later_internal_eq_holds: 1ms
+msc_client_pending: 1ms
+plookup_pomap_just_inv: 1ms
+frac_auth_frag_proper: 1ms
+FreeStructure.interpret=subst: 1ms
+NatData.find-fstLeafToRemoveInd.leaf-isInv-lemma: 1ms
+msc_client_ready: 1ms
+fupd_frame_l: 1ms
+wp_bind_alloc: 1ms
+inG_unfold_validN: 1ms
+heap_update_validN: 1ms
+PID.IsAdequate': 1ms
+wp_loc_add: 1ms
+msc_inv_body_names: 1ms
+AbGroupSolverModel.terms-equality: 1ms
+proofmode_frame_auto_emp: 1ms
+MonoidLatticeColimit.Func-app: 1ms
+AddGroup.negative_zro: 1ms
+Pos_eq_dec.pred_xI: 1ms
+spawnRF_contractive: 1ms
+degree<=_polyMap: 1ms
+pm_name_eq: 1ms
+fp_approx_cauchy: 1ms
+AbMonoid.BigSum_Perm: 1ms
+sep_mono_l: 1ms
+ipm: 1ms
+pm_next_hyp_from: 1ms
+inv_proper: 1ms
+GCDMonoid.gcd_*_div: 1ms
+view_updateP_frag: 1ms
+fanTheorem.induction: 1ms
+not_suc_le_self: 1ms
+PosetAddGroup.to>=0: 1ms
+request_counter_model_update: 1ms
+equation.cRing: 1ms
+IntRing.ldistr: 1ms
+fanTheorem: 1ms
+inv_exist_access: 1ms
+BIuPredPersistentlyMixin: 1ms
+frac_auth_validN: 1ms
+CGroup.BigProd_ipow: 1ms
+PID.monoid_adequate': 1ms
+Monoid.LDiv.cancel-left: 1ms
+KFinSet.forall-dec: 1ms
+SlicePrecat.forget: 1ms
+view_frag: 1ms
+ExclCOFE: 1ms
+NatSemiring.*-assoc: 1ms
+wand_elim_ent: 1ms
+and_True-rev: 1ms
+IntRing.lldistr: 1ms
+QPoly.~: 1ms
+option_extend: 1ms
+ViewOFE: 1ms
+ownE_disjoint: 1ms
+own_inv: 1ms
+proofmode_duplicate_insert_fails: 1ms
+RingSolverModel.normalize: 1ms
+pm_frame_intuitionistic: 1ms
+SemiringSolverModel.Term: 1ms
+RingSolverModel.interpretNF_negative: 1ms
+*>_inv: 1ms
+gmap_view_lookup_delete_ne: 1ms
+solver_tower_car_coerce: 1ms
+BIPersistentlyMixin: 1ms
+CocompletePrecat.op: 1ms
+proofmode_into_invariant_drop_emp: 1ms
+agree_map_ne: 1ms
+LinearOrder.meet/=left: 1ms
+CGroupSolverModel.interpretNF: 1ms
+PolyAlgebra.*-comm: 1ms
+Sort.RedBlack.sort=insert.makeTree: 1ms
+app_lam_pure_ctx_absurd: 1ms
+msc_incr_shift: 1ms
+PrimStep: 1ms
+proofmode_frame_auto_persistent: 1ms
+MatrixRing.product-assoc: 1ms
+coe_path: 1ms
+TowerOFE: 1ms
+gmap_singleton_discrete: 1ms
+Monoid.LDiv.id-div: 1ms
+NatSemiring: 1ms
+pm_wp_if_false: 1ms
+alloc_step_inv_ctx_item: 1ms
+sep_permute6_close: 1ms
+DecSubMonoid: 1ms
+or_intro_r': 1ms
+fupd_except_0: 1ms
+pm_transport: 1ms
+dfrac_valid_op_l: 1ms
+indexedFanTheorem.pathAt: 1ms
+pm_split_put_right: 1ms
+gen_heap_map: 1ms
+pure_sep_l_elim: 1ms
+ListMonoid: 1ms
+KFinSet.search: 1ms
+inv: 1ms
+CGroupData.group-correct: 1ms
+irisGpreS: 1ms
+gmap_singleton_op: 1ms
+pm_destruct_persistent: 1ms
+msc_load_witness: 1ms
+QPoly: 1ms
+DiscretePrecat.o: 1ms
+gmap_pcore: 1ms
+IntegralDomain.Dec: 1ms
+base_new_proph_step_inv: 1ms
+coPset_disj_CMRA.proper_inner_coPset: 1ms
+GCDMonoid.gcd_*-comm: 1ms
+QPoly.~.lists-lem2: 1ms
+wp_step_iter_mono: 1ms
+JoinSemilattice.join-assoc: 1ms
+IsCoprime.<=gcdInv: 1ms
+fresh_inv_name: 1ms
+gset_disj_CMRA.op_assoc: 1ms
+indexedFanTheorem.initialState: 1ms
+PolyRing.ide-right: 1ms
+bupd_mono: 1ms
+lam_ctx_absurd: 1ms
+BoundedPigeonholeSet: 1ms
+proofmode_destruct_persistent: 1ms
+DiagramCone: 1ms
+EqualityDecide: 1ms
+proofmode_forall_goal: 1ms
+proph_list_resolves_there: 1ms
+plookup_gset_union_just: 1ms
+pmap_ind.entries_of_tree_lookup_aux.lookup_at_xH: 1ms
+QEquiv.fromInjSurj: 1ms
+heap_state_to_gmap.heap_state_to_gmap_wf: 1ms
+UPredOFE: 1ms
+exist_mono: 1ms
+ht_conseq: 1ms
+of_to_val: 1ms
+count.all-diff: 1ms
+funOF: 1ms
+base_step_not_val: 1ms
+resolve_strongly_atomic_ctx_item: 1ms
+MaxNatUCMRA: 1ms
+IntDomain.#0-*: 1ms
+Equalizer.Shape.id: 1ms
+TopMeetSemilattice: 1ms
+mkProperOr: 1ms
+par_pair_post: 1ms
+FreeStructure.qinj-equality.code: 1ms
+PigeonholeSet: 1ms
+pmap_to_list_tree: 1ms
+wp_fst_pair: 1ms
+NatData.Leaf.toLeafToTerm-isInv: 1ms
+msc_counter_auth: 1ms
+idp_*>: 1ms
+PermSet.unext: 1ms
+PolyRing.*: 1ms
+wp_adequacy: 1ms
+True_intro: 1ms
+savedPredOF_contractive: 1ms
+sep_move_fifth_front: 1ms
+merge'_wf: 1ms
+pair_values_pure_ctx_absurd: 1ms
+iProp_unfold_fold: 1ms
+DecBool.compare: 1ms
+SemiringSolverModel.Data.sort-consistent: 1ms
+own_op_valid_elim_at: 1ms
+subst_rec_same_x: 1ms
+proofmode_destruct_exist1: 1ms
+gmap_map_support_lookup_aux: 1ms
+nameDecEq: 1ms
+AddMonoidLatticeColimit.poset-app: 1ms
+proofmode_clear_persistent: 1ms
+big_sepL_extract_1: 1ms
+bar-conj.aux: 1ms
+sep_comm_ent_notation: 1ms
+SemiringSolverModel.normalize: 1ms
+IntRing.rrdistr: 1ms
+excl_dist_to_eq: 1ms
+allocN_step_inv_ctx_item: 1ms
+msc_incr_after: 1ms
+wp_value: 1ms
+prodOF_contractive: 1ms
+bar-conj: 1ms
+bool_subset_union_difference: 1ms
+own_val: 1ms
+Diagram.functor: 1ms
+gset_union_fn_nothing_inv: 1ms
+EuclideanSemiringData: 1ms
+gset_overlap_tree_sound: 1ms
+div_gcd: 1ms
+ProductCat: 1ms
+big_sepM: 1ms
+map_++: 1ms
+and_assoc-rev: 1ms
+BIuPredBI: 1ms
+Cone.map: 1ms
+view_auth_persist_valid: 1ms
+solver_embed_self: 1ms
+PermSet.~-psequiv: 1ms
+intMap.func-*: 1ms
+cong: 1ms
+coPIn: 1ms
+ISemigroup: 1ms
+Quotient.map: 1ms
+RatDenseOrder: 1ms
+gset_disj_equiv_sym: 1ms
+SigmaFin: 1ms
+iabs.signum_/=0: 1ms
+gsetToCoPset_not_in: 1ms
+agreeO_map_ne_map: 1ms
+invariant_unfold: 1ms
+Ring: 1ms
+CMonoid.BigProd_pow: 1ms
+proofmode_assumption: 1ms
+iFrame: 1ms
+view_validN_ne_pair: 1ms
+~-lequiv1: 1ms
+pointsto: 1ms
+CRing.Dec: 1ms
+proofmode_destruct_pure_rewrite_explicit_family: 1ms
+CGroupData.countVars: 1ms
+Semiring.BigSum_replicate: 1ms
+base_lam_beta_pure_det: 1ms
+LinearlyOrderedSemiring.mid_inv>left: 1ms
+pm_persistent_env_dup: 1ms
+wp_adequacy_with_fork: 1ms
+Group.inverse-isInv: 1ms
+view_update_frag_valid: 1ms
+SemiringSolverModel.Data.interpretNF-correct: 1ms
+view_validN_le_pair: 1ms
+BinOpStepInv: 1ms
+IntRing.*: 1ms
+QPoly.qadd_nil: 1ms
+mono_nat_lb_own_le: 1ms
+nat_gcd-isUnique: 1ms
+counter_allocN_wp: 1ms
+pm_destruct_and_pure_l: 1ms
+msc_requests: 1ms
+proofmode_split_notation_wrapped_and: 1ms
+msc_client_read_Q: 1ms
+IsCoprime.<=gcd: 1ms
+IAddGroup: 1ms
+view_update_alloc: 1ms
+inv_split: 1ms
+forall: 1ms
+IsInvPrefix.toIndex: 1ms
+OFEMorCOFE: 1ms
+Semiring.LDiv_+: 1ms
+Precat.transport_Hom-left: 1ms
+pm_specialize_forall: 1ms
+ProdFin: 1ms
+RingLatticeColimit.Func-app: 1ms
+mkProperSep: 1ms
+wp_if_true: 1ms
+nat_gcd_*_div: 1ms
+Sort.RedBlack.sort=insert.toList_insert': 1ms
+msc_proph_total_cons: 1ms
+proofmode_exist_class_instance: 1ms
+app_lam_ctx_absurd: 1ms
+plookup'_partial_alter'_ne: 1ms
+Monoid.BigProd_replicate: 1ms
+Theory.IsTheorem: 1ms
+fupd_mask_intro: 1ms
+OrderedAddGroup: 1ms
+or_assoc-rev: 1ms
+and_elim_l': 1ms
+URFunctorContractive: 1ms
+own_op: 1ms
+msc_client1_twice_post: 1ms
+AbGroup.equals: 1ms
+auth_cmra_extend_proof.auth_extend_split: 1ms
+singleton_includedN_l.just_incl: 1ms
+proph_map_init: 1ms
+dfrac_pcore_idemp_proof: 1ms
+wp_lam_expr: 1ms
+msc_client_pending_at: 1ms
+wp_pre_body: 1ms
+Qp: 1ms
+proofmode_exact_class_instance: 1ms
+Theory.congruence: 1ms
+list_insert_length: 1ms
+wp_bind_store_r: 1ms
+LexicographicalList.trichotomy: 1ms
+RingHom.compose: 1ms
+nat_max: 1ms
+SubstSolverModel.apply-axiom: 1ms
+QPoly.~.lists-lem1: 1ms
+BiorderedSet: 1ms
+Structure.subst_IsFormulaTrue: 1ms
+view_frag_discrete: 1ms
+proofmode_exists_goal_class_instance: 1ms
+find: 1ms
+msc_client_inv_timeless: 1ms
+bar-stream.induction: 1ms
+singleton_includedN_l.empty_absurd_case: 1ms
+option_pcore_l: 1ms
+fupd_mask_close_resources: 1ms
+mkProperWand: 1ms
+Term: 1ms
+spawnG: 1ms
+LoadStepInv: 1ms
+inv_alloc_open: 1ms
+sigma-left: 1ms
+CompleteCat: 1ms
+msc_auth_frag_agree: 1ms
+Product.fromLimit.cone: 1ms
+Cone: 1ms
+SolverModel: 1ms
+PID.IsAdequate: 1ms
+msc_incr_witness: 1ms
+agree_dist_trans: 1ms
+PMSplit: 1ms
+Poset: 1ms
+IMonoid.embed: 1ms
+coPmem_union_inv: 1ms
+subG_refl: 1ms
+UPredBiBUpd: 1ms
+bool_and_idemp: 1ms
+SmithRing: 1ms
+LModule.IsIndependent: 1ms
+msc_client_pending_timeless: 1ms
+gpartial_alter.gpartial_alter_lift_fst: 1ms
+bool_and_true_inv: 1ms
+sep_mono_r_at: 1ms
+nat_one_ne_two: 1ms
+gset_in_empty: 1ms
+optionO_map: 1ms
+own_inv_close_fupd: 1ms
+QEquiv.equals: 1ms
+gset_singleton_fresh_disjoint: 1ms
+NatData.rp-returns-true-lemma.count-leaves-lemma: 1ms
+spawn_inv: 1ms
+BoundedDistributiveLattice: 1ms
+pm_specialize_into_wand: 1ms
+join_handle_intro: 1ms
+LimitMonoid.limProj: 1ms
+eval_heap_binop: 1ms
+uPredOF_applyCOFE: 1ms
+load_atomic_ctx: 1ms
+Group.inverse-equality: 1ms
+maybe_fmap_comp: 1ms
+gmap_singleton_proper: 1ms
+qp_half_lt_one: 1ms
+ProphDomSubset: 1ms
+ht_load: 1ms
+Cat.op: 1ms
+option_dist_to_eq: 1ms
+saved_pred_later_eq_holds: 1ms
+MonoidHom: 1ms
+RingSolverModel.intCoef: 1ms
+gset_disj_CMRA.op_proper_outer: 1ms
+-o: 1ms
+QPoly.from=to~: 1ms
+BIuPredLaterMixin: 1ms
+Domain.nonZero-right: 1ms
+proofmode_lob: 1ms
+transposition.transposition_/=: 1ms
+op_proper_r: 1ms
+FinSet-transport: 1ms
+IsEquiv.toQEquiv: 1ms
+BiorderedLattice: 1ms
+proofmode_specialize_intuitionistic_overwrite_fails: 1ms
+FinSet.FinCardBij: 1ms
+pm_specialize_intuitionistic: 1ms
+Rat.AltRat.subset: 1ms
+wp_step_iter_one_frame_l: 1ms
+proofmode_destruct_pure_rewrite: 1ms
+to_agree_discrete: 1ms
+solver_ff: 1ms
+CRing.With#: 1ms
+PolyRingWith#.#0-tight: 1ms
+NatSemiring.triEquals: 1ms
+proofmode_pose_proof: 1ms
+agree_map_list_append: 1ms
+pm_rename_spatial: 1ms
+own_inv_alloc_inner: 1ms
+CGroupData.sort-correct-lem: 1ms
+SemiringSolverModel.remove0: 1ms
+UnboundedDenseLinearOrder: 1ms
+request_map_update: 1ms
+excl_map_id: 1ms
+Big: 1ms
+msc_client_inv: 1ms
+FaithfulFunctor: 1ms
+prod_pcore_option_equiv: 1ms
+view_auth_persist: 1ms
+natMap.func-*: 1ms
+view_validN_raw_pair: 1ms
+msc_read_registered: 1ms
+coPset_disj_CMRA.pcore_l_coPset: 1ms
+MonoidHom.func-pow: 1ms
+gmap_view_frag: 1ms
+gmap_view_matches_dfrac_update: 1ms
+Site: 1ms
+PolyRing.*c-comm-left: 1ms
+request_saved_pred_alloc: 1ms
+proofmode_specialize_forall: 1ms
+AddGroupLatticeColimit.negative: 1ms
+IAddMonoid: 1ms
+replicate_+: 1ms
+solver_unfold_conv: 1ms
+wp_bind_store_l: 1ms
+view_updateP_frag_valid: 1ms
+spawn_tok_alloc: 1ms
+gmap_fmap_equiv_id: 1ms
+prodOF: 1ms
+proofmode_split_twice_wrapped_and: 1ms
+ownD_op': 1ms
+RingSolverModel.ringMulCoef-correct: 1ms
+Monoid.pow_*: 1ms
+msc_incr_now: 1ms
+msc_read_core_post: 1ms
+OFunctor: 1ms
+NatTrans: 1ms
+CGroupData.removeVar-correct: 1ms
+cmra_transport_valid: 1ms
+dfrac_pcore_mono_proof: 1ms
+proofmode_destruct: 1ms
+cmra_morphism_monoN: 1ms
+Perm.equiv_perm: 1ms
+MonoidBicat.monoidToMod.functor: 1ms
+solver_g_S: 1ms
+GCD.~-stable: 1ms
+++: 1ms
+PosetAbGroup: 1ms
+Sort.RedBlack.sort.balanceRight: 1ms
+glookup_partial_alter_ne: 1ms
+glookup_dist_just: 1ms
+remove1: 1ms
+LinearOrder.join/=left: 1ms
+prod_pcore_just: 1ms
+AddGroup: 1ms
+CRing.Dec.divQuotient_dec0: 1ms
+indexedFanTheorem: 1ms
+agreeRF_contractive: 1ms
+Monoid.pow_+: 1ms
+GCD.swap: 1ms
+gmap_to_list_insert_decomp: 1ms
+discrete_fun_singleton_op: 1ms
+gmap_view_both_discarded_agree_validN: 1ms
+agree_map_list_comp: 1ms
+counter_nat_add_wp: 1ms
+alloc_unit_hoare: 1ms
+proofmode_exists: 1ms
+proofmode_frame_class_instance: 1ms
+own_inv_acc_target: 1ms
+TruncP.rec-set.level: 1ms
+LinearOrder: 1ms
+solver_ggff: 1ms
+fupd_mono_at: 1ms
+matrixExt: 1ms
+plookup_insert_eq: 1ms
+state_interp: 1ms
+fanTheorem.allPaths-monotone: 1ms
+wp_bind_snd: 1ms
+wp_binop: 1ms
+ModelCat.ColimitData.liftFormula: 1ms
+excl_compl_chain: 1ms
+erase_dfrac_matches: 1ms
+own_inv_alloc_target: 1ms
+solver_unfold_chain_cauchy_zero: 1ms
+gmap_view_map_equiv_id: 1ms
+PolyIntegralDomain: 1ms
+gmap_discrete: 1ms
+Or.levelProp: 1ms
+FinSet.sface_skip: 1ms
+msc_inv: 1ms
+glookup_map_support_absent: 1ms
+UPredFUpd: 1ms
+StrictBezoutDomain: 1ms
+bupd_frame_trans: 1ms
+FamCat.mapIso: 1ms
+proofmode_class_into_persistent: 1ms
+ForkStepInv: 1ms
+psqueeze: 1ms
+snd_pair_pure_ctx_absurd: 1ms
+LimitCRing.limProj: 1ms
+wp_value_intro_notation: 1ms
+inG: 1ms
+div_loc: 1ms
+option_pcore_ne: 1ms
+proofmode_apply_wand_class_instance: 1ms
+pm_wp_if_true: 1ms
+own_val_core_id: 1ms
+base_store_step_inv: 1ms
+ghost_map_update: 1ms
+NatEuclidean.summandDiv: 1ms
+subst_fst: 1ms
+proofmode_destruct_wrapped_sep: 1ms
+All: 1ms
+Perm.perm-fin.aux: 1ms
+exclU_op_ne: 1ms
+RatField.+_alt: 1ms
+gmap_view_value_map_morphism: 1ms
+pmap_inv-comm: 1ms
+IsInj: 1ms
+msc_frag_timeless: 1ms
+SigmaDecide: 1ms
+SetCoproduct: 1ms
+makeRat.gcd_reduced: 1ms
+big_sepL: 1ms
+MonoidHom.func-InvElem: 1ms
+Ring.negative_inv: 1ms
+proofmode_specialize_forall_class_instance: 1ms
+EuclideanDomain.isNoetherian-induction: 1ms
+gmap_eq: 1ms
+fill_not_val: 1ms
+gset_overlap_union_l: 1ms
+Theory.transitivity: 1ms
+LinearlyOrderedSemiring.mid_inv: 1ms
+IntRing.suc-right: 1ms
+OFEIsoOFE: 1ms
+indexedFanTheorem.iterate: 1ms
+Model: 1ms
+iRes_singleton_proper: 1ms
+mkProperSep_elim_l: 1ms
+qp_lt_add_right: 1ms
+solver_f: 1ms
+group-sorted: 1ms
+opM: 1ms
+discrete_fun_singleton_proper: 1ms
+BezoutDomain: 1ms
+proper_later_mono: 1ms
+FinSet.skip-isInj: 1ms
+ProductAddGroup: 1ms
+view_update_dealloc: 1ms
+OrderedCRing: 1ms
+proofmode_rewrite: 1ms
+OFunctorApplyCOFE: 1ms
+FunctorPrecat.mapIso: 1ms
+++-cancel-right: 1ms
+Ideal.closure-generated: 1ms
+view_auth_unpersist_valid: 1ms
+Equalizer.map: 1ms
+ghost_map_alloc_empty: 1ms
+AddMonoidHom.func-BigSum: 1ms
+SemiringSolverModel.Data.interpretNF_Big_++: 1ms
+Sort.Perm: 1ms
+group-diff.diff-lem: 1ms
+LIdeal: 1ms
+CGroupData.removeVars-correct.count-removeVars-lem: 1ms
+msc_client_pending_at_timeless: 1ms
+msc_shard_lb: 1ms
+Theory.congruence.replace_0: 1ms
+subCat.faithful-univalence: 1ms
+wp_approx: 1ms
+LinearLattice: 1ms
+coPset_union: 1ms
+gmap_to_agree_lookup_just: 1ms
+QPoly.qadd: 1ms
+gmap_view_frag_op: 1ms
+OFunctorCOFE: 1ms
+sep_elim_r_ent: 1ms
+gmap_fmap: 1ms
+ucmra_core_mono: 1ms
+own_update: 1ms
+PrecatWithPullbacks: 1ms
+msc_read_new_post: 1ms
+pmap_to_list_PNode': 1ms
+bar-surj.induction: 1ms
+exclU_nothing_discrete: 1ms
+auth_cmra_validN_op_l_proof: 1ms
+fork_step_inv: 1ms
+pm_destruct_persistent_copy: 1ms
+SmithDomain: 1ms
+maybe_fmap_op: 1ms
+resolve_reducible: 1ms
+ImpotentCRing: 1ms
+allC-tail: 1ms
+*>-assoc: 1ms
+base_load_step_inv: 1ms
+suc_<_<=: 1ms
+msc_client_lookup_nat_agree: 1ms
+wp_rec_expr: 1ms
+HAEquiv: 1ms
+Sort.Insertion.sort-perm.insert-perm: 1ms
+base_alloc_step_inv: 1ms
+degree<=.fromCoefs: 1ms
+own_op_2: 1ms
+proofmode_split_and: 1ms
+QPoly.~-isEquiv.lists-lem1: 1ms
+request_map_insert: 1ms
+ht_store: 1ms
+pm_apply_intuitionistic_resource: 1ms
+spawn_post: 1ms
+base_faa_step_inv: 1ms
+ownM_op.op_shuffle: 1ms
+Domain: 1ms
+msc_shards: 1ms
+RingSolverModel.ringInterpretNF-correct: 1ms
+pomap: 1ms
+uPred_map_compose: 1ms
+Product.tupleMapComp: 1ms
+PolyDecDomain: 1ms
+own_update_op: 1ms
+proph_package: 1ms
+ProductLModule: 1ms
+pigeonhole-fin: 1ms
+proofmode_assumption_class_instance: 1ms
+proofmode_class_into_invariant: 1ms
+proofmode_lookup_smoke: 1ms
+gmapURF_contractive: 1ms
+SolverEmbedCoerceLaws: 1ms
+pm_apply_resource: 1ms
+-'<=id: 1ms
+wp_load.heap_auth_frag_agree.option_dist_to_eq_local: 1ms
+RingSolverModel.ringInterpretNF: 1ms
+coPpick_sound: 1ms
+inG_apply_iProp: 1ms
+wp_bind_mul_r: 1ms
+BottomDistributiveLattice: 1ms
+pm_next_hyp: 1ms
+proofmode_destruct_and_pure_l: 1ms
+n*_+_<n: 1ms
+BezoutRing.bezoutArrayInv_coprime: 1ms
+mono_nat_auth_update: 1ms
+proofmode_exact_class_intuitionistic: 1ms
+excl_option_includedN_eq: 1ms
+discrete_fun_singleton_updateP: 1ms
+laterOF_cofe: 1ms
+psingleton: 1ms
+Cat.transport_Hom_iso-right: 1ms
+option_op_comm: 1ms
+OrderedSemiring: 1ms
+gFunctors_nil: 1ms
+transposition.transposition-right: 1ms
+msc_client_ghost: 1ms
+coPset_overlap_sound: 1ms
+cmra_op_ne_both: 1ms
+plookup_pinsert_list_in: 1ms
+or_mono_r: 1ms
+bupd_extract_pure: 1ms
+gmap_singleton_dist: 1ms
+proofmode_frame_persistent: 1ms
+qp_gap: 1ms
+SetCat: 1ms
+PMFrame: 1ms
+remove1/=: 1ms
+proofmode_left: 1ms
+compl_chain_const: 1ms
+Monoid.Inv.product.lem: 1ms
+PNode'_wf: 1ms
+AddGroupCat.forget: 1ms
+ImpotentRing: 1ms
+drop.ndrop: 1ms
+frac_auth_frag_op_core_id: 1ms
+gmap_view_matches_map: 1ms
+NatData.get-leaf-zro-leaves-lemma: 1ms
+ucmra_unit_left_id_dist: 1ms
+proofmode_destruct_pure: 1ms
+length_replicate: 1ms
+uPred_map_dist: 1ms
+pmap_insert_node: 1ms
+msc_client_linear_ready: 1ms
+wp_bind_iszero: 1ms
+QPoly.nil_cons: 1ms
+natAssociates-areEqual: 1ms
+msc_read_after: 1ms
+max_nat_assoc: 1ms
+spawn_tok_exclusive: 1ms
+dfrac_full_exclusive_at: 1ms
+init: 1ms
+AddMonoid.BigSum_++: 1ms
+constOF: 1ms
+CGroupData.removeVar: 1ms
+coPset_disj_equiv_via_CoPset: 1ms
+solver_fg: 1ms
+ThreadPoolSafe: 1ms
+Diagram.functor.Func-o: 1ms
+SolverModel.terms-equality: 1ms
+IntRing.pred-left: 1ms
+DivQuotient.inDHom: 1ms
+LocalCRing: 1ms
+join_spec: 1ms
+PolyStrictDomain.zeroProduct: 1ms
+IMonoid: 1ms
+msc_lbs: 1ms
+Adjunction: 1ms
+lemma_disjoint_segs_acc: 1ms
+PermSetMonoid.*: 1ms
+makeRat.simp: 1ms
+CGroupSolverModel.apply-axioms'.interpretNF_+: 1ms
+alloc_frame_reshape: 1ms
+cmra_validN_includedN: 1ms
+msc_incr_now_timeless: 1ms
+Group.ipow_negaitve: 1ms
+laterOF: 1ms
+Theory.congruence.replace_id: 1ms
+propExt: 1ms
+prodO_map_cmra_morphism: 1ms
+FUpd: 1ms
+AddMonoid.BigSum-unique: 1ms
+mono_natRF: 1ms
+wp_lam_beta: 1ms
+saved_pred_value: 1ms
+heap_fresh_loc: 1ms
+subst_var_same: 1ms
+conePullback: 1ms
+pm_wp_expr_eq: 1ms
+KFinSet: 1ms
+pm_frame_right_direct: 1ms
+wp_value_intro: 1ms
+SemiringSolverModel.Data.interpret: 1ms
+prod_opM_components: 1ms
+inv_body: 1ms
+bar-stream: 1ms
+view_update_alloc_valid: 1ms
+TruncP: 1ms
+gmap_view_insert_delete: 1ms
+associates: 1ms
+fin-raise: 1ms
+msc_incr_faa_after: 1ms
+wp_step_iter: 1ms
+agree_op_invN: 1ms
+MatrixRing.product-rdistr: 1ms
+Functor: 1ms
+or_True-rev: 1ms
+LaterOFE: 1ms
+proofmode_mod: 1ms
+bupd_later_iter_fn: 1ms
+alloc_unit_wp: 1ms
+persistently_dup_ent: 1ms
+SemiringSolverModel.apply-axiom: 1ms
+EuclideanDomain.divChain-induction: 1ms
+AbMonoid.FinSum.aux.aux: 1ms
+proph_list_resolves_here: 1ms
+inv_exist_client: 1ms
+MatrixAlgebra: 1ms
+ModelCat.ColimitData.sigExt: 1ms
+fupd_intro: 1ms
+Structure.subst_interpret: 1ms
+Equivalence: 1ms
+wp_steps: 1ms
+Graph.concat_idp: 1ms
+Equalizer.eqBeta: 1ms
+DiscreteField.aux: 1ms
+msc_handle_nat_intro: 1ms
+glookup_partial_alter_eq_aux: 1ms
+OrderedAddGroup.pos_>0: 1ms
+IntegrallyClosedDomain: 1ms
+MeetSemilatticeAbMonoid: 1ms
+NewProphStepInv: 1ms
+Perm.perm-sym: 1ms
+MonoidLatticeColimit.poset-id: 1ms
+bupd_ownM_updateP: 1ms
+CSemiringSolverModel.interpretNF_sort: 1ms
+Domain.nonZero_inv: 1ms
+gmap_singleton_core_id: 1ms
+msc_read_post: 1ms
+IntRing.neg_minus-ldistr: 1ms
+PrecatWithBprod: 1ms
+proofmode_eval: 1ms
+NoetherianSet: 1ms
+msc_frag_split: 1ms
+msc_read_prepared: 1ms
+BiBUpdFUpd: 1ms
+mkProperValidOf: 1ms
+FullyFaithfulFunctor: 1ms
+proofmode_exact_older: 1ms
+cycle.func-inj: 1ms
+msc_inv_split_given_name: 1ms
+pm_destruct_exist_intuitionistic: 1ms
+to_agree_valid: 1ms
+own_valid: 1ms
+Sym.reduce: 1ms
+fact_body_correct: 1ms
+mkProperExist1: 1ms
+SubAddPointed: 1ms
+and_elim_r': 1ms
+own_val_dist: 1ms
+gFunctors_app: 1ms
+AbGroup: 1ms
+CGroupSolverModel.apply-axioms'.interpretNF_BigSum: 1ms
+AddGroup.With#: 1ms
+and_idem-rev: 1ms
+msc_auth_elem: 1ms
+new_proph_wp: 1ms
+SemiringSolverModel.Data.interpretNF_map-left: 1ms
+Preorder.PosetC.<=C: 1ms
+Monoid.Inv: 1ms
+pointsto_full: 1ms
+base_allocN_step_inv: 1ms
+binop_step_inv: 1ms
+LinearlyOrderedCSemiring: 1ms
+impl_elim_l: 1ms
+mkProperBUpd: 1ms
+dfrac_op_assoc: 1ms
+view_agree_dist_extract: 1ms
+n<=sucn: 1ms
+MeetSemilattice.meet-assoc: 1ms
+gmap_viewRF_contractive: 1ms
+solver_coerce_plus_suc_zero: 1ms
+AddGroup.diff_+: 1ms
+plookup'_partial_alter'_eq: 1ms
+lit_nat_default: 1ms
+CMRA: 1ms
+Ideal.bigSum: 1ms
+mono_nat_lb_core_id: 1ms
+Functor.Func-splitMono: 1ms
+msc_mono_auths: 1ms
+UCMRA: 1ms
+fupd_wp: 1ms
+ThreadSteps: 1ms
+AbGroupSolverModel: 1ms
+Semiring.FinSum_replicate: 1ms
+solver_embed_f: 1ms
+subG_inv: 1ms
+remove1-surj: 1ms
+irisGS: 1ms
+pm_rewrite: 1ms
+ProductPreorder: 1ms
+pmap_fresh_key: 1ms
+upred_compl: 1ms
+mscG: 1ms
+and_mono_l: 1ms
+solver_result: 1ms
+qp_gap_add_lt_one: 1ms
+fupd_intro_impl_pure: 1ms
+gmap_view_map_validN: 1ms
+ht: 1ms
+sep_elim_l_ent: 1ms
+PseudoSemiring: 1ms
+iAssert: 1ms
+GCDMonoid.IsCoprime_pow-left: 1ms
+FreeStructure.qinj-equality: 1ms
+proofmode_destruct_wrapped_pure: 1ms
+transport_path_pmap-right: 1ms
+AbsAbGroup: 1ms
+except_zero_bupd_bind: 1ms
+msc_client_spawn: 1ms
+makeRat.reduce1/=0: 1ms
+gmap_view_full_option_included_exact: 1ms
+RFunctorContractive: 1ms
+view_frag_core_id: 1ms
+ownM_holds_congr: 1ms
+wp_bind_item: 1ms
+msc_read_new_raw: 1ms
+BottomJoinSemilattice: 1ms
+proofmode_split_wrapped_and: 1ms
+polyMap: 1ms
+or_False-rev: 1ms
+coPset_disj_CMRA.op_proper_outer: 1ms
+msc_initial_ghosts: 1ms
+TypeMap: 1ms
+PolyRing: 1ms
+gmerge: 1ms
+upredDist_sep_l: 1ms
+Group: 1ms
+pm_destruct_into_persistent_copy: 1ms
+ucmra_core_dup: 1ms
+Functor.Func-iso: 1ms
+proofmode_split_wrapped_sep: 1ms
+ICSemigroup: 1ms
+cmra_transport_updatePM: 1ms
+SemiringSolverModel.Data.mulCoef: 1ms
+AddMonoidLatticeColimit.poset-id: 1ms
+wsat_entry: 1ms
+own_val_peval: 1ms
+DivQuotient.make~: 1ms
+MeetSemilattice.meet-monotone: 1ms
+SigmaFin.DecSubSet-isFin: 1ms
+PigeonholeSet.pigeonhole<: 1ms
+CancelGCDMonoid: 1ms
+-'+-comm: 1ms
+SIP: 1ms
+IGroup: 1ms
+BezoutRing.bezoutArray_coprime: 1ms
+ProductDirectedSet: 1ms
+AbMonoid: 1ms
+subst-assoc: 1ms
+JoinSemilattice.Joins-isProp: 1ms
+bupd_alloc_three_then: 1ms
+join_handle: 1ms
+PseudoRing.negative_*: 1ms
+NatBSemilattice.ldistr0: 1ms
+inv_acc_strong_close: 1ms
+gset_disj_CMRA.op_assoc_GSet: 1ms
+request_counter_frag_split: 1ms
+gmap_cmra_pcore_mono_proof.pointwise: 1ms
+Sort.RedBlack.sort: 1ms
+pmap_ind.not_in_keys_entries_of_tree: 1ms
+suc<=suc: 1ms
+proofmode_env_delete_head: 1ms
+plookup': 1ms
+CRingBicat: 1ms
+PolyRing.+-assoc: 1ms
+ownE_join_subset: 1ms
+binop_step_inv_ctx_item: 1ms
+LModule.*c_BigSum-rdistr: 1ms
+SigmaFin.aux.ret: 1ms
+Or.map: 1ms
+CMonoid: 1ms
+singleton_includedN_l.point_dist: 1ms
+SemiringSolverModel.Data.interpretNF_multiply: 1ms
+UnitlessGCDMonoid.gcdC: 1ms
+CGroupData.countVars-ineq: 1ms
+id<=suc: 1ms
+msc_model_gFunctor: 1ms
+proper_later_exist_false: 1ms
+proofmode_destruct_persistent_copy: 1ms
+frac_auth_agreeN: 1ms
+CancelMonoid: 1ms
+polyCoef_polyMap: 1ms
+ownE_union_equiv_ent: 1ms
+bupd_frame_r: 1ms
+solver_unfold_chain_car: 1ms
+LaterCOFE: 1ms
+msc_read_done: 1ms
+msc_client1_incr_post: 1ms
+proofmode_env_select_there: 1ms
+init_with_fork: 1ms
+gmap_viewURF_contractive: 1ms
+bar-shift-right.induction: 1ms
+heap_block_fresh_above_max: 1ms
+ofe_mor_const: 1ms
+proofmode_class_into_update: 1ms
+wp_bind_mul_l: 1ms
+pmap_*>-comm: 1ms
+gmap_view_both_validN: 1ms
+OrFin.aux: 1ms
+mono_natR: 1ms
+timeless_and: 1ms
+degree<=.trivialPoly.aux: 1ms
+transport2: 1ms
+IsEquiv: 1ms
+BicompleteCat: 1ms
+and_False-rev: 1ms
+AddPointed: 1ms
+msc_new_counter_post: 1ms
+PolyRing.padd0_*-comm: 1ms
+DiagramCone.equiv: 1ms
+coPset_disj_equiv_sym: 1ms
+gset_disj_CMRA.op_comm: 1ms
+Mono: 1ms
+++-assoc: 1ms
+Domain.nonZero_*: 1ms
+gmap_empty_discrete: 1ms
+IntRing.minus+neg: 1ms
+Group.make-ide-left: 1ms
+AbGroupCat.forget: 1ms
+Discrete: 1ms
+solver_g_embed_coerce_to_zero: 1ms
+pmap_depth': 1ms
+and_assoc: 1ms
+solver_g_embed_coerce_zero: 1ms
+option_equiv_to_inner_equiv: 1ms
+msc_client_done_timeless: 1ms
+BiFUpd: 1ms
+*>: 1ms
+Quotient.equality: 1ms
+gcd_nat_int: 1ms
+cycle.step: 1ms
+IsNoetherian: 1ms
+proofmode_start_smoke: 1ms
+Domain.Dec: 1ms
+Dfrac: 1ms
+fill_item_always_not_val: 1ms
+pathDist: 1ms
+upredDist_le: 1ms
+savedPredRF_contractive: 1ms
+gmapO_map_ne: 1ms
+solver_ff_tower: 1ms
+solver_embed_ff: 1ms
+ModelCat.ColimitData.strExt: 1ms
+msc_sum_post: 1ms
+iterr: 1ms
+Monoid.RDiv: 1ms
+MeetSemilattice.Meets-isProp: 1ms
+PolyRing.rdistr: 1ms
+ownD_disjoint: 1ms
+pmap_ind: 1ms
+wsatGS: 1ms
+Graph.concat: 1ms
+msc_is_counter: 1ms
+Comp: 1ms
+transport_path_pmap: 1ms
+degree-exists: 1ms
+heap_tree_lookup_le: 1ms
+PolyDecRing.decideEq: 1ms
+own_inv_alloc_reshape: 1ms
+rewrite: 1ms
+constRF: 1ms
+BUpd: 1ms
+MatrixModule: 1ms
+pure_base_redex_step_det: 1ms
+own_inv_alloc_finish: 1ms
+Functor.transport_Hom-right: 1ms
+Product.functor: 1ms
+fanTheorem.allPaths-empty: 1ms
+own_core_persistent: 1ms
+msc_fresh_id_absent: 1ms
+wp: 1ms
+SubGroupPoset: 1ms
+EquivFin: 1ms
+inv_alloc_open_exist_body: 1ms
+qp_ext: 1ms
+proofmode_persistent_class_instance: 1ms
+heap_update_lookup_eq: 1ms
+pfmap: 1ms
+wp_pre_contractive_ofe: 1ms
+persistently_wand_elim_ent: 1ms
+mkProperFUpd: 1ms
+dfracAgreeRF_contractive: 1ms
+wp_snd_pair: 1ms
+inclN_le: 1ms
+option_pcore_mono: 1ms
+gmap_view_auth: 1ms
+proofmode_frame_auto: 1ms
+counter_loc_add_wp: 1ms
+dfrac_discard_updatePM: 1ms
+msc_read_state: 1ms
+heap_frag: 1ms
+partial_alter': 1ms
+proofmode_frame_many: 1ms
+inv_open_close_tok: 1ms
+coPset_subset_difference_disjoint: 1ms
+pigeonhole-surj: 1ms
+heap_state_to_gmap_lookup: 1ms
+proofmode_persistent_copy_class_instance: 1ms
+Sort.RedBlack.sort=insert.toList_mkTree: 1ms
+sep_mono_r_ent: 1ms
+WP: 1ms
+iRes_singleton_validN: 1ms
+UnitlessGCDMonoid.gcd: 1ms
+fill_step_inv: 1ms
+msc_read_pending: 1ms
+cmra_transport_op: 1ms
+later_eq_use_rev: 1ms
+gmerge.gmerge_lift_fst: 1ms
+makeRat.makeRat': 1ms
+request_counter_model_agree: 1ms
+gmap_view_map_compose: 1ms
+ucmra_unit_right_id_dist: 1ms
+ProductCMonoid: 1ms
+base_reducible_prim: 1ms
+coPset_disj_CMRA.op_comm: 1ms
+CAlgebra: 1ms
+nclose_infinite: 1ms
+msc_read_shift: 1ms
+SetColimit.~-cequiv: 1ms
+CGroupData.removeVar-lem.pow-lem: 1ms
+store_step_inv_ctx_item: 1ms
+proofmode_duplicate_persistent_rename_fails: 1ms
+BiorderedLatticeAbMonoid: 1ms
+PMTimeless: 1ms
+DecBool: 1ms
+OrderedCMonoid: 1ms
+MonoidSolverModel: 1ms
+AddMonoid: 1ms
+SubsetPoset: 1ms
+mono_natG: 1ms
+gmapO_map: 1ms
+forall_elim_lemma: 1ms
+wp_nat_eq_false: 1ms
+wp_bind_app_r: 1ms
+glookup_op: 1ms
+mod-unique: 1ms
+gmap_view_auth_op_agreeN: 1ms
+dfs_own_holds_val_path: 1ms
+Equalizer.Shape: 1ms
+pm_destruct_into_and_pure_l: 1ms
+AAlgebra: 1ms
+pm_destruct_sep: 1ms
+pmap'_eq: 1ms
+iRes_singleton: 1ms
+coPset_suffixes: 1ms
+SigmaDecSet: 1ms
+BiBUpd: 1ms
+discrete_fun_lookup_insert: 1ms
+impl_intro_l: 1ms
+wp_upredDist_sep_l: 1ms
+QPoly.qadd_cons: 1ms
+pm_destruct_into_exist_intuitionistic: 1ms
+Localization.inL-inj: 1ms
+fupd_same_mask_equiv: 1ms
+MatrixRing.product_ide-right: 1ms
+pm_specialize_spatial: 1ms
+ucmra_core_ne: 1ms
+Group.make-inverse-left: 1ms
+base_fork_step_inv: 1ms
+subG_app_l: 1ms
+FreeStructure.QTerm: 1ms
+proofmode_destruct_exist: 1ms
+IntegralDomain.nonZeroCMonoid: 1ms
+pm_select_there: 1ms
+NatSemiring.cancel-left: 1ms
+gset_overlap_tree_complete: 1ms
+MonoidSolverModel.interpretNF_::: 1ms
+if_then_arg: 1ms
+proofmode_destruct_persistent_via_rule: 1ms
+glookup_map_support_present: 1ms
+pred_ctx_absurd: 1ms
+ProductPrecat.iso-first: 1ms
+BiEquiv: 1ms
+mono_nat_auth_own: 1ms
+wp_bind_app_l: 1ms
+wp_if_false: 1ms
+AgreeOFE: 1ms
+pm_destruct_exist: 1ms
+LexicographicalProduct: 1ms
+op_sep_frame_dist: 1ms
+proofmode_env_interpret_spatial: 1ms
+pointsTo_frag: 1ms
+ProdOFE: 1ms
+big_sepL_append_2: 1ms
+gmap_view_both_discarded_agree_map_validN: 1ms
+gFunctors: 1ms
+NatData.isInNF-dec: 1ms
+rat_alt_makeRat.aux2: 1ms
+Pullback.diagram: 1ms
+wp_bind_pair_r: 1ms
+wp_bind_pair_l: 1ms
+frac_auth_update_1: 1ms
+fupd_holds_at_zero: 1ms
+CMonoidSolverModel.sort-consistent: 1ms
+sep_exist1_l_ent: 1ms
+MatrixRing.product-gen-ldistr: 1ms
+Precat.transport_Hom: 1ms
+pathOver: 1ms
+base_binop_step_inv: 1ms
+FinDec.fin-dec: 1ms
+CMonoidSolverModel.interpretNF_iterr: 1ms
+msc_mono_rest: 1ms
+wp_pure_head_step: 1ms
+prop-isProp: 1ms
+nclose_subseteq': 1ms
+bupd_alloc_frame: 1ms
+natComm: 1ms
+UnitFin: 1ms
+pm_replace: 1ms
+Rat.ext: 1ms
+msc_read_states_advance: 1ms
+pmap_eq: 1ms
+SetLattice: 1ms
+pm_destruct_pure: 1ms
+ghost_map_lookup: 1ms
+solver_embed_tower: 1ms
+IPseudoCRing: 1ms
+gmap_view_delete_validN: 1ms
+impl_elim_r: 1ms
+OrderedRing.denseOrder: 1ms
+savedPredG: 1ms
+pigeonhole-fin.search-pair: 1ms
+PolyCRingWith#: 1ms
+mono_nat_lb_own_valid: 1ms
+frac_auth_frag_discrete: 1ms
+faa_step_inv_ctx_item: 1ms
+view_update_dealloc_valid: 1ms
+Cat.univalenceFromQEquiv: 1ms
+proofmode_env_replace_head: 1ms
+proofmode_next_class_instance: 1ms
+proper_later_sep_2: 1ms
+iRename: 1ms
+BoolPoset: 1ms
+impl_elim_r': 1ms
+solver_oFunctor_map_equiv: 1ms
+gmap_view_matches_insert: 1ms
+agree_map_cmra_morphism: 1ms
+True_impl-rev: 1ms
+GroupHom: 1ms
+gmap_map_support: 1ms
+proofmode_update_class_instance: 1ms
+nat_eq_dec: 1ms
+PMFromPure: 1ms
+mono_nat_auth_op: 1ms
+IntRing.minus+pos: 1ms
+spawn_post_intro: 1ms
+and_mono: 1ms
+plookup_gset_union_just_inr: 0ms
+later: 0ms
+op_frame_sep_dist: 0ms
+pm_frame_sep_l: 0ms
+RingHom.id: 0ms
+pm_exact_from_assumption_intuitionistic: 0ms
+plookup_gset_union_just_inl.union_fn_just_l: 0ms
+upredDist_except_zero: 0ms
+equivI: 0ms
+degree<=.trivialPoly: 0ms
+wp_faa: 0ms
+ofe_mor_proper: 0ms
+Preorder.PosetC.<=C-antisymmetric: 0ms
+plookup_pinsert_list_in.entry_in_not_in_keys: 0ms
+EuclideanRingData.bezout-fueled: 0ms
+LinearlyOrderedSemiring.denseOrder: 0ms
+=_<=: 0ms
+mscN_subset_mscE: 0ms
+Group.ipow: 0ms
+FunOFE: 0ms
+StrictPoset.<_/=: 0ms
+auth_total_core: 0ms
+agree_validN: 0ms
+proofmode_duplicate_intro_fails: 0ms
+subst_lam_same: 0ms
+plookup_gset_union: 0ms
+<=_exists: 0ms
+array_nat_le_suc_self: 0ms
+pmap_ind.xI_inj: 0ms
+pair_r_arg: 0ms
+rat_alt_makeRat: 0ms
+EmptyFin: 0ms
+proph_resolves_insert: 0ms
+fill_step: 0ms
+SemiringSolverModel.NF: 0ms
+gset_overlap_tree_PEmpty_r: 0ms
+add_emp_r_ent: 0ms
+Sort.Sorted.allSorted.aux: 0ms
+Or: 0ms
+glookup_delete_eq: 0ms
+IntRing.negative-left: 0ms
+length_map: 0ms
+AddMonoidCat.forget: 0ms
+arrayExt: 0ms
+Later: 0ms
+Monoid.RInv: 0ms
+BoolFin: 0ms
+isProp-prover: 0ms
+PseudoAlgebra: 0ms
+gmerge.gmerge_lift_nn: 0ms
+dfun_transport_op_equiv: 0ms
+Sym: 0ms
+exist_intro_ent: 0ms
+coPset_overlap_complete.bool_or_true_r: 0ms
+exts: 0ms
+coPset_disj_CMRA.op_assoc_CoPset.lhs_invalid_via_YZ: 0ms
+Sort.Perm.perm-refl: 0ms
+BasePrim: 0ms
+PolyRing.+-comm: 0ms
+PosetAddGroup.from>=0: 0ms
+gset_disj_CMRA.op_assoc_GSet.byLeftOr: 0ms
+$: 0ms
+discrete_fun_lookup_singleton: 0ms
+gset_disj_CMRA.validN_ne: 0ms
+degree<=: 0ms
+EuclideanSemiringData.fueled_zro: 0ms
+base_if_false_step_det: 0ms
+solver_f_S: 0ms
+envs_entails: 0ms
+msc_client_key: 0ms
+forall_mono: 0ms
+FAAStepInv: 0ms
+QEquiv: 0ms
+proph_resolves_cons_update: 0ms
+Namespace: 0ms
+ldiv_nat_int: 0ms
+AddGroupHom.func-negative: 0ms
+natMap: 0ms
+iAssumption: 0ms
+ResolveStepInv: 0ms
+at: 0ms
+ofe_mor_comp: 0ms
+orI: 0ms
+PPRing: 0ms
+or_comm: 0ms
+PseudoSemiring.op: 0ms
+mkProperEmp: 0ms
+IntRing.*-comm: 0ms
+NonZeroRing: 0ms
+plookup_pinsert_list_in.InEntry: 0ms
+allocN_signature: 0ms
+mkProperForall: 0ms
+pm_add_emp_r: 0ms
+Monoid.pow-comm2: 0ms
+bool_and_true_r: 0ms
+PMEnv: 0ms
+Group.inverse_*: 0ms
+agree_dist_le: 0ms
+RingSolverModel.interpret: 0ms
+nat_before_ne: 0ms
+resolve_strongly_atomic_ctx: 0ms
+max_nat_eq_r: 0ms
+proofmode_right: 0ms
+eval_binop_signature: 0ms
+counter_frag: 0ms
+PMIntoPure: 0ms
+CGroupData.toList: 0ms
+proofmode_into_or_drop_emp: 0ms
+NatData.get-leaf: 0ms
+pinsert_id: 0ms
+IntDomain: 0ms
+AddGroup.With#.#0-+-left: 0ms
+nX: 0ms
+makeRat.div0: 0ms
+ipred: 0ms
+proofmode_env_interpret_both: 0ms
+dfrac_pcore_op_discarded: 0ms
+vld: 0ms
+Cat: 0ms
+gmap_dom_gset: 0ms
+propExt.dir: 0ms
+pomap_tree.option_bind: 0ms
+subst_rec_same_f: 0ms
+SemiringSolverModel.multiply': 0ms
+cmra_pcore_r: 0ms
+AddMonoid.negative-unique: 0ms
+and_comm: 0ms
+iabs.signum_*: 0ms
+lastCoef: 0ms
+Sort.Sorted: 0ms
+Monoid.Inv.product: 0ms
+iLeft: 0ms
+iExists: 0ms
+glookup_partial_alter_eq: 0ms
+frac_auth_agree: 0ms
+SolverModel.terms-equality-conv: 0ms
+gset_overlap_tree.both_just: 0ms
+heap_state_to_gmap_update: 0ms
+subst_lam_ne: 0ms
+||: 0ms
+counter_fork_wp: 0ms
+new_proph_step_inv_ctx: 0ms
+upredDist_wand_l: 0ms
+iPureIntro: 0ms
+indexedFanTheorem.State: 0ms
+proper_later_persistently_2: 0ms
+new_proph_strongly_atomic: 0ms
+erase_dfrac_lift.at: 0ms
+constructor: 0ms
+DivQuotient.div-from~': 0ms
+properUPred_ent_refl: 0ms
+IntegralDomain: 0ms
+RingSolverModel.RingData: 0ms
+NatOrder.unsuc<: 0ms
+agree_pcore: 0ms
+gmap_view_update: 0ms
+SigmaFin.aux: 0ms
+proofmode_wrapped_emp: 0ms
+gsetToCoPset_in_inv: 0ms
+mono_nat_auth: 0ms
+persistent_consequence_frame_ent: 0ms
+cases: 0ms
+OrderedAbMonoid: 0ms
+PseudoRingHom: 0ms
+EPerm.eperm_equiv.conv: 0ms
+wsat_invR: 0ms
+state_fresh_proph: 0ms
+UPredCOFE: 0ms
+nL: 0ms
+solver_le_plus_right: 0ms
+FinSet.pred: 0ms
+ratDenom: 0ms
+fill_comp: 0ms
+Presieve: 0ms
+agree_map_in_inv: 0ms
+NatData.Leaf.leaf-to-term: 0ms
+and_elim_l_notation: 0ms
+fsuc/=: 0ms
+PID.adequate'_adequate: 0ms
+arraySubset: 0ms
+prodO_map: 0ms
+emp: 0ms
+AddMonoidHom.id: 0ms
+factorial_call_body: 0ms
+signum.signum_pos: 0ms
+NatTrans.op: 0ms
+binop_step_inv_ctx: 0ms
+TruncP.map: 0ms
+cmra_morphism_core: 0ms
+own_op_1: 0ms
+proper_and_mono_r: 0ms
+<except_0>: 0ms
+iPrePropO: 0ms
+Fib: 0ms
+proofmode_wrapped_wp: 0ms
+Pos: 0ms
+CGroupData.countVar: 0ms
+Iso.hinv-unique: 0ms
+Sort.RedBlack.toList: 0ms
+exist_elim_lemma: 0ms
+big_sepL_extract_2: 0ms
+nat_decode_encode: 0ms
+JoinSemilatticeAddMonoid: 0ms
+Structure: 0ms
+AddGroup.toZero: 0ms
+dfrac_full_exclusive: 0ms
+nclose_non_empty: 0ms
+maybe_fmap_pcore: 0ms
+option_op_ne: 0ms
+Jl: 0ms
+bool_or_true_r: 0ms
+gmap_insert_validN: 0ms
+IsCoprime.factor-left: 0ms
+spawnR: 0ms
+depth_max_le_l: 0ms
+frame_rearr_dist: 0ms
+maybe_fmap_ne: 0ms
+-'-'l: 0ms
+elemToIdeal.fgIdeal: 0ms
+natV: 0ms
+pm_emp_intro: 0ms
+RingSolverModel.ringInterpretNF': 0ms
+IdealMonoid.func: 0ms
+pm_frame_with_intuitionistic: 0ms
+PermSet.inPS: 0ms
+glookup_empty: 0ms
+wp_bind_post: 0ms
+nat_fact: 0ms
+proofmode_from_assumption_sep_left: 0ms
+Countable: 0ms
+fact_recV: 0ms
+coPset_disj_CMRA.op_proper_inner: 0ms
+RatField.negative_alt: 0ms
+PosetAbMonoid: 0ms
+pure_elim_lemma: 0ms
+FactorRing.inF: 0ms
+QEquiv.f_ret: 0ms
+coPset_overlap_disjoint: 0ms
+heap_update: 0ms
+ofe_retract_discrete: 0ms
+PolyRingWith#.#0-*-right: 0ms
+Ideal.ChainCondition: 0ms
+nat_decode: 0ms
+discrete_fun_lookup_insert_ne: 0ms
+select_head_state: 0ms
+Monoid.LDiv.swap: 0ms
+ofe_mor_id: 0ms
+upredDist_impl_r: 0ms
+SetIm-elim: 0ms
+sep_mono_l_at: 0ms
+funOF_contractive: 0ms
+pmerge: 0ms
+coPSubset_trans: 0ms
+merge': 0ms
+SubSemigroup: 0ms
+iIntros: 0ms
+cmra_transport_discrete_own: 0ms
+toFin'=id: 0ms
+StrictPoset: 0ms
+NatData.rp-returns-true-lemma'.right-leaf-contradiction: 0ms
+Sort.RedBlack.sort=insert.makeTree-sorted: 0ms
+discrete_fun_singleton_validN_2: 0ms
+lam_beta_value_strongly_atomic: 0ms
+Sym.fromEquiv: 0ms
+coPset_disj_equiv_via_invalid: 0ms
+False_impl: 0ms
+agree_map_comp: 0ms
+bool_or_comm: 0ms
+Valid: 0ms
+nCell: 0ms
+upredDist_later: 0ms
+heap_lookup: 0ms
+exclU_valid: 0ms
+factName: 0ms
+AbGroupCat: 0ms
+agree_list: 0ms
+HAEquiv.coh_f_sec: 0ms
+set-pi: 0ms
+Equalizer.Shape.o: 0ms
+pmap_ind.disjoint_keys_app: 0ms
+false_neq_true: 0ms
+wp_lam: 0ms
+truncP_elim_prop: 0ms
+pmap_ind.pinsert_list_app: 0ms
+PolyDecDomain.nonZeroApart: 0ms
+dfrac_valid: 0ms
+no_val_val_absurd: 0ms
+Rat.AltRat: 0ms
+app4: 0ms
+CGroupSolverModel.terms-equality: 0ms
+option_op_nothing_l: 0ms
+gset_disj_CMRA.gset_overlap_empty_l: 0ms
+HeytingAlebra: 0ms
+except_zero_frame_r: 0ms
+singleAt: 0ms
+spawn_gFunctor: 0ms
+later_persistently_of_emp: 0ms
+plookup: 0ms
+PermSetDec: 0ms
+qp_lt_add: 0ms
+iInv: 0ms
+spawnN: 0ms
+prod_discrete: 0ms
+nLeft: 0ms
+degree<=_degree<: 0ms
+PigeonholeSet.isEquiv: 0ms
+discrete_fun_singleton_discrete: 0ms
+EuclideanRingData.bezout: 0ms
+gset_overlap_comm: 0ms
+bounded-bar: 0ms
+coPpick_nonempty.pick_node_left: 0ms
+emptyEquiv: 0ms
+ucmra_core_of_core_id: 0ms
+coPset_disj_UCMRA: 0ms
+msc_proph_total: 0ms
+proofmode_frame: 0ms
+gset_overlap_tree_complete.bool_or_xx_true: 0ms
+bool_or_assoc: 0ms
+maybe_unit_eta: 0ms
+dfrac_op: 0ms
+gset_overlap_tree_complete.bool_or_true_r: 0ms
+pm_insert: 0ms
+pure_sep_to_and: 0ms
+CocompleteCat: 0ms
+base_val_stuck: 0ms
+pmap_eq_empty: 0ms
+Pauses.toIndex: 0ms
+pos_concat_len_r.namespace_n_le_suc: 0ms
+coPset_disj_op: 0ms
+pmapd: 0ms
+Excl: 0ms
+GCDDomain: 0ms
+MonoidSolverModel.interpret: 0ms
+proper_later_persistently_1: 0ms
+AddMonoidLatticeColimit.Func-app: 0ms
+LocalRing: 0ms
+Monoid.Inv.ide-isInv: 0ms
+pm_destruct_into_or: 0ms
+msc_clientN_subset_open: 0ms
+pmap_ind.disjoint_keys: 0ms
+TowerInhabited: 0ms
+nat_eq_dec.nat_pred: 0ms
+fill_step_inv_item: 0ms
+fill: 0ms
+LinearOrder.<=: 0ms
+SymFin: 0ms
+fanTheorem.walk: 0ms
+proofmode_frame_or_left: 0ms
+base_mul_step_det: 0ms
+qp_one: 0ms
+fpred: 0ms
+subst: 0ms
+&&: 0ms
+nat_le_suc_right: 0ms
+gempty: 0ms
+proofmode_from_exist_or_left: 0ms
+pos_concat_len_r: 0ms
+nat_two_ne_one: 0ms
+SubPseudoRing: 0ms
+maybe_fmap_equiv_2: 0ms
+pm_from_forall_direct: 0ms
+alloc_step_inv: 0ms
+proper_forall_mono: 0ms
+strongly_atomic_prim_base_ctx: 0ms
+ratReduced: 0ms
+frac_auth_frag_op: 0ms
+EuclideanSemiringData.suc': 0ms
+OFunctorContractive: 0ms
+coPpick_nonempty.pick_node_right_only: 0ms
+ne_proper_equiv: 0ms
+or_notation: 0ms
+option_op_equiv_nothing_inv: 0ms
+Sort.RedBlack.sort.rbTreeToList: 0ms
+seqE: 0ms
+absurd: 0ms
+ghost_mapSigma: 0ms
+SubSet.Total: 0ms
+PolyRing.negative: 0ms
+Pullback.Shape: 0ms
+FinSet.searchFin-equiv: 0ms
+coPset_disj_CMRA.validN_op_l: 0ms
+BaseSet: 0ms
+view_valid: 0ms
+pfmap_tree: 0ms
+Monoid.LDiv.trans: 0ms
+RingSolverModel.intCoef-correct: 0ms
+CMRATotal: 0ms
+WPFunInhabited: 0ms
+EuclideanSemiringData.suc'=suc: 0ms
+gset_overlap_complete: 0ms
+cmra_updateP: 0ms
+qed: 0ms
+base_rec_step_det: 0ms
+iRewrite: 0ms
+mkProperPersistently: 0ms
+sep_exist1_l_elim: 0ms
+ne_proper: 0ms
+coPset_disj_CMRA.op_assoc_CoPset.rhs_invalid_via_XY_or_YZ: 0ms
+idIso: 0ms
+proofmode_wrapped_or: 0ms
+option_dist_nothing_eq: 0ms
+QEquiv.isSurj: 0ms
+msc_client_public: 0ms
+solver_le_refl: 0ms
+isDFin.fromPigeonhole: 0ms
+msc_closed_client: 0ms
+/=: 0ms
+pred: 0ms
+proofmode_forall_goal_class_instance: 0ms
+pm_wp: 0ms
+PMEnvs: 0ms
+Solution: 0ms
+intMap.func-+: 0ms
+WPFunDist: 0ms
+coPset_difference: 0ms
+unhead.headDef: 0ms
+solver_project_embed_gg: 0ms
+AbMonoidSolverModel: 0ms
+coPset_equiv_sym: 0ms
+pm_destruct_into_exist1: 0ms
+ICMonoid: 0ms
+NatSemiring.<_*_positive-left: 0ms
+proofmode_class_from_sep: 0ms
+CmraMorphism: 0ms
+HeapBinOp: 0ms
+gmap_singleton: 0ms
+gset_disj_CMRA.validN_op_l: 0ms
+TruncP.rec: 0ms
+msc_initial_fixed: 0ms
+subst_iszero: 0ms
+AbMonoidSolverModel.apply-axiom: 0ms
+drop: 0ms
+Group.makeInv: 0ms
+nat_before_suc_right: 0ms
+inl~: 0ms
+<_suc_<=: 0ms
+pm_from_assumption_refl: 0ms
+Map: 0ms
+True_or: 0ms
+coPNotIn: 0ms
+spawnRF: 0ms
+equiv_dist_n: 0ms
+spawn_token_elem: 0ms
+FullFunctor: 0ms
+gen_heap_to_agree_valid: 0ms
+CompleteLattice.SJoin: 0ms
+fin_<: 0ms
+inclN_trans: 0ms
+msc_clientGS: 0ms
+or_intro_l_lemma: 0ms
+iStopProof: 0ms
+plookup_singleton_eq: 0ms
+isDFin: 0ms
+pmap_ind.not_in_keys_app: 0ms
+sface: 0ms
+SemiringSolverModel.natCoef: 0ms
+decideEq/=_reduce: 0ms
+RingCat.forgetToMonoid: 0ms
+fin_eq_dec: 0ms
+op_regroup_swap: 0ms
+view_validN_le: 0ms
+fin_add_inv_R: 0ms
+new_proph_step_inv_ctx_item: 0ms
+option_pcore_mono.option_pcore_nothing_l: 0ms
+request_mono_nat_update: 0ms
+proofmode_from_sep_drop_emp: 0ms
+pm_rename_intuitionistic: 0ms
+nroot: 0ms
+transportInv: 0ms
+sep_or_l_elim: 0ms
+pmap_ind.Pos_inj_fn: 0ms
+chain_map: 0ms
+nRight: 0ms
+entries_of: 0ms
+glookup_singleton_eq: 0ms
+pm_exists: 0ms
+bool_and_not_self: 0ms
+impl_pure_intro_ent: 0ms
+degree<_degree<=: 0ms
+msc_client_done: 0ms
+agreeO_map: 0ms
+COFE: 0ms
+plookup_partial_alter_ne: 0ms
+solver_embed: 0ms
+pmap_ind.list_ind: 0ms
+app_l_arg: 0ms
+op_CoPset_eq_CoPset: 0ms
+pmap_ind.entries_of_tree_nodup_aux.disjoint_left_right: 0ms
+signum: 0ms
+or_intro_l_ent: 0ms
+Expr: 0ms
+later_map_ext: 0ms
+wp_bind_pred: 0ms
+sep_assoc_lemma: 0ms
+pmap_ind.xH_ne_xI: 0ms
+wp_load.load_step_inv_ctx: 0ms
+-': 0ms
+IdealMonoid.product: 0ms
+GroupHom.compose: 0ms
+coPset_overlap_empty_l: 0ms
+load_atomic_ctx_item: 0ms
+ndot_preserve_disjoint_l: 0ms
+Monoid.LDiv.factor-right: 0ms
+group: 0ms
+polyEval: 0ms
+request_mono_nat_snapshot: 0ms
+gset_overlap_tree_comm: 0ms
+msc_empty_state: 0ms
+ModelCat.ColimitData.liftTerm: 0ms
+Ideal.IsFinitelyGenerated: 0ms
+fp_approx: 0ms
+Group.Dec: 0ms
+lob_ent.lob_at: 0ms
+ownM_holds_path: 0ms
+BI: 0ms
+sep_assoc_l_ent: 0ms
+indexedFanTheorem.IsFan: 0ms
+MonoidCat.forget: 0ms
+FinSet.skip_sface: 0ms
+True_and-rev: 0ms
+GCDMonoid.IsCoprime_*-right: 0ms
+gsingleton: 0ms
+pm_from_exist_direct: 0ms
+gset_disj_alloc_empty_updatePM: 0ms
+div_<: 0ms
+pm_destruct_into_exist: 0ms
+pm_into_and_direct: 0ms
+pm_rewrite_intuitionistic: 0ms
+CGroupSolverModel.sBigProd: 0ms
+nclose_anchor: 0ms
+init_resources: 0ms
+coPset_union_assoc: 0ms
+proofmode_env_select_here: 0ms
+CRing.IsBezout: 0ms
+store_strongly_atomic: 0ms
+auth_both_validN: 0ms
+CGroupSolverModel.sBigProd_::: 0ms
+ViewRel: 0ms
+CRingCat.forgetToRing: 0ms
+uPred: 0ms
+OFEIso: 0ms
+pomap_tree: 0ms
+pm_apply_into_wand_intuitionistic: 0ms
+SubAddMonoid: 0ms
+nJoin: 0ms
+|==>: 0ms
+RingSolverModel.Term: 0ms
+coPsetInfinite: 0ms
+FinFin: 0ms
+msc_lookup_nat: 0ms
+coPset_disj: 0ms
+cmra_updatePM_id: 0ms
+CRingCat.forgetToMonoid: 0ms
+later_map: 0ms
+terminal-obj: 0ms
+False_and: 0ms
+reducible_fill: 0ms
+resolved_store_program: 0ms
+Not: 0ms
+segment_encode: 0ms
+pinsert: 0ms
+id/=suc: 0ms
+ProphResolvesInList: 0ms
+depth_max: 0ms
+dfrac_undiscard_updatePM: 0ms
+decideEq=_reduce: 0ms
+discrete_fun_singleton_validN_1: 0ms
+CGroupData: 0ms
+Monoid.LDiv.make: 0ms
+request_saved_pred_agree: 0ms
+coPset_universe: 0ms
+wp_pures: 0ms
+/: 0ms
+maybeUnitBool_true: 0ms
+fixpoint_unique: 0ms
+coPset_disj_op_invalid_r: 0ms
+mul_l_arg: 0ms
+MonoidHom.func-LDiv: 0ms
+SemiringSolverModel.natCoef-correct: 0ms
+max_nat_le_r: 0ms
+AddGroup.fromZero: 0ms
+len_++: 0ms
+nat_max_le_r: 0ms
+mkProperInternalEq: 0ms
+bupd_fupd_flatten: 0ms
+subst_store: 0ms
+Group.inverse_ide: 0ms
+proofmode_into_forall_drop_emp: 0ms
+mkProperImpl: 0ms
+TotalOrder.tjoin: 0ms
+gmap_singleton_validN_1: 0ms
+Sort.Insertion.sort-perm: 0ms
+coPset_complement: 0ms
+lob_ent: 0ms
+gset_disj_CMRA.op_assoc_GSet.lhs_invalid_via_YZ: 0ms
+persistently_notation: 0ms
+LinearOrder.<=-dec: 0ms
+ownE_split_subset: 0ms
+pm_exists1: 0ms
+PolyDecRing: 0ms
+op_CoPset_eq_invalid: 0ms
+degree<=0: 0ms
+ArrayDec: 0ms
+PMName: 0ms
+ratDenom/=0: 0ms
+gmap_view_auth_discrete: 0ms
+Monoid.BigProd_ide: 0ms
+fork_step_inv_ctx_item: 0ms
+state_update_heap: 0ms
+nP: 0ms
+Pauses.isBarMonotone: 0ms
+msc_closed_client_subst: 0ms
+Given: 0ms
+id<suc: 0ms
+pmap_eq.pathOver_wf: 0ms
+bar-impl: 0ms
+sealedFUpd: 0ms
+dfrac_op_comm: 0ms
+gset_disj_equiv_trans: 0ms
+natUnit: 0ms
+sep_comm_lemma: 0ms
+cmra_updateP_id: 0ms
+cmra_pcore_ne_dist: 0ms
+proofmode_class_from_exist: 0ms
+homotopy-isNatural: 0ms
+option_valid: 0ms
+gmap_core_elem: 0ms
+mkProperOwn: 0ms
+dist_op_ne_r: 0ms
+TruncP.rec-set: 0ms
+if_ctx_absurd: 0ms
+PMIntoUpdate: 0ms
+indexedFanTheorem.finalState: 0ms
+msc_frag_elem_discrete: 0ms
+proofmode_from_later_or_left: 0ms
+coPset_disj_op_invalid_l: 0ms
+EPerm.eperm-refl: 0ms
+store_step_inv: 0ms
+isSet: 0ms
+heap_state_to_gmap.tag: 0ms
+IsEquiv.f_ret: 0ms
+msc_sum_loop: 0ms
+wp_resolve: 0ms
+coPset_disj_OFE: 0ms
+iszero_arg: 0ms
+-'0: 0ms
+degree<_padd.conv: 0ms
+load_step_inv: 0ms
+AgreeElem: 0ms
+nat_suc_not_le_zero: 0ms
+SetHom: 0ms
+or_intro_r_ent: 0ms
+option_op_just_l: 0ms
+wp_load.load_step_inv: 0ms
+prod_pcore: 0ms
+pfmap_tree_wf: 0ms
+rat_alt: 0ms
+wand_intro_lemma: 0ms
+SetBicat.LimitSet: 0ms
+wp_allocN: 0ms
+pm_into_forall_direct: 0ms
+pm_replace_spatial: 0ms
+pure_intro_sep_ent: 0ms
+op_GSet_eq_invalid: 0ms
+msc_counter_frag: 0ms
+solver_embed_tower_component: 0ms
+IsInvPrefix: 0ms
+LinearOrder.<_<=: 0ms
+gdelete: 0ms
+alter_wand: 0ms
+NatTrans.id: 0ms
+nName: 0ms
+fcase: 0ms
+store_l_arg: 0ms
+iterr-index-ind: 0ms
+mkGFunctor: 0ms
+nN: 0ms
+NatSemiring.ldistr: 0ms
+wp_value: 0ms
+toFin': 0ms
+heap_block_fresh_insert_before: 0ms
+gpartial_alter: 0ms
+IsCoprime: 0ms
+cmra_transport_proper: 0ms
+proofmode_class_into_and: 0ms
+solver_g: 0ms
+fill_step_inv_item_ctx: 0ms
+msc_sum_list_insert_suc: 0ms
+gset_disj_op: 0ms
+suc<=suc.conv: 0ms
+wp_new_proph: 0ms
+msc_client_suc_first: 0ms
+SubRing: 0ms
+uPredOF_cofe: 0ms
+heap_block_fresh_insert_head: 0ms
+NatEuclidean: 0ms
+Lattice: 0ms
+pos_len: 0ms
+NotDecide: 0ms
+Monoid.pow-left: 0ms
+join: 0ms
+GCDMonoid.gcd-rdistr: 0ms
+OrderedAddGroup.negative_positive': 0ms
+view_validN_raw: 0ms
+IntRing.pos_neg_+: 0ms
+pm_apply_into_wand: 0ms
+savedPred_gFunctor: 0ms
+PseudoRing.rdistr_-: 0ms
+Domain.subMonoid: 0ms
+~-pequiv: 0ms
+Monoid.BigProd-ext: 0ms
+faa_step_inv: 0ms
+Monoid.Inv.cfactor-left: 0ms
+Tower: 0ms
+comp_ectx: 0ms
+PMPersistentSelection: 0ms
+dfun_transport_core_id: 0ms
+IsEquiv.isSurj: 0ms
+AbMonoid.FinSum: 0ms
+GCD: 0ms
+singleton_includedN_l.just_incl_case: 0ms
+iModIntro: 0ms
+coPset_diff_mono_subsets: 0ms
+pos_concat_xH: 0ms
+gset_union_fn_comm: 0ms
+equiv_of_path: 0ms
+coPset_disj_equiv_refl: 0ms
+RatField.+: 0ms
+ratNom: 0ms
+SetColimit.Func-app: 0ms
+MatrixRing.product-ldistr: 0ms
+EuclideanSemiringData.gcd-isGCD-fueled: 0ms
+coPset_overlap_proper_l: 0ms
+unhead: 0ms
+LinearlyOrderedSemiring.>0_Inv: 0ms
+DivQuotient.div-to~: 0ms
+wp_upredDist_trans: 0ms
+inclN_of_dist_unit: 0ms
+Contr.Contr_QEquiv: 0ms
+mkMatrix: 0ms
+CartesianPrecat: 0ms
+iLob: 0ms
+and_elim_r_lemma: 0ms
+Decide: 0ms
+gset_union_assoc: 0ms
+subst_pred: 0ms
+nat_sum_replicate_zero: 0ms
+StrictIntegralDomain: 0ms
+pm_frame_direct: 0ms
+coPpick: 0ms
+discrete_fun_singleton: 0ms
+in_agree_op_inv: 0ms
+MeetSemilattice.meet_<=: 0ms
+next_dist: 0ms
+fill_empty: 0ms
+IntRing.zro-left: 0ms
+pmap_to_list: 0ms
+entails: 0ms
+par: 0ms
+upredDist_trans: 0ms
+qp_add: 0ms
+dfrac_pcore: 0ms
+nT: 0ms
+msc_incr_twice: 0ms
+gen_heapGS: 0ms
+dfrac_undiscard_update_at: 0ms
+HasContrFibers: 0ms
+Cat.isotoid: 0ms
+glookup_nothing_of_dom: 0ms
+length_snoc: 0ms
+PMIntoPersistent: 0ms
+True_impl: 0ms
+DistributiveLattice: 0ms
+mcases: 0ms
+coPmem_singleton_inv: 0ms
+nat_encode_pos_pad: 0ms
+setPair-unext2: 0ms
+mod_Fin: 0ms
+PrecatWithTerminal: 0ms
+view_validN: 0ms
+ofe_mor_car_ne: 0ms
+msc_clientN: 0ms
+Domain.pow_#0: 0ms
+gset_disj_CMRA.pcore_l: 0ms
+RatField.suc-inv: 0ms
+Monoid.pow_ide: 0ms
+CGroup: 0ms
+agree_map_list: 0ms
+later_intro_notation: 0ms
+Diagram: 0ms
+pm_stop: 0ms
+CGroupSolverModel.terms-equality-conv: 0ms
+just_expr_inj: 0ms
+PMIntoExist1: 0ms
+SemiringHom: 0ms
+rec_ctx_absurd: 0ms
+request_mono_nat_alloc: 0ms
+drop_map: 0ms
+pm_timeless_direct: 0ms
+or: 0ms
+solver_project: 0ms
+NonZeroSemiring: 0ms
+Sort.RedBlack.sort.insert: 0ms
+ProphId: 0ms
+exists: 0ms
+proofmode_notation_wrapped_and: 0ms
+CSemigroup: 0ms
+fork_body: 0ms
+pm_next: 0ms
+AbMonoid.BigSum-transpose: 0ms
+agree_dist_eq_to_agree_extract: 0ms
+mscModelG: 0ms
+proofmode_wrapped_exists: 0ms
+Preorder.EquivRel: 0ms
+internal_eq_elim_r_ent: 0ms
+dfrac_pcore_l_proof: 0ms
+iPoseProof: 0ms
+False_or: 0ms
+Monoid.pow: 0ms
+allocN_step_inv_ctx: 0ms
+subst_rec_ne: 0ms
+subst_pair: 0ms
+msc_modelSigma: 0ms
+contractive_ne: 0ms
+wp_bind: 0ms
+msc_client_pre: 0ms
+Cat.univalenceToTransport: 0ms
+prod_core_id: 0ms
+FinSet.choice: 0ms
+IsCoprime.swap: 0ms
+CoreId: 0ms
+fin_R: 0ms
+NatData.rp-correctness-both-inside.rw-meta: 0ms
+NatSemiring.cancel-right: 0ms
+ProductDecide: 0ms
+EuclideanSemiringData.gcd: 0ms
+PCore: 0ms
+attach_valid_r_ent: 0ms
+nclose: 0ms
+gen_heapSigma: 0ms
+SymmetricGroup: 0ms
+mod_<: 0ms
+request_mono_nat_valid: 0ms
+Contr.make: 0ms
+++-assoc: 0ms
+Ideal.sclosure: 0ms
+Iso.reverse: 0ms
+Precat.>>: 0ms
+fsuc: 0ms
+mkProperAnd: 0ms
+heap_fresh_block: 0ms
+KFinSet.search_no_reduce: 0ms
+dist_later_suc_to_dist: 0ms
+persistently_intro_emp_ent: 0ms
+Perm.perm-refl: 0ms
+option_validN_op_l: 0ms
+gset_disj_CMRA.op_assoc_GSet.rhs_invalid_via_XY_or_YZ: 0ms
+plookup'_beyond_depth: 0ms
+ProductDecSet: 0ms
+PolyDecCRing: 0ms
+impl_intro_r_lemma: 0ms
+OFE: 0ms
+ModelCat.ColimitData: 0ms
+ContractiveMap: 0ms
+own_unit: 0ms
+msc_incr_ns_next: 0ms
+untail: 0ms
+agree_equiv: 0ms
+gmap_view_auth_validN_1: 0ms
+subst_var: 0ms
+to_val: 0ms
+except_zero_mono: 0ms
+++_nil: 0ms
+all-implies: 0ms
+FinGroup: 0ms
+BaseReducible: 0ms
+impl_pure_elim_ent: 0ms
+coPset_disj_pcore: 0ms
+proofmode_env_frame_persistent: 0ms
+coPsetInfinite_difference_nonempty: 0ms
+IsCoprime.=>gcd: 0ms
+gset_union_fn: 0ms
+Semiring.ldiv=0: 0ms
+coPSubset: 0ms
+FactorRing.fequiv: 0ms
+FinSubGroup: 0ms
+AuthOFE: 0ms
+inv_*>: 0ms
+proofmode_intros_single: 0ms
+CRing.IsStrictBezout: 0ms
+PseudoRing.negative_*-left: 0ms
+pmap_ind.disjoint_keys_from_image: 0ms
+gset_disj_CMRA.op_assoc_GSet.byRightOr: 0ms
+Forall: 0ms
+proper_later_sep_1: 0ms
+pos_pad: 0ms
+own_inv_alloc_result: 0ms
+world: 0ms
+cycle.func: 0ms
+to_agree_op_inv: 0ms
+op_exchange_dist: 0ms
+iSpecialize: 0ms
+NatSemiring.<-irreflexive: 0ms
+exclU_validN: 0ms
+PolyAlgebra: 0ms
+drop.ndrop_Fin: 0ms
+inclN_op_r: 0ms
+optionO_map_ne_map: 0ms
+IntRing.neg*neg: 0ms
+fact_rec_body: 0ms
+DivQuotient.gcd-from~: 0ms
+Equalizer.Arrows: 0ms
+proofmode_into_wand_drop_emp: 0ms
+Id: 0ms
+False: 0ms
+EPerm.EPerm-equivalence: 0ms
+agree_valid: 0ms
+heap_update: 0ms
+solver_fold_car: 0ms
+max_nat_core_id: 0ms
+pm_wp_value_intro: 0ms
+mkcon: 0ms
+IsEquiv.ret_f: 0ms
+In: 0ms
+request_mono_nat_weaken: 0ms
+SemiringSolverModel.Data.interpretNF': 0ms
+coPset_disj_CMRA.op_assoc_CoPset.lhs_invalid_via_XY_or_XZ: 0ms
+Domain.nonZero-cancel-right: 0ms
+view_validN_ne: 0ms
+coPmem_gsetTreeToCoPset: 0ms
+pm_from_sep_direct: 0ms
+qp_add_assoc: 0ms
+OFEMor: 0ms
+RatField.mid>left: 0ms
+Monoid.LDiv.factor-left: 0ms
+nAcc: 0ms
+PolyRingWith#.#0-+: 0ms
+resolveProphE: 0ms
+mono_nat_auth_valid: 0ms
+toFin: 0ms
+Preorder.PosetC: 0ms
+solver_project_f_later: 0ms
+discrete_funURF_contractive: 0ms
+cmra_morphism_id: 0ms
+in_app_inv: 0ms
+proofmode_class_into_pure: 0ms
+iSplitR: 0ms
+IsEquiv.toBiEquiv: 0ms
+gset_disj_equiv_via_GSet: 0ms
+faa_step_inv_ctx: 0ms
+agree_discrete: 0ms
+DistLater: 0ms
+pm_split_and: 0ms
+proofmode_wrapped_goal: 0ms
+LocAdd: 0ms
+OrFin.ret_inr-lem: 0ms
+proofmode_class_timeless: 0ms
+PolyStrictDomain: 0ms
+OrderedAddGroup.<: 0ms
+ucmra_core_monoN: 0ms
+FunCOFE: 0ms
+PNode'_node_l: 0ms
+proofmode_class_into_forall: 0ms
+msc_incr_ns: 0ms
+pure_head_eval: 0ms
+coPset: 0ms
+iso_ofe_refl: 0ms
+prod_valid: 0ms
+MonoidLatticeColimit.poset-app: 0ms
+dfrac_discard_update_at: 0ms
+Quotient.in-surj: 0ms
+sep_exist_l_ent: 0ms
+FinSet.suc-isInj: 0ms
+TermSig: 0ms
+LinearOrder.dec<_<=: 0ms
+upredDist_and_r: 0ms
+-*: 0ms
+heap_tree_max: 0ms
+proofmode_env_split: 0ms
+glookup_insert_ne: 0ms
+flip: 0ms
+idOF: 0ms
+QPoly.~-isEquiv.symm: 0ms
+Semigroup.op: 0ms
+wsatSigma_inv_gFunctor: 0ms
+resolve_l_arg: 0ms
+proph_map_interp: 0ms
+transposition: 0ms
+discrete_fun_singleton_ne: 0ms
+pointsto_array_rest: 0ms
+IFinGroup: 0ms
+wp_store: 0ms
+nA: 0ms
+ISemiring: 0ms
+Lit: 0ms
+iso_cmra_updatePM: 0ms
+and_intro_lemma: 0ms
+inv: 0ms
+transport: 0ms
+NatAdd: 0ms
+unjust: 0ms
+AllocNStepInv: 0ms
+ProphPayload: 0ms
+to_of_val: 0ms
+SubSet: 0ms
+mono_nat_auth_lb_validN: 0ms
+PseudoRing: 0ms
+RatField.meet: 0ms
+<->trans: 0ms
+achoice: 0ms
+barMonotone_++: 0ms
+dfrac_core_eq_discarded: 0ms
+sep_mono_l_ent: 0ms
+PolyRing.*c-ldistr: 0ms
+PMIntoLater: 0ms
+Graph.Paths: 0ms
+cmra_assoc_dist: 0ms
+solver_g_coerce: 0ms
+coPset_union_comm: 0ms
+empty_ectx: 0ms
+AddGroupHom.id: 0ms
+EPerm.eperm-++-left: 0ms
+solver_seed: 0ms
+Chain: 0ms
+plookup_pomap_just_inv.unfold: 0ms
+MatrixRing.ide: 0ms
+FinDec: 0ms
+ProductAbMonoid: 0ms
+to_agree_ne: 0ms
+finite_bool_and_true: 0ms
+SemiringSolverModel.Data.interpretNF-consistent: 0ms
+pmap_ind.entries_of_lookup: 0ms
+isSet.equiv: 0ms
+not_stuck: 0ms
+msc_client_key_nat: 0ms
+msc_read_now_timeless: 0ms
+PolyRingWith#.#0_*c-left: 0ms
+nHandle: 0ms
+Preorder.PreorderC: 0ms
+inv_alloc: 0ms
+pm_sep_regroup: 0ms
+Sort.Insertion.sort-perm.insert-comm: 0ms
+IsEquiv.isInj: 0ms
+erase_dfrac_lift: 0ms
+own_valid: 0ms
+NatOrder.<: 0ms
+True: 0ms
+||: 0ms
+coPmem_intersection: 0ms
+IPseudoRing: 0ms
+PseudoRing.op: 0ms
+coPset_disj_validN: 0ms
+fixpoint: 0ms
+pdom: 0ms
+decToBool: 0ms
+TSetIm-con: 0ms
+or_False: 0ms
+PolyRing.zro-right: 0ms
+and_mono_r: 0ms
+AddMonoidHom.compose: 0ms
+<->: 0ms
+->>: 0ms
+Maybe: 0ms
+dfun_transport_discrete: 0ms
+gset_union_fn_assoc: 0ms
+both_just_true_from: 0ms
+Monoid.Inv.ldiv: 0ms
+repeat: 0ms
+pm_exists_from: 0ms
+DiscreteOFE: 0ms
+both_just_true_inv: 0ms
+Structure.IsFormulaTrue: 0ms
+AddGroup.negative-isInv: 0ms
+localization-isOrderedField.positiveSubset: 0ms
+pm_forall_from: 0ms
+wand_intro_ent: 0ms
+DiscreteFunUCMRA.discrete_fun_core_absorb: 0ms
+exist_intro_lemma: 0ms
+bupd_trans: 0ms
+SemiringSolverModel.Data.interpretNF_::: 0ms
+mono_nat_rel: 0ms
+solver_coerce_f: 0ms
+MonoidHom.id: 0ms
+sep_mono_lemma: 0ms
+gname: 0ms
+of_val: 0ms
+EquivFin.equiv_fin: 0ms
+PMFromExist: 0ms
+PMFromLater: 0ms
+Pmap': 0ms
+BoundedLattice: 0ms
+solver_A: 0ms
+Gset: 0ms
+||.rec: 0ms
+IntRing.rldistr: 0ms
+spawn_state: 0ms
+suc/=0: 0ms
+option_pcore_idemp: 0ms
+bar-monotone.induction: 0ms
+wsatSigma_disabled_gFunctor: 0ms
+LatticeAbGroup.abs: 0ms
+wand_notation: 0ms
+loc_unequals_domain: 0ms
+auth_op_snd: 0ms
+transposition1.transposition1_/=: 0ms
+fst_pair_pure_ctx_absurd: 0ms
+option_validN_ne: 0ms
+wp_fork: 0ms
+proofmode_wrapped_sep: 0ms
+DivQuotient.inD: 0ms
+-'-'r: 0ms
+bool_or_inv: 0ms
+Pos_eq_dec: 0ms
+pempty: 0ms
+prodO_map_ne_map: 0ms
+gset_overlap_tree: 0ms
+of_envs: 0ms
+subst_var_ne: 0ms
+equation.ring: 0ms
+upredDist_persistently: 0ms
+DiscreteField.nonZero-Inv: 0ms
+EuclideanRingData.bezoutIdentity: 0ms
+proofmode_env_frame_spatial: 0ms
+|-: 0ms
+SubAddGroup: 0ms
+AddGroup.With#.#0-negative-inv: 0ms
+proofmode_into_persistent_drop_emp: 0ms
+Sort.RedBlack.sort=insert: 0ms
+msc_handles: 0ms
+Sort.RedBlack.sort.aux: 0ms
+transQEquiv: 0ms
+sigma-right: 0ms
+equation.monoid: 0ms
+IsBarMonotone: 0ms
+bupd_alloc_two_then: 0ms
+Monoid.BigProd_replicate1: 0ms
+dfrac_frame_own_lt_one: 0ms
+plookup_insert_ne: 0ms
+join_loop: 0ms
+map_append_cons: 0ms
+sface-inj: 0ms
+forall_intro_ent: 0ms
+request_counter_model_valid: 0ms
+dfun_transport_op_validN: 0ms
+FactorRing.Type: 0ms
+Semiring.zero-div: 0ms
+GroupData.interpret: 0ms
+pm_ent_apply: 0ms
+degree<: 0ms
+gsetToCoPset: 0ms
+Colimit: 0ms
+all-forall: 0ms
+inv_acc_strong_close_sealed: 0ms
+pm_frame_with_spatial: 0ms
+|>: 0ms
+map: 0ms
+fin_eq_dec.fin_pred: 0ms
+fanTheorem.allPaths_::: 0ms
+savedPredOF: 0ms
+pm_mod_intro: 0ms
+glookup: 0ms
+PMIntoWand: 0ms
+request_saved_pred_persistent: 0ms
+-'-'r_id: 0ms
+forall_intro_lemma: 0ms
+QEquiv.adjointInv: 0ms
+laterUnNext: 0ms
+PseudoCRing: 0ms
+maybeUnitBool_just: 0ms
+AuthOp: 0ms
+dist_later_next: 0ms
+discrete_dist_to_eq: 0ms
+SetColimit.poset-id: 0ms
+TSetIm: 0ms
+coPset_overlap_union_r: 0ms
+NatData.rp-returns-true-lemma'': 0ms
+Dec.rec: 0ms
+CRingCat.forget: 0ms
+msc_frag_elem: 0ms
+own_op_valid: 0ms
+PolyRing.*c: 0ms
+proofmode_class_from_pure: 0ms
+Sequent: 0ms
+Sort.Sorted.allSorted: 0ms
+or_True: 0ms
+ICGroup: 0ms
+equiv_dist: 0ms
+substF: 0ms
+alloc_step_inv_ctx: 0ms
+pmap_ind.pinsert_list_base_swap: 0ms
+MonoidSolverModel.interpretNF-consistent-aux: 0ms
+agree_map_in_inv.tail: 0ms
+Monoid.LDiv: 0ms
+MonoidHom.compose: 0ms
+CMonoid.BigProd_*: 0ms
+Ideal.IsGeneratedBy1: 0ms
+Semiring.BigSum-ldistr: 0ms
+append_snoc_cons: 0ms
+nat_suc_le_add_suc: 0ms
+maybe_val: 0ms
+plookup_singleton_ne: 0ms
+subCat: 0ms
+NatEq: 0ms
+wp_load: 0ms
+fill_item_not_val: 0ms
+bupd_sep: 0ms
+Retraction: 0ms
+bupd_mono_at: 0ms
+sep: 0ms
+Exists: 0ms
+dup_wand: 0ms
+PermSet: 0ms
+Ring.Dec: 0ms
+fork_step_inv_ctx: 0ms
+join_continue: 0ms
+True_and: 0ms
+GCDMonoid.IsCoprime_pow-right: 0ms
+Sort.Insertion.sort-sorted: 0ms
+solver_project_embed_ff: 0ms
+pure: 0ms
+CGroupSolverModel.apply-axioms'.interpretNF-coef: 0ms
+True_or-rev: 0ms
+max_nat_le_l: 0ms
+makeRat.signum_nom: 0ms
+BoolPoset.<: 0ms
+pm_select_here: 0ms
+pm_persistent_select_here: 0ms
+headDef: 0ms
+proofmode_class_into_later: 0ms
+MeetSemilattice.Meets: 0ms
+ThreadIn: 0ms
+proofmode_class_into_exist: 0ms
+timeless_pure: 0ms
+nat_encode_inj: 0ms
+mono_nat_lb_own: 0ms
+AbGroup.BigSum_negative: 0ms
+ModelHom: 0ms
+later_map_compose: 0ms
+OrderedAddGroup.<0_neg: 0ms
+Section: 0ms
+auth_validN_le_helper: 0ms
+coPmem_complement: 0ms
+agree_map_in: 0ms
+toFin=id: 0ms
+base_redex_step_det: 0ms
+EuclideanSemiringData.reduce: 0ms
+properUPred_ent_at: 0ms
+gmap_eq.gmap_eq_pos: 0ms
+transport_pi: 0ms
+unfolds: 0ms
+agree_dist: 0ms
+msc_client_key_absent: 0ms
+true/=false: 0ms
+ownM_op: 0ms
+isDFin.isSplit: 0ms
+upredEquiv: 0ms
+NatData.count-leaves: 0ms
+ucmra_unit_least: 0ms
+gset_disj_UCMRA: 0ms
+Preorder.PosetC.<=C-reflexive: 0ms
+in: 0ms
+RatField.+': 0ms
+CMonoid.IsRegularElem: 0ms
+proofmode_class_from_later: 0ms
+Matrix: 0ms
+msc_clientSigma: 0ms
+Semigroup: 0ms
+pmap'_wf_empty: 0ms
+iabs: 0ms
+msc_auth: 0ms
+state_update_usedProph: 0ms
+sep_swap_ent: 0ms
+WPFunInhabited: 0ms
+solver_le_plus_left: 0ms
+dist_later_zero: 0ms
+Ideal.lclosure-univ: 0ms
+pomap_tree_wf: 0ms
+proofmode_into_update_drop_emp: 0ms
+Trunc0: 0ms
+ProductGroup: 0ms
+Monoid.LInv: 0ms
+savedPredRF: 0ms
+excl_pcore: 0ms
+pm_nat_eq.nat_pred: 0ms
+Observation: 0ms
+coPmem_empty: 0ms
+GroupSolverModel.Term: 0ms
+Graph: 0ms
+proofmode_destruct_and_class_wrong_source_fails: 0ms
+Pmap_wf: 0ms
+except_0_sep_2: 0ms
+pmap_ind.xO_inj: 0ms
+subst_if: 0ms
+dfrac_discarded_core_id: 0ms
+andI: 0ms
+proofmode_destruct_sep_class_wrong_source_fails: 0ms
+iExact: 0ms
+AuthViewRel: 0ms
+pmap_ind.nodup_keys_app: 0ms
+app3: 0ms
+dfrac_validN: 0ms
+max_nat_eq_l: 0ms
+bupd_frame_l: 0ms
+ProdCOFE: 0ms
+coPset_intersection: 0ms
+cmra_updatePM: 0ms
+DecFin: 0ms
+SubPointed: 0ms
+proofmode_class_into_wand: 0ms
+All2: 0ms
+max_nat: 0ms
+mkProperCMRAValid: 0ms
+MeetSemilatticeAddMonoid: 0ms
+gmap_view_match_fresh: 0ms
+Signature: 0ms
+to_agree: 0ms
+constRF_contractive: 0ms
+proper_impl_mono_r: 0ms
+heap_update_glookup_eq: 0ms
+coPset_diff_self_overlap_false: 0ms
+pair_l_arg: 0ms
+emp_sep_1_lemma: 0ms
+msc_new_counter: 0ms
+ndisjoint_implies_disjoint: 0ms
+store_r_arg: 0ms
+pfmap_tree.option_map: 0ms
+frac_auth_frag: 0ms
+exist1_mono_ent: 0ms
+transposition1: 0ms
+pm_into_exist1_direct: 0ms
+SetIm-con: 0ms
+own_mono: 0ms
+Sort.RedBlack.toList.=rbTreeToList: 0ms
+coPSubset_union_l: 0ms
+iEmpIntro: 0ms
+allocN_step_inv: 0ms
+bupd_later_iter_soundness: 0ms
+>==: 0ms
+proofmode_env_persistent_dup: 0ms
+DivQuotient.DivQuotientMonoid.*': 0ms
+Ideal.IsGeneratedBy: 0ms
+bool_or_comm: 0ms
+msc_modelRF_contractive: 0ms
+coPmem_singleton_eq: 0ms
+dec-separated: 0ms
+transposition.inj: 0ms
+gmap_core: 0ms
+gmap_to_agree_map: 0ms
+option_valid_validN_iff: 0ms
+excl_map_compose: 0ms
+or_idem-rev: 0ms
+pm_left: 0ms
+AllC: 0ms
+maybe_fmap_validN: 0ms
+msc_read_witness: 0ms
+excl_validN: 0ms
+DenseLinearOrder: 0ms
+pos_pad_len: 0ms
+proph_mapGS: 0ms
+GCDDomain.gcd_0: 0ms
+coPSubset_empty_l: 0ms
+solver_eq_equiv: 0ms
+Adequate: 0ms
+unfold_let: 0ms
+coPset_empty: 0ms
+nat_add_eval: 0ms
+solver_nat_split: 0ms
+bar-surj: 0ms
+auth_cmra_extend_proof: 0ms
+Equivalence.Closure: 0ms
+option_validN: 0ms
+nclose_nroot: 0ms
+LocalRing.sum1=>eitherInv: 0ms
+spawnSigma: 0ms
+FinSet.liftSurj: 0ms
+iso_ofe_sym: 0ms
+proofmode_next_hypothesis_class_wrong_source_fails: 0ms
+Empty: 0ms
+ICRing: 0ms
+CGroupData.removeVars: 0ms
+transposition.transposition-left: 0ms
+pm_intros_sep: 0ms
+Structure.IsSequentTrue: 0ms
+index-dec: 0ms
+MscProphPayload: 0ms
+fst_arg: 0ms
+CatEquiv: 0ms
+strip_append: 0ms
+iSplitL: 0ms
+pm_frame_exact: 0ms
+AddGroupHom.compose: 0ms
+option_validN_le: 0ms
+gset_overlap_union_r: 0ms
+gmap_op: 0ms
+IntRing.minus__: 0ms
+IntRing.+: 0ms
+if_else_arg: 0ms
+Subset: 0ms
+drop.ndrop_Fin_+: 0ms
+tower_chain: 0ms
+NatSemiring.<-transitive: 0ms
+SetColimit: 0ms
+DivQuotient.regular_equivalent-associates: 0ms
+base_iszero_zero_step_det: 0ms
+signum.signum_neg: 0ms
+discrete_fun_core_id: 0ms
+view_to_agree_validN: 0ms
+pm_pure_intro: 0ms
+SigmaFin.aux.f: 0ms
+OrderedAddGroup.neg_<0: 0ms
+MatrixRing.product_ide-left: 0ms
+option_nothing_discrete: 0ms
+positives_flatten: 0ms
+spawn_doneV: 0ms
+AuthValidN: 0ms
+gset_disj_CMRA.op_assoc_GSet.lhs_invalid_via_XY_or_XZ: 0ms
+Or.rec: 0ms
+PolyRing.*-assoc: 0ms
+PMSelection: 0ms
+timeless_sep: 0ms
+RatField.mid: 0ms
+rec_expr_pure_ctx_absurd: 0ms
+EPerm: 0ms
+mono_nat_lb_own_get: 0ms
+ArrayFinModule: 0ms
+maybe_fmap_equiv_id: 0ms
+heap_alloc: 0ms
+subst_fact_zero_l: 0ms
+ownM_proper: 0ms
+IdealLattice.bottom: 0ms
+Sort.RedBlack.sort.Color: 0ms
+proph: 0ms
+mono_nat_rel_holds: 0ms
+later: 0ms
+RingCat.forgetToAbGroup: 0ms
+nclose_inhabited: 0ms
+gset_disj_dist: 0ms
+isDFin.isEquiv: 0ms
+CRing: 0ms
+coPDisjoint: 0ms
+bupd_ne: 0ms
+transposition1.transposition1-right: 0ms
+makeRat: 0ms
+AuthPCore: 0ms
+view_update_frag: 0ms
+option_pcore: 0ms
+coPmem_suffixes_xO: 0ms
+kName: 0ms
+ucmra_pcore_total: 0ms
+ICSemiring: 0ms
+mkProperLater: 0ms
+msc_read: 0ms
+EqDecision: 0ms
+gset_disj_CMRA.pcore_l_GSet: 0ms
+ppartial_alter: 0ms
+mscN: 0ms
+CSemiringSolverModel.sortMonomials: 0ms
+map: 0ms
+op_proper_l: 0ms
+or_intro_l': 0ms
+rFunctor_apply: 0ms
+ucmra_core_idemp: 0ms
+Contr: 0ms
+AbMonoid.FinSum.aux: 0ms
+dist_op_congr: 0ms
+pm_frame_sep_r: 0ms
+pm_mod_into_update: 0ms
+ucmra_unit_right_id: 0ms
+solver_suc_not_le_zero: 0ms
+rat_diff_zro: 0ms
+pm_specialize_into_wand_intuitionistic: 0ms
+and_elim_l_ent: 0ms
+Ideal.IsPrincipal: 0ms
+reducible_fill_item: 0ms
+Sort.RedBlack.sort=insert.toList_repaint: 0ms
+pm_into_wand_direct: 0ms
+own_timeless: 0ms
+DecSubPointed: 0ms
+cmra_morphism_core_id: 0ms
+agree_map_in.tail: 0ms
+sep_rotate_third_front: 0ms
+Ideal: 0ms
+proofmode_env_insert_duplicate: 0ms
+prop-dpi: 0ms
+DfracCMRA: 0ms
+PolyDecIntegralDomain: 0ms
+IntRing.neg*pos: 0ms
+coPset_disj_CMRA.pcore_l: 0ms
+pm_exact_spatial: 0ms
+RatField.productNonZero: 0ms
+pmap_ind.xH_ne_xO: 0ms
+Sort.RedBlack.sort.RBTree: 0ms
+op_GSet_eq_GSet: 0ms
+subst: 0ms
+qp_le_add: 0ms
+gset_union_fn_left_id: 0ms
+upredDist: 0ms
+gset_disj_pcore: 0ms
+SemiringSolverModel.Data.collapse-consistent: 0ms
+laterOF_contractive: 0ms
+Equalizer.eqMap: 0ms
+Gmap: 0ms
+excl_op: 0ms
+OrFin: 0ms
+frac_auth_valid: 0ms
+LexicographicalList.<-transitive: 0ms
+iEval: 0ms
+Ring.IsLocal: 0ms
+agree_op_dist_left_valid: 0ms
+proofmode_clear: 0ms
+NatData: 0ms
+State: 0ms
+LModule.IsBasis: 0ms
+exist1_elim_ent: 0ms
+request_map_delete: 0ms
+PermSet.inPS~: 0ms
+proofmode_exists1_goal: 0ms
+proofmode_pure_intro_class_instance: 0ms
+lemma_disjoint_segs: 0ms
+symQEquiv: 0ms
+gset_disj_CMRA.op_proper_inner: 0ms
+++_nil: 0ms
+oFunctor_apply: 0ms
+proph_value_id: 0ms
+count: 0ms
+pmap_ind.Pos_inj_fn_xI: 0ms
+nH1: 0ms
+irisSigma: 0ms
+fin_L: 0ms
+nclose_ndot_subseteq: 0ms
+proofmode_intro_without_goal_fails: 0ms
+coPset_difference_in_inv: 0ms
+diagonal: 0ms
+substF1: 0ms
+Unit: 0ms
+ratio: 0ms
+Monoid.BigProd-unique: 0ms
+bar-shift-right: 0ms
+iszero_ctx_absurd: 0ms
+msc_incr: 0ms
+nat_fin_=: 0ms
+nat_suc_add: 0ms
+SetIm: 0ms
+msc_read_now: 0ms
+base_redex_step_det.base_redex_step_det_ctx: 0ms
+||.map: 0ms
+base_rec_beta_step_det: 0ms
+excl_map_ne: 0ms
+pm_destruct_from_sep: 0ms
+heap_lookup_above_max_absent: 0ms
+nNextI: 0ms
+SemiringSolverModel.Data.interpretNF: 0ms
+SemiringSolverModel.Data: 0ms
+suc_<=_<: 0ms
+polyCoef: 0ms
+pm_persistently_dup: 0ms
+NatData.Leaf.val: 0ms
+RatField.mid<right: 0ms
+ndot: 0ms
+proofmode_emp_intro_wrapped: 0ms
+cycle.mod_/=: 0ms
+ModelCat.emptyFin: 0ms
+val_stuck: 0ms
+factorial_call_body_at: 0ms
+pm_split_empty: 0ms
+EPerm.eperm-sym: 0ms
+option_just_discrete: 0ms
+CGroupData.removeVar_<=-lem: 0ms
+proofmode_missing_name_fails: 0ms
+RatField.negative: 0ms
+Set#: 0ms
+nat_seq: 0ms
+AbGroupSolverModel.apply-axioms: 0ms
+nI: 0ms
+excl_some_includedN_eq: 0ms
+vldN: 0ms
+resolve_skip_strongly_atomic: 0ms
+pm_of_persistent_env: 0ms
+boolV: 0ms
+idOF_cofe: 0ms
+DivQuotient.DivPreoder: 0ms
+msc_incr_result: 0ms
+SubSet.ISet: 0ms
+properUPred_ent_trans: 0ms
+pm_exact_intuitionistic: 0ms
+pm_into_exist_direct: 0ms
+Cancelable: 0ms
+gset_in: 0ms
+proph_domain_update: 0ms
+pm_test_name_p: 0ms
+gmap_to_list: 0ms
+Monoid.Inv.cfactor-right: 0ms
+IsCoprimeArray: 0ms
+or_idem: 0ms
+ownM_timeless: 0ms
+own_proper: 0ms
+Sort.Insertion.sort.insert: 0ms
+and_elim_l_lemma: 0ms
+Sort.RedBlack.sort=insert.aux=makeTree: 0ms
+Domain.nonZero-left: 0ms
+msc_read_unregistered: 0ms
+AddGroupCat.forgetToAddMonoid: 0ms
+mul_r_arg: 0ms
+just-injective: 0ms
+ucmra_core: 0ms
+coe_pi: 0ms
+ReducedRing: 0ms
+NatSemiring.triGreater: 0ms
+pm_of_env: 0ms
+AddGroup.minus_zro: 0ms
+coPset_diff_self_union_equiv: 0ms
+gmap_view_matches: 0ms
+value_nat: 0ms
+load_strongly_atomic: 0ms
+GroupData: 0ms
+maybe_fmap_proper: 0ms
+-'+: 0ms
+Embedding: 0ms
+pmap_ind.xO_inj.unxO: 0ms
+pm_next_from: 0ms
+heap_state_to_gmap: 0ms
+OneOf: 0ms
+FreeStructure: 0ms
+CMonoid.pow_*-comm: 0ms
+CGroupSolverModel.toArray: 0ms
+wp_alloc: 0ms
+subst_val: 0ms
+iabs_*: 0ms
+frac_auth_baseUR: 0ms
+mono_nat_auth_lb_valid_intro: 0ms
+gmap_fmap_comp_equiv: 0ms
+bar-shift-left: 0ms
+cmra_update: 0ms
+option_op_nothing_r: 0ms
+DiscreteFunUCMRA.discrete_fun_just_out: 0ms
+SemiringSolverModel.multiply: 0ms
+coPmem_universe: 0ms
+mono_natRF_contractive: 0ms
+exclU_op: 0ms
+Bool: 0ms
+pigeonhole-fin.aux: 0ms
+PointedHom: 0ms
+own_mono: 0ms
+intMap: 0ms
+CGroupSolverModel.interpretNF': 0ms
+proofmode_wrapped_and: 0ms
+nat_encode: 0ms
+EuclideanSemiringData.gcd-isGCD: 0ms
+bool_and_not_self_or: 0ms
+wp_let: 0ms
+own_dist: 0ms
+discrete_fun_singleton_updateP_empty: 0ms
+OrderedAddGroup.negative_positive: 0ms
+IntRing.ide-left: 0ms
+iterr_inj: 0ms
+constOF_contractive: 0ms
+pm_split_put_left: 0ms
+Formula: 0ms
+nat_max_le_l: 0ms
+subst_load: 0ms
+NonZeroCRing: 0ms
+pmap_ind.entries_of_tree_nodup_aux: 0ms
+AddMonoid.BigSum: 0ms
+EuclideanSemiringData.gcd-fueled: 0ms
+gset_disj_equiv_refl: 0ms
+unfsuc: 0ms
+UnitCOFE: 0ms
+or_mono_l: 0ms
+ndot_ne_disjoint: 0ms
+val_fill_absurd: 0ms
+LinearlyOrderedSemiring.mid_inv<right: 0ms
+properUPred_ent_to_at: 0ms
+alloc_arg: 0ms
+Value: 0ms
+Pmap: 0ms
+cmra_opM: 0ms
+++: 0ms
+Inhabited: 0ms
+bar-shift-left.induction: 0ms
+coPset_disj_dist: 0ms
+FinModule: 0ms
+Structure.Env: 0ms
+faa_signature: 0ms
+base_iszero_suc_step_det: 0ms
+Quotient.equalityEquiv: 0ms
+IntRing.pos_minus-ldistr: 0ms
+IPointed: 0ms
+proph_domain_insert: 0ms
+Loc: 0ms
+NatData.isInNF: 0ms
+gFunctor: 0ms
+PseudoRing.negative_*-right: 0ms
+PolyDomain: 0ms
+cmra_updatePM_updateP: 0ms
+max_nat_idemp: 0ms
+permSet-ext: 0ms
+JoinSemilattice.Joins: 0ms
+coPset_overlap_proper_r: 0ms
+simp_coe: 0ms
+coPmem_suffixes_concat: 0ms
+solver_plus_suc_right_fun: 0ms
+ownD_singleton_twice: 0ms
+wp_value_elim: 0ms
+False_impl-rev: 0ms
+option_excl_dist_to_eq: 0ms
+funO_map: 0ms
+Or.Or_QEquiv: 0ms
+PolyRing.ide_*c: 0ms
+LModule: 0ms
+SubstSolverModel: 0ms
+letE: 0ms
+IntRing.pred-right: 0ms
+proofmode_intros_local_alias: 0ms
+ProductAbGroup: 0ms
+NonExpansive2: 0ms
+gset_disj_CMRA.gset_union_empty_l: 0ms
+coPmem_difference: 0ms
+auth_incl_snd: 0ms
+IRing: 0ms
+msc_incr_total: 0ms
+Monoid.BigProd: 0ms
+IAbGroup: 0ms
+urFunctor_apply: 0ms
+lam_expr_pure_ctx_absurd: 0ms
+untail.tailDef: 0ms
+wp_smart_apply: 0ms
+-'-monotone-left: 0ms
+Ring.intCoef: 0ms
+dfun_transport_dist: 0ms
+OrFin.aux.ret: 0ms
+erase_dfrac_map: 0ms
+List: 0ms
+IAbMonoid: 0ms
+UnitOFE: 0ms
+later_eq_use: 0ms
+PNode'_node_r: 0ms
+nat_lt: 0ms
+dfrac_frame_both_lt_one: 0ms
+cmra_transport_ne: 0ms
+proofmode_rename: 0ms
+PMIntoForall: 0ms
+isuc: 0ms
+agree_op: 0ms
+QpOFE: 0ms
+SemiringSolverModel.Data.NF: 0ms
+Precat.=_hom: 0ms
+gmap_view_lookup_delete_eq: 0ms
+CGroup.BigProd_inverse: 0ms
+pos_concat: 0ms
+gset_overlap_sound: 0ms
+PolyRing.zro_*c: 0ms
+Semiring.BigSum-rdistr: 0ms
+mono_nat_lb: 0ms
+cmra_pcore_l_dist: 0ms
+app2: 0ms
+AddMonoidHom: 0ms
+div_mod: 0ms
+subst_snd: 0ms
+DivQuotient.equivalent-associates: 0ms
+coPset_equiv: 0ms
+++-cancel-right.contr: 0ms
+proofmode_env_interpret_persistent: 0ms
+fixpoint_unique.fixpoint_unique_aux: 0ms
+lName: 0ms
+Sort.RedBlack.sort.repaint: 0ms
+ofe_mor_ext: 0ms
+persis: 0ms
+NatSemiring.+-assoc: 0ms
+PosetAddGroup.<=_+-cancel-left: 0ms
+SubSemiring: 0ms
+plookup_gset_union_just_inr.union_fn_just_r: 0ms
+AbMonoid.FinSum-const: 0ms
+ExclCOFE.help: 0ms
+spawn: 0ms
+pred_arg: 0ms
+Ideal.closure-univ: 0ms
+option_op_assoc: 0ms
+plookup_gset_union_just_inl: 0ms
+and_idem: 0ms
+coPsetInfinite_difference_nonempty.gsetToCoPset_not_mem: 0ms
+||.rec': 0ms
+gset_overlap: 0ms
+base_pred_suc_step_det: 0ms
+discreteOFE_discrete: 0ms
+iResF_contractive: 0ms
+uPred_map: 0ms
+SubPseudoSemiring: 0ms
+proofmode_apply: 0ms
+plookup_merge: 0ms
+LinearOrder.notLess: 0ms
+except_zero_notation: 0ms
+exist1_intro_ent: 0ms
+gset_disj_op_invalid_l: 0ms
+app_r_arg: 0ms
+ForkPostInhabited: 0ms
+proofmode_class_from_exist1: 0ms
+pure_consequence_frame_ent: 0ms
+pointsto_array_index_loc: 0ms
+iResUR: 0ms
+heap_insert_block: 0ms
+uPred_map_id: 0ms
+PMIntoExist: 0ms
+skipE: 0ms
+Reducible: 0ms
+IsSurj: 0ms
+Quotient: 0ms
+gset_empty: 0ms
+mkArray: 0ms
+contradiction: 0ms
+option_op_nothing_nothing: 0ms
+pmap2: 0ms
+coPSubset_union_r: 0ms
+sep_comm_ent: 0ms
+proofmode_env_persistent_select: 0ms
+request_mono_nat_auth_split: 0ms
+DivQuotient.~: 0ms
+CMonoidSolverModel: 0ms
+BezoutRing.bezout_coprime: 0ms
+BoolLattice.<=: 0ms
+NatData.remove-pair: 0ms
+OrFin.ret_inl-lem: 0ms
+subst_alloc: 0ms
+nclose_ndot_disjoint: 0ms
+equation.abMonoid: 0ms
+proofmode_class_into_exist1: 0ms
+PosetRing: 0ms
+propExt.conv: 0ms
+coPset_disj_equiv: 0ms
+in_agree_op: 0ms
+PseudoRing.ldistr_-: 0ms
+transposition1.transposition1-left: 0ms
+max_nat_zero_r: 0ms
+contractive_zero: 0ms
+PMFromAssumption: 0ms
+TIdeal: 0ms
+FreeStructure.qinterpret: 0ms
+sep_mono_r: 0ms
+PMFromForall: 0ms
+prod_validN: 0ms
+if_arg: 0ms
+RingCat.natCoefUnique: 0ms
+PolyRing.+: 0ms
+inclN: 0ms
+mono_nat_lb_mono: 0ms
+or_intro_r_lemma: 0ms
+heap_block_fresh: 0ms
+SemigroupHom: 0ms
+FinSet.liftDepSurj: 0ms
+rebuild_stepped_pool: 0ms
+proofmode_class_assumption: 0ms
+spawn_tok: 0ms
+properUPred_ent: 0ms
+pm_test_name_q: 0ms
+coPSubset_refl: 0ms
+impl_elim: 0ms
+counter_auth: 0ms
+RatField.*: 0ms
+mono_nat_lb_own_persistent: 0ms
+StronglyAtomic: 0ms
+resolve_m_arg: 0ms
+NatData.rp-returns-true-lemma'.left-leaf-contradiction: 0ms
+Pos_eq_dec.pred_xO: 0ms
+FinSet.finiteAC: 0ms
+MonoidSolverModel.>>=: 0ms
+OrderedAddGroup.toNeg: 0ms
+zero<=_: 0ms
+coPset_disj_CMRA.op_assoc: 0ms
+OrFin.aux.f: 0ms
+agree_map_op: 0ms
+suffixes_subseteq_concat: 0ms
+coPset_disj_CMRA.proper_outer_coPset: 0ms
+NatSemiring.triLess: 0ms
+timeless_or: 0ms
+wp_rec: 0ms
+NatBSemilattice: 0ms
+upredDist_wand_r: 0ms
+fsuc_fpred: 0ms
+PreorderedAddGroup: 0ms
+<#>: 0ms
+ProductAddMonoid: 0ms
+gset_disj_equiv: 0ms
+pm_apply_wand_intuitionistic: 0ms
+FactorRing.*: 0ms
+pm_split_sep: 0ms
+isIntegral: 0ms
+option_pcore_core_id: 0ms
+SeparatedSet: 0ms
+LinearlyOrderedAbMonoid.<=_+-right: 0ms
+contractiveMap_ne: 0ms
+coPset_disj_equiv_trans: 0ms
+proofmode_into_and_pure_drop_emp: 0ms
+isProp.equiv: 0ms
+Functor.op: 0ms
+AddPointedHom: 0ms
+MonoidSolverModel.Term: 0ms
+Group.ipow_*: 0ms
+iNext: 0ms
+bool_or_inv: 0ms
+proofmode_into_later_drop_emp: 0ms
+pointsto_full_timeless: 0ms
+not_in_keys: 0ms
+timeless_emp: 0ms
+mkProperExceptZero: 0ms
+dist_S: 0ms
+big_sep_list: 0ms
+LocalRing.sumInv=>eitherInv: 0ms
+Ideal.lclosure: 0ms
+wp_apply: 0ms
+wp_load.base_load_step_inv: 0ms
+GmapValid: 0ms
+CGroupData.sort-correct: 0ms
+fanTheorem.AllPaths: 0ms
+map_natV_replicate_zero: 0ms
+faa_base_step: 0ms
+plookup'_pomap_tree: 0ms
+proofmode_pure_intro: 0ms
+replicate: 0ms
+IdealLattice.top: 0ms
+BoolFin.equiv: 0ms
+isIntegrallyClosed: 0ms
+coPset_singleton_subset: 0ms
+spawn_pendingV: 0ms
+Group.ipow_ide: 0ms
+msc_open_mask: 0ms
+iApply: 0ms
+pm_right: 0ms
+oFunctor_applyCOFE: 0ms
+bar-monotone: 0ms
+FinOrder: 0ms
+id: 0ms
+gFunctors_singleton: 0ms
+later_wand_apply_ent: 0ms
+pfmap_tree_wf.fmap_nontrivial: 0ms
+prod_incl: 0ms
+Precat.transport_Hom-right: 0ms
+msc_closed_client_adequate: 0ms
+proofmode_from_forall_or_left: 0ms
+Domain.nonZero_ldiv: 0ms
+/=-sym: 0ms
+WPFun: 0ms
+request_map_alloc: 0ms
+Name: 0ms
+impl_refl: 0ms
+SetColimit.poset-app: 0ms
+wand: 0ms
+AddMonoid.BigSum_zro: 0ms
+iRight: 0ms
+prod_op: 0ms
+cmra_validN_proper: 0ms
+msc_counter_frag_timeless: 0ms
+ghost_map_elem: 0ms
+unfold: 0ms
+pm_persistently_elim: 0ms
+maybeUnitBool: 0ms
+degree<0: 0ms
+SolverNatSplit: 0ms
+NoetherianCRing.iterate: 0ms
+Semiring.ldiv/=0: 0ms
+EuclideanSemiringData.reduce*gcd-right: 0ms
+QEquiv_=: 0ms
+NatData.Leaf.toLeaf: 0ms
+IntRing.+-assoc: 0ms
+pure_intro_lemma: 0ms
+op_dot: 0ms
+pointsto_array_index_suc_add: 0ms
+gset_overlap_tree_PEmpty_l: 0ms
+PolyRing.*c-rdistr: 0ms
+EuclideanSemiringData.reduce-fueled: 0ms
+pm_clear_spatial: 0ms
+LModule.*c_BigSum-ldistr: 0ms
+RIdeal: 0ms
+PolyRing.negative-left: 0ms
+proper_later_false_em: 0ms
+TruncP.remove: 0ms
+iMod: 0ms
+pm_from_exist1_direct: 0ms
+list_decompose: 0ms
+Index: 0ms
+RingCat.forget: 0ms
+pm_destruct_into_pure: 0ms
+nat_order_lt_to_msc_lt: 0ms
+plookup_delete_eq: 0ms
+NatData.simplify: 0ms
+Timeless: 0ms
+uPred_map_ext: 0ms
+proofmode_exact_latest: 0ms
+Ring.With#: 0ms
+finSet: 0ms
+discrete_path: 0ms
+fact_body: 0ms
+IsLimitCone: 0ms
+gmap_view_auth_op_exclusiveN: 0ms
+EPerm.Perm_EPerm: 0ms
+MatrixAbGroup: 0ms
+frac_auth_auth: 0ms
+Monoid.Inv.product.func: 0ms
+nat_sum: 0ms
+and_True: 0ms
+load_arg: 0ms
+rotatePathLeft: 0ms
+if: 0ms
+Monoid.LDiv.product-left: 0ms
+and_elim_r_ent: 0ms
+cmra_transport_core_id: 0ms
+natCountable: 0ms
+glookup_fmap: 0ms
+LModule.IsGenerated: 0ms
+Precat.op: 0ms
+RatField.join: 0ms
+proofmode_env_lookup_hit: 0ms
+qp_half: 0ms
+Group.ipow_+: 0ms
+strongly_atomic_prim_base: 0ms
+bool_or_false_r: 0ms
+MeetSemilattice.meet-comm: 0ms
+wsatSigma_enabled_gFunctor: 0ms
+nY: 0ms
+ndot_preserve_disjoint_r: 0ms
+upredDist_forall: 0ms
+fork_base_step: 0ms
+ProductPrecat.iso-second: 0ms
+AddGroup.With#.apartNonZero: 0ms
+LinearOrder.<=_/=: 0ms
+inv_ne: 0ms
+PolyStrictIntegralDomain: 0ms
+proofmode_into_pure_and_left: 0ms
+bool_and_comm: 0ms
+not_true_to_false: 0ms
+Sort.Sorted.headSorted: 0ms
+Sym.equals: 0ms
+ProphMap: 0ms
+and: 0ms
+gsetToCoPset_in: 0ms
+OrderedAddGroup.>0_pos: 0ms
+Pauses: 0ms
+OrderedAddGroup.to>0: 0ms
+NatSemiring.cancel_*-left: 0ms
+request_map_lookup: 0ms
+nSum: 0ms
+pm_destruct_into_persistent: 0ms
+=<=: 0ms
+PosetAddMonoid: 0ms
+ValidN: 0ms
+base_if_true_step_det: 0ms
+coPmem_union_just_inl: 0ms
+RingSolverModel.intMap': 0ms
+TrivialPoset: 0ms
+mul_ctx_absurd: 0ms
+FinSet.FinCardInj: 0ms
+mkIrisGS: 0ms
+iabs.negative-comm: 0ms
+transport_id_inv: 0ms
+GroupTerm: 0ms
+Transitive: 0ms
+degree-reduce: 0ms
+ghost_mapGpreS: 0ms
+pmap_ind.xI_inj.unxI: 0ms
+emp_sep_2_lemma: 0ms
+unitV: 0ms
+compl_chain_map: 0ms
+fill_step_item: 0ms
+ProductMonoid: 0ms
+mono_natSigma: 0ms
+fin_nat-inj: 0ms
+coPmem_union_just_inr.bool_or_true_r': 0ms
+gpartial_alter.gpartial_alter_lift: 0ms
+ProductCGroup: 0ms
+UnboundedDenseLinearOrder.Dec: 0ms
+pdelete: 0ms
+auth_cmra_extend_proof.auth_extend_frag_valid: 0ms
+++-cancel-left: 0ms
+proofmode_emp_intro_non_emp_fails: 0ms
+Op: 0ms
+coPmem_union_just_inr: 0ms
+nat_add_suc_right: 0ms
+nat_lt_advance: 0ms
+rFunctor_apply_constRF: 0ms
+gset_disj_CMRA.op_assoc_GSet.rhs_invalid_via_XY: 0ms
+proofmode_class_from_forall: 0ms
+Monoid.LDiv.ide-div: 0ms
+msc_two_incr_twice_read: 0ms
+excl_valid: 0ms
+irisGS_with_fork: 0ms
+IsEquiv.fromInjSurj: 0ms
+LexicographicalList: 0ms
+SemiringSolverModel.collapse1: 0ms
+sep_exist_l_elim: 0ms
+view_auth: 0ms
+Monoid.LDiv.product: 0ms
+bupd_unit_then: 0ms
+gset_disj_validN: 0ms
+ucmra_core_validN: 0ms
+EPerm.EPermDec: 0ms
+resolve_strongly_atomic: 0ms
+proph_mapSigma: 0ms
+Equivalence.Closure.ofEquivalence: 0ms
+NonExpansive: 0ms
+Iso.op: 0ms
+MonoidSolverModel.normalize-aux: 0ms
+CancelCMonoid: 0ms
+agree_map_equiv_maps: 0ms
+PolyRingWith#.#0: 0ms
+value_nat_default: 0ms
+OFEDiscrete: 0ms
+glookup_insert_eq: 0ms
+msc_make_handles: 0ms
+gset_overlap_disjoint: 0ms
+ignoreName: 0ms
+AddGroup.cancel-left: 0ms
+coPpick_nonempty: 0ms
+UnitlessGCDMonoid: 0ms
+Preorder.PosetC.<=C-transitive: 0ms
+RingLatticeColimit.poset-app: 0ms
+proofmode_wrapped_pure: 0ms
+pmap_ind.entries_of_nodup: 0ms
+pdom.list_map: 0ms
+GroupHom.func-inverse: 0ms
+DecSubGroup: 0ms
+SemiringSolverModel.natMap': 0ms
+PNode': 0ms
+equation.abGroup: 0ms
+Sort.RedBlack.toList.=rbTreeToList.aux: 0ms
+entries_of_tree: 0ms
+proofmode_next_hypothesis: 0ms
+ReducedCRing: 0ms
+pm_specialize: 0ms
+ucmra_core_left_id: 0ms
+AllocStepInv: 0ms
+finite_bool_not_true: 0ms
+bupd_intro: 0ms
+Sort.RedBlack.sort=insert.toList_insert: 0ms
+gmap_view_valueO_map: 0ms
+faa_strongly_atomic: 0ms
+discrete_fun_lookup_singleton_ne: 0ms
+TotalOrder.tmeet: 0ms
+pm_forall: 0ms
+OrderedAddMonoid: 0ms
+dist_to_dist_later_suc: 0ms
+IPointed.embed: 0ms
+loc_add_eval: 0ms
+Bar: 0ms
+CGroupSolverModel.interpretNF-consistent: 0ms
+msc_name: 0ms
+gset_disj_op_invalid_r: 0ms
+gen_heapV: 0ms
+fin_add_inv_L: 0ms
+PMIntoAnd: 0ms
+PermSetMonoid: 0ms
+wp_frame_post: 0ms
+and_False: 0ms
+bupd_notation: 0ms
+plookup'_PNode': 0ms
+PMFromSep: 0ms
+exclU_pcore: 0ms
+qp_add_comm: 0ms
+proofmode_env_persistent_context_dup: 0ms
+JoinSemilattice: 0ms
+wand_elim_lemma: 0ms
+option_op: 0ms
+mkProperExist: 0ms
+persistently_impl_elim_ent: 0ms
+gset_overlap_tree_false_witness: 0ms
+gid: 0ms
+MonoidSolverModel.>>=-consistent: 0ms
+RingHom: 0ms
+resolve_r_arg: 0ms
+subst_app: 0ms
+DiscreteFunOFE: 0ms
+o-: 0ms
+idpOver: 0ms
+inG_apply_pre: 0ms
+iDestruct: 0ms
+fac: 0ms
+pm_pure_intro_from: 0ms
+gset_union: 0ms
+savedPredSigma: 0ms
+wp_pre: 0ms
+bupd_alloc_frame_then: 0ms
+Sort.RedBlack.sort.balanceLeft: 0ms
+coPset_overlap: 0ms
+AuthValid: 0ms
+world_package: 0ms
+GCDMonoid.IsCoprime_*-left: 0ms
+inv_alloc_open_target: 0ms
+Pauses.fromIndex: 0ms
+inv_dup_ent: 0ms
+Graph.concat-assoc: 0ms
+Ideal.lclosure-superset: 0ms
+idpe: 0ms
+resolve_skip_expr: 0ms
+AbGroupCat.forgetToAddGroup: 0ms
+except_zero_mono_at: 0ms
+NatSemiring.ide-left: 0ms
+wsatSigma: 0ms
+Exclusive: 0ms
+ndisjoint: 0ms
+SmithRing.IsKaplansky: 0ms
+nC: 0ms
+pmap_ind.Pos_inj_fn_xO: 0ms
+sface-skip: 0ms
+exclU_op_ne_2: 0ms
+solver_plus_suc_right: 0ms
+IsCoprime.factor-right: 0ms
+*: 0ms
+nat_encode_inj.nat_pos_pred: 0ms
+rewriteI: 0ms
+inclN_refl_ucmra: 0ms
+gmap_view_matches_delete: 0ms
+nonZero>0: 0ms
+plookup_pinsert_list_not_in: 0ms
+msc_fresh_id: 0ms
+view_validN_op_l: 0ms
+DistributiveLattice.meet-ldistr: 0ms
+proofmode_wrapped_prop: 0ms
+agree_map_equiv_id: 0ms
+JoinSemilattice.join-monotone: 0ms
+persistently_sep_2_ent: 0ms
+Lattice.ldistr<=: 0ms
+isMonic: 0ms
+both_just_comm: 0ms
+base_lam_step_det: 0ms
+gset_disj_equiv_via_invalid: 0ms
+dist_op_ne_l: 0ms
+UnitlessMonoid: 0ms
+IAddPointed: 0ms
+False_or-rev: 0ms
+Equivalence.Closure.univ: 0ms
+ginsert: 0ms
+pm_start: 0ms
+coPmem: 0ms
+pm_frame_spatial: 0ms
+validN_sub_l: 0ms
+wp_pre_contractive_ofe: 0ms
+AddGroupHom: 0ms
+OrderedMonoid: 0ms
+ProperUPred: 0ms
+equivI_refl_notation: 0ms
+sip: 0ms
+view_auth_unpersist: 0ms
+length: 0ms
+Ideal.closure-finGenerated: 0ms
+simplify: 0ms
+CSemiring: 0ms
+optionO_map_cmra_morphism: 0ms
+assuming: 0ms
+ViewAuth: 0ms
+CGroupData.removeVars-correct: 0ms
+pmap_ind.xO_ne_xI: 0ms
+NotDec: 0ms
+AuthElem: 0ms
+MatrixRing.product: 0ms
+load_step_inv_ctx: 0ms
+bupd_ent_trans: 0ms
+spawn_token_op_invalidN: 0ms
+fresh_inv_oracle: 0ms
+AbGroupSolverModel.terms-equality-conv: 0ms
+replicate: 0ms
+Theory.congruence.replace: 0ms
+pm_persistent_select_there: 0ms
+cmra_validN_op_r: 0ms
+SubGroup: 0ms
+mul_expr_product_default: 0ms
+IdealLattice.meet: 0ms
+DiscretePrecat.map: 0ms
+except_zero_positive: 0ms
+<->_=: 0ms
+gset_union_comm: 0ms
+gset_singleton: 0ms
+agree_idemp: 0ms
+*>.concat: 0ms
+ownM_dist: 0ms
+EctxItem: 0ms
+cmra_update_det_paths: 0ms
+Perm.perm_equiv.conv: 0ms
+dfun_transport_validN: 0ms
+False_elim: 0ms
+subset_false_transfer: 0ms
+DenseLinearOrder.Dec: 0ms
+or_elim_lemma: 0ms
+gsetTreeToCoPset: 0ms
+glookup_delete_ne: 0ms
+if_bool_pure_ctx_absurd: 0ms
+equation.semiring: 0ms
+iff_body: 0ms
+nodup_keys: 0ms
+CMonoid.DivChain: 0ms
+proofmode_wp_post_refl: 0ms
+FinSet.searchFin: 0ms
+Theory: 0ms
+CancelGCDMonoid.gcd_pow_div: 0ms
+RingSolverModel.signMulCoef: 0ms
+proper_later_forall_2: 0ms
+gset_in_singleton_eq: 0ms
+RIdeal.ldiv: 0ms
+pm_specialize_into_forall: 0ms
+mkProperPure: 0ms
+==<: 0ms
+gset_disj: 0ms
+option_op_eq_nothing_inv: 0ms
+ThreadPool: 0ms
+pinsert_list: 0ms
+msc_requestGS: 0ms
+NatData.find-fstLeafToRemoveInd: 0ms
+Monoid: 0ms
+False_and-rev: 0ms
+subPrecat.embedding: 0ms
+PausesElem: 0ms
+wp_pure: 0ms
+proper_later_intro: 0ms
+subst_mul: 0ms
+solver_gg: 0ms
+gset_overlap_tree_disjoint: 0ms
+pm_destruct_exist1: 0ms
+NatData.Leaf: 0ms
+ThreadStep: 0ms
+fanTheorem.APath: 0ms
+idEquiv: 0ms
+pm_destruct_or: 0ms
+pmap_ind.Pos_inj_fn_id: 0ms
+o: 0ms
+fin_add_inv: 0ms
+QEquiv.isInj: 0ms
+nIgnore: 0ms
+inv_exist_pair: 0ms
+nThunk: 0ms
+PolyRingWith#: 0ms
+proofmode_into_exist_drop_emp: 0ms
+Sort.Insertion.sort: 0ms
+coPset_disj_valid: 0ms
+IntRing.lrdistr: 0ms
+gmap_singleton_validN_2: 0ms
+fin-inc: 0ms
+value_loc: 0ms
+Pmap_wf.PNode_nontrivial: 0ms
+Contractive: 0ms
+pm_nat_eq: 0ms
+pm_exact_from_assumption_spatial: 0ms
+AuthUCMRA: 0ms
+rFunctor_map_proper: 0ms
+Monoid.Inv.lmake: 0ms
+PMFromExist1: 0ms
+inclN_op_l: 0ms
+Pointed: 0ms
+not: 0ms
+coPset_equiv_refl: 0ms
+prodOF_cofe: 0ms
+agree_dist_sym: 0ms
+timeless_exist: 0ms
+discrete_fun_insert: 0ms
+msc_client2_twice_post: 0ms
+pm_into_invariant_direct: 0ms
+pm_apply_wand: 0ms
+So: 0ms
+nR: 0ms
+MonoidSolverModel.interpretNF: 0ms
+DivQuotient.inv~ide: 0ms
+JoinSemilattice.join-comm: 0ms
+coPset_disj_CMRA.validN_ne: 0ms
+<|>: 0ms
+ContractiveFun: 0ms
+agree_dist_refl: 0ms
+PolyRing.*c-assoc: 0ms
+iClear: 0ms
+proph_mapGpreS: 0ms
+OrderedAddMonoid.<_+: 0ms
+wp_forks: 0ms
+gset_disj_OFE: 0ms
+exist_intro': 0ms
+BILaterMixin: 0ms
+EPerm.eperm-++-right: 0ms
+IsEquiv.ret: 0ms
+max_nat_comm: 0ms
+coPset_subset_union_difference: 0ms
+PseudoCAlgebra: 0ms
+LocType: 0ms
+nNextAcc: 0ms
+SubMonoid: 0ms
+Retraction.levelProp: 0ms
+ownE: 0ms
+cmra_includedN_l: 0ms
+IdealMonoid.product-right: 0ms
+GroupHom.id: 0ms
+msc_to_agree_valid: 0ms
+pure_base_redex_step_det.pure_base_redex_step_det_ctx: 0ms
+AddGroup.Dec.decide#0: 0ms
+LexicographicalList.<L: 0ms
+coPset_equiv_trans: 0ms
+ghost_mapGS: 0ms
+IntRing.+-comm: 0ms
+impl_elim_l_lemma: 0ms
+proofmode_timeless_emp: 0ms
+AddGroup.negative-equality: 0ms
+OrderedAddGroup.positive_negative: 0ms
+uPred_map_ne: 0ms
+equation.cMonoid: 0ms
+agree_map: 0ms
+pm_lookup: 0ms
+nK: 0ms
+eval_nat_eq_false: 0ms
+constOF_cofe: 0ms
+incl: 0ms
+pm_delete: 0ms
+pathEquiv: 0ms
+store_step_inv_ctx: 0ms
+mscSigma: 0ms
+proofmode_next: 0ms
+IntRing.negative: 0ms
+proofmode_twice_wrapped_and: 0ms
+gset_disj_valid: 0ms
+solver_unfold_chain: 0ms
+excl_map: 0ms
+hiding: 0ms
+polyShift: 0ms
+bool_or_true_r: 0ms
+MatrixRing.product-gen: 0ms
+ofe_mor_comp_ne: 0ms
+optionO_map_ne_map_at: 0ms
+FinSet.||-finiteAC: 0ms
+fixpoint_unfold: 0ms
+plookup_empty: 0ms
+proofmode_delete_smoke: 0ms
+coPset_overlap_complete.bool_or_xx_true_l: 0ms
+not-isInv: 0ms
+pm_clear_intuitionistic: 0ms
+new_proph_step_inv: 0ms
+pmap: 0ms
+fill_item: 0ms
+DivQuotient: 0ms
+-: 0ms
+RatField.*_alt: 0ms
+NatBSemilattice.rdistr0: 0ms
+Set: 0ms
+RingSolverModel.ringMulCoef: 0ms
+forall_elim_ent: 0ms
+ownE_equiv_ent: 0ms
+RingLModule: 0ms
+FreeStructure.qinterpret0: 0ms
+ownE_op': 0ms
+Monoid.Inv.rmake: 0ms
+alloc_unit_program: 0ms
+proofmode_class_into_or: 0ms
+CocompletePrecat.applyEquiv: 0ms
+wp_if: 0ms
+cmra_comm_dist: 0ms
+agree_map_validN: 0ms
+fails: 0ms
+Diagram.functor.Func: 0ms
+excl_exclusive: 0ms
+factorial_prog: 0ms
+base_lam_beta_step_det: 0ms
+CGroupSolverModel: 0ms
+plookup_partial_alter_eq: 0ms
+contrFibers=>QEquiv: 0ms
+SemiringSolverModel.SemiringData: 0ms
+plookup_delete_ne: 0ms
+gname_fresh: 0ms
+depth_max_le_r: 0ms
+ProdFin.prod_equiv: 0ms
+PolyRingWith#.#0-*-left: 0ms
+SemiringSolverModel.collapse: 0ms
+all-map: 0ms
+contractive_implies_contractive2: 0ms
+solver_plus_zero_right: 0ms
+AddGroup.negative_+: 0ms
+PMIntoOr: 0ms
+DecSubSet: 0ms
+DivQuotient.div-from~: 0ms
+core_id_dup: 0ms
+proofmode_specialize_forall_class_wrong_source_fails: 0ms
+nH2: 0ms
+maybe_fmap: 0ms
+exist_elim_ent: 0ms
+OrderedAddGroup.fromNeg: 0ms
+nclose_subseteq: 0ms
+gmap_wf: 0ms
+gmap_to_list.strip: 0ms
+Quotient.equalityClosure: 0ms
+gmerge.gmerge_lift: 0ms
+NatData.Leaf.isInv: 0ms
+UPredBUpd: 0ms
+IntRing.suc-left: 0ms
+EuclideanSemiringData.isPseudonorm: 0ms
+proofmode_emp_intro: 0ms
+Monoid.DivBase: 0ms
+CGroupData.simplify: 0ms
+solver_f_embed_coerce_to_zero: 0ms
+later_map_id: 0ms
+PolyRingWith#.#0_*c-right: 0ms
+chain_const: 0ms
+Ectx: 0ms
+PosetAddGroup: 0ms
+gen_heap_gFunctor: 0ms
+proph_list_resolves: 0ms
+glookup_singleton_ne: 0ms
+ModelCat.ColimitData.liftSequent: 0ms
+proofmode_class_frame: 0ms
+EmptyOFE: 0ms
+snd_arg: 0ms
+binop_signature: 0ms
+OptionUCMRA: 0ms
+pm_into_or_direct: 0ms
+CGroupSolverModel.normalize: 0ms
+PausesIdeal: 0ms
+nclose_anchor.pos_concat_p_xH: 0ms
+IsCoprime.IsCoprime_ide-left: 0ms

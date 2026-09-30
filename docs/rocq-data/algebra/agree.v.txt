@@ -44,7 +44,7 @@ agree_valid_includedN		missing	qol
 agree_valid_instance	iris.algebra.agree:AgreeCMRA	analogue	foundational	Arend stores this operation and its laws in the containing CMRA instance instead of a separate Rocq typeclass instance.
 elem_of_agree		missing	qol
 to_agree	iris.algebra.agree:to_agree	direct	foundational
-to_agree_discrete		missing	qol
+to_agree_discrete	iris.algebra.agree:to_agree_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 to_agree_included		missing	qol
 to_agree_includedN		missing	qol
 to_agree_included_L		missing	qol

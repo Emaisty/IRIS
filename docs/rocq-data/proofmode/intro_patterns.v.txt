@@ -1,10 +1,10 @@
-gallina_ident		missing	foundational
-intro_pat		missing	foundational
-intro_pat.big_conj		missing	foundational
-intro_pat.close		missing	foundational
-intro_pat.close_conj_list		missing	foundational
-intro_pat.close_list		missing	foundational
-intro_pat.parse		missing	qol
-intro_pat.parse_go		missing	foundational
-intro_pat.stack_item		missing	foundational
-intro_pat_intuitionistic		missing	qol
+gallina_ident		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.big_conj		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.close		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.close_conj_list		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.close_list		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.parse		missing	qol	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.parse_go		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat.stack_item		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+intro_pat_intuitionistic		missing	qol	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.

@@ -59,7 +59,7 @@ view_equiv		missing	qol
 view_frag	iris.algebra.view:view_frag	direct	foundational
 view_frag_core		missing	qol
 view_frag_core_id	iris.algebra.view:view_frag_core_id	direct	qol
-view_frag_discrete		missing	qol
+view_frag_discrete	iris.algebra.view:view_frag_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 view_frag_dist_inj		missing	qol
 view_frag_included		missing	qol
 view_frag_includedN		missing	qol

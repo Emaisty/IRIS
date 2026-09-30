@@ -1,4 +1,4 @@
-sel_pat		missing	foundational
-sel_pat.parse		missing	qol
-sel_pat.parse_go		missing	foundational
-sel_pat_pure		missing	foundational
+sel_pat		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+sel_pat.parse		missing	qol	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+sel_pat.parse_go		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+sel_pat_pure		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.

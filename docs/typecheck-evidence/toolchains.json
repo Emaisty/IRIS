@@ -1,0 +1,58 @@
+{
+  "iris_commit": "e00f2867886b928e6cd420959cf39e0d3975cb8e",
+  "official": {
+    "commit": "c51e285e063dff8d7bdb8c2a82bf454059b2537b",
+    "arend_lib_tree": "f7ede015f28e0f30c8c0fb62b598edabedbfc4d7",
+    "jar_sha256": "a0d116a8756b9169b32a5947969aea7dd8f1996a5a7381f4d6c4f60ba4ed1b80"
+  },
+  "patched": {
+    "commit": "7734ae6eeb5d2c0fade4991601332d2199700e36",
+    "arend_lib_tree": "857b284abda466e75e9d80fa0c61bf81bcbb9cee",
+    "jar_sha256": "d9cee05d5d024f8f68d0eedf6f07a3714a4efed7280f7f3674cd34e3c2768d3d"
+  },
+  "pull_requests": {
+    "131": {
+      "title": "Implement String",
+      "state": "open",
+      "merged": false,
+      "html_url": "https://github.com/arend-lang/Arend/pull/131",
+      "updated_at": "2026-08-13T14:29:17Z",
+      "head": "062a2ac54144a6911a06adfec67496910c63f251"
+    },
+    "132": {
+      "title": "Compare function arguments before unfolding calls",
+      "state": "closed",
+      "merged": false,
+      "html_url": "https://github.com/arend-lang/Arend/pull/132",
+      "updated_at": "2026-08-16T12:48:20Z",
+      "head": "7a0008e75b54f11d5ee6fdad379142279bc185c4"
+    }
+  },
+  "regressions": [
+    {
+      "name": "org.arend.library.StringLibraryTest",
+      "tests": "17",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "org.arend.term.expr.visitor.ComparisonTest",
+      "tests": "26",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "org.arend.frontend.LibraryLoadOrderTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "jdk": {
+    "version": "Temurin 25.0.4.1+1",
+    "archive_sha256": "61979887f7506a24a57439ff99adb8b3a7fc89977d9cfe3b8984f58a981b7b9d"
+  }
+}

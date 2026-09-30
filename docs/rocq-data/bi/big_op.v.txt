@@ -369,7 +369,7 @@ big_sepM_affine		missing	qol
 big_sepM_affine'		missing	qol
 big_sepM_affinely_pure_2		missing	qol
 big_sepM_and		missing	qol
-big_sepM_delete	iris.bi.big_op:big_sepM_extract	analogue	qol	Arend decomposes the map entry list directly; big_sepM_extract is the delete/extract workhorse used by world satisfaction.
+big_sepM_delete	iris.bi.big_op:big_sepM_delete	analogue	qol	Actual gdelete-based map focusing is now proved; the older entry-list big_sepM_extract helper remains available.
 big_sepM_dom		missing	qol
 big_sepM_dup		missing	qol
 big_sepM_empty		missing	qol

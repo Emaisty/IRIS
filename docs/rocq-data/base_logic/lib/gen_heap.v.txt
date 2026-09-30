@@ -47,7 +47,7 @@ pointsto_frac_ne		missing	qol
 pointsto_fractional		missing	qol
 pointsto_ne		missing	qol
 pointsto_persist		missing	qol
-pointsto_timeless		missing	qol
+pointsto_timeless	iris.base_logic.lib.gen_heap:pointsto_timeless	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 pointsto_unpersist		missing	qol
 pointsto_valid		missing	qol
 pointsto_valid_2		missing	qol

@@ -14,7 +14,7 @@ discrete_fun_lookup_singleton_ne	iris.algebra.functions:discrete_fun_lookup_sing
 discrete_fun_singleton	iris.algebra.functions:discrete_fun_singleton	direct	foundational
 discrete_fun_singleton_core		missing	qol
 discrete_fun_singleton_core_id	iris.algebra.functions:discrete_fun_singleton_core_id	direct	qol
-discrete_fun_singleton_discrete		missing	qol
+discrete_fun_singleton_discrete	iris.algebra.functions:discrete_fun_singleton_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 discrete_fun_singleton_ne	iris.algebra.functions:discrete_fun_singleton_ne	direct	qol
 discrete_fun_singleton_op	iris.algebra.functions:discrete_fun_singleton_op	direct	qol
 discrete_fun_singleton_proper	iris.base_logic.lib.own:discrete_fun_singleton_proper	direct	qol

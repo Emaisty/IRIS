@@ -1,0 +1,89 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (50ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (15ms)
+
+--- Typechecking tests.proofmode ---
+[WARNING] iris.proofmode.heap_lang:8:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.bi.updates:9:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.program_logic.weakestpre:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.lib.gmap_view_functor:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.own:16:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] tests.proofmode:26:9: Definition 'wp_fork' is already imported from module iris.program_logic.lifting
+  In: \import iris.proofmode.Meta
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.program_logic.lifting:21:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.program_logic.lifting:29:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.gmap_functor:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.gen_heap:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.big_op:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.fancy_updates:37:8: Function can be declared as a lemma
+  In: fupd_ne
+[WARNING] iris_heap_lang.lang_ectx:1901:57: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[WARNING] iris_heap_lang.lang_ectx:2030:39: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+--- Done (1m20s) ---

@@ -282,7 +282,7 @@ prodOF_contractive	iris.algebra.ofe:prodOF_contractive	direct	qol
 prodO_map	iris.algebra.lib.gmap_view_functor:prodO_map	direct	foundational
 prodO_map_ne		missing	qol
 prod_cofe		missing	qol
-prod_discrete		missing	qol
+prod_discrete	iris.algebra.ofe:prod_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 prod_dist		missing	qol
 prod_map_ne		missing	qol
 prod_ofe_discrete		missing	qol

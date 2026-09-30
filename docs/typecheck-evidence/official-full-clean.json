@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/private/tmp/iris-arend-20260930/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java",
+    "-Xmx12g",
+    "-Xss16m",
+    "-jar",
+    "/private/tmp/iris-arend-20260930/official/cli/build/libs/cli-1.12.0-full.jar",
+    "-L",
+    "/private/tmp/iris-arend-20260930/official",
+    "-r",
+    "--serialize",
+    "--show-times"
+  ],
+  "cwd": "/private/tmp/iris-arend-20260930/runs/official/IRIS",
+  "started_utc": "2026-09-30T03:08:55.878127+00:00",
+  "timeout_seconds": 900,
+  "pid": 81780,
+  "exit_code": 143,
+  "timed_out": true,
+  "elapsed_seconds": 910.919,
+  "errors": 0,
+  "goals": 0,
+  "completion_markers": 0,
+  "runtime_failure": false,
+  "passed": false
+}

@@ -1,0 +1,17 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (48ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (13ms)
+
+--- Typechecking iris_heap_lang.lang_ectx ---
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang_ectx:1901:57: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[WARNING] iris_heap_lang.lang_ectx:2030:39: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+[WARNING] iris_heap_lang.lang_ectx:2464:90: The data type will not be truncated since it already fits in the specified universe
+  In: \Prop
+--- Done (6911ms) ---

@@ -1,0 +1,7 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (38ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (13ms)
+
+--- Typechecking iris.algebra.functions ---
+--- Done (6384ms) ---

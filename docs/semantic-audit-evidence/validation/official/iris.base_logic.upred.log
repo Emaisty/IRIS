@@ -1,0 +1,9 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (39ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (12ms)
+
+--- Typechecking iris.base_logic.upred ---
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+--- Done (6354ms) ---

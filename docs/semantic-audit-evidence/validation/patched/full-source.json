@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/private/tmp/iris-arend-20260930/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java",
+    "-Xmx8g",
+    "-Xss16m",
+    "-jar",
+    "/private/tmp/iris-arend-20260930/patched/cli/build/libs/cli-1.12.0-full.jar",
+    "-L",
+    "/private/tmp/iris-semantic-audit-20261001/patched/libs",
+    "-r",
+    "--serialize",
+    "--show-times"
+  ],
+  "cwd": "/private/tmp/iris-semantic-audit-20261001/patched/IRIS",
+  "deadline_seconds": 2400,
+  "source_recompile": true,
+  "started_utc": "2026-09-30T22:10:09.557502+00:00",
+  "timed_out": false,
+  "exit_code": 1,
+  "elapsed_seconds": 949.904,
+  "errors": 164,
+  "goals": 0,
+  "completion_markers": 1,
+  "crash": false,
+  "status": "error"
+}

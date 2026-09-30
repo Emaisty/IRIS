@@ -1,10 +1,10 @@
-goal_kind		missing	foundational
-goal_kind_modal		missing	foundational
-spec_goal		missing	foundational
-spec_pat		missing	foundational
-spec_pat.close		missing	foundational
-spec_pat.close_ident		missing	foundational
-spec_pat.parse		missing	qol
-spec_pat.parse_go		missing	foundational
-spec_pat.stack_item		missing	foundational
-spec_pat_modal		missing	foundational
+goal_kind		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+goal_kind_modal		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_goal		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat.close		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat.close_ident		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat.parse		missing	qol	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat.parse_go		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat.stack_item		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+spec_pat_modal		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.

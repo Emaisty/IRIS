@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- Generated from docs/proofmode.md by scripts/build-docs.py. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arend-native proof mode — Iris in Arend</title>
+  <link rel="stylesheet" href="styles.css?v=e00f286">
+</head>
+<body>
+  <nav class="guide-nav" aria-label="Documentation">
+    <a href="index.html">Porting status</a> ·
+    <a href="implementation.html">Implementation</a> ·
+    <a href="proofmode.html">Proof mode</a> ·
+    <a href="build.html#build">Build</a> ·
+    <a href="README.html">Documentation maintenance</a>
+  </nav>
+  <main class="guide">
+<h1 id="arend-native-proof-mode">Arend-native proof mode</h1>
+<p>Implemented at the 2026-09-30 merge. This is an Arend extension with Iris-style operations and explicit proof evidence; it does not interpret Rocq Ltac.</p>
+<h2 id="architecture-and-imports">Architecture and imports</h2>
+<p><a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/src/iris/proofmode/core.ard"><code>iris.proofmode.core</code></a> defines <code>PMEnv</code>, <code>PMEnvs</code>, <code>of_envs</code>, and <code>envs_entails</code>. Spatial hypotheses combine with <code>∗</code>; the intuitionistic environment wraps each hypothesis in persistence. <code>PMSelection</code>, <code>PMPersistentSelection</code>, and <code>PMSplit</code> include proofs of the resource permutations they perform.</p>
+<p>Java metas select hypotheses and build applications of the Arend <code>pm_*</code> lemmas. Those applications are typechecked against the goal. The logical rules live in Arend, including persistent duplication, framing, and mask transitions. The <a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/proofmode-extension/src/main/java/org/arend/iris/proofmode/ProofModeExtension.java">registration file</a> lists the public operations in the virtual module <code>iris.proofmode.Meta</code>. Build the extension first as described in the <a href="build.html#build">root README</a>.</p>
+<p>A small example using the same syntax as <code>tests.proofmode</code>:</p>
+<pre><code>\import Function.Meta
+\import iris.algebra.cmra
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.proofmode.Meta
+
+\lemma keep_right {M : UCMRA} (P Q : ProperUPred M)
+  : (P ∗ Q) ⊢ Q =&gt;
+  ipm $ iIntros &quot;HP HQ&quot; $ iExact &quot;HQ&quot;</code></pre>
+<p><code>ipm</code> starts from an entailment and creates the initial spatial hypothesis named <code>&quot;&quot;</code>. <code>iIntros</code> names/decomposes it. <code>$</code> composes a tactic with its continuation; operations with multiple branches take separate proof terms. <code>iStopProof</code> returns to an ordinary entailment over <code>of_envs</code>.</p>
+<p>Quoted labels are converted to UTF-16 code-unit lists (<code>PMName = List Nat</code>) before elaboration. They do not require semantic Arend <code>String</code> support and are distinct from HeapLang&#x27;s numeric variable names.</p>
+<h2 id="logical-operations">Logical operations</h2>
+<div class="guide-table"><table><thead><tr>
+<th>Operations</th>
+<th>Implemented behavior</th>
+</tr></thead><tbody>
+<tr><td><code>ipm</code>, <code>iStopProof</code></td><td>Enter/leave the environment representation.</td></tr>
+<tr><td><code>iIntros</code>, <code>iDestruct</code></td><td>Introduce or decompose supported connectives, including separation, pure facts, existentials, disjunction, and persistence.</td></tr>
+<tr><td><code>iExact</code>, <code>iAssumption</code>, <code>iEmpIntro</code>, <code>iPureIntro</code></td><td>Finish from a named hypothesis, search the environment, or prove emp/pure goals.</td></tr>
+<tr><td><code>iClear</code>, <code>iRename</code></td><td>Remove/rename spatial or persistent hypotheses.</td></tr>
+<tr><td><code>iFrame</code></td><td>Frame named resources or search automatically, including nested separating conjunctions and persistent resources.</td></tr>
+<tr><td><code>iSplitL</code>, <code>iSplitR</code></td><td>Split a separating goal with explicit spatial selection; persistent resources remain reusable. Supported conjunction goals use conjunction introduction.</td></tr>
+<tr><td><code>iLeft</code>, <code>iRight</code>, <code>iExists</code></td><td>Select a disjunct or supply an existential witness.</td></tr>
+<tr><td><code>iApply</code>, <code>iSpecialize</code></td><td>Apply entailments/wands and specialize wands or universal hypotheses, including persistent wands.</td></tr>
+<tr><td><code>iAssert</code>, <code>iPoseProof</code></td><td>Prove an intermediate proposition using selected resources; <code>iPoseProof</code> is registered as an alias of <code>iAssert</code>.</td></tr>
+<tr><td><code>iNext</code>, <code>iModIntro</code>, <code>iMod</code></td><td>Later reasoning and supported basic/fancy-update introduction or elimination.</td></tr>
+<tr><td><code>iRewrite</code>, <code>iLob</code></td><td>Rewrite with equality evidence and use Löb induction.</td></tr>
+<tr><td><code>iInv</code></td><td>Open a selected spatial invariant/accessor around a strongly atomic WP goal.</td></tr>
+</tbody></table></div>
+<p>Examples of supported patterns from the test suite:</p>
+<pre><code>-- Split a hypothesis into two spatial resources.
+iDestruct &quot;Hpair&quot; &quot;HP HQ&quot; $ ...
+-- Expose a pure fact as an Arend argument.
+iDestruct &quot;Hphi&quot; &quot;%&quot; $ \lam h =&gt; ...
+-- Move a persistent proposition into the intuitionistic context.
+iDestruct &quot;HU&quot; &quot;#HP&quot; $ ...
+-- Existential witness becomes an Arend argument.
+iDestruct &quot;Hex&quot; &quot;HPhi&quot; $ \lam x =&gt; ...
+-- Disjunction has two proof continuations.
+iDestruct &quot;Hcase&quot; &quot;HP | HQ&quot; leftProof rightProof
+-- Select the spatial resources for an intermediate assertion.
+iAssert &quot;HR&quot; &quot;HP&quot; P proofOfP continuation</code></pre>
+<p>These fragments illustrate argument order; <code>...</code> denotes the remaining proof. They are not the full Rocq introduction/selection-pattern language.</p>
+<h2 id="evidence-classes">Evidence classes</h2>
+<p>The core exposes <code>PMFromAssumption</code>, <code>PMIntoPure</code>, <code>PMFromPure</code>, <code>PMIntoPersistent</code>, <code>PMFromSep</code>, <code>PMIntoAnd</code>, <code>PMIntoOr</code>, <code>PMIntoWand</code>, <code>PMIntoLater</code>, <code>PMFromLater</code>, <code>PMTimeless</code>, <code>PMFromExist</code>/<code>PMIntoExist</code>, their <code>Set1</code> variants, <code>PMIntoForall</code>/<code>PMFromForall</code>, <code>PMFrame</code>, <code>PMIntoUpdate</code>, <code>PMIntoInvariant</code>, and <code>PMIntoAccessor</code>.</p>
+<p>Each packages an entailment or logical rule. Tactics recognize direct connectives and accept explicit evidence for wrapped propositions. For example, <code>PMIntoWand M R P Q</code> contains <code>R ⊢ (P -∗ Q)</code>; <code>PMFrame M R P Q</code> contains <code>(R ∗ Q) ⊢ P</code>. Despite its name, this implementation&#x27;s <code>PMFromSep</code> contains <code>P ⊢ (Q ∗ R)</code> and is used for destructing a hypothesis. Its direction corresponds to Rocq <code>IntoSep</code>.</p>
+<p><a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/src/tests/proofmode_custom_instances.ard"><code>tests.proofmode_custom_instances</code></a> shows how a client supplies these records without changing the Java metas. <a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/src/tests/proofmode.ard"><code>tests.proofmode</code></a> exercises their dispatch, aliases, persistent operations, and rejection cases. These classes cover the native implementation&#x27;s supported operations; they are not a complete copy of Rocq&#x27;s proof-mode instance system.</p>
+<h2 id="heaplang-automation">HeapLang automation</h2>
+<p>Term-level rules and metas share names such as <code>wp_value</code>, <code>wp_bind</code>, and <code>wp_fork</code>. Use selective imports or qualify a colliding name, as in <a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/src/tests/proofmode_wp_primitives.ard"><code>tests.proofmode_wp_primitives</code></a>.</p>
+<div class="guide-table"><table><thead><tr>
+<th>Operations</th>
+<th>Behavior</th>
+</tr></thead><tbody>
+<tr><td><code>wp_pures</code>, <code>wp_pure</code></td><td>Evaluate supported pure redexes, repeatedly or for one step.</td></tr>
+<tr><td><code>wp_lam</code>, <code>wp_let</code>, <code>wp_rec</code></td><td>Pure evaluation through the requested lambda/let or recursive beta step.</td></tr>
+<tr><td><code>wp_bind</code>, <code>wp_value</code>, <code>wp_if</code></td><td>Focus a context, discharge a value WP, or select a Boolean branch.</td></tr>
+<tr><td><code>wp_apply</code>, <code>iEval</code></td><td>Apply a supplied WP/entailment rule; <code>iEval</code> is an alias of <code>wp_apply</code>, not Rocq&#x27;s general reduction-expression language.</td></tr>
+<tr><td><code>wp_smart_apply</code></td><td>Apply a supplied specification under supported evaluation contexts and let sequencing.</td></tr>
+<tr><td><code>wp_alloc</code>, <code>wp_allocN</code>, <code>wp_load</code>, <code>wp_store</code>, <code>wp_faa</code>, <code>wp_fork</code>, <code>wp_new_proph</code>, <code>wp_resolve</code></td><td>Primitive-named aliases of <code>wp_smart_apply</code>; callers provide the rule and postcondition continuation.</td></tr>
+</tbody></table></div>
+<p>The primitive aliases do not synthesize a specification just from their name. For concrete calls, see <code>proofmode_wp_load_rule</code> and <code>proofmode_wp_load_nested_let</code> in the primitive suite. <a href="https://github.com/Emaisty/IRIS/blob/e00f2867886b928e6cd420959cf39e0d3975cb8e/src/iris/proofmode/heap_lang.ard"><code>iris.proofmode.heap_lang</code></a> proves the bridges <code>pm_wp_smart_apply</code>, <code>pm_wp_let</code>, <code>pm_wp_smart_let</code>, <code>pm_wp_smart_bind_item</code>, <code>pm_wp_inv</code>, <code>pm_wp_accessor</code>, and <code>pm_wp_inv_timeless</code> used by the metas.</p>
+<p>For invariant opening, the usual form is <code>iInv &quot;Hinv&quot; &quot;HP Hclose&quot; maskProof atomicityProof continuation</code>. Wrapped invariants may supply <code>PMIntoInvariant</code> evidence. A <code>&quot;&gt;HP Hclose&quot;</code> pattern additionally requires <code>PMTimeless</code> evidence. A <code>PMIntoAccessor</code> record supports other mask-changing accessors. <code>iInv</code> currently requires a spatial hypothesis and a WP goal; it does not open a persistent-context hypothesis directly. The continuation must meet the closing and mask obligations checked by the bridge theorem.</p>
+  </main>
+</body>
+</html>

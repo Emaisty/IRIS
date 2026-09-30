@@ -1,0 +1,7 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (51ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (14ms)
+
+--- Typechecking stdpp.namespaces ---
+--- Done (6435ms) ---

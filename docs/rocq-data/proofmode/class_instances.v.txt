@@ -14,7 +14,7 @@ from_and_big_sepL_cons_persistent		missing	qol
 from_and_big_sepMS_disj_union_persistent		missing	qol
 from_and_pure_iff		missing	qol
 from_assumption_tforall		missing	qol
-from_exist_exist		missing	qol
+from_exist_exist	iris.proofmode.core:pm_from_exist_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 from_exist_texist		missing	qol
 from_forall_tforall		missing	qol
 from_pure_big_sepL		missing	qol
@@ -81,7 +81,7 @@ from_and_sep_persistent_r		missing	qol
 from_assumption_absorbingly_r		missing	qol
 from_assumption_affinely_l_true		missing	qol
 from_assumption_affinely_r		missing	qol
-from_assumption_exact		missing	qol
+from_assumption_exact	iris.proofmode.core:pm_from_assumption_refl	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 from_assumption_forall		missing	qol
 from_assumption_intuitionistically_l		missing	qol
 from_assumption_intuitionistically_l_true		missing	qol
@@ -94,7 +94,7 @@ from_exist_affinely		missing	qol
 from_exist_intuitionistically		missing	qol
 from_exist_persistently		missing	qol
 from_exist_pure		missing	qol
-from_forall_forall		missing	qol
+from_forall_forall	iris.proofmode.core:pm_from_forall_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 from_forall_impl_pure		missing	qol
 from_forall_intuitionistically		missing	qol
 from_forall_persistently		missing	qol
@@ -139,7 +139,7 @@ into_absorbingly_absorbing		missing	qol
 into_absorbingly_default		missing	qol
 into_absorbingly_intuitionistically		missing	qol
 into_and_affinely		missing	qol
-into_and_and		missing	qol
+into_and_and	iris.proofmode.core:pm_into_and_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_and_and_affine_l		missing	qol
 into_and_and_affine_r		missing	qol
 into_and_intuitionistically		missing	qol
@@ -150,20 +150,20 @@ into_and_sep_affine		missing	qol
 into_exist_absorbingly		missing	qol
 into_exist_affinely		missing	qol
 into_exist_and_pure		missing	qol
-into_exist_exist		missing	qol
+into_exist_exist	iris.proofmode.core:pm_into_exist_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_exist_intuitionistically		missing	qol
 into_exist_persistently		missing	qol
 into_exist_pure		missing	qol
 into_exist_sep_pure		missing	qol
 into_forall_affinely		missing	qol
-into_forall_forall		missing	qol
+into_forall_forall	iris.proofmode.core:pm_into_forall_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_forall_intuitionistically		missing	qol
 into_forall_persistently		missing	qol
 into_forall_wand_pure		missing	qol
 into_or_absorbingly		missing	qol
 into_or_affinely		missing	qol
 into_or_intuitionistically		missing	qol
-into_or_or		missing	qol
+into_or_or	iris.proofmode.core:pm_into_or_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_or_persistently		missing	qol
 into_or_pure		missing	qol
 into_persistent_affinely		missing	qol
@@ -190,7 +190,7 @@ into_sep_intuitionistically_affine		missing	qol
 into_sep_persistently		missing	qol
 into_sep_persistently_affine		missing	qol
 into_sep_pure		missing	qol
-into_sep_sep		missing	qol
+into_sep_sep	iris.proofmode.core:pm_from_sep_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_wand_affine		missing	qol
 into_wand_and_l		missing	qol
 into_wand_and_r		missing	qol
@@ -199,7 +199,7 @@ into_wand_impl'		missing	qol
 into_wand_intuitionistically		missing	qol
 into_wand_persistently_false		missing	qol
 into_wand_persistently_true		missing	qol
-into_wand_wand		missing	qol
+into_wand_wand	iris.proofmode.core:pm_into_wand_direct	analogue	qol	Explicit native evidence constructor for the direct connective; Rocq typeclass flags and search registration are not reproduced.
 into_wand_wand'		missing	qol
 into_wand_wandM'		missing	qol
 maybe_combine_sep_as_absorbingly		missing	qol

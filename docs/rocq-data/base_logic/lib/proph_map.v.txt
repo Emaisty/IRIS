@@ -1,6 +1,6 @@
 proph	iris.base_logic.lib.proph_map:proph	direct	foundational
 proph_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
-proph_def		missing	foundational
+proph_def	iris.base_logic.lib.proph_map:proph	analogue	foundational	Arend exposes the prophecy ownership definition directly without the Rocq sealing wrapper.
 proph_exclusive	iris.base_logic.lib.proph_map:proph_exclusive	direct	qol
 proph_list_resolves	iris.base_logic.lib.proph_map:proph_list_resolves	direct	foundational
 proph_mapGS	iris.base_logic.lib.proph_map:proph_mapGS	direct	foundational

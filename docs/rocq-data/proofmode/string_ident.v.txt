@@ -1,1 +1,1 @@
-StringToIdent.coq_string_to_list_byte		missing	foundational
+StringToIdent.coq_string_to_list_byte		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.

@@ -1,24 +1,24 @@
-mono_nat		missing	foundational
-mono_natR		missing	foundational
-mono_natUR		missing	foundational
-mono_nat_auth		missing	foundational
+mono_nat	iris.algebra.lib.mono_nat:mono_natR	analogue	foundational	The carrier is mono_natR.E; Arend uses a view over MaxNatUCMRA.
+mono_natR	iris.algebra.lib.mono_nat:mono_natR	analogue	foundational	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
+mono_natUR	iris.algebra.lib.mono_nat:mono_natUR	analogue	foundational	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
+mono_nat_auth	iris.algebra.lib.mono_nat:mono_nat_auth	analogue	foundational	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
 mono_nat_auth_core_id		missing	qol
 mono_nat_auth_dfrac_is_op		missing	qol
-mono_nat_auth_dfrac_op		missing	qol
+mono_nat_auth_dfrac_op	iris.algebra.lib.mono_nat:mono_nat_auth_op	analogue	qol	Composition law for DfracOwn/Qp authority only.
 mono_nat_auth_dfrac_op_valid		missing	qol
 mono_nat_auth_dfrac_valid		missing	qol
 mono_nat_auth_lb_op		missing	qol
 mono_nat_auth_op_valid		missing	qol
 mono_nat_auth_persist		missing	qol
 mono_nat_auth_unpersist		missing	qol
-mono_nat_auth_valid		missing	qol
+mono_nat_auth_valid	iris.algebra.lib.mono_nat:mono_nat_auth_valid	analogue	qol	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
 mono_nat_both_dfrac_valid		missing	qol
-mono_nat_both_valid		missing	qol
-mono_nat_included		missing	qol
-mono_nat_lb		missing	foundational
-mono_nat_lb_core_id		missing	qol
+mono_nat_both_valid	iris.algebra.lib.mono_nat:mono_nat_auth_lb_valid; iris.algebra.lib.mono_nat:mono_nat_auth_lb_valid_intro	analogue	qol	Explicit lower-bound elimination and validity introduction with a Qp bound, rather than a single Rocq equivalence.
+mono_nat_included	iris.algebra.lib.mono_nat:mono_nat_included	analogue	qol	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
+mono_nat_lb	iris.algebra.lib.mono_nat:mono_nat_lb	analogue	foundational	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
+mono_nat_lb_core_id	iris.algebra.lib.mono_nat:mono_nat_lb_core_id	analogue	qol	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
 mono_nat_lb_max_is_op		missing	qol
-mono_nat_lb_mono		missing	qol
+mono_nat_lb_mono	iris.algebra.lib.mono_nat:mono_nat_lb_mono	analogue	qol	View-based monotone-natural resource with Qp authority; discarded authority is not exposed by this API.
 mono_nat_lb_op		missing	qol
 mono_nat_lb_op_le_l		missing	qol
-mono_nat_update		missing	qol
+mono_nat_update	iris.algebra.lib.mono_nat:mono_nat_auth_update	analogue	qol	Full-authority monotone update returns the new authority together with a lower-bound fragment, encoded as cmra_updateP.

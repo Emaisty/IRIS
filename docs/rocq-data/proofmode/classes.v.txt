@@ -3,9 +3,9 @@ AsEmpValid0		missing	foundational
 ElimAcc		missing	foundational
 ElimInv		missing	foundational
 FrameInstantiateExistDisabled		missing	foundational
-IntoAcc		missing	foundational
+IntoAcc	iris.proofmode.core:PMIntoAccessor	analogue	foundational	Fixed mask-changing accessor evidence P entails FUpd E1 E2 (Q * Close), used by iInv on atomic WP goals; narrower than the general Rocq accessor interface.
 IntoEmbed		missing	foundational
-IntoInv		missing	foundational
+IntoInv	iris.proofmode.core:PMIntoInvariant	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 IsApp		missing	foundational
 IsCons		missing	foundational
 IsDisjUnion		missing	foundational
@@ -17,33 +17,33 @@ is_disj_union_disj_union		missing	qol
 AsEmpValid		missing	foundational
 CombineSepAs		missing	foundational
 CombineSepGives		missing	foundational
-ElimModal		missing	foundational
-Frame		missing	foundational
+ElimModal	iris.proofmode.core:PMIntoUpdate	analogue	foundational	Basic-update evidence consumed by iMod; only a specialization of Rocq general modal elimination.
+Frame	iris.proofmode.core:PMFrame	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 FromAffinely		missing	foundational
 FromAnd		missing	foundational
-FromAssumption		missing	foundational
-FromExist		missing	foundational
-FromForall		missing	foundational
+FromAssumption	iris.proofmode.core:PMFromAssumption	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
+FromExist	iris.proofmode.core:PMFromExist	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
+FromForall	iris.proofmode.core:PMFromForall	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 FromImpl		missing	foundational
 FromModal		missing	foundational
 FromOr		missing	foundational
-FromPure		missing	foundational
+FromPure	iris.proofmode.core:PMFromPure	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 FromPureT		missing	foundational
 FromSep		missing	foundational
 FromWand		missing	foundational
 IntoAbsorbingly		missing	foundational
-IntoAnd		missing	foundational
+IntoAnd	iris.proofmode.core:PMIntoAnd	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 IntoExcept0		missing	foundational
-IntoExist		missing	foundational
-IntoForall		missing	foundational
+IntoExist	iris.proofmode.core:PMIntoExist	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
+IntoForall	iris.proofmode.core:PMIntoForall	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 IntoInternalEq		missing	foundational
-IntoLaterN		missing	foundational
-IntoOr		missing	foundational
-IntoPersistent		missing	foundational
-IntoPure		missing	foundational
+IntoLaterN	iris.proofmode.core:PMIntoLater	analogue	foundational	One-later elimination evidence; this does not provide the general N-later interface.
+IntoOr	iris.proofmode.core:PMIntoOr	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
+IntoPersistent	iris.proofmode.core:PMIntoPersistent	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
+IntoPure	iris.proofmode.core:PMIntoPure	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 IntoPureT		missing	foundational
-IntoSep		missing	foundational
-IntoWand		missing	foundational
+IntoSep	iris.proofmode.core:PMFromSep	analogue	foundational	Despite its name, PMFromSep stores P entails Q * R and is used to destruct hypotheses; this is Rocq IntoSep, not FromSep.
+IntoWand	iris.proofmode.core:PMIntoWand	analogue	foundational	Explicit evidence class for ProperUPred/iProp; native metas accept this evidence instead of reproducing the full Rocq BI/typeclass interface.
 IntoWand'		missing	foundational
 IsExcept0		missing	foundational
 KnownLFromAssumption		missing	foundational

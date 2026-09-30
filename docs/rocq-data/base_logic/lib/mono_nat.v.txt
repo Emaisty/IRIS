@@ -1,28 +1,28 @@
 mono_nat_auth_own_as_fractional		missing	qol
 mono_nat_auth_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
-mono_nat_auth_own_def		missing	foundational
+mono_nat_auth_own_def	iris.base_logic.lib.mono_nat:mono_nat_auth_own	analogue	foundational	Native mono_nat ownership/packaging; the validity result includes the owned fraction bound and m <= n.
 mono_nat_auth_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
 mono_nat_lb_own_aux		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
-mono_nat_lb_own_def		missing	foundational
+mono_nat_lb_own_def	iris.base_logic.lib.mono_nat:mono_nat_lb_own	analogue	foundational	Native mono_nat ownership/packaging; the validity result includes the owned fraction bound and m <= n.
 mono_nat_lb_own_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
-mono_natΣ		missing	foundational
-subG_mono_natΣ		missing	qol
-mono_natG		missing	foundational
-mono_nat_auth_lb_own_valid		missing	qol
-mono_nat_auth_own		missing	foundational
+mono_natΣ	iris.base_logic.lib.mono_nat:mono_natSigma	analogue	foundational	Native mono_nat ownership/packaging; the validity result includes the owned fraction bound and m <= n.
+subG_mono_natΣ	iris.base_logic.lib.mono_nat:subG_mono_natG	analogue	qol	Native mono_nat ownership/packaging; the validity result includes the owned fraction bound and m <= n.
+mono_natG	iris.base_logic.lib.mono_nat:mono_natG	analogue	foundational	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
+mono_nat_auth_lb_own_valid	iris.base_logic.lib.mono_nat:mono_nat_lb_own_valid	analogue	qol	Native mono_nat ownership/packaging; the validity result includes the owned fraction bound and m <= n.
+mono_nat_auth_own	iris.base_logic.lib.mono_nat:mono_nat_auth_own	analogue	foundational	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
 mono_nat_auth_own_agree		missing	qol
 mono_nat_auth_own_exclusive		missing	qol
 mono_nat_auth_own_fractional		missing	qol
 mono_nat_auth_own_persistent		missing	qol
 mono_nat_auth_own_timeless		missing	qol
-mono_nat_lb_own		missing	foundational
+mono_nat_lb_own	iris.base_logic.lib.mono_nat:mono_nat_lb_own	analogue	foundational	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
 mono_nat_lb_own_0		missing	qol
-mono_nat_lb_own_get		missing	qol
-mono_nat_lb_own_le		missing	qol
-mono_nat_lb_own_persistent		missing	qol
+mono_nat_lb_own_get	iris.base_logic.lib.mono_nat:mono_nat_lb_own_get	analogue	qol	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
+mono_nat_lb_own_le	iris.base_logic.lib.mono_nat:mono_nat_lb_own_le	analogue	qol	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
+mono_nat_lb_own_persistent	iris.base_logic.lib.mono_nat:mono_nat_lb_own_persistent	analogue	qol	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
 mono_nat_lb_own_timeless		missing	qol
-mono_nat_own_alloc		missing	qol
+mono_nat_own_alloc	iris.base_logic.lib.mono_nat:mono_nat_own_alloc	analogue	qol	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.
 mono_nat_own_alloc_strong		missing	qol
 mono_nat_own_persist		missing	qol
 mono_nat_own_unpersist		missing	qol
-mono_nat_own_update		missing	qol
+mono_nat_own_update	iris.base_logic.lib.mono_nat:mono_nat_own_update	analogue	qol	Ownership API over the view-based mono_nat resource; authority accepts owned Qp fractions and lower bounds are persistent.

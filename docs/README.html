@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- Generated from docs/README.md by scripts/build-docs.py. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documentation and porting status — Iris in Arend</title>
+  <link rel="stylesheet" href="styles.css?v=e00f286">
+</head>
+<body>
+  <nav class="guide-nav" aria-label="Documentation">
+    <a href="index.html">Porting status</a> ·
+    <a href="implementation.html">Implementation</a> ·
+    <a href="proofmode.html">Proof mode</a> ·
+    <a href="build.html#build">Build</a> ·
+    <a href="README.html">Documentation maintenance</a>
+  </nav>
+  <main class="guide">
+<h1 id="documentation-and-porting-status">Documentation and porting status</h1>
+<p>The <a href="implementation.html">implementation audit</a> describes the merged source and its public APIs. The <a href="proofmode.html">proof-mode guide</a> documents the native extension. The dashboard in <code>index.html</code> compares individual declarations with the pinned Rocq Iris snapshot <code>b9b6cf04478a3088aef800497cdd275d2bce0967</code>. It is an API coverage inventory, not a measure of theorem correctness or completion of the counter client.</p>
+<p>The <a href="typecheck-2026-09-30.html">toolchain audit</a> records fresh official and patched checker results, including the two failing legacy factorial modules. Its evidence files preserve revisions, process outcomes, logs, and the combined checker patch.</p>
+<h2 id="view-the-dashboard">View the dashboard</h2>
+<p>From the repository root:</p>
+<pre><code>python3 -m http.server 8000 --directory docs</code></pre>
+<p>Open <code>http://localhost:8000/</code>. HTTP is required because <code>app.js</code> fetches the tab-separated data files. Search matches Rocq names, Arend mappings, and comments; status and role filters can be combined.</p>
+<p>The guides have committed HTML versions for the static website. Edit the Markdown sources (including the root README), then regenerate them with:</p>
+<pre><code>python3 scripts/build-docs.py</code></pre>
+<p>The dependency-free renderer supports the headings, paragraphs, flat lists, tables, links, inline formatting, and fenced code used here. It rewrites guide links to HTML and source-code links to the audited Git revision.</p>
+<h2 id="maintain-the-data">Maintain the data</h2>
+<p>Each nonempty row in <code>rocq-data/**/*.v.txt</code> has four or five tab-separated fields: Rocq name, Arend mapping, relationship, role, and optional comment. Mappings use <code>module.path:definition</code>; multiple supporting definitions may be separated with <code>; </code>. A definition in the virtual <code>iris.proofmode.Meta</code> module must be registered in <code>ProofModeExtension.java</code>.</p>
+<div class="guide-table"><table><thead><tr>
+<th>Relationship</th>
+<th>Meaning</th>
+</tr></thead><tbody>
+<tr><td><code>direct</code></td><td>Corresponding public definition/theorem is present with the relevant semantics.</td></tr>
+<tr><td><code>analogue</code></td><td>Arend provides related functionality with a different representation, interface, or narrower scope; the comment states the difference.</td></tr>
+<tr><td><code>not-needed</code></td><td>Rocq-specific scaffolding, such as a sealing wrapper, is unnecessary in this implementation.</td></tr>
+<tr><td><code>missing</code></td><td>No mapped implementation has been established. The role is <code>foundational</code> or <code>qol</code>.</td></tr>
+<tr><td><code>ignored</code></td><td>Explicitly outside the selected porting scope.</td></tr>
+</tbody></table></div>
+<p><code>rocq-manifest.js</code> lists the files and pinned upstream source links. Counts are computed from rows by <code>app.js</code>; the manifest does not maintain duplicate totals. Some Rocq-only parser files remain marked <code>ignored</code>, while native proof-mode classes, environments, and logical tactic rules are now counted. Their missing rows remain visible; native proof mode does not imply every Rocq instance has been ported.</p>
+<p>When updating a mapping, read both definitions. Matching names alone are not enough: for example, <code>ghost_map_elem</code> only exposes full ownership, and <code>PMFromSep</code> has the direction of Rocq <code>IntoSep</code>. New Arend-only APIs and HeapLang/client modules outside the original dashboard inventory belong in the implementation guide rather than being fabricated as Rocq rows.</p>
+<p>After edits, check row schemas, duplicate names, mapped source declarations, manifest paths, and local documentation links. Serve the page and check loading, category totals, search, and combined filters. A source-name check does not validate theorem equivalence or substitute for typechecking.</p>
+  </main>
+</body>
+</html>

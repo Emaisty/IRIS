@@ -1,6 +1,6 @@
 Envs_proper		missing	qol
 Esnoc_proper		missing	qol
-env		missing	foundational
+env	iris.proofmode.core:PMEnv	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 env_Forall2		missing	foundational
 env_Forall2_antisymm		missing	qol
 env_Forall2_fresh		missing	qol
@@ -15,14 +15,14 @@ env_app_fresh		missing	qol
 env_app_fresh_1		missing	qol
 env_app_perm		missing	qol
 env_app_wf		missing	qol
-env_delete		missing	foundational
+env_delete	iris.proofmode.core:pm_delete	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 env_delete_fresh		missing	qol
 env_delete_wf		missing	qol
 env_dom		missing	foundational
 env_intuitionistic_flip_mono		missing	qol
 env_intuitionistic_mono		missing	qol
 env_intuitionistic_proper		missing	qol
-env_lookup		missing	foundational
+env_lookup	iris.proofmode.core:pm_lookup	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 env_lookup_delete		missing	foundational
 env_lookup_delete_Some		missing	qol
 env_lookup_delete_correct		missing	qol
@@ -31,7 +31,7 @@ env_lookup_env_delete_ne		missing	qol
 env_lookup_perm		missing	qol
 env_lookup_snoc		missing	qol
 env_lookup_snoc_ne		missing	qol
-env_replace		missing	foundational
+env_replace	iris.proofmode.core:pm_replace	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 env_replace_fresh		missing	qol
 env_replace_lookup		missing	qol
 env_replace_perm		missing	qol
@@ -47,14 +47,14 @@ env_subenv_wf		missing	qol
 env_to_list		missing	foundational
 env_to_list_proper		missing	qol
 env_to_list_subenv_proper		missing	qol
-env_to_prop		missing	foundational
+env_to_prop	iris.proofmode.core:pm_of_env	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 env_to_prop_and		missing	foundational
 env_to_prop_and_go		missing	foundational
 env_to_prop_and_pers_sound		missing	qol
 env_to_prop_go		missing	foundational
 env_to_prop_sound		missing	qol
 env_wf		missing	foundational
-envs		missing	foundational
+envs	iris.proofmode.core:PMEnvs	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 envs_Forall2		missing	foundational
 envs_Forall2_antisymm		missing	qol
 envs_Forall2_impl		missing	qol
@@ -72,7 +72,7 @@ envs_delete		missing	foundational
 envs_delete_intuitionistic		missing	qol
 envs_delete_spatial		missing	qol
 envs_dom		missing	foundational
-envs_entails		missing	foundational
+envs_entails	iris.proofmode.core:envs_entails	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 envs_entails_flip_mono		missing	qol
 envs_entails_mono		missing	qol
 envs_entails_proper		missing	qol
@@ -91,10 +91,10 @@ envs_lookup_delete_sound		missing	qol
 envs_lookup_envs_clear_spatial		missing	qol
 envs_lookup_envs_delete		missing	qol
 envs_lookup_envs_delete_ne		missing	qol
-envs_lookup_intuitionistic_sound		missing	qol
+envs_lookup_intuitionistic_sound	iris.proofmode.core:PMPersistentSelection	analogue	qol	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 envs_lookup_snoc		missing	qol
 envs_lookup_snoc_ne		missing	qol
-envs_lookup_sound		missing	qol
+envs_lookup_sound	iris.proofmode.core:PMSelection	analogue	qol	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 envs_lookup_sound'		missing	qol
 envs_lookup_sound_2		missing	qol
 envs_lookup_split		missing	qol
@@ -111,13 +111,13 @@ envs_simple_replace_sound		missing	qol
 envs_simple_replace_sound'		missing	qol
 envs_snoc		missing	foundational
 envs_snoc_sound		missing	qol
-envs_split		missing	foundational
+envs_split	iris.proofmode.core:PMSplit	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 envs_split_go		missing	foundational
 envs_split_go_sound		missing	qol
 envs_split_sound		missing	qol
 envs_wf		missing	foundational
 envs_wf'		missing	foundational
-of_envs		missing	foundational
+of_envs	iris.proofmode.core:of_envs	analogue	foundational	Native named environments over ProperUPred; spatial selection/splitting and persistent selection carry kernel-checked resource proofs.
 of_envs'		missing	foundational
 of_envs'_alt		missing	qol
 of_envs_alt		missing	qol

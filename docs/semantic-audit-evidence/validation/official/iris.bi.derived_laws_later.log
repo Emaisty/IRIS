@@ -1,0 +1,15 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (55ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (16ms)
+
+--- Typechecking iris.bi.derived_laws_later ---
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.big_op:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+--- Done (6999ms) ---

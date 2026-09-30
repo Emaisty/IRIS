@@ -1,3 +1,3 @@
-esel_pat		missing	foundational
-iTrm		missing	foundational
-use_tac_specialize_intuitionistic_helper		missing	foundational
+esel_pat		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+iTrm		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.
+use_tac_specialize_intuitionistic_helper		missing	foundational	Rocq-specific tactic syntax/parser support; the native Arend metas use their own argument and pattern handling.

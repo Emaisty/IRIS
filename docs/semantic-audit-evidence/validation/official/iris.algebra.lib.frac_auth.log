@@ -1,0 +1,15 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (41ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (15ms)
+
+--- Typechecking iris.algebra.lib.frac_auth ---
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+--- Done (9783ms) ---

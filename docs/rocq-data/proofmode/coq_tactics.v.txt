@@ -30,61 +30,61 @@ into_ih_impl		missing	qol
 into_laterN_env_sound		missing	qol
 into_laterN_envs		missing	qol
 tac_accu		missing	qol
-tac_and_destruct		missing	qol
+tac_and_destruct	iris.proofmode.core:pm_destruct_and_pure_l	analogue	qol	Specialized destruction of a conjunction with a pure left component; general Rocq conjunction destruction is not claimed.
 tac_and_destruct_choice		missing	qol
-tac_and_split		missing	qol
-tac_apply		missing	qol
-tac_assert		missing	qol
-tac_assumption		missing	qol
+tac_and_split	iris.proofmode.core:pm_split_and	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_apply	iris.proofmode.core:pm_apply_wand	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_assert	iris.proofmode.core:pm_assert	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_assumption	iris.proofmode.core:pm_exact_from_assumption_spatial	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_assumption_coq		missing	qol
-tac_clear		missing	qol
+tac_clear	iris.proofmode.core:pm_clear_spatial	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_combine_as		missing	qol
 tac_combine_as_gives		missing	qol
 tac_combine_gives		missing	qol
-tac_emp_intro		missing	qol
-tac_eval		missing	qol
+tac_emp_intro	iris.proofmode.core:pm_emp_intro	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_eval		missing	qol	Native iEval aliases wp_apply and applies an explicit rule; it is not an implementation of Rocq general reduction-expression evaluation.
 tac_eval_in		missing	qol
 tac_ex_falso		missing	qol
-tac_exist		missing	qol
-tac_exist_destruct		missing	qol
+tac_exist	iris.proofmode.core:pm_exists	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_exist_destruct	iris.proofmode.core:pm_destruct_exist	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_false_destruct		missing	qol
-tac_forall_intro		missing	qol
+tac_forall_intro	iris.proofmode.core:pm_forall	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_forall_revert		missing	qol
-tac_forall_specialize		missing	qol
-tac_frame		missing	qol
+tac_forall_specialize	iris.proofmode.core:pm_specialize_forall	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_frame	iris.proofmode.core:pm_frame_spatial	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_frame_pure		missing	qol
 tac_impl_intro		missing	qol
 tac_impl_intro_drop		missing	qol
 tac_impl_intro_intuitionistic		missing	qol
 tac_intuitionistic		missing	qol
-tac_inv_elim		missing	qol
-tac_löb		missing	qol
-tac_modal_elim		missing	qol
-tac_modal_intro		missing	qol
-tac_or_destruct		missing	qol
-tac_or_l		missing	qol
-tac_or_r		missing	qol
-tac_pose_proof		missing	qol
+tac_inv_elim	iris.proofmode.heap_lang:pm_wp_inv	analogue	qol	Invariant opening is specialized to strongly atomic HeapLang WP with explicit mask/closing obligations.
+tac_löb	iris.proofmode.core:pm_lob	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_modal_elim	iris.proofmode.core:pm_mod	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_modal_intro	iris.proofmode.core:pm_mod_intro	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_or_destruct	iris.proofmode.core:pm_destruct_or	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_or_l	iris.proofmode.core:pm_left	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_or_r	iris.proofmode.core:pm_right	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_pose_proof	iris.proofmode.core:pm_assert	analogue	qol	Native iPoseProof is an alias of iAssert and proves an assertion using selected resources.
 tac_pose_proof_hyp		missing	qol
-tac_pure		missing	qol
-tac_pure_intro		missing	qol
+tac_pure	iris.proofmode.core:pm_destruct_pure	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_pure_intro	iris.proofmode.core:pm_pure_intro	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_pure_revert		missing	qol
-tac_rename		missing	qol
+tac_rename	iris.proofmode.core:pm_rename_spatial	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_revert		missing	qol
 tac_revert_ih		missing	qol
-tac_rewrite		missing	qol
-tac_rewrite_in		missing	qol
-tac_sep_split		missing	qol
+tac_rewrite	iris.proofmode.core:pm_rewrite	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_rewrite_in		missing	qol	Native pm_rewrite_intuitionistic rewrites the goal using a persistent equality; arbitrary in-hypothesis rewriting is not mapped.
+tac_sep_split	iris.proofmode.core:pm_split_sep	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_spatial		missing	qol
-tac_specialize		missing	qol
+tac_specialize	iris.proofmode.core:pm_specialize	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_specialize_assert		missing	qol
 tac_specialize_assert_intuitionistic		missing	qol
 tac_specialize_assert_pure		missing	qol
 tac_specialize_frame		missing	qol
 tac_specialize_intuitionistic_helper		missing	qol
 tac_specialize_intuitionistic_helper_done		missing	qol
-tac_start		missing	qol
-tac_stop		missing	qol
+tac_start	iris.proofmode.core:pm_start	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
+tac_stop	iris.proofmode.core:pm_stop	analogue	qol	Kernel-checked native rule used by the corresponding Arend meta; supports the native environment/evidence interface, not all Rocq tactic options.
 tac_unlock		missing	qol
 tac_unlock_True		missing	qol
 tac_unlock_emp		missing	qol

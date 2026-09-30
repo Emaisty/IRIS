@@ -1,0 +1,33 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (102ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (28ms)
+
+--- Typechecking iris.base_logic.lib.saved_pred ---
+[WARNING] iris.algebra.gmap_functor:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.updates:9:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.own:16:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.lib.gmap_view_functor:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+--- Done (1m24s) ---

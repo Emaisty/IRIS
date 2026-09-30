@@ -1,5 +1,5 @@
-into_acc_inv		not-needed	qol	Rocq proof-mode registration; Arend proofs invoke inv_acc explicitly.
-into_inv_inv		not-needed	qol	Rocq proof-mode registration; Arend uses inv directly and has no matching registration layer.
+into_acc_inv	iris.proofmode.heap_lang:pm_wp_inv; iris.proofmode.heap_lang:pm_into_accessor_inv_timeless	analogue	qol	Atomic-WP invariant opening and a timeless PMIntoAccessor constructor; not a general Rocq IntoAcc instance.
+into_inv_inv	iris.proofmode.core:pm_into_invariant_direct	analogue	qol	Constructs native PMIntoInvariant evidence for inv; consumed by iInv.
 inv_proper	iris.base_logic.lib.invariants:inv_proper	direct	qol
 except_0_inv	iris.base_logic.lib.invariants:except_0_inv	direct	qol
 fresh_inv_name	stdpp.namespaces:fresh_inv_name	direct	qol
@@ -22,7 +22,7 @@ inv_split	iris.base_logic.lib.invariants:inv_split	direct	qol
 inv_split_l	iris.base_logic.lib.invariants:inv_split_l	direct	qol
 inv_split_r	iris.base_logic.lib.invariants:inv_split_r	direct	qol
 inv_unseal		not-needed	foundational	Rocq sealing helper; Arend exposes the corresponding definition directly and does not need this wrapper.
-is_except_0_inv		not-needed	qol	Rocq proof-mode registration; the Arend theorem except_0_inv is used explicitly.
+is_except_0_inv		missing	qol	The semantic theorem except_0_inv exists, but native proof mode does not expose a general IsExcept0 registration class.
 own_inv	iris.base_logic.lib.invariants:own_inv	direct	foundational
 own_inv_acc	iris.base_logic.lib.invariants:own_inv_acc	direct	qol
 own_inv_alloc	iris.base_logic.lib.invariants:own_inv_alloc	direct	qol

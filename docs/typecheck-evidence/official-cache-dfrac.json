@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/private/tmp/iris-arend-20260930/jdk25/jdk-25.0.4.1+1/Contents/Home/bin/java",
+    "-Xmx12g",
+    "-Xss16m",
+    "-jar",
+    "/private/tmp/iris-arend-20260930/official/cli/build/libs/cli-1.12.0-full.jar",
+    "-L",
+    "/private/tmp/iris-arend-20260930/official",
+    "iris.algebra.dfrac"
+  ],
+  "cwd": "/private/tmp/iris-arend-20260930/runs/official/IRIS",
+  "started_utc": "2026-09-30T13:49:23.756296+00:00",
+  "timeout_seconds": 180,
+  "pid": 84878,
+  "exit_code": 1,
+  "timed_out": false,
+  "elapsed_seconds": 10.015,
+  "errors": 0,
+  "goals": 0,
+  "completion_markers": 1,
+  "runtime_failure": false,
+  "passed": false
+}

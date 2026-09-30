@@ -5,8 +5,8 @@ beq		missing	foundational
 beq_eq_dec		missing	qol
 beq_true		missing	qol
 direction		missing	foundational
-ident.ident		missing	foundational
-ident_beq		missing	foundational
+ident.ident	iris.proofmode.core:PMName	analogue	foundational	Native names are lists of UTF-16 code units, with the empty list used for the initial hypothesis; no Rocq positive/string identifier sum.
+ident_beq	iris.proofmode.core:pm_name_eq	analogue	foundational	Constructive Dec equality on PMName, rather than a Boolean equality test on Rocq identifiers.
 ident_beq_reflect		missing	qol
 ident_beq_true		missing	qol
 lazy_andb_true		missing	qol

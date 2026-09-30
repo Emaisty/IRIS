@@ -1,0 +1,7 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (50ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (13ms)
+
+--- Typechecking stdpp.finite_coPset ---
+--- Done (6070ms) ---

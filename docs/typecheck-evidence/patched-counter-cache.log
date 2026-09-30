@@ -1,0 +1,144 @@
+[INFO] Loading arend-lib
+[INFO] Loaded arend-lib (57ms)
+[INFO] Loading IRIS
+[INFO] Loaded IRIS (15ms)
+[WARNING] iris_heap_lang.lib.spawn_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris_heap_lang.lib.spawn_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris_heap_lang.lib.spawn_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.own:16:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.proofmode.heap_lang:8:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.saved_pred:16:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_sigma:12:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.algebra.lib.gmap_view_functor:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat_alloc:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.program_logic.weakestpre:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:20:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.wsat:28:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.program_logic.adequacy:27:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.mono_nat:15:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.gen_heap:18:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris_heap_lang.lang:13:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.updates:9:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.bi.updates:15:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.bi.big_op:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.excl:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] examples.parallel_counter_client:13:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_client:18:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.base_logic.lib.proph_map:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.proph_map:22:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.algebra.gmap_updates:9:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.algebra.gmap_functor:10:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] examples.parallel_counter_proof:26:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] examples.parallel_counter_proof:40:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_proof:32:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:8:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.ghost_map:17:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] examples.parallel_counter_model:19:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.program_logic.lifting:21:9: Definition 'inv' is already imported from module Paths
+  In: \import iris.base_logic.lib.invariants
+[WARNING] iris.program_logic.lifting:29:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.upred:10:9: Definition '||' is already imported from module Logic
+  In: \import iris.bi.interface
+[WARNING] iris.algebra.lib.gmap_view:12:9: Definition 'decideEq' is already imported from module Set
+  In: \import iris.algebra.gmap
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_mono' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_unit' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.fancy_updates_mask:12:9: Definition 'own_valid' is already imported from module iris.base_logic.upred
+  In: \import iris.base_logic.lib.own
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_comm' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_inv' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+[WARNING] iris.base_logic.lib.invariants:27:9: Definition 'bool_or_true_r' is already imported from module iris.algebra.coPset
+  In: \import iris.algebra.gset
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/private/tmp/iris-arend-20260930/patched/cli/build/libs/cli-1.12.0-full.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+[INFO] Binary cache: 63 loaded out of 63 candidates, 230 deferred box fix(es)
+
+--- Typechecking examples.parallel_counter_client ---
+--- Done (18ms) ---

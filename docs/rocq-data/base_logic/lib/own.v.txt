@@ -32,7 +32,7 @@ from_and_own_persistent		missing	qol
 from_sep_own		missing	qol
 iRes_singleton	iris.base_logic.lib.own:iRes_singleton	direct	foundational
 iRes_singleton_core_id	iris.base_logic.lib.own:iRes_singleton_core_id	direct	qol
-iRes_singleton_discrete		missing	qol
+iRes_singleton_discrete	iris.base_logic.lib.own:iRes_singleton_discrete	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 iRes_singleton_ne		missing	qol
 iRes_singleton_op	iris.base_logic.lib.own:iRes_singleton_op	direct	qol
 inG	iris.base_logic.lib.own:inG	direct	foundational
@@ -58,7 +58,7 @@ own_def	iris.base_logic.lib.own:own	analogue	foundational	Arend exposes own dire
 own_mono	iris.base_logic.lib.own:own_mono	direct	foundational
 own_ne		missing	qol
 own_op	iris.base_logic.lib.own:own_op	direct	foundational
-own_timeless		missing	qol
+own_timeless	iris.base_logic.lib.own:own_timeless	direct	qol	Explicit Arend discreteness/timelessness proof used by invariant opening.
 own_unit	iris.base_logic.lib.own:own_unit	direct	qol
 own_update	iris.base_logic.lib.own:own_update	direct	foundational
 own_updateP	iris.base_logic.lib.own:own_updateP	direct	foundational

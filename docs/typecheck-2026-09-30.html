@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- Generated from docs/typecheck-2026-09-30.md by scripts/build-docs.py. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Official and patched Arend typecheck — 2026-09-30 — Iris in Arend</title>
+  <link rel="stylesheet" href="styles.css?v=e00f286">
+</head>
+<body>
+  <nav class="guide-nav" aria-label="Documentation">
+    <a href="index.html">Porting status</a> ·
+    <a href="implementation.html">Implementation</a> ·
+    <a href="proofmode.html">Proof mode</a> ·
+    <a href="build.html#build">Build</a> ·
+    <a href="README.html">Documentation maintenance</a>
+  </nav>
+  <main class="guide">
+<h1 id="official-and-patched-arend-typecheck--2026-09-30">Official and patched Arend typecheck — 2026-09-30</h1>
+<p>The patched checker completed the full source check: <strong>80 of 82 modules passed, two failed, and no unfilled goals were reported</strong>. Both failures are in the legacy factorial tests. The current Iris core, native proof mode, HeapLang libraries, and parallel counter client passed. The official whole-project check exceeded a 900-second process deadline while processing <code>iris.base_logic.lib.saved_pred</code>. A subsequent source-only sweep attempted every module individually: <strong>63 passed and 19 exceeded a 120-second deadline</strong>. The official checker did not establish a whole-project pass.</p>
+<p>This audit checks the unchanged Arend and Java extension sources at IRIS merge <code>e00f2867886b928e6cd420959cf39e0d3975cb8e</code>. The two checkers used independent project copies, standard-library extensions, and binary caches. The <a href="typecheck-evidence/source-manifest.json">source manifest</a> records every input.</p>
+<h2 id="toolchains">Toolchains</h2>
+<div class="guide-table"><table><thead><tr>
+<th>Component</th>
+<th>Revision</th>
+</tr></thead><tbody>
+<tr><td>Official Arend</td><td><code>c51e285e063dff8d7bdb8c2a82bf454059b2537b</code></td></tr>
+<tr><td>Patched Arend</td><td><code>7734ae6eeb5d2c0fade4991601332d2199700e36</code></td></tr>
+<tr><td>Standard library</td><td>The <code>arend-lib</code> directory bundled with each checker revision</td></tr>
+<tr><td>Java</td><td>Temurin <code>25.0.4.1+1</code>, macOS aarch64</td></tr>
+<tr><td>Gradle</td><td>The upstream wrapper, <code>9.6.1</code></td></tr>
+<tr><td>IRIS process limits</td><td><code>-Xmx12g -Xss16m</code></td></tr>
+</tbody></table></div>
+<p>GitHub&#x27;s official <code>master</code> was queried afresh and still pointed to <code>c51e285e0</code>. The patched build uses that same base with the current feature changes from <a href="https://github.com/arend-lang/Arend/pull/131">PR #131, Implement String</a>, and <a href="https://github.com/arend-lang/Arend/pull/132">PR #132, Compare function arguments before unfolding calls</a>. At the audit, #131 was open; #132 was closed without merging.</p>
+<p>The local rebase consists of <code>84c291484</code>, <code>59e60bdf3</code>, <code>b1a256cb6</code>, and <code>7734ae6ee</code>. Its string patch matches PR #131&#x27;s current feature commit <code>062a2ac54</code>; its guarded conversion patch matches PR #132&#x27;s <code>b67bd9594</code> and <code>82a633b56</code>, with API adaptations for master. It does not import the PR branches&#x27; unrelated staging changes. The conversion optimization compares arguments before unfolding function calls; it does not disable termination checking. The guarded version includes checks for inference variables and recursive re-entry.</p>
+<p>The <a href="typecheck-evidence/arend-1.12-iris.patch">combined patch</a> applies to the official revision. <a href="typecheck-evidence/toolchains.json">Toolchain metadata</a> includes complete revisions, standard-library tree IDs, jar hashes, and regression-test counts. Both jars and both standard-library Java extensions were rebuilt, as was IRIS&#x27;s extension against each corresponding jar.</p>
+<p>Java 27 could not build the upstream Gradle Groovy task: it reported <code>Unsupported class file major version 71</code>. Java 25 built both variants successfully. This was a build-tool compatibility issue, before Arend checked any proofs.</p>
+<h2 id="results-and-failures">Results and failures</h2>
+<div class="guide-table"><table><thead><tr>
+<th>Check</th>
+<th>Result</th>
+</tr></thead><tbody>
+<tr><td>Official, full source run</td><td>Timed out; no errors or goals before the deadline; last progress marker was module 10/82, <code>saved_pred</code></td></tr>
+<tr><td>Official, all 82 targets checked individually from source</td><td>63 passed, 19 timed out at 120 seconds each; no errors or goals reported before the deadlines</td></tr>
+<tr><td>Patched, full source run</td><td>80 passed, 2 failed; 164 errors, 0 goals; process exit 1</td></tr>
+<tr><td>Patched, fresh-process cache run</td><td>Loaded 80/80 available IRIS caches; reproduced the same 164 errors in the two uncached factorial modules</td></tr>
+<tr><td>Patched, counter client cache run</td><td>Passed; 63 modules loaded, 0 errors, 0 goals, process exit 0</td></tr>
+<tr><td>Targeted <code>saved_pred</code> source check, 120-second deadline</td><td>Patched passed; official timed out</td></tr>
+<tr><td>Patched checker regression suites</td><td>51 passed, 0 failed, 0 skipped</td></tr>
+</tbody></table></div>
+<p>The <a href="typecheck-evidence/modules.csv">per-module comparison</a> lists all 82 targets. <a href="typecheck-evidence/official-source-modules.json">Official process records</a> and <a href="typecheck-evidence/official-source-module-logs.zip">complete per-module logs</a> retain the source-only commands and outcomes. These checks used <code>-r</code>, with no cache reads or writes, and a separate process for each target. Parallel workers shared only immutable source/extension inputs and completed-result checkpoints. The <a href="typecheck-evidence/summary.json">summary</a> records the totals.</p>
+<p>Official timeouts include the counter proof/client, several ghost-state and program-logic modules, spawn proofs, and associated tests. Both factorial targets also timed out before producing error diagnostics, so the official run did not independently reach the patched run&#x27;s factorial failures. The official <code>saved_pred</code> deadline dump shows its main thread working in normalization and substitution. The <a href="typecheck-evidence/patched-conversion-control.log">patched targeted run</a> completed the same module from source within the 120-second budget.</p>
+<p>An initial incremental official sweep encountered binary-deserialization warnings and nonzero process exits, for example in the <a href="typecheck-evidence/official-cache-dfrac.log"><code>dfrac</code> reload</a>. Its results are excluded from the source totals above; every target was subsequently checked with caches disabled.</p>
+<p>The regression suites were <code>StringLibraryTest</code> (17), <code>ComparisonTest</code> (26), and <code>LibraryLoadOrderTest</code> (8), invoked through the root <code>:test</code> task. The String tests exercise literal elaboration, record relevance, equality, Unicode, and rejected invalid uses. The conversion tests include the same-function optimization and its inference-state guards.</p>
+<p>HeapLang binders and proof-mode context names use numeric representations in this IRIS snapshot. Passing its modules alone would not exercise the new semantic <code>String</code> type; that feature is covered by the dedicated String regression suite. The <a href="typecheck-evidence/build-and-regression-logs.zip">build and regression logs</a> include the test reports.</p>
+<p>The failing IRIS modules are:</p>
+<ul>
+<li><code>tests.fact.program_logic</code>: 135 diagnostics. The first failures are at lines 137, 141, 187, and 194: <code>State</code> records implement <code>heap</code> but omit the newer <code>usedProph</code> field. Later failures include outdated primitive-step arguments and cascading type/coverage errors.</li>
+<li><code>tests.fact</code>: 29 diagnostics. The first is a failed definitional equality in the factorial normalization proof at line 240. Further failures include outdated primitive-step applications and dependencies on the failing factorial program-logic module.</li>
+</ul>
+<p>These failures remain in the source tree. This audit does not claim that adding <code>usedProph</code> alone would repair all 164 diagnostics. In particular, the patched toolchain is compatible with the current core/client, but a claim that the entire repository typechecks is false until these tests are updated and rechecked.</p>
+<p>Complete outputs and process metadata are available for the <a href="typecheck-evidence/official-full-clean.log">official source run</a>, <a href="typecheck-evidence/patched-full-clean.log">patched source run</a>, <a href="typecheck-evidence/patched-full-cache.log">patched cache run</a>, and <a href="typecheck-evidence/patched-counter-cache.log">counter reload</a>. Timing output is diagnostic, not a controlled performance comparison; processes overlapped and JVM wall-clock timings differed from the runner&#x27;s monotonic elapsed measurements. Timeouts are incomplete checks, not proof rejections.</p>
+<h2 id="reproduce">Reproduce</h2>
+<p>Use two clean Arend checkouts at the official commit above. Apply the saved patch to one checkout. Keep their bundled <code>arend-lib</code> directories and all IRIS <code>bin/</code> and <code>ext/</code> outputs separate; the String patch changes the binary serialization version. Set <code>JAVA_HOME</code> to a compatible JDK and prepend its <code>bin</code> directory to <code>PATH</code>.</p>
+<p>From each checker checkout, build:</p>
+<pre><code>./gradlew --no-daemon :cli:jarDep :arend-lib:meta:classes</code></pre>
+<p>From a separate, initially cache-free copy of IRIS for each checker, run:</p>
+<pre><code>export AREND_JAR=/absolute/path/to/checker/cli/build/libs/cli-1.12.0-full.jar
+export AREND_LIBDIR=/absolute/path/to/checker
+./scripts/build-proofmode-extension.sh
+java -Xmx12g -Xss16m -jar &quot;$AREND_JAR&quot; -L &quot;$AREND_LIBDIR&quot; -r --serialize
+java -Xmx12g -Xss16m -jar &quot;$AREND_JAR&quot; -L &quot;$AREND_LIBDIR&quot; --serialize</code></pre>
+<p>The JSON evidence files record commands, exit codes, diagnostics, completion markers, and deadlines. The original audit workspace is <code>/private/tmp/iris-arend-20260930</code>, including the JDK, both built checkers, isolated IRIS copies, process runners, and full logs. The runners&#x27; module checkpoints are specific to these immutable input copies; use fresh copies and result directories when checking changed sources.</p>
+<p>The repository&#x27;s <code>scripts/typecheck-all.sh</code> was also corrected: a nonzero Java exit, a missing completion marker, or an unfilled goal now fails the check. It handles empty flag arrays on macOS Bash 3.2 and reports the actual number of attempted modules after an early stop or resume. Temporary stub checks verified success, errors, goals, crashes, incomplete execution, early-stop counts, and forwarding of recompilation/serialization flags.</p>
+  </main>
+</body>
+</html>
