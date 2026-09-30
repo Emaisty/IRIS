@@ -6,6 +6,7 @@
 \import Order.PartialOrder
 \import iris.algebra.cmra
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.bi.updates
 \import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.own
@@ -28,18 +29,18 @@
   \peval sealedFUpd W E1 E2 P
 
 \lemma add_emp_r_ent {M : UCMRA} (P : ProperUPred M)
-  : properUPred_ent P (mkProperSep P mkProperEmp) =>
-  properUPred_ent_trans P (mkProperSep mkProperEmp P)
-    (mkProperSep P mkProperEmp)
+  : P ⊢ (P ∗ mkProperEmp) =>
+  properUPred_ent_trans P (mkProperEmp ∗ P)
+    (P ∗ mkProperEmp)
     ((BIuPredMixin M).bi_mixin_emp_sep_1 P)
     (sep_comm_ent mkProperEmp P)
 
 \lemma ownE_union_equiv_ent {S : gFunctors} (W : wsatGS S)
     (E1 E2 Ef : coPset) (hdisj : coPset_overlap E2 Ef = false)
     (heq : coPset_equiv E1 (coPset_union E2 Ef))
-  : properUPred_ent (mkProperSep (ownE W E2) (ownE W Ef)) (ownE W E1) =>
+  : ((ownE W E2) ∗ (ownE W Ef)) ⊢ (ownE W E1) =>
   properUPred_ent_trans
-    (mkProperSep (ownE W E2) (ownE W Ef))
+    ((ownE W E2) ∗ (ownE W Ef))
     (ownE W (coPset_union E2 Ef)) (ownE W E1)
     (\lam n x hv hs => (ownE_op W E2 Ef hdisj n x hv).2 hs)
     (\lam n x hv ho =>
@@ -49,97 +50,95 @@
 \sfunc fupd_mask_close_resources {S : gFunctors} (W : wsatGS S)
     (E1 E2 Ef : coPset) (hdisj : coPset_overlap E2 Ef = false)
     (heq : coPset_equiv E1 (coPset_union E2 Ef))
-  : properUPred_ent
-      (mkProperSep (ownE W Ef) (mkProperSep (wsat W) (ownE W E2)))
-      (mkProperSep (wsat W) (mkProperSep (ownE W E1) mkProperEmp)) =>
+  : ((ownE W Ef) ∗ ((wsat W) ∗ (ownE W E2))) ⊢
+      ((wsat W) ∗ ((ownE W E1) ∗ mkProperEmp)) =>
   properUPred_ent_trans
-    (mkProperSep (ownE W Ef) (mkProperSep (wsat W) (ownE W E2)))
-    (mkProperSep (mkProperSep (wsat W) (ownE W E2)) (ownE W Ef))
-    (mkProperSep (wsat W) (mkProperSep (ownE W E1) mkProperEmp))
-    (sep_comm_ent (ownE W Ef) (mkProperSep (wsat W) (ownE W E2)))
+    ((ownE W Ef) ∗ ((wsat W) ∗ (ownE W E2)))
+    (((wsat W) ∗ (ownE W E2)) ∗ (ownE W Ef))
+    ((wsat W) ∗ ((ownE W E1) ∗ mkProperEmp))
+    (sep_comm_ent (ownE W Ef) ((wsat W) ∗ (ownE W E2)))
     (properUPred_ent_trans
-      (mkProperSep (mkProperSep (wsat W) (ownE W E2)) (ownE W Ef))
-      (mkProperSep (wsat W) (mkProperSep (ownE W E2) (ownE W Ef)))
-      (mkProperSep (wsat W) (mkProperSep (ownE W E1) mkProperEmp))
+      (((wsat W) ∗ (ownE W E2)) ∗ (ownE W Ef))
+      ((wsat W) ∗ ((ownE W E2) ∗ (ownE W Ef)))
+      ((wsat W) ∗ ((ownE W E1) ∗ mkProperEmp))
       (sep_assoc_l_ent (wsat W) (ownE W E2) (ownE W Ef))
       (sep_mono_r_ent (wsat W)
-        (mkProperSep (ownE W E2) (ownE W Ef))
-        (mkProperSep (ownE W E1) mkProperEmp)
+        ((ownE W E2) ∗ (ownE W Ef))
+        ((ownE W E1) ∗ mkProperEmp)
         (properUPred_ent_trans
-          (mkProperSep (ownE W E2) (ownE W Ef)) (ownE W E1)
-          (mkProperSep (ownE W E1) mkProperEmp)
+          ((ownE W E2) ∗ (ownE W Ef)) (ownE W E1)
+          ((ownE W E1) ∗ mkProperEmp)
           (ownE_union_equiv_ent W E1 E2 Ef hdisj heq)
           (add_emp_r_ent (ownE W E1)))))
 
 \sfunc fupd_mask_close_unsealed {S : gFunctors} (W : wsatGS S)
     (E1 E2 Ef : coPset) (hdisj : coPset_overlap E2 Ef = false)
     (heq : coPset_equiv E1 (coPset_union E2 Ef))
-  : properUPred_ent (ownE W Ef) (mkProperFUpd W E2 E1 mkProperEmp) =>
+  : (ownE W Ef) ⊢ (mkProperFUpd W E2 E1 mkProperEmp) =>
   \lam n x hv hEf m m_le_n frame hv_op hA2 =>
     \let
       | hEf_m : (ownE W Ef).upred_holds m x =>
           (ownE W Ef).upred_mono n m x x hEf
             (inclN_refl_ucmra {iResUR S} m x) m_le_n
-      | target => mkProperSep (wsat W) (mkProperSep (ownE W E1) mkProperEmp)
+      | target => (wsat W) ∗ ((ownE W E1) ∗ mkProperEmp)
       | hclose : target.upred_holds m ((iResUR S).op x frame) =>
           fupd_mask_close_resources W E1 E2 Ef hdisj heq
             m ((iResUR S).op x frame) hv_op
             (inP (x, frame, (iResUR S).ofe_dist_refl m ((iResUR S).op x frame),
               hEf_m, hA2))
-    \in bupd_intro (mkProperExceptZero target)
+    \in bupd_intro (<except_0> target)
         m ((iResUR S).op x frame) hv_op (byRight hclose)
 
 \sfunc fupd_mask_close {S : gFunctors} (W : wsatGS S)
     (E1 E2 Ef : coPset) (hdisj : coPset_overlap E2 Ef = false)
     (heq : coPset_equiv E1 (coPset_union E2 Ef))
-  : properUPred_ent (ownE W Ef) (sealedFUpd W E2 E1 mkProperEmp) =>
+  : (ownE W Ef) ⊢ (sealedFUpd W E2 E1 mkProperEmp) =>
   transport
-    (\lam Q => properUPred_ent (ownE W Ef) Q)
+    (\lam Q => (ownE W Ef) ⊢ Q)
     (inv (sealedFUpd_peval W E2 E1 mkProperEmp))
     (fupd_mask_close_unsealed W E1 E2 Ef hdisj heq)
 
 \sfunc fupd_mask_open_resources {S : gFunctors} (W : wsatGS S)
     (E1 E2 Ef : coPset) (hdisj : coPset_overlap E2 Ef = false)
     (heq : coPset_equiv E1 (coPset_union E2 Ef))
-  : properUPred_ent
-      (mkProperSep (wsat W) (ownE W E1))
-      (mkProperSep (wsat W)
-        (mkProperSep (ownE W E2) (sealedFUpd W E2 E1 mkProperEmp))) =>
+  : ((wsat W) ∗ (ownE W E1)) ⊢
+      ((wsat W) ∗
+        ((ownE W E2) ∗ (sealedFUpd W E2 E1 mkProperEmp))) =>
   properUPred_ent_trans
-    (mkProperSep (wsat W) (ownE W E1))
-    (mkProperSep (wsat W) (ownE W (coPset_union E2 Ef)))
-    (mkProperSep (wsat W)
-      (mkProperSep (ownE W E2) (sealedFUpd W E2 E1 mkProperEmp)))
+    ((wsat W) ∗ (ownE W E1))
+    ((wsat W) ∗ (ownE W (coPset_union E2 Ef)))
+    ((wsat W) ∗
+      ((ownE W E2) ∗ (sealedFUpd W E2 E1 mkProperEmp)))
     (sep_mono_r_ent (wsat W) (ownE W E1)
       (ownE W (coPset_union E2 Ef))
       (\lam n x hv ho =>
         (own_proper W.wsatGpreS_enabled W.enabled_name
           (CoPset E1) (CoPset (coPset_union E2 Ef)) heq n x hv).1 ho))
     (properUPred_ent_trans
-      (mkProperSep (wsat W) (ownE W (coPset_union E2 Ef)))
-      (mkProperSep (wsat W) (mkProperSep (ownE W E2) (ownE W Ef)))
-      (mkProperSep (wsat W)
-        (mkProperSep (ownE W E2) (sealedFUpd W E2 E1 mkProperEmp)))
+      ((wsat W) ∗ (ownE W (coPset_union E2 Ef)))
+      ((wsat W) ∗ ((ownE W E2) ∗ (ownE W Ef)))
+      ((wsat W) ∗
+        ((ownE W E2) ∗ (sealedFUpd W E2 E1 mkProperEmp)))
       (sep_mono_r_ent (wsat W) (ownE W (coPset_union E2 Ef))
-        (mkProperSep (ownE W E2) (ownE W Ef))
+        ((ownE W E2) ∗ (ownE W Ef))
         (\lam n x hv ho => (ownE_op W E2 Ef hdisj n x hv).1 ho))
       (sep_mono_r_ent (wsat W)
-        (mkProperSep (ownE W E2) (ownE W Ef))
-        (mkProperSep (ownE W E2) (sealedFUpd W E2 E1 mkProperEmp))
+        ((ownE W E2) ∗ (ownE W Ef))
+        ((ownE W E2) ∗ (sealedFUpd W E2 E1 mkProperEmp))
         (sep_mono_r_ent (ownE W E2) (ownE W Ef)
           (sealedFUpd W E2 E1 mkProperEmp)
           (fupd_mask_close W E1 E2 Ef hdisj heq))))
 
 \sfunc fupd_mask_subseteq_sealed {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (hsub : coPSubset E2 E1)
-  : properUPred_ent mkProperEmp
+  : mkProperEmp ⊢
       (mkProperFUpd W E1 E2 (sealedFUpd W E2 E1 mkProperEmp)) =>
   \let
     | Ef => coPset_difference E1 E2
     | hdisj => coPset_subset_difference_disjoint E1 E2
     | heq => coPset_subset_union_difference E1 E2 hsub
-    | body => mkProperSep (wsat W)
-        (mkProperSep (ownE W E2) (sealedFUpd W E2 E1 mkProperEmp))
+    | body => (wsat W) ∗
+        ((ownE W E2) ∗ (sealedFUpd W E2 E1 mkProperEmp))
   \in \lam n x hv _ m m_le_n frame hv_op hworld =>
     \let
       | hbody_frame : body.upred_holds m frame =>
@@ -152,15 +151,15 @@
       | hbody : body.upred_holds m ((iResUR S).op x frame) =>
           body.upred_mono m m frame ((iResUR S).op x frame)
             hbody_frame incl_frame NatSemiring.<=-refl
-    \in bupd_intro (mkProperExceptZero body)
+    \in bupd_intro (<except_0> body)
           m ((iResUR S).op x frame) hv_op (byRight hbody)
 
 \sfunc fupd_mask_subseteq {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (hsub : coPSubset E2 E1)
-  : properUPred_ent mkProperEmp
+  : mkProperEmp ⊢
       (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E1 mkProperEmp)) =>
   transport
-    (\lam Q => properUPred_ent mkProperEmp Q)
+    (\lam Q => mkProperEmp ⊢ Q)
     (pmap (mkProperFUpd W E1 E2)
       (sealedFUpd_peval W E2 E1 mkProperEmp))
     (fupd_mask_subseteq_sealed W E1 E2 hsub)
@@ -169,7 +168,7 @@
 -- returned update as a closing token.
 \sfunc fupd_mask_intro {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (hsub : coPSubset E2 E1)
-  : properUPred_ent mkProperEmp
+  : mkProperEmp ⊢
       (mkProperFUpd W E1 E2 (mkProperFUpd W E2 E1 mkProperEmp)) =>
   fupd_mask_subseteq W E1 E2 hsub
 
@@ -185,7 +184,7 @@
 
 \instance UPredBiBUpdFUpd (S : gFunctors) (W : wsatGS S) : BiBUpdFUpd
   | BIMixin => BIuPredMixin (iResUR S)
-  | bupd => mkProperBUpd
+  | bupd => \lam P => |==> P
   | fupd => mkProperFUpd W
   | bi_bupd_mixin_bupd_intro => bupd_intro
   | bi_bupd_mixin_bupd_mono => bupd_mono
@@ -200,78 +199,76 @@
   | bi_bupd_fupd => bupd_fupd W
 
 \sfunc fupd_intro {S : gFunctors} (W : wsatGS S) (E : coPset) (P : iProp S)
-  : properUPred_ent P (mkProperFUpd W E E P) =>
-  properUPred_ent_trans P (mkProperBUpd P) (mkProperFUpd W E E P)
+  : P ⊢ (mkProperFUpd W E E P) =>
+  properUPred_ent_trans P (|==> P) (mkProperFUpd W E E P)
     (bupd_intro P) (bupd_fupd W E P)
 
 \sfunc fupd_except_0 {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (P : iProp S)
-  : properUPred_ent
-      (mkProperFUpd W E1 E2 (mkProperExceptZero P))
+  : (mkProperFUpd W E1 E2 (<except_0> P)) ⊢
       (mkProperFUpd W E1 E2 P) =>
   \let
     | inner => mkProperFUpd W E2 E2 P
-    | lift : properUPred_ent (mkProperExceptZero P) inner =>
-        properUPred_ent_trans (mkProperExceptZero P)
-          (mkProperExceptZero inner) inner
+    | lift : (<except_0> P) ⊢ inner =>
+        properUPred_ent_trans (<except_0> P)
+          (<except_0> inner) inner
           (except_zero_mono P inner (fupd_intro W E2 P))
           (except_0_fupd W E2 E2 P)
   \in properUPred_ent_trans
-      (mkProperFUpd W E1 E2 (mkProperExceptZero P))
+      (mkProperFUpd W E1 E2 (<except_0> P))
       (mkProperFUpd W E1 E2 inner)
       (mkProperFUpd W E1 E2 P)
-      (fupd_mono W E1 E2 (mkProperExceptZero P) inner lift)
+      (fupd_mono W E1 E2 (<except_0> P) inner lift)
       (fupd_trans W E1 E2 E2 P)
 
 \sfunc fupd_frame_l {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (R P : iProp S)
-  : properUPred_ent
-      (mkProperSep R (mkProperFUpd W E1 E2 P))
-      (mkProperFUpd W E1 E2 (mkProperSep R P)) =>
+  : (R ∗ (mkProperFUpd W E1 E2 P)) ⊢
+      (mkProperFUpd W E1 E2 (R ∗ P)) =>
   properUPred_ent_trans
-    (mkProperSep R (mkProperFUpd W E1 E2 P))
-    (mkProperSep (mkProperFUpd W E1 E2 P) R)
-    (mkProperFUpd W E1 E2 (mkProperSep R P))
+    (R ∗ (mkProperFUpd W E1 E2 P))
+    ((mkProperFUpd W E1 E2 P) ∗ R)
+    (mkProperFUpd W E1 E2 (R ∗ P))
     (sep_comm_ent R (mkProperFUpd W E1 E2 P))
     (properUPred_ent_trans
-      (mkProperSep (mkProperFUpd W E1 E2 P) R)
-      (mkProperFUpd W E1 E2 (mkProperSep P R))
-      (mkProperFUpd W E1 E2 (mkProperSep R P))
+      ((mkProperFUpd W E1 E2 P) ∗ R)
+      (mkProperFUpd W E1 E2 (P ∗ R))
+      (mkProperFUpd W E1 E2 (R ∗ P))
       (fupd_frame_r W E1 E2 P R)
-      (fupd_mono W E1 E2 (mkProperSep P R) (mkProperSep R P)
+      (fupd_mono W E1 E2 (P ∗ R) (R ∗ P)
         (sep_comm_ent P R)))
 
 \sfunc fupd_same_mask_equiv {S : gFunctors} (W : wsatGS S)
     (E E' : coPset) (P : iProp S) (heq : coPset_equiv E E')
-  : properUPred_ent (mkProperFUpd W E E P) (mkProperFUpd W E' E' P) =>
+  : (mkProperFUpd W E E P) ⊢ (mkProperFUpd W E' E' P) =>
   \let
-    | body => mkProperSep (wsat W) (mkProperSep (ownE W E) P)
-    | body' => mkProperSep (wsat W) (mkProperSep (ownE W E') P)
-    | body_mono : properUPred_ent body body' =>
-        sep_mono_r_ent (wsat W) (mkProperSep (ownE W E) P)
-          (mkProperSep (ownE W E') P)
+    | body => (wsat W) ∗ ((ownE W E) ∗ P)
+    | body' => (wsat W) ∗ ((ownE W E') ∗ P)
+    | body_mono : body ⊢ body' =>
+        sep_mono_r_ent (wsat W) ((ownE W E) ∗ P)
+          ((ownE W E') ∗ P)
           (sep_mono_l_ent (ownE W E) (ownE W E') P
             (\lam n x hv ho =>
               (own_proper W.wsatGpreS_enabled W.enabled_name
                 (CoPset E) (CoPset E') heq n x hv).1 ho))
   \in \lam n x hv hf m m_le_n frame hv_op hworld' =>
     \let
-      | hworld : (mkProperSep (wsat W) (ownE W E)).upred_holds m frame =>
+      | hworld : ((wsat W) ∗ (ownE W E)).upred_holds m frame =>
           sep_mono_r_ent (wsat W) (ownE W E') (ownE W E)
             (\lam k y hvy ho =>
               (own_proper W.wsatGpreS_enabled W.enabled_name
                 (CoPset E) (CoPset E') heq k y hvy).2 ho)
             m frame (cmra_validN_op_r {iResUR S} m x frame hv_op) hworld'
-      | hb : (mkProperBUpd (mkProperExceptZero body)).upred_holds m
+      | hb : (|==> (<except_0> body)).upred_holds m
           ((iResUR S).op x frame) =>
           hf m m_le_n frame hv_op hworld
-    \in bupd_mono (mkProperExceptZero body) (mkProperExceptZero body')
+    \in bupd_mono (<except_0> body) (<except_0> body')
           (except_zero_mono body body' body_mono)
           m ((iResUR S).op x frame) hv_op hb
 
 \sfunc fupd_mask_mono {S : gFunctors} (W : wsatGS S)
     (E1 E2 : coPset) (P : iProp S) (hsub : coPSubset E1 E2)
-  : properUPred_ent (mkProperFUpd W E1 E1 P) (mkProperFUpd W E2 E2 P) =>
+  : (mkProperFUpd W E1 E1 P) ⊢ (mkProperFUpd W E2 E2 P) =>
   \let
     | Ef => coPset_difference E2 E1
     | hdisj : coPset_overlap E1 Ef = false =>
@@ -279,7 +276,7 @@
     | heq : coPset_equiv E2 (coPset_union E1 Ef) =>
         coPset_subset_union_difference E2 E1 hsub
     | implP => mkProperImpl (mkProperPure (coPset_overlap E1 Ef = false)) P
-    | introduce_impl : properUPred_ent P implP =>
+    | introduce_impl : P ⊢ implP =>
         \lam n x hv hp m m_le_n y incl hvy _ =>
           P.upred_mono n m x y hp incl m_le_n
   \in properUPred_ent_trans

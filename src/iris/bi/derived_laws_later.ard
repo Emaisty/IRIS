@@ -5,6 +5,7 @@
 \import iris.algebra.ofe
 \import iris.algebra.cmra
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.bi.big_op
 
 -- =================================================================================
@@ -16,7 +17,7 @@
 -- =================================================================================
 
 \func Timeless {M : UCMRA} (P : ProperUPred M) : \Prop =>
-  properUPred_ent (mkProperLater P) (mkProperExceptZero P)
+  (|> P) ⊢ (<except_0> P)
 
 -- `emp` holds at every resource (the unit is below everything); the stated
 -- type is definitionally `mkProperEmp.upred_holds n a`.
@@ -36,9 +37,8 @@
 
 -- ◇ A ∗ ◇ B ⊢ ◇ (A ∗ B)
 \lemma except_0_sep_2 {M : UCMRA} (A B : ProperUPred M)
-  : properUPred_ent
-      (mkProperSep (mkProperExceptZero A) (mkProperExceptZero B))
-      (mkProperExceptZero (mkProperSep A B)) =>
+  : ((<except_0> A) ∗ (<except_0> B)) ⊢
+      (<except_0> (A ∗ B)) =>
   \lam n x hv hs => \case \elim n, hs, hv \with {
     | 0, _, _ => byLeft ()
     | suc n', inP (a1, a2, da, hA, hB), hv' => \case hA, hB \with {
@@ -50,18 +50,18 @@
 
 \lemma timeless_sep {M : UCMRA} (P Q : ProperUPred M)
     (hP : Timeless P) (hQ : Timeless Q)
-  : Timeless (mkProperSep P Q) =>
+  : Timeless (P ∗ Q) =>
   \lam n x hv h =>
     except_0_sep_2 P Q n x hv
-      (sep_mono_r_ent (mkProperExceptZero P) (mkProperLater Q)
-        (mkProperExceptZero Q) hQ n x hv
-        (sep_mono_l_ent (mkProperLater P) (mkProperExceptZero P)
-          (mkProperLater Q) hP n x hv
+      (sep_mono_r_ent (<except_0> P) (|> Q)
+        (<except_0> Q) hQ n x hv
+        (sep_mono_l_ent (|> P) (<except_0> P)
+          (|> Q) hP n x hv
           (proper_later_sep_1 P Q n x hv h)))
 
 \lemma timeless_and {M : UCMRA} (P Q : ProperUPred M)
     (hP : Timeless P) (hQ : Timeless Q)
-  : Timeless (mkProperAnd P Q) =>
+  : Timeless (P ∧ Q) =>
   \lam n x hv h => \case \elim n, h, hv \with {
     | 0, _, _ => byLeft ()
     | suc n', hpq, hv' =>
@@ -74,7 +74,7 @@
 
 \lemma timeless_or {M : UCMRA} (P Q : ProperUPred M)
     (hP : Timeless P) (hQ : Timeless Q)
-  : Timeless (mkProperOr P Q) =>
+  : Timeless (P ∨ Q) =>
   \lam n x hv h => \case \elim n, h, hv \with {
     | 0, _, _ => byLeft ()
     | suc n', hpq, hv' => \case hpq \with {

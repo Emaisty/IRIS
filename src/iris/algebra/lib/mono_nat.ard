@@ -1,0 +1,204 @@
+\import Logic
+\import Paths
+\import Data.Maybe
+\import Arith.Nat
+\import Arith.Rat
+\import Algebra.StrictlyOrdered
+\import Order.PartialOrder
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.frac
+\import iris.algebra.dfrac
+\import iris.algebra.agree
+\import iris.algebra.view
+
+-- The idempotent max monoid used by Iris's monotone-natural ghost state.
+-- A fragment `m` records the persistent fact that the authoritative number is
+-- at least `m`; combining fragments therefore takes their maximum.
+
+\func max_nat (n m : Nat) : Nat \elim n, m
+  | 0, m => m
+  | suc n, 0 => suc n
+  | suc n, suc m => suc (max_nat n m)
+
+\lemma max_nat_zero_r (n : Nat) : max_nat n 0 = n \elim n
+  | 0 => idp
+  | suc n => idp
+
+\lemma max_nat_comm (n m : Nat) : max_nat n m = max_nat m n \elim n, m
+  | 0, m => inv (max_nat_zero_r m)
+  | suc n, 0 => idp
+  | suc n, suc m => pmap suc (max_nat_comm n m)
+
+\lemma max_nat_assoc (n m k : Nat) :
+  max_nat n (max_nat m k) = max_nat (max_nat n m) k \elim n, m, k
+  | 0, m, k => idp
+  | suc n, 0, k => idp
+  | suc n, suc m, 0 => idp
+  | suc n, suc m, suc k => pmap suc (max_nat_assoc n m k)
+
+\lemma max_nat_idemp (n : Nat) : max_nat n n = n \elim n
+  | 0 => idp
+  | suc n => pmap suc (max_nat_idemp n)
+
+\lemma max_nat_le_l (n m : Nat) : n <= max_nat n m \elim n, m
+  | 0, m => zero<=_
+  | suc n, 0 => <=-refl
+  | suc n, suc m => suc<=suc (max_nat_le_l n m)
+
+\lemma max_nat_le_r (n m : Nat) : m <= max_nat n m =>
+  transport (m <=) (inv (max_nat_comm n m)) (max_nat_le_l m n)
+
+\lemma max_nat_eq_r (n m : Nat) (h : n <= m) : max_nat n m = m \elim n, m
+  | 0, m => idp
+  | suc n, 0 => absurd (suc/=0 (<=-antisymmetric h zero<=_))
+  | suc n, suc m => pmap suc (max_nat_eq_r n m (suc<=suc.conv h))
+
+\lemma max_nat_eq_l (n m : Nat) (h : m <= n) : max_nat n m = n =>
+  max_nat_comm n m *> max_nat_eq_r m n h
+
+\func MaxNatUCMRA : UCMRA \cowith
+  | OFE => DiscreteOFE Nat
+  | op => max_nat
+  | pcore => \lam n => just n
+  | valid => \lam _ => \Sigma
+  | validN => \lam _ _ => \Sigma
+  | unit => 0
+  | cmra_op_ne => \lam x n y1 y2 h => pmap (max_nat x) h
+  | cmra_op_ne_2 => \lam y n x1 x2 h => pmap (\lam x => max_nat x y) h
+  | cmra_pcore_ne => \lam n x y cx hxy hcore =>
+      transport (\lam yy => \Sigma (cy : Nat) (just yy = just cy) (cx = cy))
+        hxy (cx, hcore, idp)
+  | cmra_validN_ne => \lam _ _ _ _ _ => ()
+  | cmra_valid_validN => \lam _ => (\lam _ _ => (), \lam _ => ())
+  | cmra_validN_le => \lam _ _ _ _ _ => ()
+  | cmra_assoc => max_nat_assoc
+  | cmra_comm => max_nat_comm
+  | cmra_pcore_l => \lam x cx hcore =>
+      transport (\lam c => max_nat c x = x)
+        (pmap (\case __ \with { | just c => c | nothing => x }) hcore)
+        (max_nat_idemp x)
+  | cmra_pcore_idemp => \lam _ _ _ => idp
+  | cmra_pcore_mono => \lam x y cx hxy hcore =>
+      inP (y, idp,
+        transport (\lam c => incl {DiscreteOFE Nat}
+          {\new Op Nat { | op => max_nat }} c y)
+          (pmap (\case __ \with { | just c => c | nothing => x }) hcore) hxy)
+  | cmra_validN_op_l => \lam _ _ _ _ => ()
+  | cmra_extend => \lam _ x y1 y2 _ hd => (y1, y2, hd, idp, idp)
+  | ucmra_unit_valid => ()
+  | ucmra_unit_left_id => \lam _ => idp
+  | ucmra_pcore_unit => idp
+
+\lemma max_nat_core_id (n : Nat) : CoreId {MaxNatUCMRA} n => idp
+
+\func mono_nat_rel_holds (a b : Nat) : \Prop => b <= a
+
+\func mono_nat_rel : ViewRel (DiscreteOFE Nat) MaxNatUCMRA \cowith
+  | view_rel_holds => \lam _ a b => mono_nat_rel_holds a b
+  | view_rel_mono => \lam _ _ a a' b b' h ha hb _ =>
+      \case hb \with {
+        | inP (z, eb) => transport (b' <=) ha
+            (<=-transitive (transport (b' <=) (inv eb) (max_nat_le_l b' z)) h)
+      }
+  | view_rel_validN => \lam _ _ _ _ => ()
+  | view_rel_unit => \lam _ => (0, <=-refl)
+
+\func mono_natR : CMRA => ViewCMRA mono_nat_rel
+\func mono_natUR : UCMRA => ViewUCMRA mono_nat_rel
+
+\func mono_nat_auth (q : Qp) (n : Nat) : mono_natR.E =>
+  mono_natR.op (view_auth (DfracOwn q) n) (view_frag n)
+
+\func mono_nat_lb (n : Nat) : mono_natR.E => view_frag n
+
+\lemma mono_nat_auth_op (q1 q2 : Qp) (n : Nat) :
+  mono_natR.equiv
+    (mono_nat_auth (qp_add q1 q2) n)
+    (mono_natR.op (mono_nat_auth q1 n) (mono_nat_auth q2 n)) =>
+  (((DfracCMRA.equiv_refl (DfracOwn (qp_add q1 q2))),
+      (AgreeOFE (DiscreteOFE Nat)).equiv_sym
+        (agree_op (to_agree n) (to_agree n)) (to_agree n)
+        (agree_idemp (to_agree n))),
+    inv (max_nat_idemp n))
+
+\lemma mono_nat_lb_core_id (n : Nat) : CoreId {mono_natR} (mono_nat_lb n) =>
+  view_frag_core_id mono_nat_rel n (max_nat_core_id n)
+
+\lemma mono_nat_auth_lb_valid (q : Qp) (n m : Nat)
+    (h : valid {mono_natR} (mono_natR.op (mono_nat_auth q n) (mono_nat_lb m)))
+  : m <= n =>
+  \case (h 0).2 \with {
+    | inP (a, da, hm) => transport (m <=)
+        (inv (view_agree_dist_extract 0 n (to_agree a) da))
+        (<=-transitive (max_nat_le_r n m) hm)
+  }
+
+\lemma mono_nat_auth_lb_validN (q : Qp) (step n m : Nat)
+    (h : validN {mono_natR} step (mono_natR.op (mono_nat_auth q n) (mono_nat_lb m)))
+  : m <= n =>
+  \case h.2 \with {
+    | inP (a, da, hm) => transport (m <=)
+        (inv (view_agree_dist_extract step n (to_agree a) da))
+        (<=-transitive (max_nat_le_r n m) hm)
+  }
+
+\lemma mono_nat_auth_valid (q : Qp) (n : Nat)
+    (hq : q.qp_val RatField.<= RatField.ide) : valid {mono_natR} (mono_nat_auth q n) =>
+  \lam step => (hq, inP (n,
+    (AgreeOFE (DiscreteOFE Nat)).ofe_dist_refl step (to_agree n), <=-refl))
+
+\lemma mono_nat_auth_lb_valid_intro (q : Qp) (n m : Nat)
+    (hq : q.qp_val RatField.<= RatField.ide) (hm : m <= n)
+  : valid {mono_natR} (mono_natR.op (mono_nat_auth q n) (mono_nat_lb m)) =>
+  \lam step => (hq, inP (n,
+    (AgreeOFE (DiscreteOFE Nat)).ofe_dist_refl step (to_agree n),
+    transport (\lam x => x <= n)
+      (inv (max_nat_eq_l n m hm)) <=-refl))
+
+\lemma mono_nat_lb_mono (m n : Nat) (h : m <= n) :
+  incl {mono_natR} {\new Op mono_natR.E { | op => mono_natR.op }}
+    (mono_nat_lb m) (mono_nat_lb n) =>
+  inP (mono_nat_lb n,
+    ((), inv (max_nat_eq_r m n h)))
+
+\lemma mono_nat_included (q : Qp) (n : Nat) :
+  incl {mono_natR} {\new Op mono_natR.E { | op => mono_natR.op }}
+    (mono_nat_lb n) (mono_nat_auth q n) =>
+  inP (view_auth (DfracOwn q) n,
+    mono_natR.cmra_comm (view_auth (DfracOwn q) n) (view_frag n))
+
+\func mono_nat_auth_update_valid (n n' : Nat) (h : n <= n')
+    (step : Nat) (fa : ViewAuth (DiscreteOFE Nat)) (ff : Nat)
+    (hv : validN {mono_natR} step
+      (mono_natR.op (mono_nat_auth qp_one n) (fa, ff)))
+  : validN {mono_natR} step
+      (mono_natR.op
+        (mono_natR.op (mono_nat_auth qp_one n') (mono_nat_lb n'))
+        (fa, ff)) \elim fa
+    | just da => \case dfrac_full_exclusive da.1 hv.1 \with {}
+    | nothing =>
+      \let
+        | oldRel : max_nat n ff <= n => \case hv.2 \with {
+            | inP (a, da, hr) => transport (max_nat n ff <=)
+                (inv (view_agree_dist_extract step n (to_agree a) da)) hr
+          }
+        | frameLe : ff <= n =>
+            <=-transitive (max_nat_le_r n ff) oldRel
+        | newRel : max_nat n' ff <= n' =>
+            transport (\lam x => x <= n')
+              (inv (max_nat_eq_l n' ff
+                (<=-transitive frameLe h))) <=-refl
+        | newRel2 : max_nat (max_nat n' n') ff <= n' =>
+            transport (\lam x => max_nat x ff <= n')
+              (inv (max_nat_idemp n')) newRel
+      \in (RatField.<=-refl,
+          inP (n', (AgreeOFE (DiscreteOFE Nat)).ofe_dist_refl step (to_agree n'),
+            newRel2))
+
+\lemma mono_nat_auth_update (n n' : Nat) (h : n <= n') :
+  cmra_updateP {mono_natUR} (mono_nat_auth qp_one n)
+    (\lam y => y = mono_natR.op (mono_nat_auth qp_one n') (mono_nat_lb n')) =>
+  \lam step frame hv =>
+    inP (mono_natR.op (mono_nat_auth qp_one n') (mono_nat_lb n'), idp,
+      mono_nat_auth_update_valid n n' h step frame.1 frame.2 hv)

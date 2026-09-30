@@ -326,6 +326,13 @@
     | nothing, just _ => \lam e => \case e \with {}
   }
 
+\lemma exclU_nothing_discrete {A : OFE} :
+  Discrete {ExclUOFE A} nothing =>
+  \lam o hd => \case \elim o, hd \with {
+    | nothing, _ => ()
+    | just _, impossible => \case impossible \with {}
+  }
+
 \func exclU_valid {A : \Type} (me : Maybe (Excl A)) : \Prop => \case me \with {
   | nothing => \Sigma
   | just e => excl_valid e

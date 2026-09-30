@@ -1,0 +1,16 @@
+\import iris.base_logic.upred
+
+-- Rocq-style surface notation for concrete Iris propositions. These metas
+-- elaborate directly to the existing ProperUPred operations.
+\meta entails \alias \infix 2 ⊢ P Q => properUPred_ent P Q
+\meta equivI \alias \infix 2 ⊣⊢ P Q => upredEquiv P Q
+
+\meta sep \alias \infixr 6 ∗ P Q => mkProperSep P Q
+\meta wand \alias \infixr 3 -∗ P Q => mkProperWand P Q
+\meta andI \alias \infixr 5 ∧ P Q => mkProperAnd P Q
+\meta orI \alias \infixr 4 ∨ P Q => mkProperOr P Q
+
+\meta |> P => mkProperLater P
+\meta <#> P => mkProperPersistently P
+\meta <except_0> P => mkProperExceptZero P
+\meta |==> P => mkProperBUpd P

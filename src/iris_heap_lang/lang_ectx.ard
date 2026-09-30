@@ -101,6 +101,9 @@
   | IsZeroPosS n p1 p2 p3 => rewrite p1 idp
   | PredS n p1 p2 p3 => rewrite p1 idp
   | MulS a b p1 p2 p3 => rewrite p1 idp
+  | BinOpS op v1 v2 result evaluates p1 p2 p3 => rewrite p1 idp
+  | AllocNS n v l positive fresh p1 p2 p3 => rewrite p1 idp
+  | FAAS l old incr lookup p1 p2 p3 => rewrite p1 idp
   | ForkS e p1 p2 p3 => rewrite p1 idp
   | NewProphS p fresh p1 p2 p3 => rewrite p1 idp
   | ResolveS p v w e innerObservations innerForks inner used p1 p2 => rewrite p1 idp
@@ -228,6 +231,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -251,6 +257,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -274,6 +283,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -296,6 +308,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -318,6 +333,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -340,6 +358,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -362,6 +383,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -385,6 +409,9 @@
     | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -407,6 +434,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -429,6 +459,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -451,6 +484,9 @@
     | IsZeroZeroS p1 _ _ => \case p1 \with {}
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -473,6 +509,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -495,6 +534,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -517,6 +559,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -539,6 +584,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -569,6 +617,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
   }
@@ -592,6 +643,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
   }
@@ -614,6 +668,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
   }
@@ -1185,6 +1242,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
@@ -1252,6 +1312,17 @@
     (efs : List Expr) (observations : List Observation) ->
     PrimStep e sigma e2 sigma2 efs observations ->
     TruncP (\Sigma (v : Value) (e2 = Val v))
+
+-- NewProph always reduces directly to the freshly allocated prophecy value.
+-- Rocq obtains this instance through type-class search; the term-mode port
+-- names it explicitly for invariant-opening rules.
+\func new_proph_strongly_atomic {cnt : Countable Loc} :
+  StronglyAtomic {cnt} NewProph =>
+  \lam sigma e2 sigma2 efs observations step =>
+    \case new_proph_step_inv sigma e2 sigma2 efs observations step \with {
+      | NewProphStepInvIntro p _ e2eq _ _ _ =>
+        inP (LitV (LitProphecy p), e2eq)
+    }
 
 \func strongly_atomic_prim_base_ctx {cnt : Countable Loc} (e : Expr)
     (atomic : StronglyAtomic {cnt} e)
@@ -1391,6 +1462,9 @@
     | IsZeroPosS _ bad _ _ => \case bad \with {}
     | PredS _ bad _ _ => \case bad \with {}
     | MulS _ _ bad _ _ => \case bad \with {}
+    | BinOpS _ _ _ _ _ bad _ _ => \case bad \with {}
+    | AllocNS _ _ _ _ _ bad _ _ => \case bad \with {}
+    | FAAS _ _ _ _ bad _ _ => \case bad \with {}
     | ForkS _ bad _ _ => \case bad \with {}
     | NewProphS _ _ bad _ _ => \case bad \with {}
   }
@@ -1476,6 +1550,9 @@
     | IsZeroPosS _ bad _ _ => \case bad \with {}
     | PredS _ bad _ _ => \case bad \with {}
     | MulS _ _ bad _ _ => \case bad \with {}
+    | BinOpS _ _ _ _ _ bad _ _ => \case bad \with {}
+    | AllocNS _ _ _ _ _ bad _ _ => \case bad \with {}
+    | FAAS _ _ _ _ bad _ _ => \case bad \with {}
     | ForkS _ bad _ _ => \case bad \with {}
     | NewProphS _ _ bad _ _ => \case bad \with {}
   }
@@ -1592,6 +1669,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -1664,6 +1744,527 @@
       alloc_step_inv_ctx v sigma e2 sigma2 efs observations K e1' e2' p1 p2 base
   }
 
+-- Deterministic inversion for positive bulk allocation.  AllocN is atomic in
+-- the current ANF language, so—as for binary operations—there is no matching
+-- evaluation-context item around it.
+\func allocN_signature (fallback : \Sigma Nat Value) (e : Expr)
+  : \Sigma Nat Value \elim e
+  | AllocN (Val count) (Val init) =>
+      (\case value_nat count \with {
+        | just n => n
+        | nothing => fallback.1
+      }, init)
+  | _ => fallback
+
+\truncated \data AllocNStepInv
+  {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) : \Prop
+  | AllocNStepInvIntro
+      (l : Loc) (positive : \Sigma (k : Nat) (n = suc k))
+      (fresh : heap_block_fresh sigma.heap l n)
+      (e2_eq : e2 = Val (LitV (LitLoc l)))
+      (sigma2_eq : sigma2 = state_update_heap sigma
+        (heap_insert_block sigma.heap l n v))
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
+
+\func base_allocN_step_inv
+  {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : BaseStep (AllocN (Val (natV n)) (Val v)) sigma
+    e2 sigma2 efs observations)
+  : AllocNStepInv n v sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS n' v' l positive fresh p1 p2 p3 {p0} {p4} =>
+      \let
+        | sourceArgs : \Sigma Nat Value => (n, v)
+        | targetArgs : \Sigma Nat Value => (n', v')
+        | argsEq : sourceArgs = targetArgs =>
+            pmap (allocN_signature sourceArgs) p1
+        | nEq : n = n' => pmap (\lam q => q.1) argsEq
+        | vEq : v = v' => pmap (\lam q => q.2) argsEq
+        | positive' : \Sigma (k : Nat) (n = suc k) =>
+            transport (\lam nn => \Sigma (k : Nat) (nn = suc k))
+              (inv nEq) positive
+        | fresh' : heap_block_fresh sigma.heap l n =>
+            transport (heap_block_fresh sigma.heap l) (inv nEq) fresh
+        | sigma2Eq : sigma2 = state_update_heap sigma
+            (heap_insert_block sigma.heap l n v) =>
+            p3
+            *> pmap (\lam nn => state_update_heap sigma
+              (heap_insert_block sigma.heap l nn v')) (inv nEq)
+            *> pmap (\lam vv => state_update_heap sigma
+              (heap_insert_block sigma.heap l n vv)) (inv vEq)
+      \in AllocNStepInvIntro l positive' fresh' p2 sigma2Eq p4 p0
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func allocN_step_inv_ctx_item
+  {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : AllocN (Val (natV n)) (Val v) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : AllocNStepInv n v sigma e2 sigma2 efs observations \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _ => \case p1 \with {}
+  | ResolveMCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _ => \case p1 \with {}
+
+\func allocN_step_inv_ctx
+  {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : AllocN (Val (natV n)) (Val v) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : AllocNStepInv n v sigma e2 sigma2 efs observations \elim K
+  | EmptyCtx =>
+      \case base_allocN_step_inv n v sigma e2' sigma2 efs observations
+        (transport (\lam ee => BaseStep ee sigma e2' sigma2 efs observations)
+          (inv p1) base) \with {
+        | AllocNStepInvIntro l positive fresh e2'_eq sigma2_eq efs_eq obs_eq =>
+          AllocNStepInvIntro l positive fresh (p2 *> e2'_eq)
+            sigma2_eq efs_eq obs_eq
+      }
+  | ConsCtx Ki K' =>
+      allocN_step_inv_ctx_item n v sigma e2 sigma2 efs observations
+        Ki K' e1' e2' p1 p2 base
+
+\func allocN_step_inv
+  {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : PrimStep (AllocN (Val (natV n)) (Val v)) sigma
+    e2 sigma2 efs observations)
+  : AllocNStepInv n v sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      allocN_step_inv_ctx n v sigma e2 sigma2 efs observations
+        K e1' e2' p1 p2 base
+  }
+
+-- Deterministic inversion for the atomic binary-operation fragment.  Binary
+-- operations deliberately have no evaluation-context items: their operands
+-- are values in the ANF programs that use them.
+\func binop_signature (fallback : \Sigma HeapBinOp Value Value) (e : Expr)
+  : \Sigma HeapBinOp Value Value \elim e
+  | BinOp op (Val v1) (Val v2) => (op, v1, v2)
+  | _ => fallback
+
+\func eval_binop_signature (args : \Sigma HeapBinOp Value Value) : Maybe Value =>
+  eval_heap_binop args.1 args.2 args.3
+
+\truncated \data BinOpStepInv
+  {cnt : Countable Loc}
+  (op : HeapBinOp) (v1 v2 result : Value)
+  (evaluates : eval_heap_binop op v1 v2 = just result)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (efs : List Expr) (observations : List Observation) : \Prop
+  | BinOpStepInvIntro
+      (e2_eq : e2 = Val result) (sigma2_eq : sigma2 = sigma)
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
+
+\func base_binop_step_inv
+  {cnt : Countable Loc}
+  (op : HeapBinOp) (v1 v2 result : Value)
+  (evaluates : eval_heap_binop op v1 v2 = just result)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (efs : List Expr) (observations : List Observation)
+  (hstep : BaseStep (BinOp op (Val v1) (Val v2)) sigma
+    e2 sigma2 efs observations)
+  : BinOpStepInv op v1 v2 result evaluates sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS op' v1' v2' result' evaluates' p1 p2 p3 {p0} {p4} =>
+      \let
+        | sourceArgs : \Sigma HeapBinOp Value Value => (op, v1, v2)
+        | targetArgs : \Sigma HeapBinOp Value Value => (op', v1', v2')
+        | argsEq : sourceArgs = targetArgs =>
+            pmap (binop_signature sourceArgs) p1
+        | resultEq : result = result' =>
+            pmap (\case __ \with {
+              | nothing => result
+              | just value => value
+            }) (inv evaluates *>
+              pmap eval_binop_signature argsEq *> evaluates')
+      \in BinOpStepInvIntro
+          (p2 *> pmap Val (inv resultEq)) p3 p4 p0
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func binop_step_inv_ctx_item
+  {cnt : Countable Loc}
+  (op : HeapBinOp) (v1 v2 result : Value)
+  (evaluates : eval_heap_binop op v1 v2 = just result)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (efs : List Expr) (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : BinOp op (Val v1) (Val v2) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : BinOpStepInv op v1 v2 result evaluates sigma e2 sigma2 efs observations
+  \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _ => \case p1 \with {}
+  | ResolveMCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _ => \case p1 \with {}
+
+\func binop_step_inv_ctx
+  {cnt : Countable Loc}
+  (op : HeapBinOp) (v1 v2 result : Value)
+  (evaluates : eval_heap_binop op v1 v2 = just result)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (efs : List Expr) (observations : List Observation)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : BinOp op (Val v1) (Val v2) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : BinOpStepInv op v1 v2 result evaluates sigma e2 sigma2 efs observations
+  \elim K
+  | EmptyCtx =>
+    \case base_binop_step_inv op v1 v2 result evaluates sigma e2' sigma2
+        efs observations
+        (transport (\lam ee => BaseStep ee sigma e2' sigma2 efs observations)
+          (inv p1) base) \with {
+      | BinOpStepInvIntro e2'_eq sigma2_eq efs_eq observations_eq =>
+        BinOpStepInvIntro (p2 *> e2'_eq) sigma2_eq efs_eq observations_eq
+    }
+  | ConsCtx Ki K' =>
+      binop_step_inv_ctx_item op v1 v2 result evaluates sigma e2 sigma2
+        efs observations Ki K' e1' e2' p1 p2 base
+
+\func binop_step_inv
+  {cnt : Countable Loc}
+  (op : HeapBinOp) (v1 v2 result : Value)
+  (evaluates : eval_heap_binop op v1 v2 = just result)
+  (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+  (efs : List Expr) (observations : List Observation)
+  (hstep : PrimStep (BinOp op (Val v1) (Val v2)) sigma
+    e2 sigma2 efs observations)
+  : BinOpStepInv op v1 v2 result evaluates sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      binop_step_inv_ctx op v1 v2 result evaluates sigma e2 sigma2
+        efs observations K e1' e2' p1 p2 base
+  }
+
+\func fork_body (fallback : Expr) (e : Expr) : Expr \elim e
+  | Fork body => body
+  | _ => fallback
+
+\truncated \data ForkStepInv
+  {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) : \Prop
+  | ForkStepInvIntro
+      (e2_eq : e2 = Val unitV) (sigma2_eq : sigma2 = sigma)
+      (efs_eq : efs = body :: nil) (observations_eq : observations = nil)
+
+\func base_fork_step_inv
+  {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : BaseStep (Fork body) sigma e2 sigma2 efs observations)
+  : ForkStepInv body sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS body' p1 p2 p3 {p0} {p4} =>
+      \let bodyEq : body = body' => pmap (fork_body body) p1
+      \in ForkStepInvIntro p2 p3
+        (p4 *> pmap (\lam b => b :: nil) (inv bodyEq)) p0
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func fork_step_inv_ctx_item
+  {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : Fork body = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : ForkStepInv body sigma e2 sigma2 efs observations \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _ => \case p1 \with {}
+  | ResolveMCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _ => \case p1 \with {}
+
+\func fork_step_inv_ctx
+  {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) (K : Ectx) (e1' e2' : Expr)
+  (p1 : Fork body = fill K e1') (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : ForkStepInv body sigma e2 sigma2 efs observations \elim K
+  | EmptyCtx =>
+    \case base_fork_step_inv body sigma e2' sigma2 efs observations
+        (transport (\lam ee => BaseStep ee sigma e2' sigma2 efs observations)
+          (inv p1) base) \with {
+      | ForkStepInvIntro e2'_eq sigma2_eq efs_eq observations_eq =>
+        ForkStepInvIntro (p2 *> e2'_eq) sigma2_eq efs_eq observations_eq
+    }
+  | ConsCtx Ki K' =>
+      fork_step_inv_ctx_item body sigma e2 sigma2 efs observations
+        Ki K' e1' e2' p1 p2 base
+
+\func fork_step_inv
+  {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : PrimStep (Fork body) sigma e2 sigma2 efs observations)
+  : ForkStepInv body sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      fork_step_inv_ctx body sigma e2 sigma2 efs observations
+        K e1' e2' p1 p2 base
+  }
+
+\func faa_signature (fallback : \Sigma Loc Nat) (e : Expr) : \Sigma Loc Nat
+  \elim e
+  | FAA (Val (LitV (LitLoc l))) (Val (LitV (LitInt (pos incr)))) =>
+      (l, incr)
+  | FAA (Val (LitV (LitLoc l))) (Val (LitV (LitInt (neg 0)))) =>
+      (l, 0)
+  | FAA (Val (LitV (LitLoc _))) (Val (LitV (LitInt (neg (suc _))))) =>
+      fallback
+  | _ => fallback
+
+\truncated \data FAAStepInv
+  {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) : \Prop
+  | FAAStepInvIntro (old : Nat)
+      (lookup : glookup sigma.heap l = just (natV old))
+      (e2_eq : e2 = Val (natV old))
+      (sigma2_eq : sigma2 = state_update_heap sigma
+        (heap_update sigma.heap l (natV (old Nat.+ incr))))
+      (efs_eq : efs = nil) (observations_eq : observations = nil)
+
+\func base_faa_step_inv
+  {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : BaseStep
+    (FAA (Val (LitV (LitLoc l))) (Val (natV incr))) sigma
+    e2 sigma2 efs observations)
+  : FAAStepInv l incr sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS l' old incr' lookup p1 p2 p3 {p0} {p4} =>
+      \let
+        | sourceArgs : \Sigma Loc Nat => (l, incr)
+        | targetArgs : \Sigma Loc Nat => (l', incr')
+        | argsEq : sourceArgs = targetArgs =>
+            pmap (faa_signature sourceArgs) p1
+        | lookupAtSource : glookup sigma.heap l = just (natV old) =>
+            transport (\lam loc =>
+              glookup sigma.heap loc = just (natV old))
+              (inv (pmap (\lam args => args.1) argsEq)) lookup
+        | sigma2AtSource : sigma2 = state_update_heap sigma
+            (heap_update sigma.heap l (natV (old Nat.+ incr))) =>
+            p3 *> pmap (\lam args => state_update_heap sigma
+              (heap_update sigma.heap args.1
+                (natV (old Nat.+ args.2)))) (inv argsEq)
+      \in FAAStepInvIntro old lookupAtSource p2 sigma2AtSource p4 p0
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func faa_step_inv_ctx_item
+  {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : FAA (Val (LitV (LitLoc l))) (Val (natV incr)) =
+    fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : FAAStepInv l incr sigma e2 sigma2 efs observations \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx => \case p1 \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _ => \case p1 \with {}
+  | ResolveMCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _ => \case p1 \with {}
+
+\func faa_step_inv_ctx
+  {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation) (K : Ectx) (e1' e2' : Expr)
+  (p1 : FAA (Val (LitV (LitLoc l))) (Val (natV incr)) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations)
+  : FAAStepInv l incr sigma e2 sigma2 efs observations \elim K
+  | EmptyCtx =>
+    \case base_faa_step_inv l incr sigma e2' sigma2 efs observations
+        (transport (\lam ee => BaseStep ee sigma e2' sigma2 efs observations)
+          (inv p1) base) \with {
+      | FAAStepInvIntro old lookup e2'_eq sigma2_eq efs_eq observations_eq =>
+        FAAStepInvIntro old lookup (p2 *> e2'_eq) sigma2_eq
+          efs_eq observations_eq
+    }
+  | ConsCtx Ki K' =>
+      faa_step_inv_ctx_item l incr sigma e2 sigma2 efs observations
+        Ki K' e1' e2' p1 p2 base
+
+\func faa_step_inv
+  {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (hstep : PrimStep
+    (FAA (Val (LitV (LitLoc l))) (Val (natV incr))) sigma
+    e2 sigma2 efs observations)
+  : FAAStepInv l incr sigma e2 sigma2 efs observations =>
+  \case hstep \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      faa_step_inv_ctx l incr sigma e2 sigma2 efs observations
+        K e1' e2' p1 p2 base
+  }
+
+\func faa_strongly_atomic {cnt : Countable Loc} (l incr : Nat) :
+  StronglyAtomic {cnt}
+    (FAA (Val (LitV (LitLoc l))) (Val (natV incr))) =>
+  \lam sigma e2 sigma2 efs observations step =>
+    \case faa_step_inv l incr sigma e2 sigma2 efs observations step \with {
+      | FAAStepInvIntro old _ e2_eq _ _ _ =>
+        inP (natV old, e2_eq)
+    }
+
 \truncated \data StoreStepInv
   {cnt : Countable Loc}
   (l : Loc) (v : Value) (sigma : State cnt)
@@ -1713,6 +2314,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -1846,6 +2450,9 @@
     | IsZeroPosS _ p1 _ _ => \case p1 \with {}
     | PredS _ p1 _ _ => \case p1 \with {}
     | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
@@ -1927,5 +2534,109 @@
   \case hstep \with {
     | EctxStep K e1' e2' p1 p2 base =>
       load_step_inv_ctx l v sigma e2 sigma2 efs observations lookup
+        K e1' e2' p1 p2 base
+  }
+
+\func base_load_atomic
+  {cnt : Countable Loc}
+  (l : Loc) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (step : BaseStep (Load (Val (LitV (LitLoc l)))) sigma
+    e2 sigma2 efs observations) :
+  TruncP (\Sigma (v : Value) (e2 = Val v)) =>
+  \case step \with {
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ v _ _ p2 _ => inP (v, p2)
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+
+\func load_atomic_ctx_item
+  {cnt : Countable Loc}
+  (l : Loc) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (Ki : EctxItem) (K' : Ectx) (e1' e2' : Expr)
+  (p1 : Load (Val (LitV (LitLoc l))) = fill_item Ki (fill K' e1'))
+  (p2 : e2 = fill_item Ki (fill K' e2'))
+  (base : BaseStep e1' sigma e2' sigma2 efs observations) :
+  TruncP (\Sigma (v : Value) (e2 = Val v)) \elim Ki
+  | AppLCtx _ => \case p1 \with {}
+  | AppRCtx _ => \case p1 \with {}
+  | IfCtx _ _ => \case p1 \with {}
+  | PairLCtx _ => \case p1 \with {}
+  | PairRCtx _ => \case p1 \with {}
+  | FstCtx => \case p1 \with {}
+  | SndCtx => \case p1 \with {}
+  | IsZeroCtx => \case p1 \with {}
+  | PredCtx => \case p1 \with {}
+  | MulLCtx _ => \case p1 \with {}
+  | MulRCtx _ => \case p1 \with {}
+  | AllocCtx => \case p1 \with {}
+  | LoadCtx =>
+    \let
+      | innerEq : Val (LitV (LitLoc l)) = fill K' e1' =>
+        pmap (\lam e => \case e \with {
+          | Load e' => e'
+          | _ => Val (LitV (LitLoc l))
+        }) p1
+      | innerNotVal : to_val (fill K' e1') = nothing =>
+        fill_not_val K' e1'
+          (base_val_stuck e1' sigma e2' sigma2 efs observations base)
+      | impossible : just (LitV (LitLoc l)) = nothing =>
+        pmap to_val innerEq *> innerNotVal
+    \in \case impossible \with {}
+  | StoreLCtx _ => \case p1 \with {}
+  | StoreRCtx _ => \case p1 \with {}
+
+\func load_atomic_ctx
+  {cnt : Countable Loc}
+  (l : Loc) (sigma : State cnt)
+  (e2 : Expr) (sigma2 : State cnt) (efs : List Expr)
+  (observations : List Observation)
+  (K : Ectx) (e1' e2' : Expr)
+  (p1 : Load (Val (LitV (LitLoc l))) = fill K e1')
+  (p2 : e2 = fill K e2')
+  (base : BaseStep e1' sigma e2' sigma2 efs observations) :
+  TruncP (\Sigma (v : Value) (e2 = Val v)) \elim K
+  | EmptyCtx =>
+    \let
+      | exactBase : BaseStep
+          (Load (Val (LitV (LitLoc l)))) sigma e2'
+          sigma2 efs observations =>
+          transport (\lam source => BaseStep source sigma e2'
+            sigma2 efs observations) (inv p1) base
+    \in \scase base_load_atomic l sigma e2' sigma2 efs
+        observations exactBase \with {
+      | inP (v, returned) => inP (v, p2 *> returned)
+    }
+  | ConsCtx Ki K' =>
+    load_atomic_ctx_item l sigma e2 sigma2 efs observations
+      Ki K' e1' e2' p1 p2 base
+
+\func load_strongly_atomic {cnt : Countable Loc} (l : Loc) :
+  StronglyAtomic {cnt} (Load (Val (LitV (LitLoc l)))) =>
+  \lam sigma e2 sigma2 efs observations step => \case step \with {
+    | EctxStep K e1' e2' p1 p2 base =>
+      load_atomic_ctx l sigma e2 sigma2 efs observations
         K e1' e2' p1 p2 base
   }

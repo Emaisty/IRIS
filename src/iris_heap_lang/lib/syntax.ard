@@ -1,0 +1,46 @@
+\import Arith.Nat
+\import iris_heap_lang.lang
+
+-- Stable numeric binders keep substitution decidable without relying on
+-- Arend's legacy opaque String primitive.
+\func nT : Name => 0
+\func nC : Name => 1
+\func nK : Name => 2
+\func nL : Name => 3
+\func nSum : Name => 4
+\func nA : Name => 5
+\func nI : Name => 6
+\func nAcc : Name => 7
+\func nN : Name => 8
+\func nP : Name => 9
+\func nR : Name => 10
+\func nThunk : Name => 11
+\func nHandle : Name => 12
+\func nCell : Name => 13
+\func nJoin : Name => 14
+\func nLeft : Name => 15
+\func nRight : Name => 16
+\func nX : Name => 17
+\func nY : Name => 18
+\func nH1 : Name => 19
+\func nH2 : Name => 20
+\func nIgnore : Name => 21
+\func nNextI : Name => 22
+\func nNextAcc : Name => 23
+
+\func letE (x : Name) (rhs body : Expr) : Expr =>
+  App (Lam x body) rhs
+
+\func seqE (first second : Expr) : Expr => letE nIgnore first second
+
+\func app2 (f a b : Expr) : Expr => App (App f a) b
+\func app3 (f a b c : Expr) : Expr => App (app2 f a b) c
+\func app4 (f a b c d : Expr) : Expr => App (app3 f a b c) d
+
+-- A one-step expression used by ResolveProph. Resolve requires its first
+-- argument to perform an actual atomic base step, like heap_lang Skip.
+\func skipE : Expr =>
+  App (Val (LamV nIgnore (Val unitV))) (Val unitV)
+
+\func resolveProphE (p result : Expr) : Expr =>
+  Resolve skipE p result

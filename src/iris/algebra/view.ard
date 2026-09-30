@@ -42,6 +42,24 @@
 \func view_frag {A : OFE} {B : UCMRA} (b : B.E)
   : (ViewOFE A B).E => (nothing, b)
 
+\lemma view_frag_discrete {A : OFE} {B : UCMRA}
+    (b : B.E) (hb : Discrete {B} b) :
+  Discrete {ViewOFE A B} (view_frag b) =>
+  \lam y hd =>
+    (\case y.1 \as ay, idp : y.1 = ay
+      \return (OptionOFE (ProdCMRA DfracCMRA (AgreeCMRA A))).equiv
+        nothing y.1
+      \with {
+        | nothing, ey => transport
+            (\lam z => (OptionOFE
+              (ProdCMRA DfracCMRA (AgreeCMRA A))).equiv nothing z)
+            (inv ey) ()
+        | just _, ey => \case transport
+            (\lam z => (OptionOFE
+              (ProdCMRA DfracCMRA (AgreeCMRA A))).dist 0 nothing z)
+            ey hd.1 \with {}
+      }, hb y.2 hd.2)
+
 \func view_validN {A : OFE} {B : UCMRA} (rel : ViewRel A B)
     (n : Nat) (x : (ViewOFE A B).E) : \Prop =>
   \case x.1 \with {

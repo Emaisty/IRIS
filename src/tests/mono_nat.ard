@@ -1,0 +1,51 @@
+\import Arith.Nat
+\import Arith.Rat
+\import Algebra.StrictlyOrdered
+\import Order.PartialOrder
+\import iris.algebra.frac
+\import iris.algebra.lib.mono_nat
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.mono_nat
+
+\lemma request_mono_nat_auth_split (q1 q2 : Qp) (n : Nat) :
+  mono_natR.equiv
+    (mono_nat_auth (qp_add q1 q2) n)
+    (mono_natR.op (mono_nat_auth q1 n) (mono_nat_auth q2 n)) =>
+  mono_nat_auth_op q1 q2 n
+
+\lemma request_mono_nat_valid {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (q : Qp) (n m : Nat) :
+  ((mono_nat_auth_own H gam q n) ∗ (mono_nat_lb_own H gam m)) ⊢
+    (mkProperPure
+      (\Sigma (q.qp_val RatField.<= RatField.ide) (m <= n))) =>
+  mono_nat_lb_own_valid H gam q n m
+
+\lemma request_mono_nat_snapshot {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (q : Qp) (n : Nat) :
+  (mono_nat_auth_own H gam q n) ⊢
+    (mono_nat_lb_own H gam n) =>
+  mono_nat_lb_own_get H gam q n
+
+\lemma request_mono_nat_weaken {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n' n : Nat) (h : n' <= n) :
+  (mono_nat_lb_own H gam n) ⊢
+    (mono_nat_lb_own H gam n') =>
+  mono_nat_lb_own_le H gam n' n h
+
+\lemma request_mono_nat_alloc {S : gFunctors} (H : mono_natG S) (n : Nat) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (\lam gam =>
+      (mono_nat_auth_own H gam qp_one n) ∗
+        (mono_nat_lb_own H gam n)))) =>
+  mono_nat_own_alloc H n
+
+\lemma request_mono_nat_update {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n n' : Nat) (h : n <= n') :
+  (mono_nat_auth_own H gam qp_one n) ⊢
+    (|==> ((mono_nat_auth_own H gam qp_one n') ∗
+      (mono_nat_lb_own H gam n'))) =>
+  mono_nat_own_update H gam n n' h

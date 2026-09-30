@@ -4,6 +4,7 @@
 \import Data.Maybe
 \import Data.Or
 \import Paths
+\import Paths.Meta
 \import Arith.Rat
 \import iris_heap_lang.lang
 \import iris.algebra.gmap
@@ -14,6 +15,7 @@
 \import iris.algebra.agree
 \import iris.algebra.lib.gmap_view
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.bi.big_op
 \import iris.bi.updates
 \import iris.base_logic.lib.iprop
@@ -59,9 +61,8 @@
 \func proph_map_interp {S : gFunctors} (H : proph_mapGS S)
     (observations : List Observation) (used : Gset) : iProp S =>
   mkProperExist ProphMap (\lam R =>
-    mkProperSep
-      (mkProperPure (\Sigma (ProphResolvesInList R observations)
-        (ProphDomSubset R used)))
+    (mkProperPure (\Sigma (ProphResolvesInList R observations)
+        (ProphDomSubset R used))) ∗
       (gen_heap_interp H R))
 
 \func proph {S : gFunctors} (H : proph_mapGS S)
@@ -72,9 +73,11 @@
     (p : ProphId) (value : ProphPayload)
   : proph_list_resolves ((p, value) :: observations) p
       = value :: proph_list_resolves observations p =>
-  \case Pos_eq_dec p p \with {
-    | yes _ => idp
-    | no ne => absurd (ne idp)
+  \case Pos_eq_dec p p \as d, idp : Pos_eq_dec p p = d
+    \return proph_list_resolves ((p, value) :: observations) p =
+      value :: proph_list_resolves observations p \with {
+    | yes _, h => rewrite h idp
+    | no ne, _ => absurd (ne idp)
   }
 
 \lemma proph_resolves_insert (R : ProphMap)
@@ -84,18 +87,20 @@
   : ProphResolvesInList
       (ginsert p (proph_list_resolves observations p) R) observations =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp =>
-          \let same : proph_list_resolves observations p = resolves =>
-              pmap
-                (\case __ \with {
-                  | nothing => proph_list_resolves observations p
-                  | just xs => xs
-                })
-                (inv (glookup_insert_eq p
-                  (proph_list_resolves observations p) R) *> hlookup)
-          \in inv same
-      }
+    | yes eq =>
+      transport (\lam q' => resolves = proph_list_resolves observations q') eq
+        (\let same : proph_list_resolves observations p = resolves =>
+            pmap
+              (\case __ \with {
+                | nothing => proph_list_resolves observations p
+                | just xs => xs
+              })
+              (inv (glookup_insert_eq p
+                (proph_list_resolves observations p) R) *>
+                transport (\lam q' => glookup (ginsert p
+                  (proph_list_resolves observations p) R) q' = just resolves)
+                  (inv eq) hlookup)
+         \in inv same)
     | no ne => hR q resolves
         (inv (glookup_insert_ne p q
           (proph_list_resolves observations p) R ne) *> hlookup)
@@ -108,9 +113,9 @@
       (ginsert p (proph_list_resolves observations p) R)
       (pinsert p () used) =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp => plookup_insert_eq p () used
-      }
+    | yes eq => transport
+        (\lam q' => plookup (pinsert p () used) q' = just ()) eq
+        (plookup_insert_eq p () used)
     | no ne => plookup_insert_ne p q () used ne *> hR q resolves
         (inv (glookup_insert_ne p q
           (proph_list_resolves observations p) R ne) *> hlookup)
@@ -120,9 +125,11 @@
     (p q : ProphId) (value : ProphPayload) (ne : Not (p = q))
   : proph_list_resolves ((p, value) :: observations) q
       = proph_list_resolves observations q =>
-  \case Pos_eq_dec q p \with {
-    | yes eq => absurd (ne (inv eq))
-    | no _ => idp
+  \case Pos_eq_dec q p \as d, idp : Pos_eq_dec q p = d
+    \return proph_list_resolves ((p, value) :: observations) q =
+      proph_list_resolves observations q \with {
+    | yes eq, _ => absurd (ne (inv eq))
+    | no _, h => rewrite h idp
   }
 
 \lemma proph_resolves_cons_update (R : ProphMap)
@@ -132,18 +139,20 @@
   : ProphResolvesInList
       (ginsert p (proph_list_resolves observations p) R) observations =>
   \lam q resolves hlookup => \case Pos_eq_dec p q \with {
-    | yes eq => \case eq \with {
-        | idp =>
-          \let same : proph_list_resolves observations p = resolves =>
-              pmap
-                (\case __ \with {
-                  | nothing => proph_list_resolves observations p
-                  | just xs => xs
-                })
-                (inv (glookup_insert_eq p
-                  (proph_list_resolves observations p) R) *> hlookup)
-          \in inv same
-      }
+    | yes eq =>
+      transport (\lam q' => resolves = proph_list_resolves observations q') eq
+        (\let same : proph_list_resolves observations p = resolves =>
+            pmap
+              (\case __ \with {
+                | nothing => proph_list_resolves observations p
+                | just xs => xs
+              })
+              (inv (glookup_insert_eq p
+                (proph_list_resolves observations p) R) *>
+                transport (\lam q' => glookup (ginsert p
+                  (proph_list_resolves observations p) R) q' = just resolves)
+                  (inv eq) hlookup)
+         \in inv same)
     | no ne =>
         \let oldLookup : glookup R q = just resolves =>
             inv (glookup_insert_ne p q
@@ -170,8 +179,8 @@
 -- [proph_map_new_proph] below.
 \lemma proph_map_init {S : gFunctors} (Hpre : proph_mapGpreS S)
     (observations : List Observation) (used : Gset)
-  : properUPred_ent mkProperEmp
-      (mkProperBUpd (mkProperExist1 (proph_mapGS S)
+  : mkProperEmp ⊢
+      (|==> (mkProperExist1 (proph_mapGS S)
         (\lam H => proph_map_interp H observations used))) =>
   \let
     | R : ProphMap => gempty
@@ -183,7 +192,7 @@
         (\lam H => gen_heap_interp H R)
     | Target => mkProperExist1 (proph_mapGS S)
         (\lam H => proph_map_interp H observations used)
-    | package : properUPred_ent Source Target =>
+    | package : Source ⊢ Target =>
         \lam n x hx hsource => \case hsource \with {
           | inP (H, hR) => inP (H,
               inP (R, pure_intro_sep_ent
@@ -192,8 +201,8 @@
                 (resolves, domain)
                 (gen_heap_interp H R) n x hx hR))
         }
-  \in properUPred_ent_trans mkProperEmp (mkProperBUpd Source)
-      (mkProperBUpd Target)
+  \in properUPred_ent_trans mkProperEmp (|==> Source)
+      (|==> Target)
       (gen_heap_init Hpre R)
       (bupd_mono Source Target package)
 
@@ -202,10 +211,9 @@
 \lemma proph_map_new_proph {S : gFunctors} (H : proph_mapGS S)
     (p : ProphId) (used : Gset) (observations : List Observation)
     (freshUsed : Not (gset_in p used))
-  : properUPred_ent (proph_map_interp H observations used)
-      (mkProperBUpd
-        (mkProperSep
-          (proph_map_interp H observations (pinsert p () used))
+  : (proph_map_interp H observations used) ⊢
+      (|==>
+        ((proph_map_interp H observations (pinsert p () used)) ∗
           (proph H p (proph_list_resolves observations p)))) =>
   \lam n x hx hinterp => \case hinterp \with {
     | inP (R, hparts) => \case hparts \with {
@@ -229,28 +237,26 @@
                 (ProphDomSubset R' (pinsert p () used)) =>
                 (proph_resolves_insert R observations p freshR hres,
                  proph_domain_insert R used observations p hdom)
-            | Updated => mkProperSep (gen_heap_interp H R')
+            | Updated => (gen_heap_interp H R') ∗
                 (proph H p (proph_list_resolves observations p))
-            | Target => mkProperSep
-                (proph_map_interp H observations (pinsert p () used))
+            | Target => (proph_map_interp H observations (pinsert p () used)) ∗
                 (proph H p (proph_list_resolves observations p))
-            | packageAuth : properUPred_ent (gen_heap_interp H R')
+            | packageAuth : (gen_heap_interp H R') ⊢
                 (proph_map_interp H observations (pinsert p () used)) =>
                 properUPred_ent_trans
                   (gen_heap_interp H R')
-                  (mkProperSep (mkProperPure
+                  ((mkProperPure
                     (\Sigma (ProphResolvesInList R' observations)
-                      (ProphDomSubset R' (pinsert p () used))))
+                      (ProphDomSubset R' (pinsert p () used)))) ∗
                     (gen_heap_interp H R'))
                   (proph_map_interp H observations (pinsert p () used))
                   (pure_intro_sep_ent _ newPure (gen_heap_interp H R'))
                   (exist_intro_ent
-                    (\lam RR => mkProperSep
-                      (mkProperPure
+                    (\lam RR => (mkProperPure
                         (\Sigma (ProphResolvesInList RR observations)
-                          (ProphDomSubset RR (pinsert p () used))))
+                          (ProphDomSubset RR (pinsert p () used)))) ∗
                       (gen_heap_interp H RR)) R')
-            | finish : properUPred_ent Updated Target =>
+            | finish : Updated ⊢ Target =>
                 sep_mono_l_ent (gen_heap_interp H R')
                   (proph_map_interp H observations (pinsert p () used))
                   (proph H p (proph_list_resolves observations p))
@@ -263,8 +269,8 @@
                   (gen_heap_interp H R) n x hx hparts
           \in properUPred_ent_trans
               (gen_heap_interp H R)
-              (mkProperBUpd Updated)
-              (mkProperBUpd Target)
+              (|==> Updated)
+              (|==> Target)
               (gen_heap_alloc H R p (DfracOwn qp_one)
                 (proph_list_resolves observations p)
                 freshR RatField.<=-refl)
@@ -278,9 +284,8 @@
 \lemma proph_map_agree {S : gFunctors} (H : proph_mapGS S)
     (observations : List Observation) (used : Gset)
     (p : ProphId) (resolves : List ProphPayload)
-  : properUPred_ent
-      (mkProperSep (proph_map_interp H observations used)
-        (proph H p resolves))
+  : ((proph_map_interp H observations used) ∗
+        (proph H p resolves)) ⊢
       (mkProperPure
         (\Sigma (gset_in p used)
           (resolves = proph_list_resolves observations p))) =>
@@ -317,8 +322,8 @@
                   M.cmra_validN_ne n x
                     (M.op apure (M.op aauth afrag)) dauthfrag hx
               | hauthfrag_valid : M.validN n (M.op aauth afrag) =>
-                  M.cmra_validN_op_r n apure (M.op aauth afrag) hx_regroup
-              | hauthfrag : (mkProperSep (gen_heap_interp H R)
+                  cmra_validN_op_r {M} n apure (M.op aauth afrag) hx_regroup
+              | hauthfrag : ((gen_heap_interp H R) ∗
                   (proph H p resolves)).upred_holds n
                   (M.op aauth afrag) =>
                   inP (aauth, afrag,
@@ -342,15 +347,12 @@
     (p : ProphId) (value : ProphPayload)
     (futureObservations : List Observation) (used : Gset)
     (resolves : List ProphPayload)
-  : properUPred_ent
-      (mkProperSep
-        (proph_map_interp H ((p, value) :: futureObservations) used)
-        (proph H p resolves))
-      (mkProperBUpd
+  : ((proph_map_interp H ((p, value) :: futureObservations) used) ∗
+        (proph H p resolves)) ⊢
+      (|==>
         (mkProperExist (List ProphPayload) (\lam remaining =>
-          mkProperSep (mkProperPure (resolves = value :: remaining))
-            (mkProperSep
-              (proph_map_interp H futureObservations used)
+          (mkProperPure (resolves = value :: remaining)) ∗
+            ((proph_map_interp H futureObservations used) ∗
               (proph H p remaining))))) =>
   \lam n x hx hsource => \case hsource \with {
     | inP (ainterp, afrag, douter, hinterp, hfrag) =>
@@ -360,11 +362,9 @@
             \let
               | M => iResUR S
               | remaining => proph_list_resolves futureObservations p
-              | lookupPair : properUPred_ent
-                  (mkProperSep
-                    (proph_map_interp H
-                      ((p, value) :: futureObservations) used)
-                    (proph H p resolves))
+              | lookupPair : ((proph_map_interp H
+                      ((p, value) :: futureObservations) used) ∗
+                    (proph H p resolves)) ⊢
                   (mkProperPure
                     (\Sigma (gset_in p used)
                       (resolves = proph_list_resolves
@@ -375,41 +375,50 @@
               | resolvesEq : resolves = value :: remaining =>
                   agreed.2 *> proph_list_resolves_here
                     futureObservations p value
-              | fixedSource : (mkProperSep
-                  (mkProperSep
-                    (mkProperPure
+              | fixedSource : (((mkProperPure
                       (\Sigma
                         (ProphResolvesInList R
                           ((p, value) :: futureObservations))
-                        (ProphDomSubset R used)))
-                    (gen_heap_interp H R))
+                        (ProphDomSubset R used))) ∗
+                    (gen_heap_interp H R)) ∗
                   (proph H p resolves)).upred_holds n x =>
                   inP (ainterp, afrag, douter,
                     inP (apure, aauth, dinner, hpure, hauth), hfrag)
-              | authFragOnX : (mkProperSep (gen_heap_interp H R)
+              | authFragOnX : ((gen_heap_interp H R) ∗
                   (proph H p resolves)).upred_holds n x =>
                   properUPred_ent_trans
-                    (mkProperSep
-                      (mkProperSep
-                        (mkProperPure
+                    (((mkProperPure
                           (\Sigma
                             (ProphResolvesInList R
                               ((p, value) :: futureObservations))
-                            (ProphDomSubset R used)))
-                        (gen_heap_interp H R))
+                            (ProphDomSubset R used))) ∗
+                        (gen_heap_interp H R)) ∗
                       (proph H p resolves))
-                    (mkProperSep
+                    ((mkProperPure
+                        (\Sigma
+                          (ProphResolvesInList R
+                            ((p, value) :: futureObservations))
+                          (ProphDomSubset R used))) ∗
+                      ((gen_heap_interp H R) ∗
+                        (proph H p resolves)))
+                    ((gen_heap_interp H R) ∗
+                      (proph H p resolves))
+                    (sep_assoc_l_ent
                       (mkProperPure
                         (\Sigma
                           (ProphResolvesInList R
                             ((p, value) :: futureObservations))
                           (ProphDomSubset R used)))
-                      (mkProperSep (gen_heap_interp H R)
-                        (proph H p resolves)))
-                    (mkProperSep (gen_heap_interp H R)
+                      (gen_heap_interp H R)
                       (proph H p resolves))
-                    (sep_assoc_r_ent _ _ _)
-                    (sep_elim_r_ent _ _) n x hx fixedSource
+                    (sep_elim_r_ent
+                      (mkProperPure
+                        (\Sigma
+                          (ProphResolvesInList R
+                            ((p, value) :: futureObservations))
+                          (ProphDomSubset R used)))
+                      ((gen_heap_interp H R) ∗
+                        (proph H p resolves))) n x hx fixedSource
               | R' : ProphMap => ginsert p remaining R
               | newPure : \Sigma
                   (ProphResolvesInList R' futureObservations)
@@ -418,53 +427,49 @@
                     p value hpure.1,
                    proph_domain_update R used futureObservations p
                     agreed.1 hpure.2)
-              | Updated => mkProperSep (gen_heap_interp H R')
+              | Updated => (gen_heap_interp H R') ∗
                   (proph H p remaining)
               | Interp => proph_map_interp H futureObservations used
-              | Body => mkProperSep (mkProperPure
-                  (resolves = value :: remaining))
-                  (mkProperSep Interp (proph H p remaining))
+              | Body => (mkProperPure
+                  (resolves = value :: remaining)) ∗
+                  (Interp ∗ (proph H p remaining))
               | Target => mkProperExist (List ProphPayload)
-                  (\lam tail => mkProperSep
-                    (mkProperPure (resolves = value :: tail))
-                    (mkProperSep Interp (proph H p tail)))
-              | packageAuth : properUPred_ent (gen_heap_interp H R') Interp =>
+                  (\lam tail => (mkProperPure (resolves = value :: tail)) ∗
+                    (Interp ∗ (proph H p tail)))
+              | packageAuth : (gen_heap_interp H R') ⊢ Interp =>
                   properUPred_ent_trans
                     (gen_heap_interp H R')
-                    (mkProperSep
-                      (mkProperPure
+                    ((mkProperPure
                         (\Sigma
                           (ProphResolvesInList R' futureObservations)
-                          (ProphDomSubset R' used)))
+                          (ProphDomSubset R' used))) ∗
                       (gen_heap_interp H R'))
                     Interp
                     (pure_intro_sep_ent _ newPure (gen_heap_interp H R'))
                     (exist_intro_ent
-                      (\lam RR => mkProperSep
-                        (mkProperPure
+                      (\lam RR => (mkProperPure
                           (\Sigma
                             (ProphResolvesInList RR futureObservations)
-                            (ProphDomSubset RR used)))
+                            (ProphDomSubset RR used))) ∗
                         (gen_heap_interp H RR)) R')
-              | finish : properUPred_ent Updated Target =>
+              | finish : Updated ⊢ Target =>
                   properUPred_ent_trans Updated
-                    (mkProperSep Interp (proph H p remaining))
+                    (Interp ∗ (proph H p remaining))
                     Target
                     (sep_mono_l_ent (gen_heap_interp H R') Interp
                       (proph H p remaining) packageAuth)
                     (properUPred_ent_trans
-                      (mkProperSep Interp (proph H p remaining))
+                      (Interp ∗ (proph H p remaining))
                       Body Target
                       (pure_intro_sep_ent _ resolvesEq
-                        (mkProperSep Interp (proph H p remaining)))
+                        (Interp ∗ (proph H p remaining)))
                       (exist_intro_ent
-                        (\lam tail => mkProperSep
-                          (mkProperPure (resolves = value :: tail))
-                          (mkProperSep Interp (proph H p tail))) remaining))
+                        (\lam tail => (mkProperPure (resolves = value :: tail)) ∗
+                          (Interp ∗ (proph H p tail))) remaining))
             \in properUPred_ent_trans
-                (mkProperSep (gen_heap_interp H R) (proph H p resolves))
-                (mkProperBUpd Updated)
-                (mkProperBUpd Target)
+                ((gen_heap_interp H R) ∗ (proph H p resolves))
+                (|==> Updated)
+                (|==> Target)
                 (gen_heap_update H R p resolves remaining)
                 (bupd_mono Updated Target finish)
                 n x hx authFragOnX
@@ -475,8 +480,7 @@
 -- Full prophecy tokens are exclusive, independently of the predicted lists.
 \lemma proph_exclusive {S : gFunctors} (H : proph_mapGS S)
     (p : ProphId) (resolves1 resolves2 : List ProphPayload)
-  : properUPred_ent
-      (mkProperSep (proph H p resolves1) (proph H p resolves2))
+  : ((proph H p resolves1) ∗ (proph H p resolves2)) ⊢
       (mkProperPure Empty) =>
   \lam n x hx htokens =>
     \let

@@ -1,0 +1,55 @@
+\import Logic
+\import Data.Maybe
+\import Arith.Nat
+\import iris.algebra.gmap
+\import iris.algebra.frac
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.own
+\import iris.base_logic.lib.ghost_map
+
+-- Public counter-facing signature checks for the ghost request map.
+\lemma request_map_alloc {cnt : Countable Nat} {S : gFunctors}
+    (Hpre : ghost_mapGpreS Nat cnt (\Sigma Nat gname) S)
+  : mkProperEmp ⊢
+      (|==>
+        (mkProperExist1 (ghost_mapGS Nat cnt (\Sigma Nat gname) S)
+          (\lam H => ghost_map_auth H qp_one gempty))) =>
+  ghost_map_alloc_empty Hpre
+
+\lemma request_map_insert {cnt : Countable Nat} {S : gFunctors}
+    (H : ghost_mapGS Nat cnt (\Sigma Nat gname) S)
+    (m : Gmap Nat cnt (\Sigma Nat gname))
+    (k : Nat) (v : \Sigma Nat gname) (fresh : glookup m k = nothing)
+  : (ghost_map_auth H qp_one m) ⊢
+      (|==> ((ghost_map_auth H qp_one (ginsert k v m)) ∗
+        (ghost_map_elem H k v))) =>
+  ghost_map_insert H m k v fresh
+
+\lemma request_map_lookup {cnt : Countable Nat} {S : gFunctors}
+    (H : ghost_mapGS Nat cnt (\Sigma Nat gname) S)
+    (m : Gmap Nat cnt (\Sigma Nat gname))
+    (k : Nat) (v : \Sigma Nat gname)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k v)) ⊢
+      (mkProperPure (glookup m k = just v)) =>
+  ghost_map_lookup H m k v
+
+\lemma request_map_update {cnt : Countable Nat} {S : gFunctors}
+    (H : ghost_mapGS Nat cnt (\Sigma Nat gname) S)
+    (m : Gmap Nat cnt (\Sigma Nat gname))
+    (k : Nat) (old new : \Sigma Nat gname)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k old)) ⊢
+      (|==> ((ghost_map_auth H qp_one (ginsert k new m)) ∗
+        (ghost_map_elem H k new))) =>
+  ghost_map_update H m k old new
+
+\lemma request_map_delete {cnt : Countable Nat} {S : gFunctors}
+    (H : ghost_mapGS Nat cnt (\Sigma Nat gname) S)
+    (m : Gmap Nat cnt (\Sigma Nat gname))
+    (k : Nat) (v : \Sigma Nat gname)
+  : ((ghost_map_auth H qp_one m) ∗ (ghost_map_elem H k v)) ⊢
+      (|==> (ghost_map_auth H qp_one (gdelete k m))) =>
+  ghost_map_delete H m k v

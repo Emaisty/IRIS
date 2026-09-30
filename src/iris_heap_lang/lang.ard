@@ -16,32 +16,23 @@
 
 
 
--- \func String => List Nat
---
--- \func stringDecEq (x y : String) : (x = y) `Or` (Not (x = y)) \elim x, y
---   | nil, nil => inl idp
---   | nil, :: _ _ => inr (\lam p => \case p \with {})
---   | :: _ _, nil => inr (\lam p => \case p \with {})
---   | :: a xs, :: b ys => \case decEqNat a b \with {
---     | inl ab => \case stringDecEq xs ys \with {
---       | inl xys => inl (pmap2 (::) ab xys)
---       | inr nxys => inr (\lam p => nxys (pmap tail p))
---     }
---     | inr nab => inr (\lam p => nab (pmap headDef p))
---   }
---   \where {
---     \func headDef (l : List Nat) : Nat
---       | nil => 0
---       | :: a _ => a
---
---     \func tail (l : List Nat) : List Nat
---       | nil => nil
---       | :: _ xs => xs
---   }
-
 \func Loc => Nat
 
 \func ProphId => Pos
+
+-- Binders are semantic identifiers.  Nat keeps their equality constructive
+-- and independent of surface-level pretty-printing support.
+\func Name => Nat
+
+\func nameDecEq (x y : Name) : (x = y) `Or` (Not (x = y))
+  \elim x, y
+  | 0, 0 => inl idp
+  | 0, suc _ => inr (\lam p => \case p \with {})
+  | suc _, 0 => inr (\lam p => \case p \with {})
+  | suc x, suc y => \case nameDecEq x y \with {
+      | inl p => inl (pmap suc p)
+      | inr q => inr (\lam p => q (pmap pred p))
+    }
 
 \data Lit
   | LitInt (n : Int)
@@ -50,17 +41,22 @@
   | LitLoc (l : Loc)
   | LitProphecy (p : ProphId)
 
+\data HeapBinOp
+  | NatAddOp
+  | NatEqOp
+  | LocAddOp
+
 \data Value : \Set0
   | LitV (l : Lit)
-  | LamV (x : String) (body : Expr)
-  | RecV (f x : String) (body : Expr)
+  | LamV (x : Name) (body : Expr)
+  | RecV (f x : Name) (body : Expr)
   | PairV (v1 v2 : Value)
 
 \data Expr : \Set0
   | Val (v : Value)
-  | Var (x : String)
-  | Lam (x : String) (body : Expr)
-  | Rec (f x : String) (body : Expr)
+  | Var (x : Name)
+  | Lam (x : Name) (body : Expr)
+  | Rec (f x : Name) (body : Expr)
   | App (e1 e2 : Expr)
   | If (cond thenB elseB : Expr)
   | Pair (e1 e2 : Expr)
@@ -69,12 +65,64 @@
   | IsZero (e : Expr)
   | Pred (e : Expr)
   | Mul (e1 e2 : Expr)
+  | BinOp (op : HeapBinOp) (e1 e2 : Expr)
   | Load (e : Expr)
   | Store (e1 e2 : Expr)
   | Alloc (e : Expr)
+  | AllocN (count init : Expr)
+  | FAA (loc incr : Expr)
   | Fork (e : Expr)
   | NewProph
   | Resolve (e proph resolution : Expr)
+
+\func natV (n : Nat) : Value => LitV (LitInt (pos n))
+
+\func boolV (b : Bool) : Value => LitV (LitBool b)
+
+\func unitV : Value => LitV LitUnit
+
+\func value_nat (v : Value) : Maybe Nat \elim v
+  | LitV (LitInt (pos n)) => just n
+  | LitV (LitInt (neg 0)) => just 0
+  | LitV (LitInt (neg (suc _))) => nothing
+  | LitV (LitBool _) => nothing
+  | LitV LitUnit => nothing
+  | LitV (LitLoc _) => nothing
+  | LitV (LitProphecy _) => nothing
+  | LamV _ _ => nothing
+  | RecV _ _ _ => nothing
+  | PairV _ _ => nothing
+
+\func value_loc (v : Value) : Maybe Loc \elim v
+  | LitV (LitLoc l) => just l
+  | LitV (LitInt _) => nothing
+  | LitV (LitBool _) => nothing
+  | LitV LitUnit => nothing
+  | LitV (LitProphecy _) => nothing
+  | LamV _ _ => nothing
+  | RecV _ _ _ => nothing
+  | PairV _ _ => nothing
+
+\func eval_heap_binop (op : HeapBinOp) (v1 v2 : Value) : Maybe Value \elim op
+  | NatAddOp => \case value_nat v1, value_nat v2 \with {
+      | just n, just m => just (natV (n Nat.+ m))
+      | _, _ => nothing
+    }
+  | NatEqOp => \case value_nat v1, value_nat v2 \with {
+      | just n, just m => \case NatSemiring.decideEq n m \with {
+          | yes _ => just (boolV true)
+          | no _ => just (boolV false)
+        }
+      | _, _ => nothing
+    }
+  | LocAddOp => \case value_loc v1, value_nat v2 \with {
+      | just l, just i => just (LitV (LitLoc (l Nat.+ i)))
+      | _, _ => nothing
+    }
+
+\func NatAdd (e1 e2 : Expr) : Expr => BinOp NatAddOp e1 e2
+\func NatEq (e1 e2 : Expr) : Expr => BinOp NatEqOp e1 e2
+\func LocAdd (e1 e2 : Expr) : Expr => BinOp LocAddOp e1 e2
 
 \record State (cnt : Countable Loc)
   | heap : Gmap Loc cnt Value
@@ -88,19 +136,19 @@
   | Val v => just v
   | _ => nothing
 
-\func subst (x : String) (v : Value) (e : Expr) : Expr \elim e
+\func subst (x : Name) (v : Value) (e : Expr) : Expr \elim e
   | Val w => Val w
-  | Var y => \case decideEq x y \with {
+  | Var y => \case nameDecEq x y \with {
     | inl _ => Val v
     | inr _ => Var y
   }
-  | Lam y body => \case decideEq x y \with {
+  | Lam y body => \case nameDecEq x y \with {
     | inl _ => Lam y body
     | inr _ => Lam y (subst x v body)
   }
-  | Rec f y body => \case decideEq x f \with {
+  | Rec f y body => \case nameDecEq x f \with {
     | inl _ => Rec f y body
-    | inr _ => \case decideEq x y \with {
+    | inr _ => \case nameDecEq x y \with {
       | inl _ => Rec f y body
       | inr _ => Rec f y (subst x v body)
     }
@@ -113,21 +161,64 @@
   | IsZero e => IsZero (subst x v e)
   | Pred e => Pred (subst x v e)
   | Mul e1 e2 => Mul (subst x v e1) (subst x v e2)
+  | BinOp op e1 e2 => BinOp op (subst x v e1) (subst x v e2)
   | Alloc e => Alloc (subst x v e)
+  | AllocN count init => AllocN (subst x v count) (subst x v init)
+  | FAA loc incr => FAA (subst x v loc) (subst x v incr)
   | Load e => Load (subst x v e)
   | Store e1 e2 => Store (subst x v e1) (subst x v e2)
   | Fork e => Fork (subst x v e)
   | NewProph => NewProph
   | Resolve e proph resolution =>
       Resolve (subst x v e) (subst x v proph) (subst x v resolution)
-  \where {
-    -- Blocked on a concrete decidable equality proof for Arend String.
-    -- Any proof unfolding substitution through binders may have to discharge this.
-    \func decideEq (x y : String) : (x = y) `Or` (Not (x = y)) => {?}
-  }
 
 \func heap_update {cnt : Countable Loc} (h : Gmap Loc cnt Value) (l : Loc) (v : Value) : Gmap Loc cnt Value =>
   ginsert l v h
+
+\func heap_insert_block {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (l n : Nat) (v : Value) : Gmap Loc cnt Value \elim n
+  | 0 => h
+  | suc n => heap_insert_block (ginsert l v h) (suc l) n v
+
+\func heap_block_fresh {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (l n : Nat) : \Prop \elim n
+  | 0 => \Sigma
+  | suc n => \Sigma (glookup h l = nothing) (heap_block_fresh h (suc l) n)
+
+-- Inserting strictly before a fresh block preserves freshness of every
+-- location in that block.  This is the small map fact needed to turn the
+-- left-to-right operational allocation into matching ghost ownership.
+\lemma nat_le_suc_self (n : Nat) : n <= suc n \elim n
+  | 0 => zero<=_
+  | suc n => suc<=suc (nat_le_suc_self n)
+
+\lemma nat_before_ne (l k : Nat) (before : suc l <= k) : Not (l = k) =>
+  \lam eq => not_suc_le_self l
+    (transport (\lam x => suc l <= x) (inv eq) before)
+
+\lemma nat_before_suc_right (l k : Nat) (before : suc l <= k)
+  : suc l <= suc k =>
+  (NatSemiring.<=∘) before (nat_le_suc_self k)
+
+\lemma heap_block_fresh_insert_before {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (insert start n : Nat) (v : Value)
+    (before : suc insert <= start)
+    (fresh : heap_block_fresh h start n)
+  : heap_block_fresh (ginsert insert v h) start n
+  \elim n
+  | 0 => ()
+  | suc n =>
+      ( glookup_insert_ne insert start v h (nat_before_ne insert start before)
+          *> fresh.1
+      , heap_block_fresh_insert_before h insert (suc start) n v
+          (nat_before_suc_right insert start before) fresh.2
+      )
+
+\lemma heap_block_fresh_insert_head {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (l n : Nat) (v : Value)
+    (fresh : heap_block_fresh h (suc l) n)
+  : heap_block_fresh (ginsert l v h) (suc l) n =>
+  heap_block_fresh_insert_before h l (suc l) n v <=-refl fresh
 
 \func state_update_heap {cnt : Countable Loc}
     (s : State cnt) (h : Gmap Loc cnt Value) : State cnt \cowith
@@ -196,6 +287,47 @@
         (nat_max_le_r (heap_tree_max l) (heap_tree_max r))
         (nat_max_le_r p0.1 (nat_max (heap_tree_max l) (heap_tree_max r))))
 
+\lemma heap_lookup_above_max_absent {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (l : Loc)
+    (above : suc (heap_tree_max h.gtree.tree) <= l)
+  : glookup h l = nothing =>
+  \case plookup h.gtree (encode {cnt} l) \as o,
+        idp : plookup h.gtree (encode {cnt} l) = o
+  \return (\case o \with { | nothing => nothing | just p => just p.2 }) = nothing
+  \with {
+    | nothing, _ => idp
+    | just p, hp =>
+      \let
+        | bound => heap_tree_max h.gtree.tree
+        | hpLoc : p.1 = l =>
+            encode_inj {cnt} p.1 l (h.gtree_wf (encode {cnt} l) p hp)
+        | storedLe : p.1 <= bound =>
+            heap_tree_lookup_le h.gtree.tree (encode {cnt} l) p hp
+        | lLe : l <= bound =>
+            transport (\lam a => a <= bound) hpLoc storedLe
+      \in absurd (not_suc_le_self bound
+        ((NatSemiring.<=∘) above lLe))
+  }
+
+\lemma heap_block_fresh_above_max {cnt : Countable Loc}
+    (h : Gmap Loc cnt Value) (start n : Nat)
+    (above : suc (heap_tree_max h.gtree.tree) <= start)
+  : heap_block_fresh h start n
+  \elim n
+  | 0 => ()
+  | suc n =>
+      ( heap_lookup_above_max_absent h start above
+      , heap_block_fresh_above_max h (suc start) n
+          (nat_before_suc_right (heap_tree_max h.gtree.tree) start above)
+      )
+
+\func heap_fresh_block {cnt : Countable Loc} (s : State cnt) (n : Nat)
+  : \Sigma (l : Loc) (heap_block_fresh s.heap l n) =>
+  \let
+    | bound => heap_tree_max s.heap.gtree.tree
+    | l => suc bound
+  \in (l, heap_block_fresh_above_max s.heap l n <=-refl)
+
 \func heap_fresh_loc {cnt : Countable Loc} (s : State cnt)
   : \Sigma (l : Loc) (glookup s.heap l = nothing)
   =>
@@ -228,19 +360,19 @@
 \truncated \data BaseStep {cnt : Countable Loc}
     (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt)
     (efs : List Expr) (observations : List Observation) : \Prop
-  | BetaS (x : String) (body : Expr) (v : Value)
+  | BetaS (x : Name) (body : Expr) (v : Value)
           (p1 : e1 = App (Val (LamV x body)) (Val v))
           (p2 : e2 = subst x v body)
           (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | RecBetaS (f x : String) (body : Expr) (v : Value)
+  | RecBetaS (f x : Name) (body : Expr) (v : Value)
              (p1 : e1 = App (Val (RecV f x body)) (Val v))
              (p2 : e2 = subst x v (subst f (RecV f x body) body))
              (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | LamS (x : String) (body : Expr)
+  | LamS (x : Name) (body : Expr)
          (p1 : e1 = Lam x body)
          (p2 : e2 = Val (LamV x body))
          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | RecS (f x : String) (body : Expr)
+  | RecS (f x : Name) (body : Expr)
          (p1 : e1 = Rec f x body)
          (p2 : e2 = Val (RecV f x body))
          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
@@ -297,6 +429,24 @@
          (p1 : e1 = Mul (Val (LitV (LitInt (pos a)))) (Val (LitV (LitInt (pos b)))))
          (p2 : e2 = Val (LitV (LitInt (pos (a Nat.* b)))))
          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
+  | BinOpS (op : HeapBinOp) (v1 v2 result : Value)
+      (evaluates : eval_heap_binop op v1 v2 = just result)
+      (p1 : e1 = BinOp op (Val v1) (Val v2))
+      (p2 : e2 = Val result)
+      (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
+  | AllocNS (n : Nat) (v : Value) (l : Loc)
+      (positive : \Sigma (k : Nat) (n = suc k))
+      (fresh : heap_block_fresh s1.heap l n)
+      (p1 : e1 = AllocN (Val (natV n)) (Val v))
+      (p2 : e2 = Val (LitV (LitLoc l)))
+      (p3 : s2 = state_update_heap s1 (heap_insert_block s1.heap l n v))
+      {p0 : observations = nil} {p4 : efs = nil}
+  | FAAS (l : Loc) (old incr : Nat)
+      (lookup : glookup s1.heap l = just (natV old))
+      (p1 : e1 = FAA (Val (LitV (LitLoc l))) (Val (natV incr)))
+      (p2 : e2 = Val (natV old))
+      (p3 : s2 = state_update_heap s1 (heap_update s1.heap l (natV (old Nat.+ incr))))
+      {p0 : observations = nil} {p4 : efs = nil}
   | ForkS (e : Expr)
           (p1 : e1 = Fork e)
           (p2 : e2 = Val (LitV LitUnit))
@@ -410,5 +560,3 @@
 \func nat_fact (n : Nat) : Nat
   | 0      => 1
   | suc n' => suc n' Nat.* nat_fact n'
-
-\func natV (n : Nat) : Value => LitV (LitInt (pos n))

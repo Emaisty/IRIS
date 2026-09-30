@@ -1,5 +1,6 @@
 \import Data.List
 \import iris.base_logic.upred
+\import iris.base_logic.notation
 \import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.gfunctors
 \import iris.algebra.gmap
@@ -22,19 +23,15 @@
     (H : irisGS cnt S) (E : coPset)
     (l : Loc) (old new : Value) (p : ProphId) (w : Value)
     (resolves : List ProphPayload)
-  : properUPred_ent
-      (mkProperSep
-        (pointsto_full H.iris_gen_heap l old)
-        (proph H.iris_proph_map p resolves))
-      (wp H E (resolved_store_program l new p w)
+  : ((pointsto_full H.iris_gen_heap l old) ∗
+        (proph H.iris_proph_map p resolves)) ⊢
+      (WP H E (resolved_store_program l new p w)
         (\lam returned =>
           mkProperExist (List ProphPayload) (\lam remaining =>
-            mkProperSep
-              (mkProperPure
+            (mkProperPure
                 (\Sigma (returned = LitV LitUnit)
-                  (resolves = (LitV LitUnit, w) :: remaining)))
-              (mkProperSep
-                (pointsto_full H.iris_gen_heap l new)
+                  (resolves = (LitV LitUnit, w) :: remaining))) ∗
+              ((pointsto_full H.iris_gen_heap l new) ∗
                 (proph H.iris_proph_map p remaining))))) =>
   wp_resolve_store H E l old new p w resolves
 
@@ -42,11 +39,10 @@
 -- identifier in the as-yet-unexecuted trace.
 \lemma new_proph_wp {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-  : properUPred_ent mkProperEmp
-      (wp H E NewProph (\lam returned =>
+  : mkProperEmp ⊢
+      (WP H E NewProph (\lam returned =>
         mkProperExist ProphId (\lam p =>
           mkProperExist (List ProphPayload) (\lam resolves =>
-            mkProperAnd
-              (mkProperPure (returned = LitV (LitProphecy p)))
+            (mkProperPure (returned = LitV (LitProphecy p))) ∧
               (proph H.iris_proph_map p resolves))))) =>
   wp_new_proph H E

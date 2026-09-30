@@ -1,0 +1,31 @@
+\import Arith.Nat
+\import iris.algebra.dfrac
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.saved_pred
+
+\lemma request_saved_pred_persistent {S : gFunctors}
+    (H : savedPredG S Nat) (gam : gname) (Phi : Nat -> iProp S) :
+  (saved_pred_own H gam DfracDiscarded Phi) ⊢
+    (<#>
+      (saved_pred_own H gam DfracDiscarded Phi)) =>
+  saved_pred_discarded_persistent H gam Phi
+
+\lemma request_saved_pred_alloc {S : gFunctors}
+    (H : savedPredG S Nat) (Phi : Nat -> iProp S) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (\lam gam =>
+      saved_pred_own H gam DfracDiscarded Phi))) =>
+  saved_pred_alloc H Phi DfracDiscarded ()
+
+\lemma request_saved_pred_agree {S : gFunctors}
+    (H : savedPredG S Nat) (gam : gname)
+    (Phi Psi : Nat -> iProp S) (x : Nat) :
+  ((saved_pred_own H gam DfracDiscarded Phi) ∗
+      (saved_pred_own H gam DfracDiscarded Psi)) ⊢
+    (|>
+      (mkProperInternalEq {iResUR S} {iPropO S} (Phi x) (Psi x))) =>
+  saved_pred_agree H gam DfracDiscarded DfracDiscarded Phi Psi x

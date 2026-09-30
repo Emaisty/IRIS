@@ -1,0 +1,42 @@
+\import Arith.Nat
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.frac
+\import iris.algebra.agree
+\import iris.algebra.lib.frac_auth
+
+\func counter_modelR : CMRA =>
+  frac_authR (AgreeCMRA (DiscreteOFE Nat))
+
+\func counter_auth (n : Nat) : counter_modelR.E =>
+  frac_auth_auth (to_agree n)
+
+\func counter_frag (q : Qp) (n : Nat) : counter_modelR.E =>
+  frac_auth_frag q (to_agree n)
+
+\lemma request_counter_frag_split (q1 q2 : Qp) (n : Nat) :
+  counter_modelR.equiv
+    (counter_frag (qp_add q1 q2) n)
+    (counter_modelR.op (counter_frag q1 n) (counter_frag q2 n)) =>
+  frac_auth_frag_op_core_id q1 q2 (to_agree n)
+    (agree_idemp (to_agree n))
+
+\lemma request_counter_model_valid (n : Nat)
+    (h : (AgreeCMRA (DiscreteOFE Nat)).valid (to_agree n)) :
+  counter_modelR.valid
+    (counter_modelR.op (counter_auth n) (counter_frag qp_one n)) =>
+  frac_auth_valid (to_agree n) h
+
+\lemma request_counter_model_agree (n m : Nat)
+    (h : counter_modelR.valid
+      (counter_modelR.op (counter_auth n) (counter_frag qp_one m))) :
+  (AgreeCMRA (DiscreteOFE Nat)).equiv (to_agree n) (to_agree m) =>
+  frac_auth_agree (to_agree n) (to_agree m) h
+
+\lemma request_counter_model_update (n m k : Nat)
+    (hk : (AgreeCMRA (DiscreteOFE Nat)).valid (to_agree k)) :
+  cmra_updateP {frac_authUR (AgreeCMRA (DiscreteOFE Nat))}
+    (counter_modelR.op (counter_auth n) (counter_frag qp_one m))
+    (\lam y => y =
+      counter_modelR.op (counter_auth k) (counter_frag qp_one k)) =>
+  frac_auth_update_1 (to_agree n) (to_agree m) (to_agree k) hk

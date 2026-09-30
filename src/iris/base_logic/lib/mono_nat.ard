@@ -1,0 +1,124 @@
+\import Logic
+\import Paths
+\import Arith.Nat
+\import Arith.Rat
+\import Algebra.StrictlyOrdered
+\import Order.PartialOrder
+\import iris.algebra.cmra
+\import iris.algebra.frac
+\import iris.algebra.lib.mono_nat
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.updates
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.own
+
+\func mono_natRF : RFunctor => constRF mono_natUR
+
+\func mono_natRF_contractive : RFunctorContractive mono_natRF =>
+  constRF_contractive mono_natUR
+
+\func mono_nat_gFunctor : gFunctor =>
+  mkGFunctor mono_natRF mono_natRF_contractive
+
+\func mono_natSigma : gFunctors =>
+  gFunctors_singleton mono_nat_gFunctor
+
+\record mono_natG (S : gFunctors)
+  | mono_nat_inG : inG S mono_natR
+
+\func subG_mono_natG {S : gFunctors} (h : subG mono_natSigma S)
+  : mono_natG S \cowith
+  | mono_nat_inG =>
+      transport (\lam Z => inG S Z)
+        (rFunctor_apply_constRF mono_natUR (iPropCOFE S))
+        (subG_inG h)
+
+\func mono_nat_auth_own {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (q : Qp) (n : Nat) : iProp S =>
+  own H.mono_nat_inG gam (mono_nat_auth q n)
+
+\func mono_nat_lb_own {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n : Nat) : iProp S =>
+  own H.mono_nat_inG gam (mono_nat_lb n)
+
+\lemma mono_nat_lb_own_persistent {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n : Nat) :
+  (mono_nat_lb_own H gam n) ⊢
+    (<#> (mono_nat_lb_own H gam n)) =>
+  own_core_persistent H.mono_nat_inG gam (mono_nat_lb n)
+    (mono_nat_lb_core_id n)
+
+\lemma mono_nat_lb_own_valid {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (q : Qp) (n m : Nat) :
+  ((mono_nat_auth_own H gam q n) ∗ (mono_nat_lb_own H gam m)) ⊢
+    (mkProperPure
+      (\Sigma (q.qp_val RatField.<= RatField.ide) (m <= n))) =>
+  properUPred_ent_trans
+    ((mono_nat_auth_own H gam q n) ∗ (mono_nat_lb_own H gam m))
+    (mkProperValidOf {iResUR S} {mono_natR}
+      (mono_natR.op (mono_nat_auth q n) (mono_nat_lb m)))
+    (mkProperPure
+      (\Sigma (q.qp_val RatField.<= RatField.ide) (m <= n)))
+    (own_op_valid H.mono_nat_inG gam (mono_nat_auth q n) (mono_nat_lb m))
+    (\lam step _ _ (hv : validN {mono_natR} step
+        (mono_natR.op (mono_nat_auth q n) (mono_nat_lb m))) =>
+      (hv.1, mono_nat_auth_lb_validN q step n m hv))
+
+\lemma mono_nat_lb_own_get {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (q : Qp) (n : Nat) :
+  (mono_nat_auth_own H gam q n) ⊢
+    (mono_nat_lb_own H gam n) =>
+  iris.base_logic.lib.own.own_mono H.mono_nat_inG gam
+    (mono_nat_auth q n) (mono_nat_lb n)
+    (mono_nat_included q n)
+
+\lemma mono_nat_lb_own_le {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n' n : Nat) (h : n' <= n) :
+  (mono_nat_lb_own H gam n) ⊢
+    (mono_nat_lb_own H gam n') =>
+  iris.base_logic.lib.own.own_mono H.mono_nat_inG gam
+    (mono_nat_lb n) (mono_nat_lb n')
+    (mono_nat_lb_mono n' n h)
+
+\lemma mono_nat_own_alloc {S : gFunctors} (H : mono_natG S) (n : Nat) :
+  mkProperEmp ⊢
+    (|==> (mkProperExist gname (\lam gam =>
+      (mono_nat_auth_own H gam qp_one n) ∗
+        (mono_nat_lb_own H gam n)))) =>
+  \let
+    | auth => mono_nat_auth qp_one n
+    | lb => mono_nat_lb n
+    | both => mono_natR.op auth lb
+  \in properUPred_ent_trans mkProperEmp
+    (|==> (mkProperExist gname (\lam gam =>
+      own H.mono_nat_inG gam both)))
+    (|==> (mkProperExist gname (\lam gam =>
+      (mono_nat_auth_own H gam qp_one n) ∗
+        (mono_nat_lb_own H gam n))))
+    (own_alloc H.mono_nat_inG both
+      (mono_nat_auth_lb_valid_intro qp_one n n RatField.<=-refl <=-refl))
+    (bupd_mono
+      (mkProperExist gname (\lam gam => own H.mono_nat_inG gam both))
+      (mkProperExist gname (\lam gam =>
+        (mono_nat_auth_own H gam qp_one n) ∗
+          (mono_nat_lb_own H gam n)))
+      (\lam step x hx hex => \case hex \with {
+        | inP (gam, hown) =>
+          inP (gam, (own_op H.mono_nat_inG gam auth lb step x hx).1 hown)
+      }))
+
+\lemma mono_nat_own_update {S : gFunctors} (H : mono_natG S)
+    (gam : gname) (n n' : Nat) (h : n <= n') :
+  (mono_nat_auth_own H gam qp_one n) ⊢
+    (|==> ((mono_nat_auth_own H gam qp_one n') ∗
+      (mono_nat_lb_own H gam n'))) =>
+  own_update_op H.mono_nat_inG gam
+    (mono_nat_auth qp_one n)
+    (mono_nat_auth qp_one n')
+    (mono_nat_lb n')
+    (cmra_updateP_update_det
+      (mono_nat_auth qp_one n)
+      (mono_natR.op (mono_nat_auth qp_one n') (mono_nat_lb n'))
+      (mono_nat_auth_update n n' h))

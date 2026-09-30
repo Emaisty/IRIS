@@ -11,6 +11,7 @@
 -- `uPred` also exports ownM-level `own_valid`/`own_mono`; hide them so the
 -- `own`-level ones from `own.ard` resolve unambiguously.
 \import iris.base_logic.upred \hiding (own_valid, own_mono, own_unit)
+\import iris.base_logic.notation
 \import iris.bi.updates
 \import iris.base_logic.lib.iprop
 \import iris.base_logic.lib.own
@@ -185,8 +186,7 @@
 -- The per-key content of the invariant big-op: `▷ Q ∗ ownD {i} ∨ ownE {i}`.
 -- Named so that `big_sepM_extract` instantiates at exactly this function.
 \func wsat_entry {S : gFunctors} (W : wsatGS S) (i : gname) (Q : iProp S) : iProp S =>
-  mkProperOr
-      (mkProperSep (mkProperLater Q) (ownD W (gset_singleton i)))
+  ((|> Q) ∗ (ownD W (gset_singleton i))) ∨
       (ownE W (coPset_singleton i))
 
 -- Rocq:
@@ -196,9 +196,8 @@
 --     [∗ map] i ↦ Q ∈ I, ▷ Q ∗ ownD {[i]} ∨ ownE {[i]}).
 \func wsat {S : gFunctors} (W : wsatGS S) : iProp S =>
   mkProperExist (Gmap gname gnameCountable (iProp S)) (\lam I =>
-      mkProperSep
-          (own W.wsatGpreS_inv W.invariant_name
-              (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I)))
+      (own W.wsatGpreS_inv W.invariant_name
+              (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I))) ∗
           (big_sepM I (wsat_entry W)))
 
 -- =================================================================================
@@ -212,16 +211,16 @@
 
 \lemma ownE_op {S : gFunctors} (W : wsatGS S) (E1 E2 : coPset)
                (h : coPset_overlap E1 E2 = false)
-  : upredEquiv (ownE W (coPset_union E1 E2))
-               (mkProperSep (ownE W E1) (ownE W E2))
+  : (ownE W (coPset_union E1 E2)) ⊣⊢
+               ((ownE W E1) ∗ (ownE W E2))
   => transport
-      (\lam a => upredEquiv (own W.wsatGpreS_enabled W.enabled_name a)
-                            (mkProperSep (ownE W E1) (ownE W E2)))
+      (\lam a => (own W.wsatGpreS_enabled W.enabled_name a) ⊣⊢
+                            ((ownE W E1) ∗ (ownE W E2)))
       (op_CoPset_eq_CoPset E1 E2 h)
       (own_op W.wsatGpreS_enabled W.enabled_name (CoPset E1) (CoPset E2))
 
 \lemma ownE_disjoint {S : gFunctors} (W : wsatGS S) (E1 E2 : coPset)
-  : properUPred_ent (mkProperSep (ownE W E1) (ownE W E2))
+  : ((ownE W E1) ∗ (ownE W E2)) ⊢
                     (mkProperPure (coPset_overlap E1 E2 = false))
   => \lam n x hv hsep =>
       \case coPset_overlap E1 E2 \as b, idp : coPset_overlap E1 E2 = b
@@ -241,9 +240,9 @@
       }
 
 \lemma ownE_op' {S : gFunctors} (W : wsatGS S) (E1 E2 : coPset)
-  : upredEquiv (mkProperAnd (mkProperPure (coPset_overlap E1 E2 = false))
-                            (ownE W (coPset_union E1 E2)))
-               (mkProperSep (ownE W E1) (ownE W E2))
+  : ((mkProperPure (coPset_overlap E1 E2 = false)) ∧
+                            (ownE W (coPset_union E1 E2))) ⊣⊢
+               ((ownE W E1) ∗ (ownE W E2))
   => \lam n x hv =>
       ( \lam hand => (ownE_op W E1 E2 hand.1 n x hv).1 hand.2
       , \lam hsep =>
@@ -252,8 +251,7 @@
       )
 
 \lemma ownE_singleton_twice {S : gFunctors} (W : wsatGS S) (i : gname)
-  : properUPred_ent
-      (mkProperSep (ownE W (coPset_singleton i)) (ownE W (coPset_singleton i)))
+  : ((ownE W (coPset_singleton i)) ∗ (ownE W (coPset_singleton i))) ⊢
       (mkProperPure Empty)
   => \lam n x hv hsep =>
       \case inv (coPset_overlap_complete (coPset_singleton i) (coPset_singleton i) i
@@ -268,16 +266,16 @@
 
 \lemma ownD_op {S : gFunctors} (W : wsatGS S) (D1 D2 : Gset)
                (h : gset_overlap D1 D2 = false)
-  : upredEquiv (ownD W (gset_union D1 D2))
-               (mkProperSep (ownD W D1) (ownD W D2))
+  : (ownD W (gset_union D1 D2)) ⊣⊢
+               ((ownD W D1) ∗ (ownD W D2))
   => transport
-      (\lam a => upredEquiv (own W.wsatGpreS_disabled W.disabled_name a)
-                            (mkProperSep (ownD W D1) (ownD W D2)))
+      (\lam a => (own W.wsatGpreS_disabled W.disabled_name a) ⊣⊢
+                            ((ownD W D1) ∗ (ownD W D2)))
       (op_GSet_eq_GSet D1 D2 h)
       (own_op W.wsatGpreS_disabled W.disabled_name (GSet D1) (GSet D2))
 
 \lemma ownD_disjoint {S : gFunctors} (W : wsatGS S) (D1 D2 : Gset)
-  : properUPred_ent (mkProperSep (ownD W D1) (ownD W D2))
+  : ((ownD W D1) ∗ (ownD W D2)) ⊢
                     (mkProperPure (gset_overlap D1 D2 = false))
   => \lam n x hv hsep =>
       \case gset_overlap D1 D2 \as b, idp : gset_overlap D1 D2 = b
@@ -297,9 +295,9 @@
       }
 
 \lemma ownD_op' {S : gFunctors} (W : wsatGS S) (D1 D2 : Gset)
-  : upredEquiv (mkProperAnd (mkProperPure (gset_overlap D1 D2 = false))
-                            (ownD W (gset_union D1 D2)))
-               (mkProperSep (ownD W D1) (ownD W D2))
+  : ((mkProperPure (gset_overlap D1 D2 = false)) ∧
+                            (ownD W (gset_union D1 D2))) ⊣⊢
+               ((ownD W D1) ∗ (ownD W D2))
   => \lam n x hv =>
       ( \lam hand => (ownD_op W D1 D2 hand.1 n x hv).1 hand.2
       , \lam hsep =>
@@ -308,8 +306,7 @@
       )
 
 \lemma ownD_singleton_twice {S : gFunctors} (W : wsatGS S) (i : gname)
-  : properUPred_ent
-      (mkProperSep (ownD W (gset_singleton i)) (ownD W (gset_singleton i)))
+  : ((ownD W (gset_singleton i)) ∗ (ownD W (gset_singleton i))) ⊢
       (mkProperPure Empty)
   => \lam n x hv hsep =>
       \case inv (gset_overlap_complete (gset_singleton i) (gset_singleton i) i
@@ -344,7 +341,7 @@
 -- of `▷ (Q ≡ P)` at index `n` — resource-independently.
 \lemma later_internal_eq_holds {S : gFunctors} (n : Nat) (x : (iResUR S).E)
     (Q P : iProp S) (h : DistLater {iPropO S} n P Q)
-  : (mkProperLater (mkProperInternalEq {iResUR S} {iPropO S} Q P)).upred_holds n x
+  : (|> (mkProperInternalEq {iResUR S} {iPropO S} Q P)).upred_holds n x
   => \case \elim n, \elim h \with {
     | 0, _ => ()
     | suc n', h' => (iPropO S).ofe_dist_sym n' P Q (h'.dist_later_lt n' id<suc)
@@ -353,7 +350,7 @@
 \lemma own_op_valid_at {S : gFunctors} {A : CMRA.{0}}
     (i : inG S A) (gam : gname) (a b : A.E)
     (n : Nat) (x : (iResUR S).E) (hv : (iResUR S).validN n x)
-    (hsep : (mkProperSep (own i gam a) (own i gam b)).upred_holds n x)
+    (hsep : ((own i gam a) ∗ (own i gam b)).upred_holds n x)
   : A.validN n (A.op a b) =>
   own_op_valid i gam a b n x hv hsep
 
@@ -361,7 +358,7 @@
     (i : inG S A) (gam : gname) (a b : A.E)
     (n : Nat) (x : (iResUR S).E) (hv : (iResUR S).validN n x)
     (P : \Prop) (k : A.validN n (A.op a b) -> P)
-    (hsep : (mkProperSep (own i gam a) (own i gam b)).upred_holds n x)
+    (hsep : ((own i gam a) ∗ (own i gam b)).upred_holds n x)
   : P => k (own_op_valid_at i gam a b n x hv hsep)
 
 -- Keep the full gmap-view validity calculation outside the `own` entailment.
@@ -398,22 +395,18 @@
 
 \lemma invariant_lookup {S : gFunctors} (W : wsatGS S)
     (I : Gmap gname gnameCountable (iProp S)) (i : gname) (P : iProp S)
-  : properUPred_ent
-      (mkProperSep
-          (own W.wsatGpreS_inv W.invariant_name
-              (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I)))
-          (ownI W i P))
+  : ((own W.wsatGpreS_inv W.invariant_name
+              (wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I))) ∗
+          (ownI W i P)) ⊢
       (mkProperExist (iProp S) (\lam Q =>
-          mkProperSep
-              (mkProperPure (glookup I i = just Q))
-              (mkProperLater (mkProperInternalEq {iResUR S} {iPropO S} Q P))))
+          (mkProperPure (glookup I i = just Q)) ∗
+              (|> (mkProperInternalEq {iResUR S} {iPropO S} Q P))))
   => \lam n x hv hsep => \case hsep \with {
       | inP (x1, x2, dx, hauth, hownI) =>
         \let
           | authE => wsat_inv_auth (DfracOwn qp_one) (invariant_unfold_map I)
           | fragE => wsat_inv_frag i DfracDiscarded (to_agree (invariant_unfold P))
-          | hdirect : (mkProperSep
-                (own W.wsatGpreS_inv W.invariant_name authE)
+          | hdirect : ((own W.wsatGpreS_inv W.invariant_name authE) ∗
                 (own W.wsatGpreS_inv W.invariant_name fragE)).upred_holds n x =>
               inP (x1, x2, dx, hauth,
                 ownI_holds_unfold W i P n x2 hownI)
@@ -437,10 +430,10 @@
 -- =================================================================================
 
 \lemma later_eq_use {M : UCMRA} (n : Nat) (u w : M.E) (Q P : ProperUPred M)
-    (hlater : (mkProperLater (mkProperInternalEq {M} {UPredOFE M} Q P)).upred_holds n w)
-    (hQ : (mkProperLater Q).upred_holds n u)
+    (hlater : (|> (mkProperInternalEq {M} {UPredOFE M} Q P)).upred_holds n w)
+    (hQ : (|> Q).upred_holds n u)
     (hvu : M.validN n u)
-  : (mkProperLater P).upred_holds n u
+  : (|> P).upred_holds n u
   => \case \elim n, hlater, hQ, hvu \with {
     | 0, _, _, _ => ()
     | suc n', hl, hq, hvu' =>
@@ -448,10 +441,10 @@
   }
 
 \lemma later_eq_use_rev {M : UCMRA} (n : Nat) (u w : M.E) (Q P : ProperUPred M)
-    (hlater : (mkProperLater (mkProperInternalEq {M} {UPredOFE M} Q P)).upred_holds n w)
-    (hP : (mkProperLater P).upred_holds n u)
+    (hlater : (|> (mkProperInternalEq {M} {UPredOFE M} Q P)).upred_holds n w)
+    (hP : (|> P).upred_holds n u)
     (hvu : M.validN n u)
-  : (mkProperLater Q).upred_holds n u
+  : (|> Q).upred_holds n u
   => \case \elim n, hlater, hP, hvu \with {
     | 0, _, _, _ => ()
     | suc n', hl, hp, hvu' =>
@@ -464,9 +457,8 @@
 -- =================================================================================
 
 \lemma ownI_open {S : gFunctors} (W : wsatGS S) (i : gname) (P : iProp S)
-  : properUPred_ent
-      (mkProperSep (wsat W) (mkProperSep (ownI W i P) (ownE W (coPset_singleton i))))
-      (mkProperSep (wsat W) (mkProperSep (mkProperLater P) (ownD W (gset_singleton i))))
+  : ((wsat W) ∗ ((ownI W i P) ∗ (ownE W (coPset_singleton i)))) ⊢
+      ((wsat W) ∗ ((|> P) ∗ (ownD W (gset_singleton i))))
   => \lam n x hv hsep => \case hsep \with {
     | inP (x1, x2, dx, hw, hoe) => \case hw \with {
       | inP (I, hI) => \case hI, hoe \with {
@@ -586,10 +578,9 @@
 -- =================================================================================
 
 \lemma ownI_close {S : gFunctors} (W : wsatGS S) (i : gname) (P : iProp S)
-  : properUPred_ent
-      (mkProperSep (wsat W) (mkProperSep (ownI W i P)
-          (mkProperSep (mkProperLater P) (ownD W (gset_singleton i)))))
-      (mkProperSep (wsat W) (ownE W (coPset_singleton i)))
+  : ((wsat W) ∗ ((ownI W i P) ∗
+          ((|> P) ∗ (ownD W (gset_singleton i))))) ⊢
+      ((wsat W) ∗ (ownE W (coPset_singleton i)))
   => \lam n x hv hsep => \case hsep \with {
     | inP (x1, x2, dx, hw, hrest) => \case hw \with {
       | inP (I, hI) => \case hI, hrest \with {

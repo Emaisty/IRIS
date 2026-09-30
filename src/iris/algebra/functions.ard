@@ -328,6 +328,43 @@
        | no _ => (B i).ofe_dist_refl n (B i).unit
      }
 
+\lemma dfun_transport_discrete {I : \Set} {B : I -> UCMRA}
+    {x i : I} (p : x = i) (y : (B x).E) (hy : Discrete {B x} y) :
+  Discrete {B i} (transport (\lam j => (B j).E) p y) \elim p
+  | idp => hy
+
+-- Discreteness of a dependent singleton only needs the selected value and
+-- every component unit to be discrete.  For `iResUR`, those units are empty
+-- finite maps, hence discrete even when the component functor is higher-order.
+\lemma discrete_fun_singleton_discrete {I : \Set}
+    (dec : \Pi (x y : I) -> Dec (x = y)) {B : I -> UCMRA}
+    (x : I) (y : (B x).E) (hy : Discrete {B x} y)
+    (hunit : \Pi (i : I) -> Discrete {B i} (B i).unit) :
+  Discrete {DiscreteFunUCMRA B} (discrete_fun_singleton dec x y) =>
+  \lam f hd i => \case dec x i \as d,
+      idp : dec x i = d
+    \return (B i).equiv
+      (\case d \with {
+        | yes p => transport (\lam j => (B j).E) p y
+        | no _ => (B i).unit
+      }) (f i)
+    \with {
+      | yes p, ed => dfun_transport_discrete p y hy (f i)
+          (transport
+            (\lam q => (B i).dist 0
+              (\case q \with {
+                | yes p' => transport (\lam j => (B j).E) p' y
+                | no _ => (B i).unit
+              }) (f i)) ed (hd i))
+      | no _, ed => hunit i (f i)
+          (transport
+            (\lam q => (B i).dist 0
+              (\case q \with {
+                | yes p' => transport (\lam j => (B j).E) p' y
+                | no _ => (B i).unit
+              }) (f i)) ed (hd i))
+    }
+
 -- `singleton x (y1 ⋅ y2) ≡ singleton x y1 ⋅ singleton x y2`.
 \lemma discrete_fun_singleton_op {I : \Set} (dec : \Pi (x y : I) -> Dec (x = y))
                                  {B : I -> UCMRA} (x : I) (y1 y2 : (B x).E)

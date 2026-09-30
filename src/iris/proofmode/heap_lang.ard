@@ -1,0 +1,339 @@
+\import Data.Bool
+\import Paths
+\import iris.algebra.coPset
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.lib.wsat
+\import iris.base_logic.lib.invariants
+\import iris.base_logic.lib.fancy_updates
+\import iris.base_logic.upred
+\import iris.base_logic.notation
+\import iris.bi.big_op
+\import iris.program_logic.weakestpre
+\import iris.program_logic.lifting
+\import iris.proofmode.core
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+\import iris_heap_lang.lang_subst
+\import stdpp.coPset
+\import stdpp.namespaces
+
+-- Bridge names keep the virtual tactic module free of collisions with the
+-- term-level HeapLang rules (`wp_value`, `wp_fork`, ...).
+\func pm_wp {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (Phi : Value -> iProp S) : iProp S => wp H E e Phi
+
+\lemma pm_wp_expr_eq {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) (equal : e1 = e2) :
+  (pm_wp H E e1 Phi) ⊢ (pm_wp H E e2 Phi) =>
+  \lam n a valid holds =>
+    transport (\lam e => (pm_wp H E e Phi).upred_holds n a) equal holds
+
+\lemma pm_wp_value_intro {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (v : Value)
+    (Phi : Value -> iProp S)
+  : (Phi v) ⊢ (pm_wp H E (Val v) Phi) =>
+  wp_value_intro H E v Phi
+
+\lemma pm_wp_smart_apply {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E e Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢ (Psi v))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E e Psi) =>
+  properUPred_ent_trans (of_envs envs) P (pm_wp H E e Psi) next
+    (properUPred_ent_trans P (pm_wp H E e Phi) (pm_wp H E e Psi)
+      rule (wp_mono H E e Phi Psi post))
+
+\lemma pm_wp_bind_item {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Ki : EctxItem)
+    (e : Expr) (Phi : Value -> iProp S)
+    {envs : PMEnvs (iResUR S)}
+    (next : envs_entails envs
+      (pm_wp H E e (\lam v => pm_wp H E (fill_item Ki (Val v)) Phi)))
+  : envs_entails envs (pm_wp H E (fill_item Ki e) Phi) =>
+  properUPred_ent_trans (of_envs envs)
+    (pm_wp H E e (\lam v => pm_wp H E (fill_item Ki (Val v)) Phi))
+    (pm_wp H E (fill_item Ki e) Phi)
+    next (wp_bind_item H E Ki e Phi)
+
+-- Generic call-by-value let sequencing.  HeapLang's `let x := rhs in body`
+-- is represented by `App (Lam x body) rhs`; keeping this theorem here avoids
+-- rebuilding the Lam/App plumbing in each client library.
+\lemma pm_wp_let {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (Phi : Value -> iProp S) :
+  (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
+    (pm_wp H E (App (Lam x body) rhs) Phi) =>
+  \let
+    | LamV0 => LamV x body
+    | AppPost : Value -> iProp S => \lam v =>
+        pm_wp H E (App (Val LamV0) (Val v)) Phi
+    | LamPost : Value -> iProp S => \lam vf =>
+        pm_wp H E (App (Val vf) rhs) Phi
+    | specialize : \Pi (v : Value) ->
+        (pm_wp H E (subst x v body) Phi) ⊢ (AppPost v) =>
+        \lam v => wp_lam_beta H E x body v Phi
+    | rhsToApp :
+        (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
+          (pm_wp H E (App (Val LamV0) rhs) Phi) =>
+        properUPred_ent_trans
+          (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
+          (pm_wp H E rhs AppPost)
+          (pm_wp H E (App (Val LamV0) rhs) Phi)
+          (wp_mono H E rhs
+            (\lam v => pm_wp H E (subst x v body) Phi)
+            AppPost specialize)
+          (wp_bind_app_r H E LamV0 rhs Phi)
+    | exposeLam : (pm_wp H E (App (Val LamV0) rhs) Phi) ⊢
+        (pm_wp H E (App (Lam x body) rhs) Phi) =>
+        properUPred_ent_trans
+          (pm_wp H E (App (Val LamV0) rhs) Phi)
+          (pm_wp H E (Val LamV0) LamPost)
+          (pm_wp H E (App (Lam x body) rhs) Phi)
+          (wp_value_intro H E LamV0 LamPost)
+          (properUPred_ent_trans
+            (pm_wp H E (Val LamV0) LamPost)
+            (pm_wp H E (Lam x body) LamPost)
+            (pm_wp H E (App (Lam x body) rhs) Phi)
+            (wp_lam_expr H E x body LamPost)
+            (wp_bind_app_l H E (Lam x body) rhs Phi))
+  \in properUPred_ent_trans
+      (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
+      (pm_wp H E (App (Val LamV0) rhs) Phi)
+      (pm_wp H E (App (Lam x body) rhs) Phi) rhsToApp exposeLam
+
+\lemma pm_wp_smart_let {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E rhs Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      (pm_wp H E (subst x v body) Psi))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E (App (Lam x body) rhs) Psi) =>
+  properUPred_ent_trans (of_envs envs) P
+    (pm_wp H E (App (Lam x body) rhs) Psi) next
+    (properUPred_ent_trans P (pm_wp H E rhs Phi)
+      (pm_wp H E (App (Lam x body) rhs) Psi) rule
+      (properUPred_ent_trans (pm_wp H E rhs Phi)
+        (pm_wp H E rhs
+          (\lam v => pm_wp H E (subst x v body) Psi))
+        (pm_wp H E (App (Lam x body) rhs) Psi)
+        (wp_mono H E rhs Phi
+          (\lam v => pm_wp H E (subst x v body) Psi) post)
+        (pm_wp_let H E x rhs body Psi)))
+
+\lemma pm_wp_smart_bind_item {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Ki : EctxItem) (e : Expr)
+    (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
+    (P : iProp S)
+    (rule : P ⊢ (pm_wp H E e Phi))
+    (post : \Pi (v : Value) -> (Phi v) ⊢
+      (pm_wp H E (fill_item Ki (Val v)) Psi))
+    (next : envs_entails envs P)
+  : envs_entails envs (pm_wp H E (fill_item Ki e) Psi) =>
+  pm_wp_bind_item H E Ki e Psi
+    (pm_wp_smart_apply H E e Phi
+      (\lam v => pm_wp H E (fill_item Ki (Val v)) Psi)
+      envs P rule post next)
+
+\lemma pm_wp_if_true {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : (pm_wp H E t Phi) ⊢
+      (pm_wp H E (If (Val (boolV true)) t f) Phi) =>
+  wp_if_true H E t f Phi
+
+\lemma pm_wp_if_false {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (t f : Expr)
+    (Phi : Value -> iProp S)
+  : (pm_wp H E f Phi) ⊢
+      (pm_wp H E (If (Val (boolV false)) t f) Phi) =>
+  wp_if_false H E t f Phi
+
+-- Open a selected invariant around a strongly atomic expression.  The
+-- extension only discovers the parameters and builds the selection; this
+-- theorem performs the resource permutation and both mask transitions.
+\lemma pm_wp_inv {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (e : Expr) (Phi : Value -> iProp S)
+    (hNE : coPSubset (nclose N) E) (atomic : StronglyAtomic {cnt} e)
+    {envs : PMEnvs (iResUR S)} (selection : PMSelection envs.spatial)
+    (body_name close_name : PMName)
+    (instance : PMIntoInvariant selection.selected_prop H.iris_wsat N P)
+    (next : envs_entails
+      (\new PMEnvs (iResUR S) {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc
+            (pm_snoc selection.selected_rest body_name (|> P))
+            close_name
+            ((|> P) -∗
+              (mkProperFUpd H.iris_wsat
+                (coPset_difference E (nclose N)) E mkProperEmp))
+      })
+      (pm_wp H (coPset_difference E (nclose N)) e
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : envs_entails envs (pm_wp H E e Phi) =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | R => pm_of_env selection.selected_rest
+    | Inv => iris.base_logic.lib.invariants.inv H.iris_wsat N P
+    | LP => |> P
+    | Close => LP -∗
+        (mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E mkProperEmp)
+    | K => I ∗ R
+    | WPInner => pm_wp H (coPset_difference E (nclose N)) e
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))
+    | prepare : (of_envs envs) ⊢ (Inv ∗ K) =>
+        properUPred_ent_trans (of_envs envs)
+          (I ∗ (Inv ∗ R)) (Inv ∗ K)
+          (sep_mono_r_ent I (pm_of_env envs.spatial) (Inv ∗ R)
+            (properUPred_ent_trans (pm_of_env envs.spatial)
+              (selection.selected_prop ∗ R) (Inv ∗ R)
+              selection.selection_sound
+              (sep_mono_l_ent selection.selected_prop Inv R
+                instance.into_invariant)))
+          (sep_swap_ent I Inv R)
+    | arrange : ((LP ∗ Close) ∗ K) ⊢
+        (I ∗ ((R ∗ LP) ∗ Close)) =>
+        properUPred_ent_trans ((LP ∗ Close) ∗ (I ∗ R))
+          ((I ∗ R) ∗ (LP ∗ Close))
+          (I ∗ ((R ∗ LP) ∗ Close))
+          (sep_comm_ent (LP ∗ Close) (I ∗ R))
+          (properUPred_ent_trans ((I ∗ R) ∗ (LP ∗ Close))
+            (I ∗ (R ∗ (LP ∗ Close)))
+            (I ∗ ((R ∗ LP) ∗ Close))
+            (sep_assoc_l_ent I R (LP ∗ Close))
+            (sep_mono_r_ent I (R ∗ (LP ∗ Close))
+              ((R ∗ LP) ∗ Close) (sep_assoc_r_ent R LP Close)))
+    | opened : (((LP ∗ Close) ∗ K)) ⊢ WPInner =>
+        properUPred_ent_trans ((LP ∗ Close) ∗ K)
+          (I ∗ ((R ∗ LP) ∗ Close)) WPInner arrange next
+  \in properUPred_ent_trans (of_envs envs) (Inv ∗ K)
+    (pm_wp H E e Phi) prepare
+    (wp_atomic_inv_acc H E N P K e Phi hNE atomic opened)
+
+-- Run an arbitrary mask-changing accessor around an atomic expression.
+-- Invariant opening is one instance; downstream libraries can expose other
+-- accessors without teaching the extension their proposition syntax.
+\lemma pm_wp_accessor {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E D : coPset) (P Close : iProp S)
+    (e : Expr) (Phi : Value -> iProp S)
+    (atomic : StronglyAtomic {cnt} e)
+    {envs : PMEnvs (iResUR S)} (selection : PMSelection envs.spatial)
+    (body_name close_name : PMName)
+    (instance : PMIntoAccessor selection.selected_prop H.iris_wsat
+      E D P Close)
+    (next : envs_entails
+      (\new PMEnvs (iResUR S) {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc
+            (pm_snoc selection.selected_rest body_name P)
+            close_name Close
+      })
+      (pm_wp H D e
+        (\lam v => mkProperFUpd H.iris_wsat D E (Phi v))))
+  : envs_entails envs (pm_wp H E e Phi) =>
+  \let
+    | I => pm_of_persistent_env envs.intuitionistic
+    | R => pm_of_env selection.selected_rest
+    | K => I ∗ R
+    | WPInner => pm_wp H D e
+        (\lam v => mkProperFUpd H.iris_wsat D E (Phi v))
+    | prepare : (of_envs envs) ⊢ (selection.selected_prop ∗ K) =>
+        properUPred_ent_trans (of_envs envs)
+          (I ∗ (selection.selected_prop ∗ R))
+          (selection.selected_prop ∗ K)
+          (sep_mono_r_ent I (pm_of_env envs.spatial)
+            (selection.selected_prop ∗ R) selection.selection_sound)
+          (sep_swap_ent I selection.selected_prop R)
+    | access : (selection.selected_prop ∗ K) ⊢
+        (mkProperFUpd H.iris_wsat E D ((P ∗ Close) ∗ K)) =>
+        properUPred_ent_trans (selection.selected_prop ∗ K)
+          ((mkProperFUpd H.iris_wsat E D (P ∗ Close)) ∗ K)
+          (mkProperFUpd H.iris_wsat E D ((P ∗ Close) ∗ K))
+          (sep_mono_l_ent selection.selected_prop
+            (mkProperFUpd H.iris_wsat E D (P ∗ Close)) K
+            instance.into_accessor)
+          (fupd_frame_r H.iris_wsat E D (P ∗ Close) K)
+    | arrange : ((P ∗ Close) ∗ K) ⊢
+        (I ∗ ((R ∗ P) ∗ Close)) =>
+        properUPred_ent_trans ((P ∗ Close) ∗ (I ∗ R))
+          ((I ∗ R) ∗ (P ∗ Close))
+          (I ∗ ((R ∗ P) ∗ Close))
+          (sep_comm_ent (P ∗ Close) (I ∗ R))
+          (properUPred_ent_trans ((I ∗ R) ∗ (P ∗ Close))
+            (I ∗ (R ∗ (P ∗ Close)))
+            (I ∗ ((R ∗ P) ∗ Close))
+            (sep_assoc_l_ent I R (P ∗ Close))
+            (sep_mono_r_ent I (R ∗ (P ∗ Close))
+              ((R ∗ P) ∗ Close) (sep_assoc_r_ent R P Close)))
+    | opened : ((P ∗ Close) ∗ K) ⊢ WPInner =>
+        properUPred_ent_trans ((P ∗ Close) ∗ K)
+          (I ∗ ((R ∗ P) ∗ Close)) WPInner arrange next
+  \in properUPred_ent_trans (of_envs envs)
+    (selection.selected_prop ∗ K) (pm_wp H E e Phi) prepare
+    (properUPred_ent_trans (selection.selected_prop ∗ K)
+      (mkProperFUpd H.iris_wsat E D ((P ∗ Close) ∗ K))
+      (pm_wp H E e Phi) access
+      (properUPred_ent_trans
+        (mkProperFUpd H.iris_wsat E D ((P ∗ Close) ∗ K))
+        (mkProperFUpd H.iris_wsat E D WPInner)
+        (pm_wp H E e Phi)
+        (fupd_mono H.iris_wsat E D ((P ∗ Close) ∗ K) WPInner opened)
+        (wp_atomic H E D e Phi atomic)))
+
+\func pm_into_accessor_inv_timeless {S : gFunctors}
+    {Pacc : iProp S} (W : wsatGS S) (E : coPset)
+    (N : Namespace) (P : iProp S)
+    (hNE : coPSubset (nclose N) E)
+    (invariant : PMIntoInvariant Pacc W N P)
+    (timeless : PMTimeless (iResUR S) P) :
+    PMIntoAccessor Pacc W E (coPset_difference E (nclose N)) P
+      (P -∗ mkProperFUpd W
+        (coPset_difference E (nclose N)) E mkProperEmp) \cowith
+  | into_accessor =>
+      properUPred_ent_trans Pacc
+        (iris.base_logic.lib.invariants.inv W N P)
+        (mkProperFUpd W E (coPset_difference E (nclose N))
+          (P ∗ (P -∗ mkProperFUpd W
+            (coPset_difference E (nclose N)) E mkProperEmp)))
+        invariant.into_invariant
+        (inv_acc_timeless W E N P hNE timeless.pm_timeless)
+
+\lemma pm_wp_inv_timeless {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (N : Namespace) (P : iProp S)
+    (e : Expr) (Phi : Value -> iProp S)
+    (hNE : coPSubset (nclose N) E) (atomic : StronglyAtomic {cnt} e)
+    {envs : PMEnvs (iResUR S)} (selection : PMSelection envs.spatial)
+    (body_name close_name : PMName)
+    (invariant : PMIntoInvariant selection.selected_prop H.iris_wsat N P)
+    (timeless : PMTimeless (iResUR S) P)
+    (next : envs_entails
+      (\new PMEnvs (iResUR S) {
+        | intuitionistic => envs.intuitionistic
+        | spatial => pm_snoc
+            (pm_snoc selection.selected_rest body_name P)
+            close_name
+            (P -∗ mkProperFUpd H.iris_wsat
+              (coPset_difference E (nclose N)) E mkProperEmp)
+      })
+      (pm_wp H (coPset_difference E (nclose N)) e
+        (\lam v => mkProperFUpd H.iris_wsat
+          (coPset_difference E (nclose N)) E (Phi v))))
+  : envs_entails envs (pm_wp H E e Phi) =>
+  pm_wp_accessor H E (coPset_difference E (nclose N)) P
+    (P -∗ mkProperFUpd H.iris_wsat
+      (coPset_difference E (nclose N)) E mkProperEmp)
+    e Phi atomic selection body_name close_name
+    (pm_into_accessor_inv_timeless H.iris_wsat E N P hNE
+      invariant timeless) next
