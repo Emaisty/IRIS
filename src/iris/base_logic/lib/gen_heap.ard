@@ -28,8 +28,10 @@
 -- =================================================================================
 -- A12: generic heap ghost state (the operational core of Rocq
 -- `base_logic/lib/gen_heap.v`).  The full Rocq library also carries metadata
--- resources; the sequential language in this repository only needs the heap
--- map itself, so this module deliberately packages one `gmap_view` resource.
+-- resources. This port deliberately packages only the heap map as one
+-- `gmap_view` resource, also used by concurrent clients. Its allocation rules
+-- do not return metadata tokens, and initialization returns the interpretation
+-- without the upstream collection of initial points-to resources.
 --
 -- Values are stored under `Agree (Discrete V)`.  The view's discardable
 -- fraction controls ownership of a location, while Agree enforces that all

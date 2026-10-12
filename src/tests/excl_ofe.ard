@@ -1,0 +1,121 @@
+\import Logic
+\import Paths
+\import Data.Maybe
+\import Arith.Nat
+\import Meta
+\import iris.algebra.ofe
+\import iris.algebra.cmra
+\import iris.algebra.excl
+\import iris_heap_lang.lang
+
+-- Different delayed naturals agree at index zero. This exercises the
+-- generic inclusion rule on a genuinely nondiscrete OFE.
+\func delayed_nat : OFE => LaterOFE (DiscreteOFE Nat)
+
+\lemma delayed_zero_inclusion :
+  inclN {ExclUCMRA delayed_nat}
+    {\new Op _ { | op => (ExclUCMRA delayed_nat).op }}
+    (just (excl (next 0))) 0 (just (excl (next 1))) =>
+  (excl_includedN {delayed_nat} 0 (next 0) (next 1)).2
+    (dist_later_zero 0 1)
+
+\lemma delayed_zero_target_distance :
+  (ExclUOFE delayed_nat).dist 0
+    (just (excl (next 1))) (just (excl (next 0))) =>
+  excl_option_includedN_dist 0 (next 0) (just (excl (next 1)))
+    () delayed_zero_inclusion
+
+\lemma delayed_values_differ : Not (next 0 = next 1) =>
+  \lam h => \case pmap laterUnNext h \with {}
+
+\lemma delayed_one_inclusion_impossible :
+  Not (inclN {ExclUCMRA delayed_nat}
+    {\new Op _ { | op => (ExclUCMRA delayed_nat).op }}
+    (just (excl (next 0))) 1 (just (excl (next 1)))) =>
+  \lam h =>
+    \let hd => (excl_includedN {delayed_nat} 1 (next 0) (next 1)).1 h
+    \in \case hd.dist_later_lt 0 id<suc \with {}
+
+\lemma delayed_unindexed_inclusion_impossible :
+  Not (incl {ExclUCMRA delayed_nat}
+    {\new Op _ { | op => (ExclUCMRA delayed_nat).op }}
+    (just (excl (next 0))) (just (excl (next 1)))) =>
+  \lam h => \case (excl_included {delayed_nat} (next 0) (next 1)).1 h \with {}
+
+\func distance_is_not_equality : \Sigma =>
+  fails ((excl_includedN {delayed_nat} 0 (next 0) (next 1)).1
+    delayed_zero_inclusion : next 0 = next 1)
+
+-- Discreteness alone also does not imply path equality: this OFE identifies
+-- every pair of naturals, while its carrier still has distinct 0 and 1.
+\func indiscrete_nat : OFE \cowith
+  | E => Nat
+  | dist _ _ _ => \Sigma
+  | equiv _ _ => \Sigma
+  | equiv_refl _ => ()
+  | equiv_sym _ _ _ => ()
+  | equiv_trans _ _ _ _ _ => ()
+  | ofe_equiv_dist _ _ => (\lam _ _ => (), \lam _ => ())
+  | ofe_dist_refl _ _ => ()
+  | ofe_dist_sym _ _ _ _ => ()
+  | ofe_dist_trans _ _ _ _ _ _ => ()
+  | ofe_dist_le _ _ _ _ _ _ => ()
+
+\lemma indiscrete_nat_is_discrete : OFEDiscrete indiscrete_nat =>
+  \lam _ _ _ => ()
+
+\lemma equivalent_distinct_payloads_included :
+  incl {ExclUCMRA indiscrete_nat}
+    {\new Op _ { | op => (ExclUCMRA indiscrete_nat).op }}
+    (just (excl 0)) (just (excl 1)) =>
+  (excl_included {indiscrete_nat} 0 1).2 ()
+
+\lemma equivalent_target_extracted :
+  (ExclUOFE indiscrete_nat).equiv (just (excl 1)) (just (excl 0)) =>
+  excl_option_included_equiv 0 (just (excl 1)) ()
+    equivalent_distinct_payloads_included
+
+\func equivalence_is_not_equality : \Sigma =>
+  fails ((excl_included {indiscrete_nat} 0 1).1
+    equivalent_distinct_payloads_included : 0 = 1)
+
+\func discreteness_without_leibniz_is_insufficient : \Sigma =>
+  fails (option_excl_dist_to_eq_of_discrete indiscrete_nat
+    indiscrete_nat_is_discrete 0 (just (excl 0)) (just (excl 1)) ())
+
+-- The valid-target premise matters: every present exclusive resource is
+-- included in the invalid resource, which cannot yield a payload equality.
+\lemma invalid_target_inclusion :
+  inclN {ExclUCMRA (DiscreteOFE Nat)}
+    {\new Op _ { | op => (ExclUCMRA (DiscreteOFE Nat)).op }}
+    (just (excl 0)) 0 (just exclInvalid) =>
+  inP (just (excl 0), ())
+
+\func invalid_target_is_rejected : \Sigma =>
+  fails (excl_option_includedN_dist {DiscreteOFE Nat} 0 0
+    (just exclInvalid) () invalid_target_inclusion)
+
+-- Old interfaces remain callable, including the legacy Value-only helper's
+-- two unused type arguments. These do not depend on the factorial modules.
+\lemma legacy_inclusion_equality (n v : Nat) :
+  just (excl v) = just (excl v) =>
+  excl_option_includedN_eq n v (just (excl v)) ()
+    ((excl_includedN {DiscreteOFE Nat} n v v).2 idp)
+
+\lemma legacy_value_equality (n : Nat) :
+  just (excl unitV) = just (excl unitV) =>
+  option_dist_to_eq n (just (excl unitV)) (just (excl unitV))
+    idp Nat Value ()
+
+\lemma legacy_invalid_equality (n : Nat) :
+  exclInvalid {Nat} = exclInvalid =>
+  excl_dist_to_eq Nat n exclInvalid exclInvalid ()
+
+\lemma legacy_empty_equality (n : Nat) :
+  nothing {Excl Nat} = nothing =>
+  option_excl_dist_to_eq Nat n nothing nothing ()
+
+\lemma discrete_bridge_on_naturals (n v : Nat) :
+  just (excl v) = just (excl v) =>
+  option_excl_dist_to_eq_of_discrete (DiscreteOFE Nat)
+    (discreteOFE_discrete Nat) n (just (excl v)) (just (excl v)) idp

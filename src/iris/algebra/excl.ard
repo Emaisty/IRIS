@@ -172,23 +172,94 @@
 -- =================================================================================
 
 
+-- Inclusion in a valid optional exclusive resource gives distance at the
+-- same step index. No discreteness or path-equality assumption is needed.
+\lemma excl_option_includedN_dist
+  {A : OFE} (n : Nat) (a : A.E) (y : Maybe (Excl A.E))
+  (hy : validN {ExclUCMRA A} n y)
+  (h : inclN {ExclUCMRA A}
+    {\new Op _ { | op => (ExclUCMRA A).op }} (just (excl a)) n y)
+  : (ExclUOFE A).dist n y (just (excl a)) => \case h \with {
+    | inP (z, hz) => \case \elim y, \elim z, hy, hz \with {
+      | nothing, nothing, _, hd => \case hd \with {}
+      | nothing, just _, _, hd => \case hd \with {}
+      | just (excl b), nothing, _, hd => hd
+      | just (excl b), just _, _, hd => \case hd \with {}
+      | just exclInvalid, _, hy, _ => \case hy \with {}
+    }
+  }
+
+-- Rocq Excl_includedN: inclusion of present exclusive resources is exactly
+-- payload distance, for an arbitrary OFE.
+\lemma excl_includedN {A : OFE} (n : Nat) (a b : A.E)
+  : inclN {ExclUCMRA A}
+      {\new Op _ { | op => (ExclUCMRA A).op }}
+      (just (excl a)) n (just (excl b)) <-> A.dist n a b =>
+  (\lam h => A.ofe_dist_sym n b a
+      (excl_option_includedN_dist n a (just (excl b)) () h),
+   \lam h => inP (nothing, A.ofe_dist_sym n a b h))
+
+\lemma excl_option_included_equiv
+  {A : OFE} (a : A.E) (y : Maybe (Excl A.E))
+  (hy : valid {ExclUCMRA A} y)
+  (h : incl {ExclUCMRA A}
+    {\new Op _ { | op => (ExclUCMRA A).op }} (just (excl a)) y)
+  : (ExclUOFE A).equiv y (just (excl a)) => \case h \with {
+    | inP (z, hz) => \case \elim y, \elim z, hy, hz \with {
+      | nothing, nothing, _, he => \case he \with {}
+      | nothing, just _, _, he => \case he \with {}
+      | just (excl b), nothing, _, he => he
+      | just (excl b), just _, _, he => \case he \with {}
+      | just exclInvalid, _, hy, _ => \case hy \with {}
+    }
+  }
+
+-- Rocq Excl_included: the unindexed version uses OFE equivalence.
+\lemma excl_included {A : OFE} (a b : A.E)
+  : incl {ExclUCMRA A}
+      {\new Op _ { | op => (ExclUCMRA A).op }}
+      (just (excl a)) (just (excl b)) <-> A.equiv a b =>
+  (\lam h => A.equiv_sym b a
+      (excl_option_included_equiv a (just (excl b)) () h),
+   \lam h => inP (nothing, A.equiv_sym a b h))
+
+-- Distance yields path equality only with both discreteness and Leibniz
+-- equivalence. These bridges support any OFE with that evidence.
+\lemma excl_dist_to_eq_of_discrete
+  (A : LeibnizOFE) (hA : OFEDiscrete A) (n : Nat) (e1 e2 : Excl A.E)
+  (h : (ExclOFE A).dist n e1 e2) : e1 = e2 =>
+  \case \elim e1, \elim e2, h \with {
+    | excl a, excl b, hd => pmap excl
+        (hA a b (A.ofe_dist_le n 0 a b hd (zero<=_)))
+    | exclInvalid, exclInvalid, _ => idp
+    | excl _, exclInvalid, hd => \case hd \with {}
+    | exclInvalid, excl _, hd => \case hd \with {}
+  }
+
+\lemma option_excl_dist_to_eq_of_discrete
+  (A : LeibnizOFE) (hA : OFEDiscrete A) (n : Nat)
+  (o1 o2 : Maybe (Excl A.E))
+  (h : (ExclUOFE A).dist n o1 o2) : o1 = o2 =>
+  \case \elim o1, \elim o2, h \with {
+    | nothing, nothing, _ => idp
+    | nothing, just _, hd => \case hd \with {}
+    | just _, nothing, hd => \case hd \with {}
+    | just e1, just e2, hd =>
+        pmap just (excl_dist_to_eq_of_discrete A hA n e1 e2 hd)
+  }
+
+-- Compatibility helpers for the explicitly discrete model. Their public
+-- signatures are retained; general OFE clients use the relations above.
 \func excl_option_includedN_eq
   {V : \Set} (n : Nat) (v : V) (y : Maybe (Excl V))
   (hv : validN {ExclUCMRA (DiscreteOFE V)} n y)
   (h  : inclN {ExclUCMRA (DiscreteOFE V)}
       {\new Op _ { | op => (ExclUCMRA (DiscreteOFE V)).op }}
       (just (excl v)) n y)
-  : y = just (excl v) => \case h \with {
-    | inP (z, hz) =>
-      \case \elim y, \elim z, hv, hz \with {
-        | nothing, nothing, _, hdist => \case hdist \with {}
-        | nothing, just _, _, hdist => \case hdist \with {}
-        | just (excl a), nothing, _, hdist =>
-          pmap just (pmap excl (discrete_dist_to_eq V n a v hdist))
-        | just (excl a), just _, _, hdist => \case hdist \with {}
-        | just exclInvalid, _, hv, _ => \case hv \with {}
-      }
-  }
+  : y = just (excl v) =>
+  option_excl_dist_to_eq_of_discrete (DiscreteOFE V)
+    (discreteOFE_discrete V) n y (just (excl v))
+    (excl_option_includedN_dist n v y hv h)
 
 \func option_dist_to_eq
   (n : Nat) (o1 o2 : Maybe (Excl Value))
@@ -196,38 +267,22 @@
   (_ _ : \Type)
   (_ : validN {ExclUCMRA (DiscreteOFE Value)} n o1)
   : o1 = o2
-  => \case \elim o1, \elim o2, h \with {
-    | nothing, nothing, _ => idp
-    | nothing, just _, hdist => \case hdist \with {}
-    | just _, nothing, hdist => \case hdist \with {}
-    | just (excl v1), just (excl v2), hdist =>
-      pmap just (pmap excl (discrete_dist_to_eq Value n v1 v2 hdist))
-    | just (excl _), just exclInvalid, hdist => \case hdist \with {}
-    | just exclInvalid, just (excl _), hdist => \case hdist \with {}
-    | just exclInvalid, just exclInvalid, _ => idp
-  }
+  => option_excl_dist_to_eq_of_discrete (DiscreteOFE Value)
+      (discreteOFE_discrete Value) n o1 o2 h
 
 \lemma excl_dist_to_eq
   (V : \Set) (n : Nat) (e1 e2 : Excl V)
   (h : (ExclOFE (DiscreteOFE V)).dist n e1 e2)
   : e1 = e2
-  => \case \elim e1, \elim e2, h \with {
-    | excl a,        excl b,        h' => pmap excl (discrete_dist_to_eq V n a b h')
-    | exclInvalid,   exclInvalid,   _  => idp
-    | excl _,        exclInvalid,   h' => \case h' \with {}
-    | exclInvalid,   excl _,        h' => \case h' \with {}
-  }
+  => excl_dist_to_eq_of_discrete (DiscreteOFE V)
+      (discreteOFE_discrete V) n e1 e2 h
 
 \lemma option_excl_dist_to_eq
   (V : \Set) (n : Nat) (o1 o2 : Maybe (Excl V))
   (h : (ExclUCMRA (DiscreteOFE V)).dist n o1 o2)
   : o1 = o2
-  => \case \elim o1, \elim o2, h \with {
-    | nothing,  nothing,  _  => idp
-    | nothing,  just _,   h' => \case h' \with {}
-    | just _,   nothing,  h' => \case h' \with {}
-    | just e1,  just e2,  h' => pmap just (excl_dist_to_eq V n e1 e2 h')
-  }
+  => option_excl_dist_to_eq_of_discrete (DiscreteOFE V)
+      (discreteOFE_discrete V) n o1 o2 h
 
 
 -- =================================================================================

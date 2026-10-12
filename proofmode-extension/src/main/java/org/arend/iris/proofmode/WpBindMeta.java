@@ -51,6 +51,18 @@ class WpBindMeta extends ExactMeta {
   private ArendRef storeLCtx;
   @Dependency(name = "StoreRCtx")
   private ArendRef storeRCtx;
+  @Dependency(name = "BinOpLCtx")
+  private ArendRef binOpLCtx;
+  @Dependency(name = "BinOpRCtx")
+  private ArendRef binOpRCtx;
+  @Dependency(name = "AllocNLCtx")
+  private ArendRef allocNLCtx;
+  @Dependency(name = "AllocNRCtx")
+  private ArendRef allocNRCtx;
+  @Dependency(name = "FaaLCtx")
+  private ArendRef faaLCtx;
+  @Dependency(name = "FaaRCtx")
+  private ArendRef faaRCtx;
 
   protected record Focus(ConcreteExpression item, CoreExpression expression) {}
 
@@ -88,27 +100,40 @@ class WpBindMeta extends ExactMeta {
     var fields = call.getDefCallArguments();
     String name = call.getDefinition().getName();
     if ((name.equals("App") || name.equals("Pair") || name.equals("Mul")
-        || name.equals("Store")) && fields.size() >= 2) {
+        || name.equals("Store") || name.equals("AllocN") || name.equals("FAA")
+        || name.equals("BinOp")) && fields.size() >= 2) {
+      boolean binOp = name.equals("BinOp");
+      if (binOp && fields.size() < 3) return null;
       CoreExpression left = fields.get(fields.size() - 2);
       CoreExpression right = fields.getLast();
-      CoreExpression leftValue = value(typechecker, left);
-      if (leftValue == null) {
-        ArendRef constructor = switch (name) {
-          case "App" -> appLCtx;
-          case "Pair" -> pairLCtx;
-          case "Mul" -> mulLCtx;
-          default -> storeLCtx;
-        };
-        return new Focus(item(contextData, constructor, right), left);
-      }
-      if (value(typechecker, right) == null) {
+      CoreExpression rightValue = value(typechecker, right);
+      if (rightValue == null) {
         ArendRef constructor = switch (name) {
           case "App" -> appRCtx;
           case "Pair" -> pairRCtx;
           case "Mul" -> mulRCtx;
+          case "BinOp" -> binOpRCtx;
+          case "AllocN" -> allocNRCtx;
+          case "FAA" -> faaRCtx;
           default -> storeRCtx;
         };
-        return new Focus(item(contextData, constructor, leftValue), right);
+        return new Focus(binOp
+            ? item(contextData, constructor, fields.get(fields.size() - 3), left)
+            : item(contextData, constructor, left), right);
+      }
+      if (value(typechecker, left) == null) {
+        ArendRef constructor = switch (name) {
+          case "App" -> appLCtx;
+          case "Pair" -> pairLCtx;
+          case "Mul" -> mulLCtx;
+          case "BinOp" -> binOpLCtx;
+          case "AllocN" -> allocNLCtx;
+          case "FAA" -> faaLCtx;
+          default -> storeLCtx;
+        };
+        return new Focus(binOp
+            ? item(contextData, constructor, fields.get(fields.size() - 3), rightValue)
+            : item(contextData, constructor, rightValue), left);
       }
       return null;
     }

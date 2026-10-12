@@ -66,55 +66,50 @@
 -- is represented by `App (Lam x body) rhs`; keeping this theorem here avoids
 -- rebuilding the Lam/App plumbing in each client library.
 \lemma pm_wp_let {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (H : irisGS cnt S) (E : coPset) (x : Binder) (rhs body : Expr)
     (Phi : Value -> iProp S) :
-  (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
+  (pm_wp H E rhs (\lam v => pm_wp H E (subst_binder x v body) Phi)) ⊢
     (pm_wp H E (App (Lam x body) rhs) Phi) =>
   \let
-    | LamV0 => LamV x body
     | AppPost : Value -> iProp S => \lam v =>
-        pm_wp H E (App (Val LamV0) (Val v)) Phi
-    | LamPost : Value -> iProp S => \lam vf =>
-        pm_wp H E (App (Val vf) rhs) Phi
+        pm_wp H E (App (Lam x body) (Val v)) Phi
     | specialize : \Pi (v : Value) ->
-        (pm_wp H E (subst x v body) Phi) ⊢ (AppPost v) =>
-        \lam v => wp_lam_beta H E x body v Phi
-    | rhsToApp :
-        (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi)) ⊢
-          (pm_wp H E (App (Val LamV0) rhs) Phi) =>
-        properUPred_ent_trans
-          (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
-          (pm_wp H E rhs AppPost)
-          (pm_wp H E (App (Val LamV0) rhs) Phi)
-          (wp_mono H E rhs
-            (\lam v => pm_wp H E (subst x v body) Phi)
-            AppPost specialize)
-          (wp_bind_app_r H E LamV0 rhs Phi)
-    | exposeLam : (pm_wp H E (App (Val LamV0) rhs) Phi) ⊢
-        (pm_wp H E (App (Lam x body) rhs) Phi) =>
-        properUPred_ent_trans
-          (pm_wp H E (App (Val LamV0) rhs) Phi)
-          (pm_wp H E (Val LamV0) LamPost)
-          (pm_wp H E (App (Lam x body) rhs) Phi)
-          (wp_value_intro H E LamV0 LamPost)
-          (properUPred_ent_trans
-            (pm_wp H E (Val LamV0) LamPost)
-            (pm_wp H E (Lam x body) LamPost)
-            (pm_wp H E (App (Lam x body) rhs) Phi)
-            (wp_lam_expr H E x body LamPost)
-            (wp_bind_app_l H E (Lam x body) rhs Phi))
+        (pm_wp H E (subst_binder x v body) Phi) ⊢ (AppPost v) =>
+        \lam v =>
+          \let
+            | LamPost : Value -> iProp S => \lam vf =>
+                pm_wp H E (App (Val vf) (Val v)) Phi
+          \in properUPred_ent_trans
+              (pm_wp H E (subst_binder x v body) Phi)
+              (pm_wp H E (Lam x body) LamPost)
+              (AppPost v)
+              (properUPred_ent_trans
+                (pm_wp H E (subst_binder x v body) Phi)
+                (LamPost (LamV x body))
+                (pm_wp H E (Lam x body) LamPost)
+                (wp_lam_beta H E x body v Phi)
+                (properUPred_ent_trans
+                  (LamPost (LamV x body))
+                  (pm_wp H E (Val (LamV x body)) LamPost)
+                  (pm_wp H E (Lam x body) LamPost)
+                  (wp_value_intro H E (LamV x body) LamPost)
+                  (wp_lam_expr H E x body LamPost)))
+              (wp_bind_app_l H E (Lam x body) v Phi)
   \in properUPred_ent_trans
-      (pm_wp H E rhs (\lam v => pm_wp H E (subst x v body) Phi))
-      (pm_wp H E (App (Val LamV0) rhs) Phi)
-      (pm_wp H E (App (Lam x body) rhs) Phi) rhsToApp exposeLam
+      (pm_wp H E rhs (\lam v => pm_wp H E (subst_binder x v body) Phi))
+      (pm_wp H E rhs AppPost)
+      (pm_wp H E (App (Lam x body) rhs) Phi)
+      (wp_mono H E rhs
+        (\lam v => pm_wp H E (subst_binder x v body) Phi) AppPost specialize)
+      (wp_bind_app_r H E (Lam x body) rhs Phi)
 
 \lemma pm_wp_smart_let {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (x : Name) (rhs body : Expr)
+    (H : irisGS cnt S) (E : coPset) (x : Binder) (rhs body : Expr)
     (Phi Psi : Value -> iProp S) (envs : PMEnvs (iResUR S))
     (P : iProp S)
     (rule : P ⊢ (pm_wp H E rhs Phi))
     (post : \Pi (v : Value) -> (Phi v) ⊢
-      (pm_wp H E (subst x v body) Psi))
+      (pm_wp H E (subst_binder x v body) Psi))
     (next : envs_entails envs P)
   : envs_entails envs (pm_wp H E (App (Lam x body) rhs) Psi) =>
   properUPred_ent_trans (of_envs envs) P
@@ -123,10 +118,10 @@
       (pm_wp H E (App (Lam x body) rhs) Psi) rule
       (properUPred_ent_trans (pm_wp H E rhs Phi)
         (pm_wp H E rhs
-          (\lam v => pm_wp H E (subst x v body) Psi))
+          (\lam v => pm_wp H E (subst_binder x v body) Psi))
         (pm_wp H E (App (Lam x body) rhs) Psi)
         (wp_mono H E rhs Phi
-          (\lam v => pm_wp H E (subst x v body) Psi) post)
+          (\lam v => pm_wp H E (subst_binder x v body) Psi) post)
         (pm_wp_let H E x rhs body Psi)))
 
 \lemma pm_wp_smart_bind_item {cnt : Countable Loc} {S : gFunctors}

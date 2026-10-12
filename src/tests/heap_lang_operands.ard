@@ -1,0 +1,188 @@
+\import Arith.Nat
+\import Data.List
+\import Data.Maybe
+\import Logic
+\import Paths
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+
+-- F02: nested operands use the real contextual reduction relation.
+\func operand_add (a b : Nat) : Expr => NatAdd (Val (natV a)) (Val (natV b))
+
+\lemma nested_add_right {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (NatAdd (operand_add 1 2) (operand_add 3 4)) sigma
+    (NatAdd (operand_add 1 2) (Val (natV 7))) sigma nil nil =>
+  fill_step_item (BinOpRCtx NatAddOp (operand_add 1 2))
+    (BasePrim (BinOpS NatAddOp (natV 3) (natV 4) (natV 7) idp idp idp idp {idp} {idp}))
+
+\lemma nested_add_left {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (NatAdd (operand_add 1 2) (Val (natV 7))) sigma
+    (NatAdd (Val (natV 3)) (Val (natV 7))) sigma nil nil =>
+  fill_step_item (BinOpLCtx NatAddOp (natV 7))
+    (BasePrim (BinOpS NatAddOp (natV 1) (natV 2) (natV 3) idp idp idp idp {idp} {idp}))
+
+\lemma nested_add_result {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (NatAdd (Val (natV 3)) (Val (natV 7))) sigma
+    (Val (natV 10)) sigma nil nil =>
+  BasePrim (BinOpS NatAddOp (natV 3) (natV 7) (natV 10) idp idp idp idp {idp} {idp})
+
+\lemma nested_allocN_right {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (AllocN (operand_add 1 1) (operand_add 2 3)) sigma
+    (AllocN (operand_add 1 1) (Val (natV 5))) sigma nil nil =>
+  fill_step_item (AllocNRCtx (operand_add 1 1))
+    (BasePrim (BinOpS NatAddOp (natV 2) (natV 3) (natV 5) idp idp idp idp {idp} {idp}))
+
+\lemma nested_allocN_left {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (AllocN (operand_add 1 1) (Val (natV 5))) sigma
+    (AllocN (Val (natV 2)) (Val (natV 5))) sigma nil nil =>
+  fill_step_item (AllocNLCtx (natV 5))
+    (BasePrim (BinOpS NatAddOp (natV 1) (natV 1) (natV 2) idp idp idp idp {idp} {idp}))
+
+\lemma nested_allocN_result {cnt : Countable Loc} (sigma : State cnt)
+    (l : Loc) (fresh : heap_block_fresh sigma.heap l 2) :
+  PrimStep (AllocN (Val (natV 2)) (Val (natV 5))) sigma
+    (Val (LitV (LitLoc l)))
+    (state_update_heap sigma (heap_insert_block sigma.heap l 2 (natV 5))) nil nil =>
+  BasePrim (AllocNS 2 (natV 5) l (1, idp) fresh idp idp idp {idp} {idp})
+
+\lemma nested_faa_right {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))) (operand_add 1 1)) sigma
+    (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))) (Val (natV 2))) sigma nil nil =>
+  fill_step_item (FaaRCtx (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))))
+    (BasePrim (BinOpS NatAddOp (natV 1) (natV 1) (natV 2) idp idp idp idp {idp} {idp}))
+
+\lemma nested_faa_left {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))) (Val (natV 2))) sigma
+    (FAA (Val (LitV (LitLoc (l Nat.+ 1)))) (Val (natV 2))) sigma nil nil =>
+  fill_step_item (FaaLCtx (natV 2))
+    (BasePrim (BinOpS LocAddOp (LitV (LitLoc l)) (natV 1) (LitV (LitLoc (l Nat.+ 1)))
+      idp idp idp idp {idp} {idp}))
+
+\lemma nested_faa_result {cnt : Countable Loc} (sigma : State cnt) (l old : Nat)
+    (lookup : glookup sigma.heap (l Nat.+ 1) = just (natV old)) :
+  PrimStep (FAA (Val (LitV (LitLoc (l Nat.+ 1)))) (Val (natV 2))) sigma
+    (Val (natV old))
+    (state_update_heap sigma (heap_update sigma.heap (l Nat.+ 1) (natV (old Nat.+ 2)))) nil nil =>
+  BasePrim (FAAS (l Nat.+ 1) old 2 lookup idp idp idp {idp} {idp})
+
+-- The right operand mutates a location that the left operand will read.
+-- Inverting *every* first step rules out evaluating the left operand early.
+\func operand_read (l : Loc) : Expr => Load (Val (LitV (LitLoc l)))
+\func operand_increment (l : Loc) : Expr => FAA (Val (LitV (LitLoc l))) (Val (natV 1))
+
+\lemma operand_effect_first {cnt : Countable Loc} (Ki : EctxItem)
+    (l old : Nat) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV old)) :
+  PrimStep (fill_item Ki (operand_increment l)) sigma
+    (fill_item Ki (Val (natV old)))
+    (state_update_heap sigma (heap_update sigma.heap l (natV (old Nat.+ 1)))) nil nil =>
+  fill_step_item Ki (BasePrim (FAAS l old 1 lookup idp idp idp {idp} {idp}))
+
+\lemma operand_effect_first_inv {cnt : Countable Loc} (Ki : EctxItem)
+    (l : Loc) (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (fill_item Ki (operand_increment l)) sigma e2 sigma2 efs observations) :
+  TruncP (\Sigma (old : Nat) (glookup sigma.heap l = just (natV old))
+    (e2 = fill_item Ki (Val (natV old)))
+    (sigma2 = state_update_heap sigma (heap_update sigma.heap l (natV (old Nat.+ 1))))
+    (efs = nil) (observations = nil)) =>
+  \case fill_step_inv_item Ki (operand_increment l) sigma e2 sigma2 efs observations idp step \with {
+    | inP (inner, equal, innerStep) =>
+      \case faa_step_inv l 1 sigma inner sigma2 efs observations innerStep \with {
+        | FAAStepInvIntro old lookup result state forks obs =>
+          inP (old, lookup, equal *> pmap (fill_item Ki) result, state, forks, obs)
+      }
+  }
+
+\lemma binop_effect_right_first {cnt : Countable Loc} (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 1)) :
+  PrimStep (NatAdd (operand_read l) (operand_increment l)) sigma
+    (NatAdd (operand_read l) (Val (natV 1)))
+    (state_update_heap sigma (heap_update sigma.heap l (natV 2))) nil nil =>
+  operand_effect_first (BinOpRCtx NatAddOp (operand_read l)) l 1 sigma lookup
+
+\lemma allocN_effect_right_first {cnt : Countable Loc} (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 1)) :
+  PrimStep (AllocN (operand_read l) (operand_increment l)) sigma
+    (AllocN (operand_read l) (Val (natV 1)))
+    (state_update_heap sigma (heap_update sigma.heap l (natV 2))) nil nil =>
+  operand_effect_first (AllocNRCtx (operand_read l)) l 1 sigma lookup
+
+\lemma faa_effect_right_first {cnt : Countable Loc} (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 1)) :
+  PrimStep (FAA (LocAdd (Val (LitV (LitLoc l))) (operand_read l)) (operand_increment l)) sigma
+    (FAA (LocAdd (Val (LitV (LitLoc l))) (operand_read l)) (Val (natV 1)))
+    (state_update_heap sigma (heap_update sigma.heap l (natV 2))) nil nil =>
+  operand_effect_first (FaaRCtx (LocAdd (Val (LitV (LitLoc l))) (operand_read l))) l 1 sigma lookup
+
+\lemma binop_reject_left_first {cnt : Countable Loc} (l : Loc) (sigma sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (NatAdd (operand_read l) (operand_increment l)) sigma
+      (NatAdd (Val (natV 1)) (operand_increment l)) sigma2 efs observations) : Empty =>
+  \case operand_effect_first_inv (BinOpRCtx NatAddOp (operand_read l)) l sigma
+      (NatAdd (Val (natV 1)) (operand_increment l)) sigma2 efs observations step \with {
+    | inP (old, lookup, result, state, forks, obs) =>
+      \case pmap (binop_l_arg (Val (natV 1))) result \with {}
+  }
+
+\lemma allocN_reject_left_first {cnt : Countable Loc} (l : Loc) (sigma sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (AllocN (operand_read l) (operand_increment l)) sigma
+      (AllocN (Val (natV 1)) (operand_increment l)) sigma2 efs observations) : Empty =>
+  \case operand_effect_first_inv (AllocNRCtx (operand_read l)) l sigma
+      (AllocN (Val (natV 1)) (operand_increment l)) sigma2 efs observations step \with {
+    | inP (old, lookup, result, state, forks, obs) =>
+      \case pmap (allocN_l_arg (Val (natV 1))) result \with {}
+  }
+
+\lemma faa_reject_left_first {cnt : Countable Loc} (l : Loc) (sigma sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (FAA (LocAdd (Val (LitV (LitLoc l))) (operand_read l)) (operand_increment l)) sigma
+      (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))) (operand_increment l))
+      sigma2 efs observations) : Empty =>
+  \case operand_effect_first_inv (FaaRCtx (LocAdd (Val (LitV (LitLoc l))) (operand_read l))) l sigma
+      (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 1))) (operand_increment l))
+      sigma2 efs observations step \with {
+    | inP (old, lookup, result, state, forks, obs) =>
+      \case pmap (binop_r_arg (Val (natV 1))) (pmap (faa_l_arg (Val (natV 1))) result) \with {}
+  }
+
+-- The subsequent read sees 2, not the pre-increment value 1.
+\func operand_effect_state {cnt : Countable Loc} (sigma : State cnt) (l : Loc) : State cnt =>
+  state_update_heap sigma (heap_update sigma.heap l (natV 2))
+
+\lemma operand_read_after_increment {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (operand_read l) (operand_effect_state sigma l)
+    (Val (natV 2)) (operand_effect_state sigma l) nil nil =>
+  BasePrim (LoadS l (natV 2) (glookup_insert_eq l (natV 2) sigma.heap)
+    idp idp idp {idp} {idp})
+
+\lemma binop_effect_left_second {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (NatAdd (operand_read l) (Val (natV 1))) (operand_effect_state sigma l)
+    (NatAdd (Val (natV 2)) (Val (natV 1))) (operand_effect_state sigma l) nil nil =>
+  fill_step_item (BinOpLCtx NatAddOp (natV 1)) (operand_read_after_increment sigma l)
+
+\lemma allocN_effect_left_second {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (AllocN (operand_read l) (Val (natV 1))) (operand_effect_state sigma l)
+    (AllocN (Val (natV 2)) (Val (natV 1))) (operand_effect_state sigma l) nil nil =>
+  fill_step_item (AllocNLCtx (natV 1)) (operand_read_after_increment sigma l)
+
+\lemma faa_effect_left_second {cnt : Countable Loc} (sigma : State cnt) (l : Loc) :
+  PrimStep (FAA (LocAdd (Val (LitV (LitLoc l))) (operand_read l)) (Val (natV 1)))
+    (operand_effect_state sigma l)
+    (FAA (LocAdd (Val (LitV (LitLoc l))) (Val (natV 2))) (Val (natV 1)))
+    (operand_effect_state sigma l) nil nil =>
+  fill_step_item (FaaLCtx (natV 1))
+    (fill_step_item (BinOpRCtx LocAddOp (Val (LitV (LitLoc l)))) (operand_read_after_increment sigma l))
+
+-- Resolve's recursive context may expose these operands, but must keep the
+-- observation for the primitive's final atomic step (no observation here).
+\lemma resolve_nested_operand {cnt : Countable Loc} (sigma : State cnt)
+    (p : ProphId) (w : Value) :
+  PrimStep (Resolve (NatAdd (operand_add 1 2) (Val (natV 3)))
+      (Val (LitV (LitProphecy p))) (Val w)) sigma
+    (Resolve (NatAdd (Val (natV 3)) (Val (natV 3)))
+      (Val (LitV (LitProphecy p))) (Val w)) sigma nil nil =>
+  fill_step_item (ResolveLCtx (BinOpLCtx NatAddOp (natV 3)) (LitV (LitProphecy p)) w)
+    (BasePrim (BinOpS NatAddOp (natV 1) (natV 2) (natV 3) idp idp idp idp {idp} {idp}))

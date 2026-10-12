@@ -1730,7 +1730,7 @@
   }
 
 \func rec_ctx_absurd
-  {cnt : Countable Loc} (f x : Name) (body : Expr)
+  {cnt : Countable Loc} (f x : Binder) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Rec f x body = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1749,9 +1749,15 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func lam_ctx_absurd
-  {cnt : Countable Loc} (x : Name) (body : Expr)
+  {cnt : Countable Loc} (x : Binder) (body : Expr)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : Lam x body = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1770,6 +1776,12 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func iszero_ctx_absurd
   {cnt : Countable Loc} (arg : Value)
@@ -1799,6 +1811,12 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func pred_ctx_absurd
   {cnt : Countable Loc} (arg : Value)
@@ -1828,6 +1846,12 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func mul_ctx_absurd
   {cnt : Countable Loc} (v1 v2 : Value)
@@ -1865,6 +1889,12 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func if_ctx_absurd
   {cnt : Countable Loc} (b : Bool) (thenE elseE : Expr)
@@ -1894,9 +1924,15 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func app_lam_ctx_absurd
-  {cnt : Countable Loc} (x : Name) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (x : Binder) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (LamV x body)) (Val v) = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1931,9 +1967,15 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func app_rec_ctx_absurd
-  {cnt : Countable Loc} (f x : Name) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (f x : Binder) (body : Expr) (v : Value)
   (sigma sigma2 : State cnt) (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
   (p1 : App (Val (RecV f x body)) (Val v) = fill_item Ki (fill K e1'))
   (base : BaseStep e1' sigma e2' sigma2 nil) : Empty \elim Ki
@@ -1968,9 +2010,15 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func base_rec_step_det
-  {cnt : Countable Loc} (f x : Name) (body : Expr)
+  {cnt : Countable Loc} (f x : Binder) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (Rec f x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (RecV f x body)) (sigma2 = sigma)
@@ -2002,7 +2050,7 @@
   }
 
 \func base_lam_step_det
-  {cnt : Countable Loc} (x : Name) (body : Expr)
+  {cnt : Countable Loc} (x : Binder) (body : Expr)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (Lam x body) sigma e2 sigma2 nil)
   : \Sigma (e2 = Val (LamV x body)) (sigma2 = sigma)
@@ -2175,10 +2223,10 @@
   }
 
 \func base_lam_beta_step_det
-  {cnt : Countable Loc} (x : Name) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (x : Binder) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (App (Val (LamV x body)) (Val v)) sigma e2 sigma2 nil)
-  : \Sigma (e2 = subst x v body) (sigma2 = sigma)
+  : \Sigma (e2 = subst_binder x v body) (sigma2 = sigma)
   => \case base \with {
     | BetaS x' body' v' p1 p2 p3 =>
       \let
@@ -2188,8 +2236,8 @@
           pmap (\lam e => \case e \with { | App (Val (LamV _ bb)) _ => bb | _ => body }) p1
         | v_eq : v = v' =>
           pmap (\lam e => \case e \with { | App _ (Val vv) => vv | _ => v }) p1
-        | subst_eq : subst x' v' body' = subst x v body =>
-          path (\lam i => subst (inv x_eq @ i) (inv v_eq @ i) (inv body_eq @ i))
+        | subst_eq : subst_binder x' v' body' = subst_binder x v body =>
+          path (\lam i => subst_binder (inv x_eq @ i) (inv v_eq @ i) (inv body_eq @ i))
       \in (p2 *> subst_eq, p3)
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
     | LamS _ _ p1 _ _ => \case p1 \with {}
@@ -2210,10 +2258,10 @@
   }
 
 \func base_rec_beta_step_det
-  {cnt : Countable Loc} (f x : Name) (body : Expr) (v : Value)
+  {cnt : Countable Loc} (f x : Binder) (body : Expr) (v : Value)
   (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
   (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma e2 sigma2 nil)
-  : \Sigma (e2 = subst x v (subst f (RecV f x body) body)) (sigma2 = sigma)
+  : \Sigma (e2 = subst_binder x v (subst_binder f (RecV f x body) body)) (sigma2 = sigma)
   => \case base \with {
     | RecBetaS f' x' body' v' p1 p2 p3 =>
       \let
@@ -2226,10 +2274,10 @@
         | v_eq : v = v' =>
           pmap (\lam e => \case e \with { | App _ (Val vv) => vv | _ => v }) p1
         | subst_eq :
-          subst x' v' (subst f' (RecV f' x' body') body') =
-          subst x v (subst f (RecV f x body) body) =>
-          path (\lam i => subst (inv x_eq @ i) (inv v_eq @ i)
-            (subst (inv f_eq @ i)
+          subst_binder x' v' (subst_binder f' (RecV f' x' body') body') =
+          subst_binder x v (subst_binder f (RecV f x body) body) =>
+          path (\lam i => subst_binder (inv x_eq @ i) (inv v_eq @ i)
+            (subst_binder (inv f_eq @ i)
               (RecV (inv f_eq @ i) (inv x_eq @ i) (inv body_eq @ i))
               (inv body_eq @ i)))
       \in (p2 *> subst_eq, p3)
@@ -2299,7 +2347,7 @@
 
 \lemma wp_rec
   {cnt : Countable Loc}
-  (f x : Name) (body : Expr)
+  (f x : Binder) (body : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (Phi (RecV f x body)) (wp (Rec f x body) Phi)
   => properUPred_ent_trans
@@ -2320,7 +2368,7 @@
 
 \lemma wp_lam
   {cnt : Countable Loc}
-  (x : Name) (body : Expr)
+  (x : Binder) (body : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (Phi (LamV x body)) (wp (Lam x body) Phi)
   => properUPred_ent_trans
@@ -2341,17 +2389,17 @@
 
 \lemma wp_lam_beta
   {cnt : Countable Loc}
-  (x : Name) (body : Expr) (v : Value)
+  (x : Binder) (body : Expr) (v : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent (wp (subst x v body) Phi)
+  : properUPred_ent (wp (subst_binder x v body) Phi)
       (wp (App (Val (LamV x body)) (Val v)) Phi)
   => wp_pure_step
       (App (Val (LamV x body)) (Val v))
-      (subst x v body)
+      (subst_binder x v body)
       (\lam s => BasePrim (BetaS x body v idp idp idp {idp}))
       (base_redex_step_det
         (App (Val (LamV x body)) (Val v))
-        (subst x v body)
+        (subst_binder x v body)
         (base_lam_beta_step_det x body v)
         (app_lam_ctx_absurd x body v))
       idp
@@ -2359,14 +2407,14 @@
 
 \lemma wp_lam_beta_to
   {cnt : Countable Loc}
-  (x : Name) (body body' : Expr) (v : Value)
-  (subst_eq : subst x v body = body')
+  (x : Binder) (body body' : Expr) (v : Value)
+  (subst_eq : subst_binder x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
       (wp (App (Val (LamV x body)) (Val v)) Phi)
   => properUPred_ent_trans
       (wp body' Phi)
-      (wp (subst x v body) Phi)
+      (wp (subst_binder x v body) Phi)
       (wp (App (Val (LamV x body)) (Val v)) Phi)
       (\lam n a hv h =>
         transport
@@ -2377,17 +2425,17 @@
 
 \lemma wp_rec_beta
   {cnt : Countable Loc}
-  (f x : Name) (body : Expr) (v : Value)
+  (f x : Binder) (body : Expr) (v : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent (wp (subst x v (subst f (RecV f x body) body)) Phi)
+  : properUPred_ent (wp (subst_binder x v (subst_binder f (RecV f x body) body)) Phi)
       (wp (App (Val (RecV f x body)) (Val v)) Phi)
   => wp_pure_step
       (App (Val (RecV f x body)) (Val v))
-      (subst x v (subst f (RecV f x body) body))
+      (subst_binder x v (subst_binder f (RecV f x body) body))
       (\lam s => BasePrim (RecBetaS f x body v idp idp idp {idp}))
       (base_redex_step_det
         (App (Val (RecV f x body)) (Val v))
-        (subst x v (subst f (RecV f x body) body))
+        (subst_binder x v (subst_binder f (RecV f x body) body))
         (base_rec_beta_step_det f x body v)
         (app_rec_ctx_absurd f x body v))
       idp
@@ -2395,14 +2443,14 @@
 
 \lemma wp_rec_beta_to
   {cnt : Countable Loc}
-  (f x : Name) (body body' : Expr) (v : Value)
-  (subst_eq : subst x v (subst f (RecV f x body) body) = body')
+  (f x : Binder) (body body' : Expr) (v : Value)
+  (subst_eq : subst_binder x v (subst_binder f (RecV f x body) body) = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
       (wp (App (Val (RecV f x body)) (Val v)) Phi)
   => properUPred_ent_trans
       (wp body' Phi)
-      (wp (subst x v (subst f (RecV f x body) body)) Phi)
+      (wp (subst_binder x v (subst_binder f (RecV f x body) body)) Phi)
       (wp (App (Val (RecV f x body)) (Val v)) Phi)
       (\lam n a hv h =>
         transport
@@ -2823,22 +2871,22 @@
   : properUPred_ent {HeapCMRA Loc cnt Value}
     (wp e (\lam v => wp (App (Val vf) (Val v)) Phi))
     (wp (App (Val vf) e) Phi)
-  => wp_bind_item (AppRCtx vf) e Phi
+  => wp_bind_item (AppRCtx (Val vf)) e Phi
 
 \lemma wp_bind_app_l
   {cnt : Countable Loc}
-  (e1 e2 : Expr)
+  (e1 : Expr) (v2 : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent {HeapCMRA Loc cnt Value}
-    (wp e1 (\lam v => wp (App (Val v) e2) Phi))
-    (wp (App e1 e2) Phi)
-  => wp_bind_item (AppLCtx e2) e1 Phi
+    (wp e1 (\lam v => wp (App (Val v) (Val v2)) Phi))
+    (wp (App e1 (Val v2)) Phi)
+  => wp_bind_item (AppLCtx v2) e1 Phi
 
 \lemma wp_rec_lam_app2_to
   {cnt : Countable Loc}
-  (f x y : Name) (body body1 body2 : Expr) (v1 v2 : Value)
-  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
-  (subst_lam_eq : subst y v2 body1 = body2)
+  (f x y : Binder) (body body1 body2 : Expr) (v1 v2 : Value)
+  (subst_rec_eq : subst_binder x v1 (subst_binder f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (subst_lam_eq : subst_binder y v2 body1 = body2)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body2 Phi)
       (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val v2)) Phi)
@@ -2860,36 +2908,36 @@
             (\lam vf => wp (App (Val vf) (Val v2)) Phi))
             (wp_bind_app_l
               (App (Val (RecV f x (Lam y body))) (Val v1))
-              (Val v2)
+              v2
               Phi)))
 
 \lemma wp_rec_lam_app1_to
   {cnt : Countable Loc}
-  (f x y : Name) (body body1 : Expr) (v1 : Value) (arg : Expr)
-  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (f x y : Binder) (body body1 : Expr) (v1 : Value) (arg : Value)
+  (subst_rec_eq : subst_binder x v1 (subst_binder f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)
-      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) arg) Phi)
+  : properUPred_ent (wp (App (Val (LamV y body1)) (Val arg)) Phi)
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val arg)) Phi)
   => properUPred_ent_trans
-      (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (Val (LamV y body1)) (Val arg)) Phi)
       (wp (App (Val (RecV f x (Lam y body))) (Val v1))
-        (\lam vf => wp (App (Val vf) arg) Phi))
-      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) arg) Phi)
+        (\lam vf => wp (App (Val vf) (Val arg)) Phi))
+      (wp (App (App (Val (RecV f x (Lam y body))) (Val v1)) (Val arg)) Phi)
       (properUPred_ent_trans
-        (wp (App (Val (LamV y body1)) arg) Phi)
-        (wp (Lam y body1) (\lam vf => wp (App (Val vf) arg) Phi))
+        (wp (App (Val (LamV y body1)) (Val arg)) Phi)
+        (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val arg)) Phi))
         (wp (App (Val (RecV f x (Lam y body))) (Val v1))
-          (\lam vf => wp (App (Val vf) arg) Phi))
-        (wp_lam y body1 (\lam vf => wp (App (Val vf) arg) Phi))
+          (\lam vf => wp (App (Val vf) (Val arg)) Phi))
+        (wp_lam y body1 (\lam vf => wp (App (Val vf) (Val arg)) Phi))
         (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
-          (\lam vf => wp (App (Val vf) arg) Phi)))
+          (\lam vf => wp (App (Val vf) (Val arg)) Phi)))
       (wp_bind_app_l (App (Val (RecV f x (Lam y body))) (Val v1)) arg Phi)
 
 \lemma wp_rec_expr_lam_app2_to
   {cnt : Countable Loc}
-  (f x y : Name) (body body1 body2 : Expr) (v1 v2 : Value)
-  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
-  (subst_lam_eq : subst y v2 body1 = body2)
+  (f x y : Binder) (body body1 body2 : Expr) (v1 v2 : Value)
+  (subst_rec_eq : subst_binder x v1 (subst_binder f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (subst_lam_eq : subst_binder y v2 body1 = body2)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body2 Phi)
       (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi)
@@ -2928,7 +2976,7 @@
           (wp_rec f x (Lam y body)
             (\lam vr => wp (App (Val vr) (Val v1))
               (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
-          (wp_bind_app_l (Rec f x (Lam y body)) (Val v1)
+          (wp_bind_app_l (Rec f x (Lam y body)) v1
             (\lam vf => wp (App (Val vf) (Val v2)) Phi))))
       (properUPred_ent_trans
         (wp (App (Rec f x (Lam y body)) (Val v1))
@@ -2938,12 +2986,12 @@
         (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val v2)) Phi)
         (properUPred_ent_refl (wp (App (Rec f x (Lam y body)) (Val v1))
           (\lam vf => wp (App (Val vf) (Val v2)) Phi)))
-        (wp_bind_app_l (App (Rec f x (Lam y body)) (Val v1)) (Val v2) Phi))
+        (wp_bind_app_l (App (Rec f x (Lam y body)) (Val v1)) v2 Phi))
 
 \lemma wp_lam_expr_app_to
   {cnt : Countable Loc}
-  (x : Name) (body body' : Expr) (v : Value)
-  (subst_eq : subst x v body = body')
+  (x : Binder) (body body' : Expr) (v : Value)
+  (subst_eq : subst_binder x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent (wp body' Phi)
       (wp (App (Lam x body) (Val v)) Phi)
@@ -2957,84 +3005,88 @@
         (wp (Lam x body) (\lam vf => wp (App (Val vf) (Val v)) Phi))
         (wp_lam_beta_to x body body' v subst_eq Phi)
         (wp_lam x body (\lam vf => wp (App (Val vf) (Val v)) Phi)))
-      (wp_bind_app_l (Lam x body) (Val v) Phi)
+      (wp_bind_app_l (Lam x body) v Phi)
 
+-- Evaluate the argument before exposing the lambda expression.
 \lemma wp_lam_expr_app_arg_to
   {cnt : Countable Loc}
-  (x : Name) (body : Expr) (arg : Expr)
+  (x : Binder) (body : Expr) (arg : Expr)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
-      (wp (App (Val (LamV x body)) arg) Phi)
+      (wp arg (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi))
       (wp (App (Lam x body) arg) Phi)
   => properUPred_ent_trans
-      (wp (App (Val (LamV x body)) arg) Phi)
-      (wp (Lam x body) (\lam vf => wp (App (Val vf) arg) Phi))
+      (wp arg (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi))
+      (wp arg (\lam v => wp (App (Lam x body) (Val v)) Phi))
       (wp (App (Lam x body) arg) Phi)
-      (wp_lam x body (\lam vf => wp (App (Val vf) arg) Phi))
-      (wp_bind_app_l (Lam x body) arg Phi)
+      (wp_post_mono arg
+        (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi)
+        (\lam v => wp (App (Lam x body) (Val v)) Phi)
+        (\lam v => properUPred_ent_trans
+          (wp (App (Val (LamV x body)) (Val v)) Phi)
+          (wp (Lam x body) (\lam vf => wp (App (Val vf) (Val v)) Phi))
+          (wp (App (Lam x body) (Val v)) Phi)
+          (wp_lam x body (\lam vf => wp (App (Val vf) (Val v)) Phi))
+          (wp_bind_app_l (Lam x body) v Phi)))
+      (wp_bind_item (AppRCtx (Lam x body)) arg Phi)
 
 \lemma wp_lam_expr_app_r_to
   {cnt : Countable Loc}
-  (x : Name) (body body' arg : Expr)
-  (subst_eq : \Pi (v : Value) -> subst x v body = body')
+  (x : Binder) (body body' arg : Expr)
+  (subst_eq : \Pi (v : Value) -> subst_binder x v body = body')
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent
       (wp arg (\lam _ => wp body' Phi))
       (wp (App (Lam x body) arg) Phi)
   => properUPred_ent_trans
       (wp arg (\lam _ => wp body' Phi))
-      (wp (App (Val (LamV x body)) arg) Phi)
+      (wp arg (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi))
       (wp (App (Lam x body) arg) Phi)
-      (properUPred_ent_trans
-        (wp arg (\lam _ => wp body' Phi))
-        (wp arg (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi))
-        (wp (App (Val (LamV x body)) arg) Phi)
-        (wp_post_mono arg
-          (\lam _ => wp body' Phi)
-          (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi)
-          (\lam v => wp_lam_beta_to x body body' v (subst_eq v) Phi))
-        (wp_bind_app_r (LamV x body) arg Phi))
+      (wp_post_mono arg
+        (\lam _ => wp body' Phi)
+        (\lam v => wp (App (Val (LamV x body)) (Val v)) Phi)
+        (\lam v => wp_lam_beta_to x body body' v (subst_eq v) Phi))
       (wp_lam_expr_app_arg_to x body arg Phi)
 
 \lemma wp_rec_expr_lam_app1_to
   {cnt : Countable Loc}
-  (f x y : Name) (body body1 : Expr) (v1 : Value) (arg : Expr)
-  (subst_rec_eq : subst x v1 (subst f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
+  (f x y : Binder) (body body1 : Expr) (v1 : Value) (arg : Value)
+  (subst_rec_eq : subst_binder x v1 (subst_binder f (RecV f x (Lam y body)) (Lam y body)) = Lam y body1)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
-  : properUPred_ent (wp (App (Val (LamV y body1)) arg) Phi)
-      (wp (App (App (Rec f x (Lam y body)) (Val v1)) arg) Phi)
+  : properUPred_ent (wp (App (Val (LamV y body1)) (Val arg)) Phi)
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val arg)) Phi)
   => properUPred_ent_trans
-      (wp (App (Val (LamV y body1)) arg) Phi)
+      (wp (App (Val (LamV y body1)) (Val arg)) Phi)
       (wp (App (Rec f x (Lam y body)) (Val v1))
-        (\lam vf => wp (App (Val vf) arg) Phi))
-      (wp (App (App (Rec f x (Lam y body)) (Val v1)) arg) Phi)
+        (\lam vf => wp (App (Val vf) (Val arg)) Phi))
+      (wp (App (App (Rec f x (Lam y body)) (Val v1)) (Val arg)) Phi)
       (properUPred_ent_trans
-        (wp (App (Val (LamV y body1)) arg) Phi)
+        (wp (App (Val (LamV y body1)) (Val arg)) Phi)
         (wp (App (Val (RecV f x (Lam y body))) (Val v1))
-          (\lam vf => wp (App (Val vf) arg) Phi))
+          (\lam vf => wp (App (Val vf) (Val arg)) Phi))
         (wp (App (Rec f x (Lam y body)) (Val v1))
-          (\lam vf => wp (App (Val vf) arg) Phi))
+          (\lam vf => wp (App (Val vf) (Val arg)) Phi))
         (properUPred_ent_trans
-          (wp (App (Val (LamV y body1)) arg) Phi)
-          (wp (Lam y body1) (\lam vf => wp (App (Val vf) arg) Phi))
+          (wp (App (Val (LamV y body1)) (Val arg)) Phi)
+          (wp (Lam y body1) (\lam vf => wp (App (Val vf) (Val arg)) Phi))
           (wp (App (Val (RecV f x (Lam y body))) (Val v1))
-            (\lam vf => wp (App (Val vf) arg) Phi))
-          (wp_lam y body1 (\lam vf => wp (App (Val vf) arg) Phi))
+            (\lam vf => wp (App (Val vf) (Val arg)) Phi))
+          (wp_lam y body1 (\lam vf => wp (App (Val vf) (Val arg)) Phi))
           (wp_rec_beta_to f x (Lam y body) (Lam y body1) v1 subst_rec_eq
-            (\lam vf => wp (App (Val vf) arg) Phi)))
+            (\lam vf => wp (App (Val vf) (Val arg)) Phi)))
         (properUPred_ent_trans
           (wp (App (Val (RecV f x (Lam y body))) (Val v1))
-            (\lam vf => wp (App (Val vf) arg) Phi))
+            (\lam vf => wp (App (Val vf) (Val arg)) Phi))
           (wp (Rec f x (Lam y body))
             (\lam vr => wp (App (Val vr) (Val v1))
-              (\lam vf => wp (App (Val vf) arg) Phi)))
+              (\lam vf => wp (App (Val vf) (Val arg)) Phi)))
           (wp (App (Rec f x (Lam y body)) (Val v1))
-            (\lam vf => wp (App (Val vf) arg) Phi))
+            (\lam vf => wp (App (Val vf) (Val arg)) Phi))
           (wp_rec f x (Lam y body)
             (\lam vr => wp (App (Val vr) (Val v1))
-              (\lam vf => wp (App (Val vf) arg) Phi)))
-          (wp_bind_app_l (Rec f x (Lam y body)) (Val v1)
-            (\lam vf => wp (App (Val vf) arg) Phi))))
+              (\lam vf => wp (App (Val vf) (Val arg)) Phi)))
+          (wp_bind_app_l (Rec f x (Lam y body)) v1
+            (\lam vf => wp (App (Val vf) (Val arg)) Phi))))
       (wp_bind_app_l (App (Rec f x (Lam y body)) (Val v1)) arg Phi)
 
 \lemma wp_bind_if
@@ -3048,12 +3100,12 @@
 
 \lemma wp_bind_mul_l
   {cnt : Countable Loc}
-  (e1 e2 : Expr)
+  (e1 : Expr) (v2 : Value)
   (Phi : Value -> ProperUPred (HeapCMRA Loc cnt Value))
   : properUPred_ent {HeapCMRA Loc cnt Value}
-    (wp e1 (\lam v => wp (Mul (Val v) e2) Phi))
-    (wp (Mul e1 e2) Phi)
-  => wp_bind_item (MulLCtx e2) e1 Phi
+    (wp e1 (\lam v => wp (Mul (Val v) (Val v2)) Phi))
+    (wp (Mul e1 (Val v2)) Phi)
+  => wp_bind_item (MulLCtx v2) e1 Phi
 
 \lemma wp_bind_mul_r
   {cnt : Countable Loc}
@@ -3063,7 +3115,7 @@
   : properUPred_ent {HeapCMRA Loc cnt Value}
     (wp e2 (\lam v => wp (Mul (Val v1) (Val v)) Phi))
     (wp (Mul (Val v1) e2) Phi)
-  => wp_bind_item (MulRCtx v1) e2 Phi
+  => wp_bind_item (MulRCtx (Val v1)) e2 Phi
 
 \lemma wp_bind_store_r
   {cnt : Countable Loc}
@@ -3073,7 +3125,7 @@
   : properUPred_ent {HeapCMRA Loc cnt Value}
     (wp e2 (\lam v => wp (Store (Val v1) (Val v)) Phi))
     (wp (Store (Val v1) e2) Phi)
-  => wp_bind_item (StoreRCtx v1) e2 Phi
+  => wp_bind_item (StoreRCtx (Val v1)) e2 Phi
 
 -- =================================================================================
 -- Historical fixed-HeapCMRA Hoare triples.

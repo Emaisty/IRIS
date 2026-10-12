@@ -22,6 +22,7 @@
 \import iris.bi.derived_laws_later
 \import iris_heap_lang.lang
 \import iris_heap_lang.lang_ectx
+\import iris_heap_lang.lang_subst
 \import iris.program_logic.weakestpre
 \import stdpp.coPset
 \import stdpp.namespaces
@@ -1029,10 +1030,13 @@
       (sep_comm_ent (WP H E e Phi) mkProperEmp)
       ((BIuPredMixin (iResUR S)).bi_mixin_emp_sep_2 (WP H E e Phi)))
 
--- Atomic lifting rule. `R` is the client resource. Reducibility is
--- established from R and the physical state; every concrete successor may
--- perform a basic ghost update and must return the successor state, its WP,
--- and a WP at the fork postcondition for every spawned expression.
+-- General step-lifting convenience with a basic-update transition premise.
+-- `R` is the client resource. Reducibility is established from R and the
+-- physical state; every successor must return the state interpretation,
+-- its WP, and a WP at the fork postcondition for every spawned expression.
+-- The historical name does not impose atomicity or grant invariant access.
+-- Use `wp_atomic_inv_acc` and its variants for atomic invariant access;
+-- these separately require StronglyAtomic and invariant closure.
 \lemma wp_lift_atomic {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
     (Phi : Value -> iProp S) (R : iProp S)
@@ -1115,13 +1119,13 @@
         opened_to_core m (M.op a frame) ha_frame hopened)
     (wp_nonval_intro H E e Phi notVal)
 
--- Atomic lifting with a one-step-delayed transition frame.  This is the
--- term-mode counterpart of the `▷` premise in Iris' atomic head-step rules:
--- `Rnow` is available immediately (and therefore establishes reducibility),
--- while `Rafter` becomes available exactly when the physical step's
--- successor obligation is checked.  It is the key rule for opening an
--- invariant around an atomic heap operation without pretending that the
--- whole invariant body is timeless.
+-- General step lifting with a one-step-delayed transition frame. `Rnow` is
+-- available immediately; the reducibility premise receives Rnow ∗ ▷ Rafter
+-- together with the current state interpretation. Rafter becomes available
+-- when the successor obligation is checked. Every successor and spawned
+-- thread still needs its WP, and the transition uses a basic update.
+-- This rule alone grants no invariant access. The atomic invariant-access
+-- rules separately supply atomicity, mask changes, and a close continuation.
 \lemma wp_lift_atomic_later_frame {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
     (Phi : Value -> iProp S) (Rnow Rafter : iProp S)
@@ -1437,7 +1441,7 @@
   }
 
 \func app_lam_pure_ctx_absurd {cnt : Countable Loc}
-    (x : Name) (body : Expr) (v : Value)
+    (x : Binder) (body : Expr) (v : Value)
     (sigma sigma2 : State cnt) (efs : List Expr)
     (observations : List Observation)
     (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
@@ -1479,14 +1483,20 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func base_lam_beta_pure_det {cnt : Countable Loc}
-    (x : Name) (body : Expr) (v : Value)
+    (x : Binder) (body : Expr) (v : Value)
     (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
     (efs : List Expr) (observations : List Observation)
     (base : BaseStep (App (Val (LamV x body)) (Val v)) sigma
       e2 sigma2 efs observations) :
-  \Sigma (e2 = subst x v body) (sigma2 = sigma)
+  \Sigma (e2 = subst_binder x v body) (sigma2 = sigma)
     (efs = nil) (observations = nil) =>
   \case base \with {
     | BetaS x' body' v' p1 p2 p3 {p0} {p4} =>
@@ -1497,8 +1507,8 @@
             | App (Val (LamV _ bb)) _ => bb | _ => body }) p1
         | vEq : v = v' => pmap (\lam e => \case e \with {
             | App _ (Val vv) => vv | _ => v }) p1
-        | substEq : subst x' v' body' = subst x v body =>
-            path (\lam i => subst (inv xEq @ i) (inv vEq @ i)
+        | substEq : subst_binder x' v' body' = subst_binder x v body =>
+            path (\lam i => subst_binder (inv xEq @ i) (inv vEq @ i)
               (inv bodyEq @ i))
       \in (p2 *> substEq, p3, p4, p0)
     | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
@@ -1524,28 +1534,40 @@
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
 
+\func base_lam_beta_value_pure_det {cnt : Countable Loc}
+    (x : Binder) (result arg : Value)
+    (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (base : BaseStep (App (Val (LamV x (Val result))) (Val arg)) sigma
+      e2 sigma2 efs observations) :
+  \Sigma (e2 = Val result) (sigma2 = sigma)
+    (efs = nil) (observations = nil) =>
+  \let | det => base_lam_beta_pure_det x (Val result) arg
+      sigma e2 sigma2 efs observations base
+  \in (det.1 *> subst_binder_val x arg result, det.2, det.3, det.4)
+
 \lemma wp_lam_beta {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (x : Name) (body : Expr) (v : Value)
+    (x : Binder) (body : Expr) (v : Value)
     (Phi : Value -> iProp S) :
-  (WP H E (subst x v body) Phi) ⊢
+  (WP H E (subst_binder x v body) Phi) ⊢
     (WP H E (App (Val (LamV x body)) (Val v)) Phi) =>
   wp_pure_step H E (App (Val (LamV x body)) (Val v))
-    (subst x v body)
+    (subst_binder x v body)
     (\lam sigma => BasePrim (BetaS x body v idp idp idp {idp} {idp}))
     (pure_base_redex_step_det
-      (App (Val (LamV x body)) (Val v)) (subst x v body)
+      (App (Val (LamV x body)) (Val v)) (subst_binder x v body)
       (base_lam_beta_pure_det x body v)
     (app_lam_pure_ctx_absurd x body v)) idp Phi
 
 \func lam_beta_value_strongly_atomic {cnt : Countable Loc}
-    (x : Name) (result arg : Value) :
+    (x : Binder) (result arg : Value) :
   StronglyAtomic {cnt}
     (App (Val (LamV x (Val result))) (Val arg)) =>
   \lam sigma e2 sigma2 efs observations step =>
     \let | det => pure_base_redex_step_det
       (App (Val (LamV x (Val result))) (Val arg)) (Val result)
-      (base_lam_beta_pure_det x (Val result) arg)
+      (base_lam_beta_value_pure_det x result arg)
       (app_lam_pure_ctx_absurd x (Val result) arg)
       sigma e2 sigma2 efs observations step
     \in inP (result, det.1)
@@ -1555,7 +1577,7 @@
 -- whose invariant transition produces a later postcondition.
 \lemma wp_lam_beta_value_later_frame {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (x : Name) (result arg : Value) (Rafter : iProp S)
+    (x : Binder) (result arg : Value) (Rafter : iProp S)
     (Phi : Value -> iProp S)
     (transition : Rafter ⊢
       (|==> (Phi result))) :
@@ -1588,7 +1610,7 @@
         \lam sigma allObservations n a ha hs =>
           \let | _state => dropDelayed sigma allObservations n a ha hs
           \in inP (Val result, sigma, nil, nil,
-            BasePrim (BetaS x (Val result) arg idp idp idp {idp} {idp}))
+            BasePrim (BetaS x (Val result) arg idp (inv (subst_binder_val x arg result)) idp {idp} {idp}))
     | step : \Pi (sigma : State cnt) (e2 : Expr)
         (sigma2 : State cnt) (efs : List Expr)
         (observations futureObservations : List Observation) ->
@@ -1604,7 +1626,7 @@
           \let
             | det => pure_base_redex_step_det
                 Expr0 (Val result)
-                (base_lam_beta_pure_det x (Val result) arg)
+                (base_lam_beta_value_pure_det x result arg)
                 (app_lam_pure_ctx_absurd x (Val result) arg)
                 sigma e2 sigma2 efs observations hstep
             | e2Eq : e2 = Val result => det.1
@@ -1744,14 +1766,20 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func base_rec_beta_pure_det {cnt : Countable Loc}
-    (f x : Name) (body : Expr) (v : Value)
+    (f x : Binder) (body : Expr) (v : Value)
     (sigma : State cnt) (e2 : Expr) (sigma2 : State cnt)
     (efs : List Expr) (observations : List Observation)
     (base : BaseStep (App (Val (RecV f x body)) (Val v)) sigma
       e2 sigma2 efs observations) :
-  \Sigma (e2 = subst x v (subst f (RecV f x body) body))
+  \Sigma (e2 = subst_binder x v (subst_binder f (RecV f x body) body))
     (sigma2 = sigma) (efs = nil) (observations = nil) =>
   \case base \with {
     | RecBetaS f' x' body' v' p1 p2 p3 {p0} {p4} =>
@@ -1764,10 +1792,10 @@
             | App (Val (RecV _ _ bb)) _ => bb | _ => body }) p1
         | vEq : v = v' => pmap (\lam e => \case e \with {
             | App _ (Val vv) => vv | _ => v }) p1
-        | substEq : subst x' v' (subst f' (RecV f' x' body') body') =
-            subst x v (subst f (RecV f x body) body) =>
-            path (\lam i => subst (inv xEq @ i) (inv vEq @ i)
-              (subst (inv fEq @ i)
+        | substEq : subst_binder x' v' (subst_binder f' (RecV f' x' body') body') =
+            subst_binder x v (subst_binder f (RecV f x body) body) =>
+            path (\lam i => subst_binder (inv xEq @ i) (inv vEq @ i)
+              (subst_binder (inv fEq @ i)
                 (RecV (inv fEq @ i) (inv xEq @ i) (inv bodyEq @ i))
                 (inv bodyEq @ i)))
       \in (p2 *> substEq, p3, p4, p0)
@@ -1796,26 +1824,26 @@
 
 \lemma wp_rec_beta {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (f x : Name) (body : Expr) (v : Value)
+    (f x : Binder) (body : Expr) (v : Value)
     (Phi : Value -> iProp S) :
-  (WP H E (subst x v (subst f (RecV f x body) body)) Phi) ⊢
+  (WP H E (subst_binder x v (subst_binder f (RecV f x body) body)) Phi) ⊢
     (WP H E (App (Val (RecV f x body)) (Val v)) Phi) =>
   wp_pure_step H E (App (Val (RecV f x body)) (Val v))
-    (subst x v (subst f (RecV f x body) body))
+    (subst_binder x v (subst_binder f (RecV f x body) body))
     (\lam sigma => BasePrim
       (RecBetaS f x body v idp idp idp {idp} {idp}))
     (pure_base_redex_step_det
       (App (Val (RecV f x body)) (Val v))
-      (subst x v (subst f (RecV f x body) body))
+      (subst_binder x v (subst_binder f (RecV f x body) body))
       (base_rec_beta_pure_det f x body v)
       (app_values_pure_ctx_absurd (RecV f x body) v)) idp Phi
 
 \func pure_head_eval (e : Expr) : Maybe Expr \elim e
   | Lam x body => just (Val (LamV x body))
   | Rec f x body => just (Val (RecV f x body))
-  | App (Val (LamV x body)) (Val v) => just (subst x v body)
+  | App (Val (LamV x body)) (Val v) => just (subst_binder x v body)
   | App (Val (RecV f x body)) (Val v) =>
-      just (subst x v (subst f (RecV f x body) body))
+      just (subst_binder x v (subst_binder f (RecV f x body) body))
   | If (Val (LitV (LitBool true))) t f => just t
   | If (Val (LitV (LitBool false))) t f => just f
   | Pair (Val v1) (Val v2) => just (Val (PairV v1 v2))
@@ -1835,11 +1863,11 @@
     (efs = nil) (observations = nil) =>
   \case base \with {
     | BetaS x body v p1 p2 p3 {p0} {p4} =>
-      (p2 *> just_expr_inj (subst x v body) result
+      (p2 *> just_expr_inj (subst_binder x v body) result
         (inv (pmap pure_head_eval p1) *> evaluates), p3, p4, p0)
     | RecBetaS f x body v p1 p2 p3 {p0} {p4} =>
       (p2 *> just_expr_inj
-        (subst x v (subst f (RecV f x body) body)) result
+        (subst_binder x v (subst_binder f (RecV f x body) body)) result
         (inv (pmap pure_head_eval p1) *> evaluates), p3, p4, p0)
     | IfTrueS t f p1 p2 p3 {p0} {p4} =>
       (p2 *> just_expr_inj t result
@@ -1930,6 +1958,12 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func fst_pair_pure_ctx_absurd {cnt : Countable Loc}
     (v1 v2 : Value) (sigma sigma2 : State cnt) (efs : List Expr)
@@ -1962,6 +1996,12 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func snd_pair_pure_ctx_absurd {cnt : Countable Loc}
     (v1 v2 : Value) (sigma sigma2 : State cnt) (efs : List Expr)
@@ -1994,6 +2034,12 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func if_bool_pure_ctx_absurd {cnt : Countable Loc}
     (b : Bool) (t f : Expr) (sigma sigma2 : State cnt)
@@ -2026,9 +2072,15 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func lam_expr_pure_ctx_absurd {cnt : Countable Loc}
-    (x : Name) (body : Expr) (sigma sigma2 : State cnt)
+    (x : Binder) (body : Expr) (sigma sigma2 : State cnt)
     (efs : List Expr) (observations : List Observation)
     (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
     (p1 : Lam x body = fill_item Ki (fill K e1'))
@@ -2052,9 +2104,15 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func rec_expr_pure_ctx_absurd {cnt : Countable Loc}
-    (f x : Name) (body : Expr) (sigma sigma2 : State cnt)
+    (f x : Binder) (body : Expr) (sigma sigma2 : State cnt)
     (efs : List Expr) (observations : List Observation)
     (Ki : EctxItem) (K : Ectx) (e1' e2' : Expr)
     (p1 : Rec f x body = fill_item Ki (fill K e1'))
@@ -2078,9 +2136,15 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \lemma wp_lam_expr {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (x : Name) (body : Expr)
+    (H : irisGS cnt S) (E : coPset) (x : Binder) (body : Expr)
     (Phi : Value -> iProp S) :
   (WP H E (Val (LamV x body)) Phi) ⊢
     (WP H E (Lam x body) Phi) =>
@@ -2089,7 +2153,7 @@
     (lam_expr_pure_ctx_absurd x body) Phi
 
 \lemma wp_rec_expr {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (f x : Name) (body : Expr)
+    (H : irisGS cnt S) (E : coPset) (f x : Binder) (body : Expr)
     (Phi : Value -> iProp S) :
   (WP H E (Val (RecV f x body)) Phi) ⊢
     (WP H E (Rec f x body) Phi) =>
@@ -3980,16 +4044,16 @@
 -- the observation appended by Resolve and returns the tail prophecy token.
 -- It is the first derived rule that couples a physical invariant update with
 -- the trace-indexed prophecy invariant in one WP step.
-\func resolve_skip_expr (x : Name) (arg : Value) : Expr =>
+\func resolve_skip_expr (x : Binder) (arg : Value) : Expr =>
   App (Val (LamV x (Val unitV))) (Val arg)
 
 \func resolve_skip_strongly_atomic {cnt : Countable Loc}
-    (x : Name) (arg : Value) :
+    (x : Binder) (arg : Value) :
   StronglyAtomic {cnt} (resolve_skip_expr x arg) =>
   \lam sigma e2 sigma2 efs observations step =>
     \let | det => pure_base_redex_step_det
       (resolve_skip_expr x arg) (Val unitV)
-      (base_lam_beta_pure_det x (Val unitV) arg)
+      (base_lam_beta_value_pure_det x unitV arg)
       (app_lam_pure_ctx_absurd x (Val unitV) arg)
       sigma e2 sigma2 efs observations step
     \in inP (unitV, det.1)
@@ -3999,7 +4063,7 @@
 -- clients: it consumes the predicted trace head and returns the tail token.
 \lemma wp_resolve_skip {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (x : Name) (arg : Value) (p : ProphId) (w : Value)
+    (x : Binder) (arg : Value) (p : ProphId) (w : Value)
     (resolves : List ProphPayload) :
   (proph H.iris_proph_map p resolves) ⊢
     (WP H E
@@ -4046,7 +4110,7 @@
           \let
             | innerRed : Reducible Skip sigma =>
                 inP (Val unitV, sigma, nil, nil,
-                  BasePrim (BetaS x (Val unitV) arg idp idp idp {idp} {idp}))
+                  BasePrim (BetaS x (Val unitV) arg idp (inv (subst_binder_val x arg unitV)) idp {idp} {idp}))
             | used : gset_in p sigma.usedProph =>
                 usedOf sigma allObservations n r hr hsource
           \in resolve_reducible Skip
@@ -4068,7 +4132,7 @@
             | ResolveStepInvIntro returned innerObservations inner _
                 e2Eq observationsEq =>
               \let
-                | det => base_lam_beta_pure_det x (Val unitV) arg sigma
+                | det => base_lam_beta_value_pure_det x unitV arg sigma
                     (Val returned) sigma2 efs innerObservations inner
                 | returnedEq : returned = unitV =>
                     pmap (maybe_val returned) (pmap to_val det.1)
@@ -4196,7 +4260,7 @@
 -- invariant around Resolve.
 \lemma wp_resolve_skip_later_frame {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset)
-    (x : Name) (arg : Value) (p : ProphId) (w : Value)
+    (x : Binder) (arg : Value) (p : ProphId) (w : Value)
     (resolves : List ProphPayload) (Rafter : iProp S)
     (Phi : Value -> iProp S)
     (transition : \Pi (remaining : List ProphPayload) ->
@@ -4262,7 +4326,7 @@
                 dropDelayed sigma allObservations n r hr hsource
             | innerRed : Reducible Skip sigma =>
                 inP (Val unitV, sigma, nil, nil,
-                  BasePrim (BetaS x (Val unitV) arg idp idp idp {idp} {idp}))
+                  BasePrim (BetaS x (Val unitV) arg idp (inv (subst_binder_val x arg unitV)) idp {idp} {idp}))
             | used : gset_in p sigma.usedProph =>
                 usedOf sigma allObservations n r hr source
           \in resolve_reducible Skip
@@ -4284,7 +4348,7 @@
             | ResolveStepInvIntro returned innerObservations inner _
                 e2Eq observationsEq =>
               \let
-                | det => base_lam_beta_pure_det x (Val unitV) arg sigma
+                | det => base_lam_beta_value_pure_det x unitV arg sigma
                     (Val returned) sigma2 efs innerObservations inner
                 | returnedEq : returned = unitV =>
                     pmap (maybe_val returned) (pmap to_val det.1)
@@ -5067,18 +5131,18 @@
   \in wp_lift_atomic H E e Phi mkProperEmp idp red step
 
 \lemma wp_bind_app_r {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (vf : Value)
-    (e : Expr) (Phi : Value -> iProp S)
-  : (WP H E e (\lam v => WP H E (App (Val vf) (Val v)) Phi)) ⊢
-      (WP H E (App (Val vf) e) Phi) =>
-  wp_bind_item H E (AppRCtx vf) e Phi
-
-\lemma wp_bind_app_l {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
     (Phi : Value -> iProp S)
-  : (WP H E e1 (\lam v => WP H E (App (Val v) e2) Phi)) ⊢
+  : (WP H E e2 (\lam v => WP H E (App e1 (Val v)) Phi)) ⊢
       (WP H E (App e1 e2) Phi) =>
-  wp_bind_item H E (AppLCtx e2) e1 Phi
+  wp_bind_item H E (AppRCtx e1) e2 Phi
+
+\lemma wp_bind_app_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (App (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (App e1 (Val v2)) Phi) =>
+  wp_bind_item H E (AppLCtx v2) e1 Phi
 
 \lemma wp_bind_if {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e t f : Expr)
@@ -5088,26 +5152,25 @@
   wp_bind_item H E (IfCtx t f) e Phi
 
 \lemma wp_bind_store_r {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (v1 : Value)
-    (e2 : Expr) (Phi : Value -> iProp S)
-  : (WP H E e2
-        (\lam v => WP H E (Store (Val v1) (Val v)) Phi)) ⊢
-      (WP H E (Store (Val v1) e2) Phi) =>
-  wp_bind_item H E (StoreRCtx v1) e2 Phi
-
-\lemma wp_bind_pair_l {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
     (Phi : Value -> iProp S)
-  : (WP H E e1 (\lam v => WP H E (Pair (Val v) e2) Phi)) ⊢
-      (WP H E (Pair e1 e2) Phi) =>
-  wp_bind_item H E (PairLCtx e2) e1 Phi
+  : (WP H E e2 (\lam v => WP H E (Store e1 (Val v)) Phi)) ⊢
+      (WP H E (Store e1 e2) Phi) =>
+  wp_bind_item H E (StoreRCtx e1) e2 Phi
+
+\lemma wp_bind_pair_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (Pair (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (Pair e1 (Val v2)) Phi) =>
+  wp_bind_item H E (PairLCtx v2) e1 Phi
 
 \lemma wp_bind_pair_r {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (v1 : Value)
-    (e2 : Expr) (Phi : Value -> iProp S)
-  : (WP H E e2 (\lam v => WP H E (Pair (Val v1) (Val v)) Phi)) ⊢
-      (WP H E (Pair (Val v1) e2) Phi) =>
-  wp_bind_item H E (PairRCtx v1) e2 Phi
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : (WP H E e2 (\lam v => WP H E (Pair e1 (Val v)) Phi)) ⊢
+      (WP H E (Pair e1 e2) Phi) =>
+  wp_bind_item H E (PairRCtx e1) e2 Phi
 
 \lemma wp_bind_fst {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
@@ -5138,18 +5201,18 @@
   wp_bind_item H E PredCtx e Phi
 
 \lemma wp_bind_mul_l {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
     (Phi : Value -> iProp S)
-  : (WP H E e1 (\lam v => WP H E (Mul (Val v) e2) Phi)) ⊢
-      (WP H E (Mul e1 e2) Phi) =>
-  wp_bind_item H E (MulLCtx e2) e1 Phi
+  : (WP H E e1 (\lam v => WP H E (Mul (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (Mul e1 (Val v2)) Phi) =>
+  wp_bind_item H E (MulLCtx v2) e1 Phi
 
 \lemma wp_bind_mul_r {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (v1 : Value)
-    (e2 : Expr) (Phi : Value -> iProp S)
-  : (WP H E e2 (\lam v => WP H E (Mul (Val v1) (Val v)) Phi)) ⊢
-      (WP H E (Mul (Val v1) e2) Phi) =>
-  wp_bind_item H E (MulRCtx v1) e2 Phi
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : (WP H E e2 (\lam v => WP H E (Mul e1 (Val v)) Phi)) ⊢
+      (WP H E (Mul e1 e2) Phi) =>
+  wp_bind_item H E (MulRCtx e1) e2 Phi
 
 \lemma wp_bind_alloc {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e : Expr)
@@ -5166,8 +5229,50 @@
   wp_bind_item H E LoadCtx e Phi
 
 \lemma wp_bind_store_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (Store (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (Store e1 (Val v2)) Phi) =>
+  wp_bind_item H E (StoreLCtx v2) e1 Phi
+
+\lemma wp_bind_binop_r {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : (WP H E e2 (\lam v => WP H E (BinOp op e1 (Val v)) Phi)) ⊢
+      (WP H E (BinOp op e1 e2) Phi) =>
+  wp_bind_item H E (BinOpRCtx op e1) e2 Phi
+
+\lemma wp_bind_binop_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (BinOp op (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (BinOp op e1 (Val v2)) Phi) =>
+  wp_bind_item H E (BinOpLCtx op v2) e1 Phi
+
+\lemma wp_bind_allocN_r {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
     (Phi : Value -> iProp S)
-  : (WP H E e1 (\lam v => WP H E (Store (Val v) e2) Phi)) ⊢
-      (WP H E (Store e1 e2) Phi) =>
-  wp_bind_item H E (StoreLCtx e2) e1 Phi
+  : (WP H E e2 (\lam v => WP H E (AllocN e1 (Val v)) Phi)) ⊢
+      (WP H E (AllocN e1 e2) Phi) =>
+  wp_bind_item H E (AllocNRCtx e1) e2 Phi
+
+\lemma wp_bind_allocN_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (AllocN (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (AllocN e1 (Val v2)) Phi) =>
+  wp_bind_item H E (AllocNLCtx v2) e1 Phi
+
+\lemma wp_bind_faa_r {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : (WP H E e2 (\lam v => WP H E (FAA e1 (Val v)) Phi)) ⊢
+      (WP H E (FAA e1 e2) Phi) =>
+  wp_bind_item H E (FaaRCtx e1) e2 Phi
+
+\lemma wp_bind_faa_l {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : (WP H E e1 (\lam v => WP H E (FAA (Val v) (Val v2)) Phi)) ⊢
+      (WP H E (FAA e1 (Val v2)) Phi) =>
+  wp_bind_item H E (FaaLCtx v2) e1 Phi

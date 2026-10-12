@@ -1,0 +1,148 @@
+\import Function.Meta
+\import Meta
+\import iris.algebra.coPset
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.notation
+\import iris.base_logic.upred
+\import iris.program_logic.weakestpre \hiding (wp_value)
+\import iris_heap_lang.lang
+\import iris.proofmode.Meta
+\import stdpp.coPset
+
+-- Each test elaborates through the Java focuser and checks the resulting term.
+
+\lemma bind_binop_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E e2 (\lam v => wp H E (BinOp op e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (BinOp op e1 e2) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_binop_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 e2 : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e2 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (BinOp op e1 (Val v)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (BinOp op e1 e2) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\lemma bind_binop_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (BinOp op (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (BinOp op e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_binop_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 : Expr) (v2 : Value)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e1 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (BinOp op (Val v) (Val v2)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (BinOp op e1 (Val v2)) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\func bind_binop_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (op : HeapBinOp) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (BinOp op (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ wp H E (BinOp op e1 e2) Phi)
+
+\lemma bind_allocN_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E e2 (\lam v => wp H E (AllocN e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (AllocN e1 e2) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_allocN_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e2 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (AllocN e1 (Val v)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (AllocN e1 e2) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\lemma bind_allocN_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (AllocN (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (AllocN e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_allocN_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e1 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (AllocN (Val v) (Val v2)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (AllocN e1 (Val v2)) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\func bind_allocN_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (AllocN (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ wp H E (AllocN e1 e2) Phi)
+
+\lemma bind_faa_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E e2 (\lam v => wp H E (FAA e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (FAA e1 e2) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_faa_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e2 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (FAA e1 (Val v)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (FAA e1 e2) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\lemma bind_faa_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (FAA (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (FAA e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma smart_apply_faa_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E e1 Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E (FAA (Val v) (Val v2)) Psi)
+  : (P ∗ mkProperEmp) ⊢ wp H E (FAA e1 (Val v2)) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\func bind_faa_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (FAA (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ wp H E (FAA e1 e2) Phi)
+
+-- This was stuck before F02; both nested BinOp operands must be evaluated.
+\lemma pures_nested_add {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 10)) ⊢ wp H E
+    (NatAdd (NatAdd (Val (natV 1)) (Val (natV 2)))
+      (NatAdd (Val (natV 3)) (Val (natV 4)))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+-- Pure evaluation stops at the ready stateful operation, retaining its WP.
+\lemma pures_allocN_operands {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (wp H E (AllocN (Val (natV 2)) (Val (natV 5))) Phi) ⊢ wp H E
+    (AllocN (NatAdd (Val (natV 1)) (Val (natV 1)))
+      (NatAdd (Val (natV 2)) (Val (natV 3)))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma pures_faa_operands {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (wp H E (FAA (Val (LitV (LitLoc 1))) (Val (natV 2))) Phi) ⊢ wp H E
+    (FAA (LocAdd (Val (LitV (LitLoc 0))) (Val (natV 1)))
+      (NatAdd (Val (natV 1)) (Val (natV 1)))) Phi =>
+  ipm $ wp_pures $ iExact ""

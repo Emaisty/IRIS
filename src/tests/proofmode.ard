@@ -718,18 +718,91 @@
     wp_smart_apply rule post $ iExact "HP"
 
 \lemma proofmode_wp_bind_app_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (App (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (App e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+-- The left expression need not be a value: the right operand is evaluated first.
+\lemma proofmode_wp_bind_app_right {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
     (Phi : Value -> iProp S)
-  : ((wp H E e1 (\lam v => wp H E (App (Val v) e2) Phi)) ∗
+  : ((wp H E e2 (\lam v => wp H E (App e1 (Val v)) Phi)) ∗
       mkProperEmp) ⊢ (wp H E (App e1 e2) Phi) =>
   ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
 
-\lemma proofmode_wp_bind_app_right {cnt : Countable Loc} {S : gFunctors}
-    (H : irisGS cnt S) (E : coPset) (vf : Value) (e : Expr)
+-- Right-to-left focus regressions for every ordinary binary context.
+
+\lemma proofmode_wp_bind_pair_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
     (Phi : Value -> iProp S)
-  : ((wp H E e (\lam v => wp H E (App (Val vf) (Val v)) Phi)) ∗
-      mkProperEmp) ⊢ (wp H E (App (Val vf) e) Phi) =>
+  : ((wp H E e2 (\lam v => wp H E (Pair e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Pair e1 e2) Phi) =>
   ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma proofmode_wp_bind_pair_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (Pair (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Pair e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma proofmode_wp_bind_mul_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E e2 (\lam v => wp H E (Mul e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Mul e1 e2) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma proofmode_wp_bind_mul_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (Mul (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Mul e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma proofmode_wp_bind_store_right {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S)
+  : ((wp H E e2 (\lam v => wp H E (Store e1 (Val v)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Store e1 e2) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\lemma proofmode_wp_bind_store_left {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 : Expr) (v2 : Value)
+    (Phi : Value -> iProp S)
+  : ((wp H E e1 (\lam v => wp H E (Store (Val v) (Val v2)) Phi)) ∗
+      mkProperEmp) ⊢ (wp H E (Store e1 (Val v2)) Phi) =>
+  ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+
+\func proofmode_wp_bind_app_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (App (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ (wp H E (App e1 e2) Phi))
+
+\func proofmode_wp_bind_pair_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (Pair (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ (wp H E (Pair e1 e2) Phi))
+
+\func proofmode_wp_bind_mul_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (Mul (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ (wp H E (Mul e1 e2) Phi))
+
+\func proofmode_wp_bind_store_left_first_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (e1 e2 : Expr)
+    (Phi : Value -> iProp S) =>
+  fails (ipm $ iIntros "HP HE" $ wp_bind $ iExact "HP"
+    : ((wp H E e1 (\lam v => wp H E (Store (Val v) e2) Phi)) ∗
+        mkProperEmp) ⊢ (wp H E (Store e1 e2) Phi))
 
 \lemma proofmode_wp_pures_value {cnt : Countable Loc} {S : gFunctors}
     (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S)

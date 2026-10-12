@@ -1,0 +1,67 @@
+\import Function.Meta
+\import Meta
+\import iris.algebra.coPset
+\import iris.algebra.gmap
+\import iris.base_logic.lib.gfunctors
+\import iris.base_logic.lib.iprop
+\import iris.base_logic.notation
+\import iris.base_logic.upred
+\import iris.program_logic.weakestpre \hiding (wp_value)
+\import iris_heap_lang.lang
+\import iris_heap_lang.lib.syntax
+\import iris.proofmode.Meta
+\import stdpp.coPset
+
+-- The closed F03 example now returns the outer 2 through native automation.
+\lemma pures_sequence_preserves_outer {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 2)) ⊢ wp H E
+    (letE nIgnore (Val (natV 2)) (seqE (Val (natV 1)) (Var nIgnore))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma pures_sequence_named_shadow_in_second {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 3)) ⊢ wp H E
+    (letE nIgnore (Val (natV 2))
+      (seqE (Val (natV 1)) (letE nIgnore (Val (natV 3)) (Var nIgnore)))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma pures_sequence_named_shadow_in_first {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 2)) ⊢ wp H E
+    (letE nIgnore (Val (natV 2))
+      (seqE (letE nIgnore (Val (natV 3)) (Var nIgnore)) (Var nIgnore))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma pures_nested_sequences {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 2)) ⊢ wp H E
+    (letE nIgnore (Val (natV 2))
+      (seqE (Val (natV 1)) (seqE (Val (natV 3)) (Var nIgnore)))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma pures_anonymous_recursion {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) :
+  (Phi (natV 7)) ⊢ wp H E
+    (App (Val (RecV BAnon BAnon (Val (natV 7)))) (Val (natV 1))) Phi =>
+  ipm $ wp_pures $ iExact ""
+
+\lemma wp_lam_anonymous {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (arg : Value) (body : Expr)
+    (Phi : Value -> iProp S) :
+  (wp H E body Phi) ⊢ wp H E (App (Val (LamV BAnon body)) (Val arg)) Phi =>
+  ipm $ wp_lam $ iExact ""
+
+\lemma smart_apply_sequence {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (rhs body : Expr)
+    (P : iProp S) (Phi Psi : Value -> iProp S)
+    (rule : P ⊢ wp H E rhs Phi)
+    (post : \Pi (v : Value) -> (Phi v) ⊢ wp H E body Psi) :
+  (P ∗ mkProperEmp) ⊢ wp H E (seqE rhs body) Psi =>
+  ipm $ iIntros "HP HE" $ wp_smart_apply rule post $ iExact "HP"
+
+\func pures_old_capture_result_fails {cnt : Countable Loc} {S : gFunctors}
+    (H : irisGS cnt S) (E : coPset) (Phi : Value -> iProp S) : \Sigma =>
+  fails (ipm $ wp_pures $ iExact "" :
+    (Phi (natV 1)) ⊢ wp H E
+      (letE nIgnore (Val (natV 2)) (seqE (Val (natV 1)) (Var nIgnore))) Phi)

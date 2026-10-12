@@ -13,24 +13,30 @@
 
 \func fill_item_not_val (Ki : EctxItem) (e : Expr)
   : to_val e = nothing -> to_val (fill_item Ki e) = nothing \elim Ki
-  | AppLCtx e2 => \lam (_ : to_val e = nothing) => idp
-  | AppRCtx vf => \lam (_ : to_val e = nothing) => idp
+  | AppLCtx v2 => \lam (_ : to_val e = nothing) => idp
+  | AppRCtx eLeft => \lam (_ : to_val e = nothing) => idp
   | IfCtx thenB elseB => \lam (_ : to_val e = nothing) => idp
-  | PairLCtx e2 => \lam (_ : to_val e = nothing) => idp
-  | PairRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | PairLCtx v2 => \lam (_ : to_val e = nothing) => idp
+  | PairRCtx eLeft => \lam (_ : to_val e = nothing) => idp
   | FstCtx => \lam (_ : to_val e = nothing) => idp
   | SndCtx => \lam (_ : to_val e = nothing) => idp
   | IsZeroCtx => \lam (_ : to_val e = nothing) => idp
   | PredCtx => \lam (_ : to_val e = nothing) => idp
-  | MulLCtx e2 => \lam (_ : to_val e = nothing) => idp
-  | MulRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | MulLCtx v2 => \lam (_ : to_val e = nothing) => idp
+  | MulRCtx eLeft => \lam (_ : to_val e = nothing) => idp
   | AllocCtx => \lam (_ : to_val e = nothing) => idp
   | LoadCtx => \lam (_ : to_val e = nothing) => idp
-  | StoreLCtx e2 => \lam (_ : to_val e = nothing) => idp
-  | StoreRCtx v1 => \lam (_ : to_val e = nothing) => idp
+  | StoreLCtx v2 => \lam (_ : to_val e = nothing) => idp
+  | StoreRCtx eLeft => \lam (_ : to_val e = nothing) => idp
   | ResolveLCtx Ki vp vt => \lam (_ : to_val e = nothing) => idp
   | ResolveMCtx e0 vt => \lam (_ : to_val e = nothing) => idp
   | ResolveRCtx e0 e1 => \lam (_ : to_val e = nothing) => idp
+  | BinOpLCtx _ _ => \lam (_ : to_val e = nothing) => idp
+  | BinOpRCtx _ _ => \lam (_ : to_val e = nothing) => idp
+  | AllocNLCtx _ => \lam (_ : to_val e = nothing) => idp
+  | AllocNRCtx _ => \lam (_ : to_val e = nothing) => idp
+  | FaaLCtx _ => \lam (_ : to_val e = nothing) => idp
+  | FaaRCtx _ => \lam (_ : to_val e = nothing) => idp
 
 \func fill_item_always_not_val (Ki : EctxItem) (e : Expr)
   : to_val (fill_item Ki e) = nothing \elim Ki
@@ -52,6 +58,12 @@
   | ResolveLCtx _ _ _ => idp
   | ResolveMCtx _ _ => idp
   | ResolveRCtx _ _ => idp
+  | BinOpLCtx _ _ => idp
+  | BinOpRCtx _ _ => idp
+  | AllocNLCtx _ => idp
+  | AllocNRCtx _ => idp
+  | FaaLCtx _ => idp
+  | FaaRCtx _ => idp
 
 \func fill_not_val (K : Ectx) (e : Expr)
   : to_val e = nothing -> to_val (fill K e) = nothing \elim K
@@ -192,6 +204,34 @@
   | Store _ e2 => e2
   | _ => d
 
+\func binop_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | BinOp _ e1 _ => e1
+  | _ => d
+
+\func binop_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | BinOp _ _ e2 => e2
+  | _ => d
+
+\func allocN_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | AllocN e1 _ => e1
+  | _ => d
+
+\func allocN_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | AllocN _ e2 => e2
+  | _ => d
+
+\func faa_l_arg (d : Expr) (e : Expr) : Expr \elim e
+  | FAA e1 _ => e1
+  | _ => d
+
+\func faa_r_arg (d : Expr) (e : Expr) : Expr \elim e
+  | FAA _ e2 => e2
+  | _ => d
+
+\func binop_operator (d : HeapBinOp) (e : Expr) : HeapBinOp \elim e
+  | BinOp op _ _ => op
+  | _ => d
+
 \func resolve_l_arg (d : Expr) (e : Expr) : Expr \elim e
   | Resolve e0 _ _ => e0
   | _ => d
@@ -238,7 +278,7 @@
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
-  | AppRCtx vf => \case base \with {
+  | AppRCtx eLeft => \case base \with {
     | BetaS x body v p1 _ _ =>
       no_val_val_absurd e1 v no_val (pmap (app_r_arg e1) p1)
     | RecBetaS f x body v p1 _ _ =>
@@ -315,7 +355,7 @@
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
-  | PairRCtx v1 => \case base \with {
+  | PairRCtx eLeft => \case base \with {
     | PairS w1 w2 p1 _ _ =>
       no_val_val_absurd e1 w2 no_val (pmap (pair_r_arg e1) p1)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
@@ -466,7 +506,7 @@
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
-  | MulRCtx v1 => \case base \with {
+  | MulRCtx eLeft => \case base \with {
     | MulS a b p1 _ _ =>
       no_val_val_absurd e1 (LitV (LitInt (pos b))) no_val (pmap (mul_r_arg e1) p1)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
@@ -566,7 +606,7 @@
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
     | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
   }
-  | StoreRCtx v1 => \case base \with {
+  | StoreRCtx eLeft => \case base \with {
     | StoreS l v _ _ p1 _ _ =>
       no_val_val_absurd e1 v no_val (pmap (store_r_arg e1) p1)
     | BetaS _ _ _ p1 _ _ => \case p1 \with {}
@@ -674,6 +714,156 @@
     | ForkS _ p1 _ _ => \case p1 \with {}
     | NewProphS _ _ p1 _ _ => \case p1 \with {}
   }
+  | BinOpLCtx _ arg => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ v1 v2 _ _ p1 _ _ =>
+      no_val_val_absurd e1 v1 no_val (pmap (binop_l_arg e1) p1)
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | BinOpRCtx _ eLeft => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ v1 v2 _ _ p1 _ _ =>
+      no_val_val_absurd e1 v2 no_val (pmap (binop_r_arg e1) p1)
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | AllocNLCtx arg => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS n v _ _ _ p1 _ _ =>
+      no_val_val_absurd e1 (natV n) no_val (pmap (allocN_l_arg e1) p1)
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | AllocNRCtx eLeft => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS n v _ _ _ p1 _ _ =>
+      no_val_val_absurd e1 v no_val (pmap (allocN_r_arg e1) p1)
+    | FAAS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | FaaLCtx arg => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS l _ incr _ p1 _ _ =>
+      no_val_val_absurd e1 (LitV (LitLoc l)) no_val (pmap (faa_l_arg e1) p1)
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
+  | FaaRCtx eLeft => \case base \with {
+    | PairS _ _ p1 _ _ => \case p1 \with {}
+    | BetaS _ _ _ p1 _ _ => \case p1 \with {}
+    | RecBetaS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | LamS _ _ p1 _ _ => \case p1 \with {}
+    | RecS _ _ _ p1 _ _ => \case p1 \with {}
+    | IfTrueS _ _ p1 _ _ => \case p1 \with {}
+    | IfFalseS _ _ p1 _ _ => \case p1 \with {}
+    | FstS _ _ p1 _ _ => \case p1 \with {}
+    | SndS _ _ p1 _ _ => \case p1 \with {}
+    | AllocS _ _ _ p1 _ _ => \case p1 \with {}
+    | LoadS _ _ _ p1 _ _ => \case p1 \with {}
+    | StoreS _ _ _ _ p1 _ _ => \case p1 \with {}
+    | IsZeroZeroS p1 _ _ => \case p1 \with {}
+    | IsZeroPosS _ p1 _ _ => \case p1 \with {}
+    | PredS _ p1 _ _ => \case p1 \with {}
+    | MulS _ _ p1 _ _ => \case p1 \with {}
+    | BinOpS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | AllocNS _ _ _ _ _ p1 _ _ => \case p1 \with {}
+    | FAAS l _ incr _ p1 _ _ =>
+      no_val_val_absurd e1 (natV incr) no_val (pmap (faa_r_arg e1) p1)
+    | ForkS _ p1 _ _ => \case p1 \with {}
+    | NewProphS _ _ p1 _ _ => \case p1 \with {}
+    | ResolveS _ _ _ _ _ _ _ _ p1 _ => \case p1 \with {}
+  }
 
 \lemma fill_step_inv_item_ctx_cons {cnt : Countable Loc}
                                    (Ki Ki' : EctxItem)
@@ -687,15 +877,16 @@
                                    (base : BaseStep e1' s1 e2' s2 efs observations)
   : TruncP (\Sigma (e2'' : Expr) (e2 = fill_item Ki e2'') (PrimStep e1 s1 e2'' s2 efs observations))
   \elim Ki, Ki'
-  | AppLCtx arg, AppLCtx arg' =>
+  | AppLCtx v, AppLCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (app_l_arg e1) p1
-      | arg_eq : arg = arg' => pmap (app_r_arg arg) p1
-      | e2_eq : e2 = fill_item (AppLCtx arg) (fill K' e2') =>
-        p2 *> pmap (\lam a => App (fill K' e2') a) (inv arg_eq)
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (app_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (AppLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => App (fill K' e2') (Val vv)) (inv v_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
-  | AppLCtx arg, AppRCtx vf =>
-    absurd (no_val_val_absurd e1 vf no_val (pmap (app_l_arg e1) p1))
+  | AppLCtx v, AppRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (app_r_arg (Val v)) p1))
   | AppLCtx _, IfCtx _ _ => \case p1 \with {}
   | AppLCtx _, PairLCtx _ => \case p1 \with {}
   | AppLCtx _, PairRCtx _ => \case p1 \with {}
@@ -709,15 +900,14 @@
   | AppLCtx _, LoadCtx => \case p1 \with {}
   | AppLCtx _, StoreLCtx _ => \case p1 \with {}
   | AppLCtx _, StoreRCtx _ => \case p1 \with {}
-  | AppRCtx vf, AppLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations vf base (pmap (app_l_arg (Val vf)) p1))
-  | AppRCtx vf, AppRCtx vf' =>
+  | AppRCtx _, AppLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (app_r_arg e1) p1))
+  | AppRCtx arg, AppRCtx arg' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (app_r_arg e1) p1
-      | vf_eq : vf = vf' =>
-        pmap (maybe_val vf) (pmap to_val (pmap (app_l_arg (Val vf)) p1))
-      | e2_eq : e2 = fill_item (AppRCtx vf) (fill K' e2') =>
-        p2 *> pmap (\lam v => App (Val v) (fill K' e2')) (inv vf_eq)
+      | arg_eq : arg = arg' => pmap (app_l_arg arg) p1
+      | e2_eq : e2 = fill_item (AppRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => App a (fill K' e2')) (inv arg_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
   | AppRCtx _, IfCtx _ _ => \case p1 \with {}
   | AppRCtx _, PairLCtx _ => \case p1 \with {}
@@ -756,15 +946,16 @@
   | IfCtx _ _, LoadCtx => \case p1 \with {}
   | IfCtx _ _, StoreLCtx _ => \case p1 \with {}
   | IfCtx _ _, StoreRCtx _ => \case p1 \with {}
-  | PairLCtx arg, PairLCtx arg' =>
+  | PairLCtx v, PairLCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (pair_l_arg e1) p1
-      | arg_eq : arg = arg' => pmap (pair_r_arg arg) p1
-      | e2_eq : e2 = fill_item (PairLCtx arg) (fill K' e2') =>
-        p2 *> pmap (\lam a => Pair (fill K' e2') a) (inv arg_eq)
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (pair_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (PairLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Pair (fill K' e2') (Val vv)) (inv v_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
-  | PairLCtx _, PairRCtx v =>
-    absurd (no_val_val_absurd e1 v no_val (pmap (pair_l_arg e1) p1))
+  | PairLCtx v, PairRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (pair_r_arg (Val v)) p1))
   | PairLCtx _, AppLCtx _ => \case p1 \with {}
   | PairLCtx _, AppRCtx _ => \case p1 \with {}
   | PairLCtx _, IfCtx _ _ => \case p1 \with {}
@@ -778,15 +969,14 @@
   | PairLCtx _, LoadCtx => \case p1 \with {}
   | PairLCtx _, StoreLCtx _ => \case p1 \with {}
   | PairLCtx _, StoreRCtx _ => \case p1 \with {}
-  | PairRCtx v, PairLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (pair_l_arg (Val v)) p1))
-  | PairRCtx v, PairRCtx v' =>
+  | PairRCtx _, PairLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (pair_r_arg e1) p1))
+  | PairRCtx arg, PairRCtx arg' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (pair_r_arg e1) p1
-      | v_eq : v = v' =>
-        pmap (maybe_val v) (pmap to_val (pmap (pair_l_arg (Val v)) p1))
-      | e2_eq : e2 = fill_item (PairRCtx v) (fill K' e2') =>
-        p2 *> pmap (\lam vv => Pair (Val vv) (fill K' e2')) (inv v_eq)
+      | arg_eq : arg = arg' => pmap (pair_l_arg arg) p1
+      | e2_eq : e2 = fill_item (PairRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Pair a (fill K' e2')) (inv arg_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
   | PairRCtx _, AppLCtx _ => \case p1 \with {}
   | PairRCtx _, AppRCtx _ => \case p1 \with {}
@@ -873,15 +1063,16 @@
   | PredCtx, LoadCtx => \case p1 \with {}
   | PredCtx, StoreLCtx _ => \case p1 \with {}
   | PredCtx, StoreRCtx _ => \case p1 \with {}
-  | MulLCtx arg, MulLCtx arg' =>
+  | MulLCtx v, MulLCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (mul_l_arg e1) p1
-      | arg_eq : arg = arg' => pmap (mul_r_arg arg) p1
-      | e2_eq : e2 = fill_item (MulLCtx arg) (fill K' e2') =>
-        p2 *> pmap (\lam a => Mul (fill K' e2') a) (inv arg_eq)
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (mul_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (MulLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Mul (fill K' e2') (Val vv)) (inv v_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
-  | MulLCtx _, MulRCtx v =>
-    absurd (no_val_val_absurd e1 v no_val (pmap (mul_l_arg e1) p1))
+  | MulLCtx v, MulRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (mul_r_arg (Val v)) p1))
   | MulLCtx _, AppLCtx _ => \case p1 \with {}
   | MulLCtx _, AppRCtx _ => \case p1 \with {}
   | MulLCtx _, IfCtx _ _ => \case p1 \with {}
@@ -895,15 +1086,14 @@
   | MulLCtx _, LoadCtx => \case p1 \with {}
   | MulLCtx _, StoreLCtx _ => \case p1 \with {}
   | MulLCtx _, StoreRCtx _ => \case p1 \with {}
-  | MulRCtx v, MulLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (mul_l_arg (Val v)) p1))
-  | MulRCtx v, MulRCtx v' =>
+  | MulRCtx _, MulLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (mul_r_arg e1) p1))
+  | MulRCtx arg, MulRCtx arg' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (mul_r_arg e1) p1
-      | v_eq : v = v' =>
-        pmap (maybe_val v) (pmap to_val (pmap (mul_l_arg (Val v)) p1))
-      | e2_eq : e2 = fill_item (MulRCtx v) (fill K' e2') =>
-        p2 *> pmap (\lam vv => Mul (Val vv) (fill K' e2')) (inv v_eq)
+      | arg_eq : arg = arg' => pmap (mul_l_arg arg) p1
+      | e2_eq : e2 = fill_item (MulRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Mul a (fill K' e2')) (inv arg_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
   | MulRCtx _, AppLCtx _ => \case p1 \with {}
   | MulRCtx _, AppRCtx _ => \case p1 \with {}
@@ -954,15 +1144,16 @@
   | LoadCtx, AllocCtx => \case p1 \with {}
   | LoadCtx, StoreLCtx _ => \case p1 \with {}
   | LoadCtx, StoreRCtx _ => \case p1 \with {}
-  | StoreLCtx arg, StoreLCtx arg' =>
+  | StoreLCtx v, StoreLCtx v' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (store_l_arg e1) p1
-      | arg_eq : arg = arg' => pmap (store_r_arg arg) p1
-      | e2_eq : e2 = fill_item (StoreLCtx arg) (fill K' e2') =>
-        p2 *> pmap (\lam a => Store (fill K' e2') a) (inv arg_eq)
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (store_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (StoreLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => Store (fill K' e2') (Val vv)) (inv v_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
-  | StoreLCtx _, StoreRCtx v =>
-    absurd (no_val_val_absurd e1 v no_val (pmap (store_l_arg e1) p1))
+  | StoreLCtx v, StoreRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (store_r_arg (Val v)) p1))
   | StoreLCtx _, AppLCtx _ => \case p1 \with {}
   | StoreLCtx _, AppRCtx _ => \case p1 \with {}
   | StoreLCtx _, IfCtx _ _ => \case p1 \with {}
@@ -976,15 +1167,14 @@
   | StoreLCtx _, MulRCtx _ => \case p1 \with {}
   | StoreLCtx _, AllocCtx => \case p1 \with {}
   | StoreLCtx _, LoadCtx => \case p1 \with {}
-  | StoreRCtx v, StoreLCtx _ =>
-    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (store_l_arg (Val v)) p1))
-  | StoreRCtx v, StoreRCtx v' =>
+  | StoreRCtx _, StoreLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (store_r_arg e1) p1))
+  | StoreRCtx arg, StoreRCtx arg' =>
     \let
       | e1_eq : e1 = fill K' e1' => pmap (store_r_arg e1) p1
-      | v_eq : v = v' =>
-        pmap (maybe_val v) (pmap to_val (pmap (store_l_arg (Val v)) p1))
-      | e2_eq : e2 = fill_item (StoreRCtx v) (fill K' e2') =>
-        p2 *> pmap (\lam vv => Store (Val vv) (fill K' e2')) (inv v_eq)
+      | arg_eq : arg = arg' => pmap (store_l_arg arg) p1
+      | e2_eq : e2 = fill_item (StoreRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => Store a (fill K' e2')) (inv arg_eq)
     \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
   | StoreRCtx _, AppLCtx _ => \case p1 \with {}
   | StoreRCtx _, AppRCtx _ => \case p1 \with {}
@@ -1155,6 +1345,307 @@
               (inv e1arg_eq)
     \in inP (fill K' e2', e2_eq,
       EctxStep K' e1' e2' hole_eq idp base)
+  | BinOpLCtx op v, BinOpLCtx op' v' =>
+    \let
+      | op_eq : op = op' => pmap (binop_operator op) p1
+      | e1_eq : e1 = fill K' e1' => pmap (binop_l_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (binop_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (BinOpLCtx op v) (fill K' e2') =>
+        p2 *> pmap (\lam o => BinOp o (fill K' e2') (Val v')) (inv op_eq)
+           *> pmap (\lam vv => BinOp op (fill K' e2') (Val vv)) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | BinOpLCtx op v, BinOpRCtx op' _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (binop_r_arg (Val v)) p1))
+  | BinOpRCtx op _, BinOpLCtx op' v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (binop_r_arg e1) p1))
+  | BinOpRCtx op arg, BinOpRCtx op' arg' =>
+    \let
+      | op_eq : op = op' => pmap (binop_operator op) p1
+      | e1_eq : e1 = fill K' e1' => pmap (binop_r_arg e1) p1
+      | arg_eq : arg = arg' => pmap (binop_l_arg arg) p1
+      | e2_eq : e2 = fill_item (BinOpRCtx op arg) (fill K' e2') =>
+        p2 *> pmap (\lam o => BinOp o arg' (fill K' e2')) (inv op_eq)
+           *> pmap (\lam a => BinOp op a (fill K' e2')) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | AllocNLCtx v, AllocNLCtx v' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (allocN_l_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (allocN_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (AllocNLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => AllocN (fill K' e2') (Val vv)) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | AllocNLCtx v, AllocNRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (allocN_r_arg (Val v)) p1))
+  | AllocNRCtx _, AllocNLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (allocN_r_arg e1) p1))
+  | AllocNRCtx arg, AllocNRCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (allocN_r_arg e1) p1
+      | arg_eq : arg = arg' => pmap (allocN_l_arg arg) p1
+      | e2_eq : e2 = fill_item (AllocNRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => AllocN a (fill K' e2')) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | FaaLCtx v, FaaLCtx v' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (faa_l_arg e1) p1
+      | v_eq : v = v' =>
+        pmap (maybe_val v) (pmap to_val (pmap (faa_r_arg (Val v)) p1))
+      | e2_eq : e2 = fill_item (FaaLCtx v) (fill K' e2') =>
+        p2 *> pmap (\lam vv => FAA (fill K' e2') (Val vv)) (inv v_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | FaaLCtx v, FaaRCtx _ =>
+    absurd (val_fill_absurd K' e1' s1 e2' s2 efs observations v base (pmap (faa_r_arg (Val v)) p1))
+  | FaaRCtx _, FaaLCtx v =>
+    absurd (no_val_val_absurd e1 v no_val (pmap (faa_r_arg e1) p1))
+  | FaaRCtx arg, FaaRCtx arg' =>
+    \let
+      | e1_eq : e1 = fill K' e1' => pmap (faa_r_arg e1) p1
+      | arg_eq : arg = arg' => pmap (faa_l_arg arg) p1
+      | e2_eq : e2 = fill_item (FaaRCtx arg) (fill K' e2') =>
+        p2 *> pmap (\lam a => FAA a (fill K' e2')) (inv arg_eq)
+    \in inP (fill K' e2', e2_eq, EctxStep K' e1' e2' e1_eq idp base)
+  | AppLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | AppLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | AppLCtx _, AllocNLCtx _ => \case p1 \with {}
+  | AppLCtx _, AllocNRCtx _ => \case p1 \with {}
+  | AppLCtx _, FaaLCtx _ => \case p1 \with {}
+  | AppLCtx _, FaaRCtx _ => \case p1 \with {}
+  | AppRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | AppRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | AppRCtx _, AllocNLCtx _ => \case p1 \with {}
+  | AppRCtx _, AllocNRCtx _ => \case p1 \with {}
+  | AppRCtx _, FaaLCtx _ => \case p1 \with {}
+  | AppRCtx _, FaaRCtx _ => \case p1 \with {}
+  | IfCtx _ _, BinOpLCtx _ _ => \case p1 \with {}
+  | IfCtx _ _, BinOpRCtx _ _ => \case p1 \with {}
+  | IfCtx _ _, AllocNLCtx _ => \case p1 \with {}
+  | IfCtx _ _, AllocNRCtx _ => \case p1 \with {}
+  | IfCtx _ _, FaaLCtx _ => \case p1 \with {}
+  | IfCtx _ _, FaaRCtx _ => \case p1 \with {}
+  | PairLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | PairLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | PairLCtx _, AllocNLCtx _ => \case p1 \with {}
+  | PairLCtx _, AllocNRCtx _ => \case p1 \with {}
+  | PairLCtx _, FaaLCtx _ => \case p1 \with {}
+  | PairLCtx _, FaaRCtx _ => \case p1 \with {}
+  | PairRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | PairRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | PairRCtx _, AllocNLCtx _ => \case p1 \with {}
+  | PairRCtx _, AllocNRCtx _ => \case p1 \with {}
+  | PairRCtx _, FaaLCtx _ => \case p1 \with {}
+  | PairRCtx _, FaaRCtx _ => \case p1 \with {}
+  | FstCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | FstCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | FstCtx, AllocNLCtx _ => \case p1 \with {}
+  | FstCtx, AllocNRCtx _ => \case p1 \with {}
+  | FstCtx, FaaLCtx _ => \case p1 \with {}
+  | FstCtx, FaaRCtx _ => \case p1 \with {}
+  | SndCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | SndCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | SndCtx, AllocNLCtx _ => \case p1 \with {}
+  | SndCtx, AllocNRCtx _ => \case p1 \with {}
+  | SndCtx, FaaLCtx _ => \case p1 \with {}
+  | SndCtx, FaaRCtx _ => \case p1 \with {}
+  | IsZeroCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | IsZeroCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | IsZeroCtx, AllocNLCtx _ => \case p1 \with {}
+  | IsZeroCtx, AllocNRCtx _ => \case p1 \with {}
+  | IsZeroCtx, FaaLCtx _ => \case p1 \with {}
+  | IsZeroCtx, FaaRCtx _ => \case p1 \with {}
+  | PredCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | PredCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | PredCtx, AllocNLCtx _ => \case p1 \with {}
+  | PredCtx, AllocNRCtx _ => \case p1 \with {}
+  | PredCtx, FaaLCtx _ => \case p1 \with {}
+  | PredCtx, FaaRCtx _ => \case p1 \with {}
+  | MulLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | MulLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | MulLCtx _, AllocNLCtx _ => \case p1 \with {}
+  | MulLCtx _, AllocNRCtx _ => \case p1 \with {}
+  | MulLCtx _, FaaLCtx _ => \case p1 \with {}
+  | MulLCtx _, FaaRCtx _ => \case p1 \with {}
+  | MulRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | MulRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | MulRCtx _, AllocNLCtx _ => \case p1 \with {}
+  | MulRCtx _, AllocNRCtx _ => \case p1 \with {}
+  | MulRCtx _, FaaLCtx _ => \case p1 \with {}
+  | MulRCtx _, FaaRCtx _ => \case p1 \with {}
+  | AllocCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | AllocCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | AllocCtx, AllocNLCtx _ => \case p1 \with {}
+  | AllocCtx, AllocNRCtx _ => \case p1 \with {}
+  | AllocCtx, FaaLCtx _ => \case p1 \with {}
+  | AllocCtx, FaaRCtx _ => \case p1 \with {}
+  | LoadCtx, BinOpLCtx _ _ => \case p1 \with {}
+  | LoadCtx, BinOpRCtx _ _ => \case p1 \with {}
+  | LoadCtx, AllocNLCtx _ => \case p1 \with {}
+  | LoadCtx, AllocNRCtx _ => \case p1 \with {}
+  | LoadCtx, FaaLCtx _ => \case p1 \with {}
+  | LoadCtx, FaaRCtx _ => \case p1 \with {}
+  | StoreLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | StoreLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | StoreLCtx _, AllocNLCtx _ => \case p1 \with {}
+  | StoreLCtx _, AllocNRCtx _ => \case p1 \with {}
+  | StoreLCtx _, FaaLCtx _ => \case p1 \with {}
+  | StoreLCtx _, FaaRCtx _ => \case p1 \with {}
+  | StoreRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | StoreRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | StoreRCtx _, AllocNLCtx _ => \case p1 \with {}
+  | StoreRCtx _, AllocNRCtx _ => \case p1 \with {}
+  | StoreRCtx _, FaaLCtx _ => \case p1 \with {}
+  | StoreRCtx _, FaaRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, BinOpLCtx _ _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, BinOpRCtx _ _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, AllocNLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, AllocNRCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, FaaLCtx _ => \case p1 \with {}
+  | ResolveLCtx _ _ _, FaaRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, BinOpLCtx _ _ => \case p1 \with {}
+  | ResolveMCtx _ _, BinOpRCtx _ _ => \case p1 \with {}
+  | ResolveMCtx _ _, AllocNLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, AllocNRCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, FaaLCtx _ => \case p1 \with {}
+  | ResolveMCtx _ _, FaaRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, BinOpLCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _, BinOpRCtx _ _ => \case p1 \with {}
+  | ResolveRCtx _ _, AllocNLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, AllocNRCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, FaaLCtx _ => \case p1 \with {}
+  | ResolveRCtx _ _, FaaRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, AppLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, AppRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, IfCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _, PairLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, PairRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, FstCtx => \case p1 \with {}
+  | BinOpLCtx _ _, SndCtx => \case p1 \with {}
+  | BinOpLCtx _ _, IsZeroCtx => \case p1 \with {}
+  | BinOpLCtx _ _, PredCtx => \case p1 \with {}
+  | BinOpLCtx _ _, MulLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, MulRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, AllocCtx => \case p1 \with {}
+  | BinOpLCtx _ _, LoadCtx => \case p1 \with {}
+  | BinOpLCtx _ _, StoreLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | BinOpLCtx _ _, ResolveMCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _, ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _, AllocNLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, AllocNRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, FaaLCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _, FaaRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, AppLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, AppRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, IfCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _, PairLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, PairRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, FstCtx => \case p1 \with {}
+  | BinOpRCtx _ _, SndCtx => \case p1 \with {}
+  | BinOpRCtx _ _, IsZeroCtx => \case p1 \with {}
+  | BinOpRCtx _ _, PredCtx => \case p1 \with {}
+  | BinOpRCtx _ _, MulLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, MulRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, AllocCtx => \case p1 \with {}
+  | BinOpRCtx _ _, LoadCtx => \case p1 \with {}
+  | BinOpRCtx _ _, StoreLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, StoreRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | BinOpRCtx _ _, ResolveMCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _, ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _, AllocNLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, AllocNRCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, FaaLCtx _ => \case p1 \with {}
+  | BinOpRCtx _ _, FaaRCtx _ => \case p1 \with {}
+  | AllocNLCtx _, AppLCtx _ => \case p1 \with {}
+  | AllocNLCtx _, AppRCtx _ => \case p1 \with {}
+  | AllocNLCtx _, IfCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _, PairLCtx _ => \case p1 \with {}
+  | AllocNLCtx _, PairRCtx _ => \case p1 \with {}
+  | AllocNLCtx _, FstCtx => \case p1 \with {}
+  | AllocNLCtx _, SndCtx => \case p1 \with {}
+  | AllocNLCtx _, IsZeroCtx => \case p1 \with {}
+  | AllocNLCtx _, PredCtx => \case p1 \with {}
+  | AllocNLCtx _, MulLCtx _ => \case p1 \with {}
+  | AllocNLCtx _, MulRCtx _ => \case p1 \with {}
+  | AllocNLCtx _, AllocCtx => \case p1 \with {}
+  | AllocNLCtx _, LoadCtx => \case p1 \with {}
+  | AllocNLCtx _, StoreLCtx _ => \case p1 \with {}
+  | AllocNLCtx _, StoreRCtx _ => \case p1 \with {}
+  | AllocNLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | AllocNLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _, FaaLCtx _ => \case p1 \with {}
+  | AllocNLCtx _, FaaRCtx _ => \case p1 \with {}
+  | AllocNRCtx _, AppLCtx _ => \case p1 \with {}
+  | AllocNRCtx _, AppRCtx _ => \case p1 \with {}
+  | AllocNRCtx _, IfCtx _ _ => \case p1 \with {}
+  | AllocNRCtx _, PairLCtx _ => \case p1 \with {}
+  | AllocNRCtx _, PairRCtx _ => \case p1 \with {}
+  | AllocNRCtx _, FstCtx => \case p1 \with {}
+  | AllocNRCtx _, SndCtx => \case p1 \with {}
+  | AllocNRCtx _, IsZeroCtx => \case p1 \with {}
+  | AllocNRCtx _, PredCtx => \case p1 \with {}
+  | AllocNRCtx _, MulLCtx _ => \case p1 \with {}
+  | AllocNRCtx _, MulRCtx _ => \case p1 \with {}
+  | AllocNRCtx _, AllocCtx => \case p1 \with {}
+  | AllocNRCtx _, LoadCtx => \case p1 \with {}
+  | AllocNRCtx _, StoreLCtx _ => \case p1 \with {}
+  | AllocNRCtx _, StoreRCtx _ => \case p1 \with {}
+  | AllocNRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | AllocNRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | AllocNRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | AllocNRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | AllocNRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNRCtx _, FaaLCtx _ => \case p1 \with {}
+  | AllocNRCtx _, FaaRCtx _ => \case p1 \with {}
+  | FaaLCtx _, AppLCtx _ => \case p1 \with {}
+  | FaaLCtx _, AppRCtx _ => \case p1 \with {}
+  | FaaLCtx _, IfCtx _ _ => \case p1 \with {}
+  | FaaLCtx _, PairLCtx _ => \case p1 \with {}
+  | FaaLCtx _, PairRCtx _ => \case p1 \with {}
+  | FaaLCtx _, FstCtx => \case p1 \with {}
+  | FaaLCtx _, SndCtx => \case p1 \with {}
+  | FaaLCtx _, IsZeroCtx => \case p1 \with {}
+  | FaaLCtx _, PredCtx => \case p1 \with {}
+  | FaaLCtx _, MulLCtx _ => \case p1 \with {}
+  | FaaLCtx _, MulRCtx _ => \case p1 \with {}
+  | FaaLCtx _, AllocCtx => \case p1 \with {}
+  | FaaLCtx _, LoadCtx => \case p1 \with {}
+  | FaaLCtx _, StoreLCtx _ => \case p1 \with {}
+  | FaaLCtx _, StoreRCtx _ => \case p1 \with {}
+  | FaaLCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | FaaLCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | FaaLCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | FaaLCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | FaaLCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | FaaLCtx _, AllocNLCtx _ => \case p1 \with {}
+  | FaaLCtx _, AllocNRCtx _ => \case p1 \with {}
+  | FaaRCtx _, AppLCtx _ => \case p1 \with {}
+  | FaaRCtx _, AppRCtx _ => \case p1 \with {}
+  | FaaRCtx _, IfCtx _ _ => \case p1 \with {}
+  | FaaRCtx _, PairLCtx _ => \case p1 \with {}
+  | FaaRCtx _, PairRCtx _ => \case p1 \with {}
+  | FaaRCtx _, FstCtx => \case p1 \with {}
+  | FaaRCtx _, SndCtx => \case p1 \with {}
+  | FaaRCtx _, IsZeroCtx => \case p1 \with {}
+  | FaaRCtx _, PredCtx => \case p1 \with {}
+  | FaaRCtx _, MulLCtx _ => \case p1 \with {}
+  | FaaRCtx _, MulRCtx _ => \case p1 \with {}
+  | FaaRCtx _, AllocCtx => \case p1 \with {}
+  | FaaRCtx _, LoadCtx => \case p1 \with {}
+  | FaaRCtx _, StoreLCtx _ => \case p1 \with {}
+  | FaaRCtx _, StoreRCtx _ => \case p1 \with {}
+  | FaaRCtx _, ResolveLCtx _ _ _ => \case p1 \with {}
+  | FaaRCtx _, ResolveMCtx _ _ => \case p1 \with {}
+  | FaaRCtx _, ResolveRCtx _ _ => \case p1 \with {}
+  | FaaRCtx _, BinOpLCtx _ _ => \case p1 \with {}
+  | FaaRCtx _, BinOpRCtx _ _ => \case p1 \with {}
+  | FaaRCtx _, AllocNLCtx _ => \case p1 \with {}
+  | FaaRCtx _, AllocNRCtx _ => \case p1 \with {}
 
 \lemma fill_step_inv_item_ctx {cnt : Countable Loc}
                               (Ki : EctxItem)
@@ -1274,6 +1765,12 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func new_proph_step_inv_ctx
   {cnt : Countable Loc} (sigma : State cnt)
@@ -1429,6 +1926,12 @@
               fill_item_always_not_val innerKi (fill K' e2')
           \in \case impossible \with {}
       }
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func resolve_strongly_atomic_ctx {cnt : Countable Loc}
     (e : Expr) (atomic : StronglyAtomic {cnt} e)
@@ -1712,6 +2215,12 @@
   | LoadCtx => \case p1 \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func alloc_step_inv_ctx
   {cnt : Countable Loc}
@@ -1847,6 +2356,16 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations (natV n) base
+      (pmap (allocN_l_arg (Val (natV n))) p1))
+  | AllocNRCtx _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations v base
+      (pmap (allocN_r_arg (Val v)) p1))
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func allocN_step_inv_ctx
   {cnt : Countable Loc} (n : Nat) (v : Value) (sigma : State cnt)
@@ -1980,6 +2499,16 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations v1 base
+      (pmap (binop_l_arg (Val v1)) p1))
+  | BinOpRCtx _ _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations v2 base
+      (pmap (binop_r_arg (Val v2)) p1))
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func binop_step_inv_ctx
   {cnt : Countable Loc}
@@ -2093,6 +2622,12 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func fork_step_inv_ctx
   {cnt : Countable Loc} (body : Expr) (sigma : State cnt)
@@ -2221,6 +2756,16 @@
   | ResolveLCtx _ _ _ => \case p1 \with {}
   | ResolveMCtx _ _ => \case p1 \with {}
   | ResolveRCtx _ _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations (LitV (LitLoc l)) base
+      (pmap (faa_l_arg (Val (LitV (LitLoc l)))) p1))
+  | FaaRCtx _ =>
+    absurd (val_fill_absurd K' e1' sigma e2' sigma2 efs observations (natV incr) base
+      (pmap (faa_r_arg (Val (natV incr))) p1))
 
 \func faa_step_inv_ctx
   {cnt : Countable Loc} (l : Loc) (incr : Nat) (sigma : State cnt)
@@ -2356,7 +2901,7 @@
       | impossible : just (LitV (LitLoc l)) = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
-  | StoreRCtx v1 =>
+  | StoreRCtx eLeft =>
     \let
       | inner_eq : Val v = fill K' e1' =>
         pmap (\lam e => \case e \with {
@@ -2368,6 +2913,12 @@
       | impossible : just v = nothing =>
         pmap to_val inner_eq *> inner_not_val
     \in \case impossible \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func store_step_inv_ctx
   {cnt : Countable Loc}
@@ -2501,6 +3052,12 @@
     \in \case impossible \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func load_step_inv_ctx
   {cnt : Countable Loc}
@@ -2607,6 +3164,12 @@
     \in \case impossible \with {}
   | StoreLCtx _ => \case p1 \with {}
   | StoreRCtx _ => \case p1 \with {}
+  | BinOpLCtx _ _ => \case p1 \with {}
+  | BinOpRCtx _ _ => \case p1 \with {}
+  | AllocNLCtx _ => \case p1 \with {}
+  | AllocNRCtx _ => \case p1 \with {}
+  | FaaLCtx _ => \case p1 \with {}
+  | FaaRCtx _ => \case p1 \with {}
 
 \func load_atomic_ctx
   {cnt : Countable Loc}

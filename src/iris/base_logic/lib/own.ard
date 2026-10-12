@@ -754,8 +754,10 @@
             }))
 
 -- =================================================================================
--- own_alloc_strong (Rocq `own_alloc_strong` / `own_alloc_strong_dep`):
--- allocate a fresh name that additionally satisfies a predicate `P`:
+-- own_alloc_strong: allocate a fixed payload a at a fresh name satisfying P.
+-- This specializes Rocq's strong allocation interface to an explicit
+-- freshness oracle. It does not provide the name-dependent payload of
+-- `own_alloc_strong_dep` or its upstream infinitude/cofinite wrappers.
 --
 --   (∀ m, ∃ γ, m!!γ = None ∧ P γ)  →  ✓ a  →  ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ own γ a.
 --

@@ -13,9 +13,11 @@
 \import iris.algebra.auth
 \import iris.algebra.lib.gmap_view
 
--- Authoritative ghost state whose fragments carry positive fractions.  This
--- follows Iris's auth/option/product representation; the public fragment API
--- uses owned fractions only.
+-- Exclusive authoritative state over option(dfrac × A). The public fragment
+-- constructor uses owned positive fractions. Pinned Rocq frac_auth instead
+-- uses general fractional authority over option(frac × A); this port's raw
+-- carrier therefore differs. The correspondence is limited to the public
+-- owned-fragment / full-authority interface reviewed in the audit.
 
 \func frac_auth_baseUR (A : CMRA) : UCMRA =>
   OptionUCMRA (ProdCMRA DfracCMRA A)

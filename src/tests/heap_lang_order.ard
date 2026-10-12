@@ -1,0 +1,69 @@
+\import Data.List
+\import Data.Maybe
+\import Logic
+\import Paths
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_ectx
+
+-- F01 regression: Pair (Store l 1) (Load l), starting with l |-> 0,
+-- loads 0 before storing 1 and returns (unit, 0), as in pinned HeapLang.
+\func order_store (l : Loc) : Expr =>
+  Store (Val (LitV (LitLoc l))) (Val (natV 1))
+
+\func order_load (l : Loc) : Expr => Load (Val (LitV (LitLoc l)))
+
+\lemma pair_order_load_first {cnt : Countable Loc}
+    (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 0)) :
+  PrimStep (Pair (order_store l) (order_load l)) sigma
+    (Pair (order_store l) (Val (natV 0))) sigma nil nil =>
+  fill_step_item (PairRCtx (order_store l))
+    (BasePrim (LoadS l (natV 0) lookup idp idp idp {idp} {idp}))
+
+-- This quantifies over every first step, rather than exhibiting only one
+-- allowed trace. The left operand and heap cannot change before the load.
+\lemma pair_order_first_step_inv {cnt : Countable Loc}
+    (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 0))
+    (e2 : Expr) (sigma2 : State cnt)
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (Pair (order_store l) (order_load l)) sigma
+      e2 sigma2 efs observations) :
+  \Sigma (e2 = Pair (order_store l) (Val (natV 0)))
+    (sigma2 = sigma) (efs = nil) (observations = nil) =>
+  \case fill_step_inv_item (PairRCtx (order_store l)) (order_load l)
+      sigma e2 sigma2 efs observations idp step \with {
+    | inP (inner, equal, innerStep) =>
+      \case load_step_inv l (natV 0) sigma inner sigma2 efs observations
+          lookup innerStep \with {
+        | LoadStepInvIntro result state forks obs =>
+          (equal *> pmap (Pair (order_store l)) result, state, forks, obs)
+      }
+  }
+
+\lemma pair_order_store_second {cnt : Countable Loc}
+    (l : Loc) (sigma : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 0)) :
+  PrimStep (Pair (order_store l) (Val (natV 0))) sigma
+    (Pair (Val unitV) (Val (natV 0)))
+    (state_update_heap sigma (heap_update sigma.heap l (natV 1))) nil nil =>
+  fill_step_item (PairLCtx (natV 0))
+    (BasePrim (StoreS l (natV 1) (natV 0) lookup idp idp idp {idp} {idp}))
+
+\lemma pair_order_result {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (Pair (Val unitV) (Val (natV 0))) sigma
+    (Val (PairV unitV (natV 0))) sigma nil nil =>
+  BasePrim (PairS unitV (natV 0) idp idp idp {idp} {idp})
+
+-- An attempted old first step would change the left operand to unit while
+-- leaving the load unevaluated. The context inversion theorem rules it out.
+\lemma pair_order_reject_left_first {cnt : Countable Loc}
+    (l : Loc) (sigma sigma2 : State cnt)
+    (lookup : glookup sigma.heap l = just (natV 0))
+    (efs : List Expr) (observations : List Observation)
+    (step : PrimStep (Pair (order_store l) (order_load l)) sigma
+      (Pair (Val unitV) (order_load l)) sigma2 efs observations) : Empty =>
+  \let | det => pair_order_first_step_inv l sigma lookup
+      (Pair (Val unitV) (order_load l)) sigma2 efs observations step
+  \in \case pmap (pair_l_arg (Val unitV)) det.1 \with {}

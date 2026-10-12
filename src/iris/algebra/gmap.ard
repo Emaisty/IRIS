@@ -1270,6 +1270,24 @@
   | just _,  nothing => \case h \with {}
   | just _,  just _  => \case h \with {}
 
+-- This proof uses Logic.Classical.achoice, declared
+-- as an axiom in Arend's standard library, arend-lib.
+-- Each h k gives only truncated existence of an optional frame at key k.
+-- achoice combines these into truncated existence of a choice function over
+-- all keys; gmap_map_support then restricts that function to m2's support.
+-- Thus this proof, and the dependent GmapCMRA/GmapUCMRA construction, rely
+-- on this library axiom even though the maps themselves are finite.
+--
+-- Future replacement: induct over m2's finite support (its tree or a list
+-- of distinct entries), proving truncated existence of a finite frame map
+-- with the required lookup equivalences. Eliminate each h k only inside
+-- that proposition-valued goal; insert a just-witness payload at k and
+-- omit a nothing witness. Outside m2's support, use h k together with
+-- option_op_equiv_nothing_inv to show that m1 is also absent. Assemble the
+-- pointwise equivalences with glookup_op, then return the truncated map
+-- witness. This avoids choosing over the whole key type and removes this
+-- use of achoice. Recheck the dependent camera proofs after the rewrite;
+-- removing this call alone does not establish global axiom-freedom.
 \lemma gmap_lookup_included {K : \Set} {cnt : Countable K} {A : CMRA}
                             (m1 m2 : Gmap K cnt A.E)
                             (h : \Pi (k : K) ->

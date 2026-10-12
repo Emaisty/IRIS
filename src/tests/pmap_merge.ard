@@ -1,0 +1,73 @@
+\import Data.Maybe
+\import Meta
+\import Paths
+\import stdpp.pmap
+
+-- No combining function can create a key absent from both inputs.
+\lemma merge_preserves_absence {A B C : \Set}
+    (f : Maybe A -> Maybe B -> Maybe C) (m1 : Pmap A) (m2 : Pmap B)
+    (k : Pos) (h1 : plookup m1 k = nothing) (h2 : plookup m2 k = nothing)
+  : plookup (pmerge f m1 m2) k = nothing =>
+  plookup_merge_general f m1 m2 k *> pmap2 (diag_None f) h1 h2
+
+-- Deliberately violates the old lookup lemma's preservation premise.
+\func always_seven (_ _ : Maybe Nat) : Maybe Nat => just 7
+
+\lemma left_prefix_stays_absent :
+  plookup (pmerge always_seven (psingleton (xO xH) 0) pempty) xH = nothing => idp
+
+\lemma right_prefix_stays_absent :
+  plookup (pmerge always_seven pempty (psingleton (xO xH) 0)) xH = nothing => idp
+
+\lemma two_branches_prefix_stays_absent :
+  plookup (pmerge always_seven (psingleton (xO xH) 0)
+    (psingleton (xI xH) 0)) xH = nothing => idp
+
+\lemma deep_root_stays_absent :
+  plookup (pmerge always_seven (psingleton (xO (xO xH)) 0)
+    pempty) xH = nothing => idp
+
+\lemma deep_inner_prefix_stays_absent :
+  plookup (pmerge always_seven (psingleton (xO (xO xH)) 0)
+    pempty) (xO xH) = nothing => idp
+
+\lemma left_present_key_is_combined :
+  plookup (pmerge always_seven (psingleton (xO xH) 0)
+    pempty) (xO xH) = just 7 => idp
+
+\lemma right_present_key_is_combined :
+  plookup (pmerge always_seven pempty
+    (psingleton (xO xH) 0)) (xO xH) = just 7 => idp
+
+\lemma empty_inputs_stay_empty :
+  (pmerge always_seven pempty pempty).tree = PEmpty => idp
+
+-- Distinguish argument order and check all three cases with a present input.
+\func pair_inputs (a b : Maybe Nat) : Maybe (\Sigma Nat Nat) \elim a, b
+  | nothing, nothing => just (99, 99)
+  | just x, nothing => just (x, 0)
+  | nothing, just y => just (0, y)
+  | just x, just y => just (x, y)
+
+\lemma left_only_argument_preserved :
+  plookup (pmerge pair_inputs (psingleton xH 2) pempty) xH = just (2, 0) => idp
+
+\lemma right_only_argument_preserved :
+  plookup (pmerge pair_inputs pempty (psingleton xH 3)) xH = just (0, 3) => idp
+
+\lemma both_arguments_preserved :
+  plookup (pmerge pair_inputs (psingleton xH 2)
+    (psingleton xH 3)) xH = just (2, 3) => idp
+
+-- Returning nothing still removes present bindings and collapses empty nodes.
+\lemma merge_can_remove_all_entries :
+  (pmerge (\lam (_ _ : Maybe Nat) => nothing {Nat})
+    (psingleton (xO xH) 2) (psingleton (xI xH) 3)).tree = PEmpty => idp
+
+\func old_spurious_binding_fails : \Sigma =>
+  fails (idp : plookup (pmerge always_seven
+    (psingleton (xO xH) 0) pempty) xH = just 7)
+
+\func old_unrestricted_lookup_equation_fails : \Sigma =>
+  fails (idp : plookup (pmerge always_seven
+    (psingleton (xO xH) 0) pempty) xH = always_seven nothing nothing)

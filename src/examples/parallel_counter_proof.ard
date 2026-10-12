@@ -1879,7 +1879,7 @@
                   iFrame "HHead" $ iExact "HRest"
         | loadResume : \Pi (v : Value) -> ((LoadPost v) ∗ Rest) ⊢
             (WP H mscE
-              (App (Val (LamV nN BodyN)) (Val v)) Post) =>
+              (App (Lam nN BodyN) (Val v)) Post) =>
             \lam v => ipm $
               wp_lam $
               wp_apply (loadContinue v) $ iAssumption
@@ -2679,7 +2679,7 @@
         (WP H msc_open_mask
           (resolveProphE (Val (LitV (LitProphecy p)))
             (Val (natV (nat_sum reads)))) Phi) =>
-        wp_resolve_skip_later_frame H msc_open_mask nIgnore unitV p
+        wp_resolve_skip_later_frame H msc_open_mask BAnon unitV p
           (natV (nat_sum reads)) resolves After Phi
           (\lam remaining => msc_read_resolve_transition H G gam a final
             reads gamQ id Q p resolves remaining)
@@ -2740,8 +2740,8 @@
       (\lam final => msc_read_now {S} final)
       (\lam final => msc_read_after H G gam a final) K Expr0 Post
       mscN_subset_mscE
-      (resolve_strongly_atomic (resolve_skip_expr nIgnore unitV)
-        (resolve_skip_strongly_atomic nIgnore unitV) p
+      (resolve_strongly_atomic (resolve_skip_expr BAnon unitV)
+        (resolve_skip_strongly_atomic BAnon unitV) p
         (natV (nat_sum reads)))
       (msc_read_now_timeless gam) (msc_inv_read_split H G gam a) opened
 
@@ -2790,7 +2790,7 @@
       R impossible) $
     wp_apply (wp_frame_r H mscE Expr0 Base Bounds) $
     iSplitL "HToken"
-      (wp_apply (wp_resolve_skip H mscE nIgnore unitV p
+      (wp_apply (wp_resolve_skip H mscE BAnon unitV p
         (natV actual) resolves) $ iExact "HToken")
       (iExact "HBounds")
 
@@ -2812,13 +2812,15 @@
         (msc_inv H G gam a)) ∗
       (|> (Q actual))) ⊢
     (WP H mscE
-      (App (Val (LamV nIgnore (Val (natV actual)))) (Val ignored))
+      (App (Lam BAnon (Val (natV actual))) (Val ignored))
       (msc_read_core_post H G gam a Q)) =>
   \let
     | Public => iris.base_logic.lib.invariants.inv H.iris_wsat mscN
         (msc_inv H G gam a)
     | Rafter => Public ∗ (Q actual)
     | Post => msc_read_core_post H G gam a Q
+    | LamPost : Value -> iProp S => \lam vf =>
+        WP H mscE (App (Val vf) (Val ignored)) Post
     | transition : Rafter ⊢
         (|==> (Post (natV actual))) =>
         ipm $ iIntros "HPublic HQ" $
@@ -2830,12 +2832,16 @@
             (iPureIntro $ idp)
             (iFrame "HPublic" $ iExact "HQ")
   \in ipm $ iIntros "HPublic HLaterQ" $
+    wp_apply (wp_bind_app_l H mscE
+      (Lam BAnon (Val (natV actual))) ignored Post) $
+    wp_apply (wp_lam_expr H mscE BAnon (Val (natV actual)) LamPost) $
+    wp_apply (wp_value_intro H mscE (LamV BAnon (Val (natV actual))) LamPost) $
     iAssert "HLaterPublic" "HPublic" (|> Public)
       (iNext $ iExact "HPublic")
       (iAssert "HLaterPair" "HLaterPublic HLaterQ" (|> Rafter)
         (wp_apply (proper_later_sep_2 Public (Q actual)) $
           iFrame "HLaterPublic" $ iExact "HLaterQ")
-        (wp_apply (wp_lam_beta_value_later_frame H mscE nIgnore
+        (wp_apply (wp_lam_beta_value_later_frame H mscE BAnon
           (natV actual) ignored Rafter Post transition) $
           iSplitL ""
             iEmpIntro
@@ -2873,7 +2879,7 @@
         (wp_apply (inv_dup_ent H.iris_wsat mscN (msc_inv H G gam a)) $
           iExact "HInv")
         (iDestruct "HInvPair" "HInv1 HInv2" $
-          wp_lam $
+          wp_bind $
           wp_smart_apply (msc_read_resolve_registered_wp H G gam a reads
             gamQ id Q p resolves)
             (\lam ignored => msc_read_finish_sequence H G gam a
@@ -2903,10 +2909,10 @@
       iDestruct "HUnregistered" "HPred HP" $
       iDestruct "HCommon" "HInv HSaved HToken HBoundLBs" $
       iDestruct "HBoundLBs" "HBound HLBs" $
-      wp_lam $
+      wp_bind $
       wp_apply (msc_read_resolve_unregistered_wp H p resolves initial
         (nat_sum reads) (\lam ignored => WP H mscE
-          (App (Val (LamV nIgnore (Val (natV (nat_sum reads)))))
+          (App (Lam BAnon (Val (natV (nat_sum reads))))
             (Val ignored)) (msc_read_core_post H G gam a Q))) $
       iFrame "HToken HBound" $ iExact "HPred"
 

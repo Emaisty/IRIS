@@ -1,0 +1,75 @@
+\import Data.List
+\import Logic
+\import Paths
+\import Meta
+\import iris.algebra.gmap
+\import iris_heap_lang.lang
+\import iris_heap_lang.lang_subst
+\import iris_heap_lang.lang_ectx
+\import iris_heap_lang.lib.syntax
+
+-- Sequencing introduces no named scope, for any name and both operands.
+\lemma subst_seq_no_shadow (x : Name) (v : Value) (first second : Expr) :
+  subst x v (seqE first second) = seqE (subst x v first) (subst x v second) => idp
+
+\lemma anon_beta_preserves_body {cnt : Countable Loc}
+    (sigma : State cnt) (arg : Value) (body : Expr) :
+  BaseStep (App (Val (LamV BAnon body)) (Val arg)) sigma body sigma nil nil =>
+  BetaS BAnon body arg idp idp idp {idp} {idp}
+
+\lemma anon_rec_beta_preserves_body {cnt : Countable Loc}
+    (sigma : State cnt) (arg : Value) (body : Expr) :
+  BaseStep (App (Val (RecV BAnon BAnon body)) (Val arg)) sigma body sigma nil nil =>
+  RecBetaS BAnon BAnon body arg idp idp idp {idp} {idp}
+
+-- The actual closed F03 counterexample. These four PrimSteps return 2.
+\func capture_body : Expr => seqE (Val (natV 1)) (Var nIgnore)
+\func capture_program : Expr => letE nIgnore (Val (natV 2)) capture_body
+
+\lemma capture_expose_outer {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep capture_program sigma
+    (App (Val (LamV nIgnore capture_body)) (Val (natV 2))) sigma nil nil =>
+  fill_step_item (AppLCtx (natV 2))
+    (BasePrim (LamS nIgnore capture_body idp idp idp {idp} {idp}))
+
+\lemma capture_substitute_outer {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (App (Val (LamV nIgnore capture_body)) (Val (natV 2))) sigma
+    (seqE (Val (natV 1)) (Val (natV 2))) sigma nil nil =>
+  BasePrim (BetaS nIgnore capture_body (natV 2) idp idp idp {idp} {idp})
+
+\lemma capture_expose_sequence {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (seqE (Val (natV 1)) (Val (natV 2))) sigma
+    (App (Val (LamV BAnon (Val (natV 2)))) (Val (natV 1))) sigma nil nil =>
+  fill_step_item (AppLCtx (natV 1))
+    (BasePrim (LamS BAnon (Val (natV 2)) idp idp idp {idp} {idp}))
+
+\lemma capture_returns_two {cnt : Countable Loc} (sigma : State cnt) :
+  PrimStep (App (Val (LamV BAnon (Val (natV 2)))) (Val (natV 1))) sigma
+    (Val (natV 2)) sigma nil nil =>
+  BasePrim (anon_beta_preserves_body sigma (natV 1) (Val (natV 2)))
+
+-- Explicit named shadowing is intentional and must still return the inner 3.
+\lemma named_let_still_shadows :
+  subst nIgnore (natV 2) (letE nIgnore (Val (natV 3)) (Var nIgnore)) =
+    letE nIgnore (Val (natV 3)) (Var nIgnore) => idp
+
+\lemma named_shadow_returns_three {cnt : Countable Loc} (sigma : State cnt) :
+  BaseStep (App (Val (LamV nIgnore (Var nIgnore))) (Val (natV 3))) sigma
+    (Val (natV 3)) sigma nil nil =>
+  BetaS nIgnore (Var nIgnore) (natV 3) idp idp idp {idp} {idp}
+
+\lemma recursive_name_still_shadows (body : Expr) :
+  subst nIgnore (natV 2) (Rec nIgnore BAnon body) = Rec nIgnore BAnon body => idp
+
+\lemma recursive_argument_still_shadows (body : Expr) :
+  subst nIgnore (natV 2) (Rec BAnon nIgnore body) = Rec BAnon nIgnore body => idp
+
+\func anonymous_binder_is_not_a_variable : \Sigma => fails (Var BAnon : Expr)
+
+\func old_capture_substitution_fails : \Sigma =>
+  fails (idp : subst nIgnore (natV 2) capture_body = capture_body)
+
+\func anonymous_beta_cannot_bind_name_21 {cnt : Countable Loc} (sigma : State cnt) : \Sigma =>
+  fails (BetaS BAnon (Var nIgnore) (natV 1) idp idp idp {idp} {idp} :
+    BaseStep (App (Val (LamV BAnon (Var nIgnore))) (Val (natV 1))) sigma
+      (Val (natV 1)) sigma nil nil)

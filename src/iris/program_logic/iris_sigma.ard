@@ -8,8 +8,10 @@
 \import iris.base_logic.lib.gen_heap
 \import iris.base_logic.lib.proph_map
 
--- The program-logic signature is the disjoint concatenation used by Rocq
--- Iris: world satisfaction/invariants plus the generic heap ghost map.
+-- The signature for this port's program logic combines world satisfaction /
+-- invariants, the reduced heap ghost map, and prophecy resources.
+-- It omits the later-credit, heap-metadata, and step-counter resources of
+-- the default Rocq HeapLang instance.
 \func irisSigma (cnt : Countable Loc) : gFunctors =>
   gFunctors_app wsatSigma
     (gFunctors_app (gen_heapSigma Loc cnt Value) proph_mapSigma)

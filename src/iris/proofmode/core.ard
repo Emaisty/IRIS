@@ -19,7 +19,8 @@
 \import stdpp.namespaces
 
 -- Proof-mode identifiers deliberately avoid semantic String.  The extension
--- turns quoted UTF-16 code units into this representation before elaboration.
+-- encodes quoted names as lists of Unicode code points before elaboration.
+-- PMName itself permits arbitrary lists of natural numbers.
 \func PMName : \Set => List Nat
 
 \func pm_nat_eq (x y : Nat) : Dec (x = y) \elim x, y
@@ -1634,6 +1635,9 @@
     (M : UCMRA) (P Q : ProperUPred M)
   | into_persistent : P ⊢ (<#> Q)
 
+-- Corresponds to Rocq Iris IntoSep:
+-- decomposes P into Q ∗ R using P ⊢ (Q ∗ R).
+-- Rocq FromSep uses the opposite entailment direction, (Q ∗ R) ⊢ P.
 \class PMFromSep \noclassifying
     (M : UCMRA) (P Q R : ProperUPred M)
   | from_sep : P ⊢ (Q ∗ R)

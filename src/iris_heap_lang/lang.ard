@@ -20,7 +20,7 @@
 
 \func ProphId => Pos
 
--- Binders are semantic identifiers.  Nat keeps their equality constructive
+-- Variable names are semantic identifiers. Nat keeps equality constructive
 -- and independent of surface-level pretty-printing support.
 \func Name => Nat
 
@@ -33,6 +33,23 @@
       | inl p => inl (pmap suc p)
       | inr q => inr (\lam p => q (pmap pred p))
     }
+
+-- Match Rocq's named/anonymous binder distinction. An anonymous binder is
+-- not a reserved variable name and never shadows an outer named variable.
+\data Binder
+  | BAnon
+  | BNamed (x : Name)
+  \where {
+    -- Preserve the existing syntax for named lambda/recursion arguments.
+    \use \coerce named (x : Nat) : Binder => BNamed x
+  }
+
+\func binder_matches (x : Name) (b : Binder) : Bool \elim b
+  | BAnon => false
+  | BNamed y => \case nameDecEq x y \with {
+    | inl _ => true
+    | inr _ => false
+  }
 
 \data Lit
   | LitInt (n : Int)
@@ -48,15 +65,15 @@
 
 \data Value : \Set0
   | LitV (l : Lit)
-  | LamV (x : Name) (body : Expr)
-  | RecV (f x : Name) (body : Expr)
+  | LamV (x : Binder) (body : Expr)
+  | RecV (f x : Binder) (body : Expr)
   | PairV (v1 v2 : Value)
 
 \data Expr : \Set0
   | Val (v : Value)
   | Var (x : Name)
-  | Lam (x : Name) (body : Expr)
-  | Rec (f x : Name) (body : Expr)
+  | Lam (x : Binder) (body : Expr)
+  | Rec (f x : Binder) (body : Expr)
   | App (e1 e2 : Expr)
   | If (cond thenB elseB : Expr)
   | Pair (e1 e2 : Expr)
@@ -142,15 +159,15 @@
     | inl _ => Val v
     | inr _ => Var y
   }
-  | Lam y body => \case nameDecEq x y \with {
-    | inl _ => Lam y body
-    | inr _ => Lam y (subst x v body)
+  | Lam y body => \case binder_matches x y \with {
+    | true => Lam y body
+    | false => Lam y (subst x v body)
   }
-  | Rec f y body => \case nameDecEq x f \with {
-    | inl _ => Rec f y body
-    | inr _ => \case nameDecEq x y \with {
-      | inl _ => Rec f y body
-      | inr _ => Rec f y (subst x v body)
+  | Rec f y body => \case binder_matches x f \with {
+    | true => Rec f y body
+    | false => \case binder_matches x y \with {
+      | true => Rec f y body
+      | false => Rec f y (subst x v body)
     }
   }
   | App e1 e2 => App (subst x v e1) (subst x v e2)
@@ -171,6 +188,12 @@
   | NewProph => NewProph
   | Resolve e proph resolution =>
       Resolve (subst x v e) (subst x v proph) (subst x v resolution)
+
+-- Substitution by a binder, corresponding to Rocq's subst'. Anonymous
+-- application discards its argument and leaves the body unchanged.
+\func subst_binder (b : Binder) (v : Value) (e : Expr) : Expr \elim b
+  | BAnon => e
+  | BNamed x => subst x v e
 
 \func heap_update {cnt : Countable Loc} (h : Gmap Loc cnt Value) (l : Loc) (v : Value) : Gmap Loc cnt Value =>
   ginsert l v h
@@ -360,19 +383,19 @@
 \truncated \data BaseStep {cnt : Countable Loc}
     (e1 : Expr) (s1 : State cnt) (e2 : Expr) (s2 : State cnt)
     (efs : List Expr) (observations : List Observation) : \Prop
-  | BetaS (x : Name) (body : Expr) (v : Value)
+  | BetaS (x : Binder) (body : Expr) (v : Value)
           (p1 : e1 = App (Val (LamV x body)) (Val v))
-          (p2 : e2 = subst x v body)
+          (p2 : e2 = subst_binder x v body)
           (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | RecBetaS (f x : Name) (body : Expr) (v : Value)
+  | RecBetaS (f x : Binder) (body : Expr) (v : Value)
              (p1 : e1 = App (Val (RecV f x body)) (Val v))
-             (p2 : e2 = subst x v (subst f (RecV f x body) body))
+             (p2 : e2 = subst_binder x v (subst_binder f (RecV f x body) body))
              (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | LamS (x : Name) (body : Expr)
+  | LamS (x : Binder) (body : Expr)
          (p1 : e1 = Lam x body)
          (p2 : e2 = Val (LamV x body))
          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
-  | RecS (f x : Name) (body : Expr)
+  | RecS (f x : Binder) (body : Expr)
          (p1 : e1 = Rec f x body)
          (p2 : e2 = Val (RecV f x body))
          (p3 : s2 = s1) {p0 : observations = nil} {p4 : efs = nil}
@@ -466,22 +489,30 @@
       {p0 : observations = innerObservations ++ (p, (v, w)) :: nil}
       {p4 : efs = innerForks}
 
+-- Binary operands follow pinned HeapLang: evaluate the right expression first.
+-- A left hole is available only once the right operand is a value.
 \data EctxItem
-  | AppLCtx (e2 : Expr)
-  | AppRCtx (vf : Value)
+  | AppLCtx (v2 : Value)
+  | AppRCtx (e1 : Expr)
   | IfCtx (thenB elseB : Expr)
-  | PairLCtx (e2 : Expr)
-  | PairRCtx (v1 : Value)
+  | PairLCtx (v2 : Value)
+  | PairRCtx (e1 : Expr)
   | FstCtx
   | SndCtx
   | IsZeroCtx
   | PredCtx
-  | MulLCtx (e2 : Expr)
-  | MulRCtx (v1 : Value)
+  | MulLCtx (v2 : Value)
+  | MulRCtx (e1 : Expr)
+  | BinOpLCtx (op : HeapBinOp) (v2 : Value)
+  | BinOpRCtx (op : HeapBinOp) (e1 : Expr)
+  | AllocNLCtx (v2 : Value)
+  | AllocNRCtx (e1 : Expr)
+  | FaaLCtx (v2 : Value)
+  | FaaRCtx (e1 : Expr)
   | AllocCtx
   | LoadCtx
-  | StoreLCtx (e2 : Expr)
-  | StoreRCtx (v1 : Value)
+  | StoreLCtx (v2 : Value)
+  | StoreRCtx (e1 : Expr)
   -- The first Resolve argument deliberately has no plain context item: only
   -- reductions strictly below one existing item are contextual.  Its final
   -- base step is performed atomically by ResolveS.
@@ -494,21 +525,27 @@
   | ConsCtx (Ki : EctxItem) (K : Ectx)
 
 \func fill_item (Ki : EctxItem) (e : Expr) : Expr \elim Ki
-  | AppLCtx e2 => App e e2
-  | AppRCtx vf => App (Val vf) e
+  | AppLCtx v2 => App e (Val v2)
+  | AppRCtx e1 => App e1 e
   | IfCtx thenB elseB => If e thenB elseB
-  | PairLCtx e2 => Pair e e2
-  | PairRCtx v1 => Pair (Val v1) e
+  | PairLCtx v2 => Pair e (Val v2)
+  | PairRCtx e1 => Pair e1 e
   | FstCtx => Fst e
   | SndCtx => Snd e
   | IsZeroCtx => IsZero e
   | PredCtx => Pred e
-  | MulLCtx e2 => Mul e e2
-  | MulRCtx v1 => Mul (Val v1) e
+  | MulLCtx v2 => Mul e (Val v2)
+  | MulRCtx e1 => Mul e1 e
+  | BinOpLCtx op v2 => BinOp op e (Val v2)
+  | BinOpRCtx op e1 => BinOp op e1 e
+  | AllocNLCtx v2 => AllocN e (Val v2)
+  | AllocNRCtx e1 => AllocN e1 e
+  | FaaLCtx v2 => FAA e (Val v2)
+  | FaaRCtx e1 => FAA e1 e
   | AllocCtx => Alloc e
   | LoadCtx => Load e
-  | StoreLCtx e2 => Store e e2
-  | StoreRCtx v1 => Store (Val v1) e
+  | StoreLCtx v2 => Store e (Val v2)
+  | StoreRCtx e1 => Store e1 e
   | ResolveLCtx Ki vp vt =>
       Resolve (fill_item Ki e) (Val vp) (Val vt)
   | ResolveMCtx e0 vt => Resolve e0 e (Val vt)

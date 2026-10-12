@@ -28,10 +28,10 @@
 \func nNextI : Name => 22
 \func nNextAcc : Name => 23
 
-\func letE (x : Name) (rhs body : Expr) : Expr =>
+\func letE (x : Binder) (rhs body : Expr) : Expr =>
   App (Lam x body) rhs
 
-\func seqE (first second : Expr) : Expr => letE nIgnore first second
+\func seqE (first second : Expr) : Expr => letE BAnon first second
 
 \func app2 (f a b : Expr) : Expr => App (App f a) b
 \func app3 (f a b c : Expr) : Expr => App (app2 f a b) c
@@ -40,7 +40,7 @@
 -- A one-step expression used by ResolveProph. Resolve requires its first
 -- argument to perform an actual atomic base step, like heap_lang Skip.
 \func skipE : Expr =>
-  App (Val (LamV nIgnore (Val unitV))) (Val unitV)
+  App (Val (LamV BAnon (Val unitV))) (Val unitV)
 
 \func resolveProphE (p result : Expr) : Expr =>
   Resolve skipE p result

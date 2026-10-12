@@ -121,3 +121,14 @@
 \lemma subst_store (x : Name) (v : Value) (e1 e2 : Expr)
   : subst x v (Store e1 e2) = Store (subst x v e1) (subst x v e2)
   => idp
+
+\lemma subst_binder_val (b : Binder) (v w : Value)
+  : subst_binder b v (Val w) = Val w \elim b
+  | BAnon => idp
+  | BNamed _ => idp
+
+\lemma subst_lam_anon (x : Name) (v : Value) (body : Expr)
+  : subst x v (Lam BAnon body) = Lam BAnon (subst x v body) => idp
+
+\lemma subst_rec_anon (x : Name) (v : Value) (body : Expr)
+  : subst x v (Rec BAnon BAnon body) = Rec BAnon BAnon (subst x v body) => idp

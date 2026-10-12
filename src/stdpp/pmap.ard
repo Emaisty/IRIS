@@ -202,20 +202,33 @@
 -- =================================================================================
 -- merge on the raw tree
 --
--- merge' f m1 m2 combines two trees pointwise using f at every key.
---
--- We require f nothing nothing = nothing so the output stays finite.
+-- Merge visits the union of the input supports. At a key absent from both
+-- inputs, diag_None forces absence, even if f nothing nothing is nonempty.
 -- =================================================================================
+
+-- Same guard as stdpp's diag_None: an absent pair cannot create a binding.
+\func diag_None {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+                (o1 : Maybe A) (o2 : Maybe B) : Maybe C \elim o1, o2
+  | nothing, nothing => nothing
+  | o1, o2 => f o1 o2
+
+\lemma diag_None_eq {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+                    (hf : f nothing nothing = nothing)
+                    (o1 : Maybe A) (o2 : Maybe B)
+  : diag_None f o1 o2 = f o1 o2 \elim o1, o2
+  | nothing, nothing => inv hf
+  | nothing, just _ => idp
+  | just _, _ => idp
 
 \func merge' {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
              (m1 : Pmap' A) (m2 : Pmap' B) : Pmap' C \elim m1, m2
   | PEmpty, PEmpty => PEmpty
   | PEmpty, PNode v l r =>
-    PNode' (f nothing v) (merge' f PEmpty l) (merge' f PEmpty r)
+    PNode' (diag_None f nothing v) (merge' f PEmpty l) (merge' f PEmpty r)
   | PNode v l r, PEmpty =>
-    PNode' (f v nothing) (merge' f l PEmpty) (merge' f r PEmpty)
+    PNode' (diag_None f v nothing) (merge' f l PEmpty) (merge' f r PEmpty)
   | PNode v1 l1 r1, PNode v2 l2 r2 =>
-    PNode' (f v1 v2) (merge' f l1 l2) (merge' f r1 r2)
+    PNode' (diag_None f v1 v2) (merge' f l1 l2) (merge' f r1 r2)
 
 \lemma merge'_wf {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
                  (m1 : Pmap' A) (m2 : Pmap' B)
@@ -224,49 +237,56 @@
 \elim m1, m2
   | PEmpty, PEmpty => ()
   | PEmpty, PNode v l r =>
-    PNode'_wf (f nothing v) (merge' f PEmpty l) (merge' f PEmpty r)
+    PNode'_wf (diag_None f nothing v) (merge' f PEmpty l) (merge' f PEmpty r)
         (merge'_wf f PEmpty l () h2.1) (merge'_wf f PEmpty r () h2.2)
   | PNode v l r, PEmpty =>
-    PNode'_wf (f v nothing) (merge' f l PEmpty) (merge' f r PEmpty)
+    PNode'_wf (diag_None f v nothing) (merge' f l PEmpty) (merge' f r PEmpty)
         (merge'_wf f l PEmpty h1.1 ()) (merge'_wf f r PEmpty h1.2 ())
   | PNode v1 l1 r1, PNode v2 l2 r2 =>
-    PNode'_wf (f v1 v2) (merge' f l1 l2) (merge' f r1 r2)
+    PNode'_wf (diag_None f v1 v2) (merge' f l1 l2) (merge' f r1 r2)
         (merge'_wf f l1 l2 h1.1 h2.1)
         (merge'_wf f r1 r2 h1.2 h2.2)
 
--- Pointwise lookup law for merge', requiring f preserves "nothing on both sides".
+-- General lookup law, with no preservation premise on the supplied function.
+\lemma plookup'_merge'_general {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+                               (m1 : Pmap' A) (m2 : Pmap' B) (k : Pos)
+  : plookup' (merge' f m1 m2) k = diag_None f (plookup' m1 k) (plookup' m2 k)
+\elim m1, m2, k
+  | PEmpty, PEmpty, xH => idp
+  | PEmpty, PEmpty, xO q => idp
+  | PEmpty, PEmpty, xI q => idp
+  | PEmpty, PNode v l r, xH =>
+    plookup'_PNode' (diag_None f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) xH
+  | PEmpty, PNode v l r, xO q =>
+    plookup'_PNode' (diag_None f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) (xO q) *>
+    plookup'_merge'_general f PEmpty l q
+  | PEmpty, PNode v l r, xI q =>
+    plookup'_PNode' (diag_None f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) (xI q) *>
+    plookup'_merge'_general f PEmpty r q
+  | PNode v l r, PEmpty, xH =>
+    plookup'_PNode' (diag_None f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) xH
+  | PNode v l r, PEmpty, xO q =>
+    plookup'_PNode' (diag_None f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) (xO q) *>
+    plookup'_merge'_general f l PEmpty q
+  | PNode v l r, PEmpty, xI q =>
+    plookup'_PNode' (diag_None f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) (xI q) *>
+    plookup'_merge'_general f r PEmpty q
+  | PNode v1 l1 r1, PNode v2 l2 r2, xH =>
+    plookup'_PNode' (diag_None f v1 v2) (merge' f l1 l2) (merge' f r1 r2) xH
+  | PNode v1 l1 r1, PNode v2 l2 r2, xO q =>
+    plookup'_PNode' (diag_None f v1 v2) (merge' f l1 l2) (merge' f r1 r2) (xO q) *>
+    plookup'_merge'_general f l1 l2 q
+  | PNode v1 l1 r1, PNode v2 l2 r2, xI q =>
+    plookup'_PNode' (diag_None f v1 v2) (merge' f l1 l2) (merge' f r1 r2) (xI q) *>
+    plookup'_merge'_general f r1 r2 q
+
+-- Compatibility corollary for functions that already preserve double absence.
 \lemma plookup'_merge' {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
                        (hf : f nothing nothing = nothing)
                        (m1 : Pmap' A) (m2 : Pmap' B) (k : Pos)
   : plookup' (merge' f m1 m2) k = f (plookup' m1 k) (plookup' m2 k)
-\elim m1, m2, k
-  | PEmpty, PEmpty, xH => inv hf
-  | PEmpty, PEmpty, xO q => inv hf
-  | PEmpty, PEmpty, xI q => inv hf
-  | PEmpty, PNode v l r, xH =>
-    plookup'_PNode' (f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) xH
-  | PEmpty, PNode v l r, xO q =>
-    plookup'_PNode' (f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) (xO q) *>
-    plookup'_merge' f hf PEmpty l q
-  | PEmpty, PNode v l r, xI q =>
-    plookup'_PNode' (f nothing v) (merge' f PEmpty l) (merge' f PEmpty r) (xI q) *>
-    plookup'_merge' f hf PEmpty r q
-  | PNode v l r, PEmpty, xH =>
-    plookup'_PNode' (f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) xH
-  | PNode v l r, PEmpty, xO q =>
-    plookup'_PNode' (f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) (xO q) *>
-    plookup'_merge' f hf l PEmpty q
-  | PNode v l r, PEmpty, xI q =>
-    plookup'_PNode' (f v nothing) (merge' f l PEmpty) (merge' f r PEmpty) (xI q) *>
-    plookup'_merge' f hf r PEmpty q
-  | PNode v1 l1 r1, PNode v2 l2 r2, xH =>
-    plookup'_PNode' (f v1 v2) (merge' f l1 l2) (merge' f r1 r2) xH
-  | PNode v1 l1 r1, PNode v2 l2 r2, xO q =>
-    plookup'_PNode' (f v1 v2) (merge' f l1 l2) (merge' f r1 r2) (xO q) *>
-    plookup'_merge' f hf l1 l2 q
-  | PNode v1 l1 r1, PNode v2 l2 r2, xI q =>
-    plookup'_PNode' (f v1 v2) (merge' f l1 l2) (merge' f r1 r2) (xI q) *>
-    plookup'_merge' f hf r1 r2 q
+  => plookup'_merge'_general f m1 m2 k *>
+    diag_None_eq f hf (plookup' m1 k) (plookup' m2 k)
 
 -- =================================================================================
 -- Extensionality on the raw tree
@@ -373,6 +393,12 @@
   | tree => merge' f m1.tree m2.tree
   | tree_wf => merge'_wf f m1.tree m2.tree m1.tree_wf m2.tree_wf
 
+\lemma plookup_merge_general {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
+                             (m1 : Pmap A) (m2 : Pmap B) (k : Pos)
+  : plookup (pmerge f m1 m2) k = diag_None f (plookup m1 k) (plookup m2 k)
+  => plookup'_merge'_general f m1.tree m2.tree k
+
+-- Preserve the existing lookup API as a corollary of the general law.
 \lemma plookup_merge {A B C : \Set} (f : Maybe A -> Maybe B -> Maybe C)
                      (hf : f nothing nothing = nothing)
                      (m1 : Pmap A) (m2 : Pmap B) (k : Pos)
@@ -726,7 +752,7 @@
 
     -- The trie traversal invariants used by the list-based induction principle.
     -- The proof factors through generalized lemmas about `entries_of_tree` with
-    -- an injective "absolute key" function `to_abs`; the user-facing axioms then
+    -- an injective "absolute key" function `to_abs`; the derived lemmas then
     -- specialize to `to_abs = id`.
 
     \lemma entries_of_lookup {A : \Set} (m : Pmap A) (k : Pos)

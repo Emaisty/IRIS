@@ -158,7 +158,7 @@
             (App (Lam ignoreName (App (App (Val fact_recV) (Pred (Val (natV 0)))) (Var lName)))
                 (Store (Var lName) (Mul (Load (Var lName)) (Val (natV 0))))))
         (natV 0)
-        (Val (LitV (LitLoc l)))
+        (LitV (LitLoc l))
         idp
         Post)
 
@@ -183,8 +183,8 @@
         (wp_pred_suc k'
           (\lam v => wp (App (App (Val fact_recV) (Val v)) (Val (LitV (LitLoc l)))) Post))
         (wp_bind
-          (ConsCtx (AppLCtx (Val (LitV (LitLoc l))))
-            (ConsCtx (AppRCtx fact_recV) EmptyCtx))
+          (ConsCtx (AppLCtx (LitV (LitLoc l)))
+            (ConsCtx (AppRCtx (Val fact_recV)) EmptyCtx))
           (Pred (Val (natV (suc k'))))
           Post))
 
@@ -455,7 +455,7 @@
                   (\lam w => (wp (Mul (Val w) (Val nV)) mul_post).upred_holds n a)
                   (inv hand.1)
                   (wp_mul j (suc k') mul_post n a hv (idp, hand.2))))
-            (wp_bind_mul_l (Load (Val locV)) (Val nV) mul_post))
+            (wp_bind_mul_l (Load (Val locV)) nV mul_post))
       | store_post : Value -> ProperUPred M =>
         \lam _ => pointsTo l (natV jk)
       | s_store_value : (pointsTo l (natV j)) ⊢
@@ -678,24 +678,11 @@
 	              (factorial_post k)))
 	        (wp (factorial_call_body_at k) (factorial_post k))
 	        s_alloc_then
-	        (properUPred_ent_trans
-	          (wp (Alloc (Val (natV 1)))
-	            (\lam vloc =>
-	              wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))) (Val vloc))
-	                (factorial_post k)))
-	          (wp (App (Val (LamV lName (App (App fact_body (Val (natV k))) (Var lName))))
-	                (Alloc (Val (natV 1))))
-	            (factorial_post k))
-	          (wp (factorial_call_body_at k) (factorial_post k))
-	          (wp_bind_app_r
-	            (LamV lName (App (App fact_body (Val (natV k))) (Var lName)))
-	            (Alloc (Val (natV 1)))
-	            (factorial_post k))
-	          (wp_lam_expr_app_arg_to
-	            lName
-	            (App (App fact_body (Val (natV k))) (Var lName))
+          (wp_lam_expr_app_arg_to
+            lName
+            (App (App fact_body (Val (natV k))) (Var lName))
             (Alloc (Val (natV 1)))
-            (factorial_post k)))
+            (factorial_post k))
 
 -- =================================================================================
 -- Proof of the public spec

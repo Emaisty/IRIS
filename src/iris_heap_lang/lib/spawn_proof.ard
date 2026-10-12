@@ -429,7 +429,7 @@
           (WP H coPset_universe
             (Store (Val (LitV (LitLoc l))) PairE) H.iris_fork_post)
           (wp_pair_values H coPset_universe (boolV true) v PairPost)
-          (wp_bind_store_r H coPset_universe (LitV (LitLoc l))
+          (wp_bind_store_r H coPset_universe (Val (LitV (LitLoc l)))
             PairE H.iris_fork_post)))
 
 \lemma spawn_child {S : gFunctors} (H : irisGS natCountable S)
@@ -555,7 +555,7 @@
         iDestruct "HInv" "#HInv"
           (inv_persistent H.iris_wsat spawnN
             (spawn_inv H SG gam l Psi)) $
-        wp_apply (pm_wp_let H coPset_universe nIgnore (Fork ChildE)
+        wp_apply (pm_wp_let H coPset_universe BAnon (Fork ChildE)
           (Val (LitV (LitLoc l))) (spawn_post H SG Psi)) $
         wp_apply (wp_fork H coPset_universe ChildE ForkPost) $
         iSplitL "HTok"
@@ -1676,7 +1676,7 @@
       (WP H coPset_universe OuterApp PhiOuter)
       (WP H coPset_universe (App OuterApp (Val f2)) Post)
       outerBeta
-      (wp_bind_app_l H coPset_universe OuterApp (Val f2) Post)
+      (wp_bind_app_l H coPset_universe OuterApp f2 Post)
 
 -- Evaluate lambda expressions before applying the value-level `par` rule.
 -- This is needed when a lambda body mentions an enclosing binder and is only
@@ -1707,29 +1707,21 @@
         (app2 (Val par) (Lam x1 body1) (Lam x2 body2)) Post
     | PhiV : Value -> iProp S => \lam vf =>
         WP H coPset_universe (App (Val vf) (Val f2)) Post
-    | PhiE : Value -> iProp S => \lam vf =>
-        WP H coPset_universe (App (Val vf) (Lam x2 body2)) Post
-    | Arg2Post : Value -> Value -> iProp S => \lam vf v =>
-        WP H coPset_universe (App (Val vf) (Val v)) Post
+    | Arg1Post : Value -> iProp S => \lam v =>
+        WP H coPset_universe (App (Val par) (Val v)) PhiV
+    | Arg2Post : Value -> iProp S => \lam v =>
+        WP H coPset_universe (App LeftE (Val v)) Post
     | valueCore : Pre ⊢ (WP H coPset_universe LeftV PhiV) =>
         ipm $ wp_lam $ wp_lam $
           wp_apply (par_body_spec H SG FPI Psi1 Psi2 f1 f2) $ iAssumption
-    | exposeArg2 : \Pi (vf : Value) -> (PhiV vf) ⊢ (PhiE vf) =>
-        \lam vf => ipm $
-          wp_apply (wp_bind_app_r H coPset_universe
-            vf (Lam x2 body2) Post) $
-          wp_apply (wp_lam_expr H coPset_universe
-            x2 body2 (Arg2Post vf)) $
-          wp_apply (wp_value_intro H coPset_universe
-            f2 (Arg2Post vf)) $ iAssumption
-    | Arg1Post : Value -> iProp S => \lam v =>
-        WP H coPset_universe (App (Val par) (Val v)) PhiE
   \in (ipm $
-      wp_apply (wp_bind_app_l H coPset_universe
-        LeftE (Lam x2 body2) Post) $
       wp_apply (wp_bind_app_r H coPset_universe
-        par (Lam x1 body1) PhiE) $
+        LeftE (Lam x2 body2) Post) $
+      wp_apply (wp_lam_expr H coPset_universe x2 body2 Arg2Post) $
+      wp_apply (wp_value_intro H coPset_universe f2 Arg2Post) $
+      wp_apply (wp_bind_app_l H coPset_universe LeftE f2 Post) $
+      wp_apply (wp_bind_app_r H coPset_universe
+        (Val par) (Lam x1 body1) PhiV) $
       wp_apply (wp_lam_expr H coPset_universe x1 body1 Arg1Post) $
       wp_apply (wp_value_intro H coPset_universe f1 Arg1Post) $
-      wp_apply (wp_mono H coPset_universe LeftV PhiV PhiE exposeArg2) $
       wp_apply valueCore $ iAssumption : Pre ⊢ Goal)

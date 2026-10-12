@@ -26,14 +26,17 @@
 \meta WP H E e Phi => wp H E e Phi
 
 -- =================================================================================
--- A12: canonical Iris weakest precondition over a generic ghost signature.
+-- HeapLang weakest precondition over a generic ghost signature.
 --
--- The factorial example's fixed-HeapCMRA compatibility implementation lives
--- in `tests.fact.program_logic`.  This module follows Rocq Iris' dependency
--- shape: the logical carrier is `iProp S`, the physical state is represented
--- by `gen_heap_interp`, and every program step temporarily changes the mask
--- from E to the empty mask before restoring E around the successor state/WP.
--- That fixed-carrier module is only a compatibility layer for the example.
+-- This specializes generic Iris to the supported HeapLang fragment, NotStuck,
+-- HasNoLc, and zero extra laters per step. The nonvalue branch still guards
+-- its step obligations by one later. The carrier is iProp S; state_interp
+-- combines the heap interpretation with prophecy observations and used IDs.
+-- Each program step changes the mask E -> empty and restores E around the
+-- successor state/WP. Spawned threads require their own WPs at the top mask.
+-- The resources omit heap metadata, later credits, and default HeapLang step
+-- counters. The fixed-HeapCMRA legacy implementation is in
+-- `tests.fact.program_logic`.
 -- =================================================================================
 
 \record irisGS (cnt : Countable Loc) (S : gFunctors)
